@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { Mail, RefreshCw } from 'lucide-react';
+import { Mail, RefreshCw, AlertCircle } from 'lucide-react';
 
 export function AuthForm() {
   const [email, setEmail] = useState('');
@@ -27,7 +27,8 @@ export function AuthForm() {
     const { error } = await signIn(email, password);
     
     if (error) {
-      if (error.message.includes('Email not confirmed')) {
+      console.error('Sign in error details:', error);
+      if (error.message.includes('Email not confirmed') || error.message.includes('signup_disabled')) {
         setNeedsConfirmation(true);
         setConfirmationEmail(email);
         toast({
@@ -59,11 +60,20 @@ export function AuthForm() {
     const { error, needsConfirmation: needsConf } = await signUp(email, password);
     
     if (error) {
-      toast({
-        title: "Error signing up",
-        description: error.message,
-        variant: "destructive",
-      });
+      console.error('Sign up error details:', error);
+      if (error.message.includes('already registered')) {
+        toast({
+          title: "Account already exists",
+          description: "This email is already registered. Try signing in instead.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Error signing up",
+          description: error.message,
+          variant: "destructive",
+        });
+      }
     } else if (needsConf) {
       setNeedsConfirmation(true);
       setConfirmationEmail(email);
@@ -87,6 +97,7 @@ export function AuthForm() {
     const { error } = await resendConfirmation(confirmationEmail);
     
     if (error) {
+      console.error('Resend error details:', error);
       toast({
         title: "Error resending email",
         description: error.message,
@@ -117,8 +128,13 @@ export function AuthForm() {
           </CardHeader>
           <CardContent className="space-y-4">
             <Alert>
+              <AlertCircle className="h-4 w-4" />
               <AlertDescription>
                 Please check your email (including spam folder) and click the confirmation link to complete your registration.
+                <br /><br />
+                <strong>Current site URL:</strong> {window.location.origin}
+                <br />
+                Make sure this matches your Supabase redirect URL settings.
               </AlertDescription>
             </Alert>
             
