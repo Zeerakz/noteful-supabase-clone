@@ -9,16 +9,118 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      roles: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: number
+          role_name: string
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: number
+          role_name: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: number
+          role_name?: string
+        }
+        Relationships: []
+      }
+      workspace_membership: {
+        Row: {
+          accepted_at: string | null
+          id: string
+          invited_at: string | null
+          role_id: number
+          status: string | null
+          user_id: string
+          workspace_id: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          id?: string
+          invited_at?: string | null
+          role_id: number
+          status?: string | null
+          user_id: string
+          workspace_id: string
+        }
+        Update: {
+          accepted_at?: string | null
+          id?: string
+          invited_at?: string | null
+          role_id?: number
+          status?: string | null
+          user_id?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workspace_membership_role_id_fkey"
+            columns: ["role_id"]
+            isOneToOne: false
+            referencedRelation: "roles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workspace_membership_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workspaces: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          is_public: boolean | null
+          name: string
+          owner_user_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_public?: boolean | null
+          name: string
+          owner_user_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_public?: boolean | null
+          name?: string
+          owner_user_id?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_user_workspace_role: {
+        Args: { workspace_uuid: string; user_uuid: string }
+        Returns: string
+      }
+      is_workspace_owner: {
+        Args: { workspace_uuid: string; user_uuid: string }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "editor" | "viewer"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -133,6 +235,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "editor", "viewer"],
+    },
   },
 } as const
