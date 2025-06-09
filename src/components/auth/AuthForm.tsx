@@ -5,14 +5,19 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { Mail, RefreshCw } from 'lucide-react';
 
 export function AuthForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const { signIn, signUp } = useAuth();
+  const [needsConfirmation, setNeedsConfirmation] = useState(false);
+  const [confirmationEmail, setConfirmationEmail] = useState('');
+  const [resendLoading, setResendLoading] = useState(false);
+  const { signIn, signUp, resendConfirmation } = useAuth();
   const { toast } = useToast();
 
   const handleSignIn = async (e: React.FormEvent) => {
@@ -22,11 +27,21 @@ export function AuthForm() {
     const { error } = await signIn(email, password);
     
     if (error) {
-      toast({
-        title: "Error signing in",
-        description: error.message,
-        variant: "destructive",
-      });
+      if (error.message.includes('Email not confirmed')) {
+        setNeedsConfirmation(true);
+        setConfirmationEmail(email);
+        toast({
+          title: "Email confirmation required",
+          description: "Please check your email and click the confirmation link to complete your registration.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Error signing in",
+          description: error.message,
+          variant: "destructive",
+        });
+      }
     } else {
       toast({
         title: "Success",
@@ -41,7 +56,7 @@ export function AuthForm() {
     e.preventDefault();
     setLoading(true);
 
-    const { error } = await signUp(email, password);
+    const { error, needsConfirmation: needsConf } = await signUp(email, password);
     
     if (error) {
       toast({
@@ -49,15 +64,102 @@ export function AuthForm() {
         description: error.message,
         variant: "destructive",
       });
+    } else if (needsConf) {
+      setNeedsConfirmation(true);
+      setConfirmationEmail(email);
+      toast({
+        title: "Check your email",
+        description: "We've sent you a confirmation link. Please check your email (including spam folder) and click the link to complete your registration.",
+      });
     } else {
       toast({
         title: "Success",
-        description: "Check your email for verification!",
+        description: "Account created and signed in!",
       });
     }
     
     setLoading(false);
   };
+
+  const handleResendConfirmation = async () => {
+    setResendLoading(true);
+    
+    const { error } = await resendConfirmation(confirmationEmail);
+    
+    if (error) {
+      toast({
+        title: "Error resending email",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Email sent",
+        description: "We've sent another confirmation email. Please check your inbox and spam folder.",
+      });
+    }
+    
+    setResendLoading(false);
+  };
+
+  if (needsConfirmation) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-blue-100">
+              <Mail className="h-6 w-6 text-blue-600" />
+            </div>
+            <CardTitle>Check your email</CardTitle>
+            <CardDescription>
+              We've sent a confirmation link to {confirmationEmail}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Alert>
+              <AlertDescription>
+                Please check your email (including spam folder) and click the confirmation link to complete your registration.
+              </AlertDescription>
+            </Alert>
+            
+            <div className="text-center">
+              <p className="text-sm text-gray-600 mb-4">
+                Didn't receive the email?
+              </p>
+              <Button 
+                variant="outline" 
+                onClick={handleResendConfirmation}
+                disabled={resendLoading}
+                className="w-full"
+              >
+                {resendLoading ? (
+                  <>
+                    <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                    Sending...
+                  </>
+                ) : (
+                  'Resend confirmation email'
+                )}
+              </Button>
+            </div>
+            
+            <div className="text-center">
+              <Button 
+                variant="ghost" 
+                onClick={() => {
+                  setNeedsConfirmation(false);
+                  setConfirmationEmail('');
+                }}
+                className="text-sm"
+              >
+                Back to sign in
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-50">
