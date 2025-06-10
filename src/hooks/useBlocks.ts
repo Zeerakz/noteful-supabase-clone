@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -45,11 +44,9 @@ export function useBlocks(pageId?: string) {
   const createBlock = async (type: string, content: any = {}, parentBlockId?: string) => {
     if (!user || !pageId) return { error: 'User not authenticated or page not selected' };
 
-    // Generate optimistic ID
     const optimisticId = `temp-${Date.now()}`;
     
     try {
-      // Get the next position for this parent
       const { data: existingBlocks } = await supabase
         .from('blocks')
         .select('pos')
@@ -74,7 +71,6 @@ export function useBlocks(pageId?: string) {
         updated_at: new Date().toISOString(),
       };
 
-      // Optimistic update
       setBlocks(prev => [...prev, newBlock].sort((a, b) => a.pos - b.pos));
 
       const { data, error } = await supabase
@@ -94,14 +90,12 @@ export function useBlocks(pageId?: string) {
 
       if (error) throw error;
       
-      // Replace optimistic block with real data
       setBlocks(prev => prev.map(block => 
         block.id === optimisticId ? data : block
       ));
       
       return { data, error: null };
     } catch (err) {
-      // Remove optimistic block on error
       setBlocks(prev => prev.filter(block => block.id !== optimisticId));
       const error = err instanceof Error ? err.message : 'Failed to create block';
       return { data: null, error };
@@ -110,7 +104,6 @@ export function useBlocks(pageId?: string) {
 
   const updateBlock = async (id: string, updates: Partial<Pick<Block, 'type' | 'content' | 'pos' | 'parent_block_id'>>) => {
     try {
-      // Optimistic update
       setBlocks(prev => prev.map(block => 
         block.id === id 
           ? { ...block, ...updates, updated_at: new Date().toISOString() }
@@ -126,14 +119,12 @@ export function useBlocks(pageId?: string) {
 
       if (error) throw error;
       
-      // Update with server response
       setBlocks(prev => prev.map(block => 
         block.id === id ? data : block
       ));
       
       return { data, error: null };
     } catch (err) {
-      // Revert optimistic update on error
       await fetchBlocks();
       const error = err instanceof Error ? err.message : 'Failed to update block';
       return { data: null, error };
@@ -142,7 +133,6 @@ export function useBlocks(pageId?: string) {
 
   const deleteBlock = async (id: string) => {
     try {
-      // Optimistic update
       const originalBlocks = blocks;
       setBlocks(prev => prev.filter(block => block.id !== id));
 
@@ -155,7 +145,6 @@ export function useBlocks(pageId?: string) {
       
       return { error: null };
     } catch (err) {
-      // Revert optimistic update on error
       setBlocks(blocks);
       const error = err instanceof Error ? err.message : 'Failed to delete block';
       return { error };
@@ -167,7 +156,7 @@ export function useBlocks(pageId?: string) {
 
     fetchBlocks();
 
-    // Set up realtime subscription
+    // Set up realtime subscription for both block changes and Y.js updates
     const channel = supabase
       .channel(`blocks-${pageId}`)
       .on(
@@ -179,12 +168,11 @@ export function useBlocks(pageId?: string) {
           filter: `page_id=eq.${pageId}`
         },
         (payload) => {
-          console.log('Realtime update:', payload);
+          console.log('Realtime block update:', payload);
           
           if (payload.eventType === 'INSERT') {
             const newBlock = payload.new as Block;
             setBlocks(prev => {
-              // Don't add if it's already in the list (optimistic update)
               if (prev.some(block => block.id === newBlock.id)) {
                 return prev;
               }
@@ -201,6 +189,10 @@ export function useBlocks(pageId?: string) {
           }
         }
       )
+      .on('broadcast', { event: 'yjs-update' }, (payload) => {
+        // Y.js updates are handled by the useYjsDocument hook
+        console.log('Y.js delta received:', payload);
+      })
       .subscribe();
 
     channelRef.current = channel;
