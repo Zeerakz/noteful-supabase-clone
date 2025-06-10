@@ -9,12 +9,12 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { AppLayoutWithSidebar } from "@/components/layout/AppLayoutWithSidebar";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import Index from "@/pages/Index";
-import Login from "@/pages/Login";
+import { Login } from "@/pages/Login";
 import { WorkspacePage } from "@/pages/WorkspacePage";
 import { PageEditor } from "@/pages/PageEditor";
 import { DatabasePage } from "@/pages/DatabasePage";
 import { TemplatesPage } from "@/pages/TemplatesPage";
-import { NotFound } from "@/pages/NotFound";
+import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
 
