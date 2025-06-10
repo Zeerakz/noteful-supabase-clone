@@ -104,6 +104,53 @@ export function usePages(workspaceId?: string) {
     }
   };
 
+  const updatePageHierarchy = async (pageId: string, newParentId: string | null, newIndex: number) => {
+    try {
+      // First, get all pages that need to be reordered
+      const { data: siblingPages } = await supabase
+        .from('pages')
+        .select('*')
+        .eq('workspace_id', workspaceId)
+        .eq('parent_page_id', newParentId || null)
+        .order('order_index', { ascending: true });
+
+      if (!siblingPages) throw new Error('Failed to fetch sibling pages');
+
+      // Remove the page being moved from its current position
+      const filteredPages = siblingPages.filter(p => p.id !== pageId);
+      
+      // Insert the page at the new position
+      filteredPages.splice(newIndex, 0, { id: pageId } as Page);
+
+      // Update all affected pages with new order indices
+      const updates = filteredPages.map((page, index) => ({
+        id: page.id,
+        order_index: index,
+        ...(page.id === pageId ? { parent_page_id: newParentId } : {})
+      }));
+
+      // Perform batch update
+      const { error } = await supabase
+        .from('pages')
+        .upsert(updates.map(update => ({
+          id: update.id,
+          order_index: update.order_index,
+          parent_page_id: update.parent_page_id,
+          updated_at: new Date().toISOString()
+        })));
+
+      if (error) throw error;
+      
+      // Refresh pages list
+      await fetchPages();
+      
+      return { error: null };
+    } catch (err) {
+      const error = err instanceof Error ? err.message : 'Failed to update page hierarchy';
+      return { error };
+    }
+  };
+
   const deletePage = async (id: string) => {
     try {
       const { error } = await supabase
@@ -134,6 +181,7 @@ export function usePages(workspaceId?: string) {
     fetchPages,
     createPage,
     updatePage,
+    updatePageHierarchy,
     deletePage,
   };
 }

@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FileText, ChevronRight, ChevronDown, Plus, MoreHorizontal, Trash2, Edit } from 'lucide-react';
+import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
 import {
   Sidebar,
   SidebarContent,
@@ -34,9 +35,10 @@ interface PageTreeItemProps {
   workspaceId: string;
   onDelete: (pageId: string) => void;
   level?: number;
+  index: number;
 }
 
-function PageTreeItem({ page, pages, workspaceId, onDelete, level = 0 }: PageTreeItemProps) {
+function PageTreeItem({ page, pages, workspaceId, onDelete, level = 0, index }: PageTreeItemProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -49,78 +51,10 @@ function PageTreeItem({ page, pages, workspaceId, onDelete, level = 0 }: PageTre
     navigate(`/workspace/${workspaceId}/page/${page.id}`);
   };
 
-  if (level === 0) {
-    return (
-      <SidebarMenuItem>
-        <SidebarMenuButton onClick={handleNavigate} className="group">
-          <div className="flex items-center gap-2">
-            {hasChildren ? (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setIsExpanded(!isExpanded);
-                }}
-                className="h-4 w-4 p-0"
-              >
-                {isExpanded ? (
-                  <ChevronDown className="h-3 w-3" />
-                ) : (
-                  <ChevronRight className="h-3 w-3" />
-                )}
-              </Button>
-            ) : (
-              <FileText className="h-3 w-3 text-muted-foreground" />
-            )}
-            <span className="truncate">{page.title}</span>
-          </div>
-        </SidebarMenuButton>
-        {isOwner && (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <SidebarMenuAction showOnHover>
-                <MoreHorizontal />
-                <span className="sr-only">More</span>
-              </SidebarMenuAction>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent side="right" align="start">
-              <DropdownMenuItem onClick={handleNavigate}>
-                <Edit className="h-4 w-4 mr-2" />
-                Edit
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => onDelete(page.id)}
-                className="text-destructive"
-              >
-                <Trash2 className="h-4 w-4 mr-2" />
-                Delete
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        )}
-        {isExpanded && hasChildren && (
-          <SidebarMenuSub>
-            {childPages.map((childPage) => (
-              <PageTreeItem
-                key={childPage.id}
-                page={childPage}
-                pages={pages}
-                workspaceId={workspaceId}
-                onDelete={onDelete}
-                level={level + 1}
-              />
-            ))}
-          </SidebarMenuSub>
-        )}
-      </SidebarMenuItem>
-    );
-  }
-
-  return (
-    <SidebarMenuSubItem>
-      <SidebarMenuSubButton onClick={handleNavigate} className="group">
-        <div className="flex items-center gap-2 w-full">
+  const content = (
+    <>
+      <SidebarMenuButton onClick={handleNavigate} className="group">
+        <div className="flex items-center gap-2">
           {hasChildren ? (
             <Button
               variant="ghost"
@@ -129,62 +63,166 @@ function PageTreeItem({ page, pages, workspaceId, onDelete, level = 0 }: PageTre
                 e.stopPropagation();
                 setIsExpanded(!isExpanded);
               }}
-              className="h-3 w-3 p-0"
+              className="h-4 w-4 p-0"
             >
               {isExpanded ? (
-                <ChevronDown className="h-2 w-2" />
+                <ChevronDown className="h-3 w-3" />
               ) : (
-                <ChevronRight className="h-2 w-2" />
+                <ChevronRight className="h-3 w-3" />
               )}
             </Button>
           ) : (
             <FileText className="h-3 w-3 text-muted-foreground" />
           )}
-          <span className="truncate flex-1">{page.title}</span>
-          {isOwner && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
+          <span className="truncate">{page.title}</span>
+        </div>
+      </SidebarMenuButton>
+      {isOwner && (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <SidebarMenuAction showOnHover>
+              <MoreHorizontal />
+              <span className="sr-only">More</span>
+            </SidebarMenuAction>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent side="right" align="start">
+            <DropdownMenuItem onClick={handleNavigate}>
+              <Edit className="h-4 w-4 mr-2" />
+              Edit
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => onDelete(page.id)}
+              className="text-destructive"
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Delete
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
+    </>
+  );
+
+  if (level === 0) {
+    return (
+      <Draggable draggableId={page.id} index={index}>
+        {(provided, snapshot) => (
+          <SidebarMenuItem
+            ref={provided.innerRef}
+            {...provided.draggableProps}
+            {...provided.dragHandleProps}
+            className={snapshot.isDragging ? 'opacity-50' : ''}
+          >
+            {content}
+            {isExpanded && hasChildren && (
+              <Droppable droppableId={`sub-${page.id}`} type="page">
+                {(provided) => (
+                  <SidebarMenuSub ref={provided.innerRef} {...provided.droppableProps}>
+                    {childPages.map((childPage, childIndex) => (
+                      <PageTreeItem
+                        key={childPage.id}
+                        page={childPage}
+                        pages={pages}
+                        workspaceId={workspaceId}
+                        onDelete={onDelete}
+                        level={level + 1}
+                        index={childIndex}
+                      />
+                    ))}
+                    {provided.placeholder}
+                  </SidebarMenuSub>
+                )}
+              </Droppable>
+            )}
+          </SidebarMenuItem>
+        )}
+      </Draggable>
+    );
+  }
+
+  return (
+    <Draggable draggableId={page.id} index={index}>
+      {(provided, snapshot) => (
+        <SidebarMenuSubItem
+          ref={provided.innerRef}
+          {...provided.draggableProps}
+          {...provided.dragHandleProps}
+          className={snapshot.isDragging ? 'opacity-50' : ''}
+        >
+          <SidebarMenuSubButton onClick={handleNavigate} className="group">
+            <div className="flex items-center gap-2 w-full">
+              {hasChildren ? (
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-4 w-4 p-0 opacity-0 group-hover:opacity-100"
-                  onClick={(e) => e.stopPropagation()}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsExpanded(!isExpanded);
+                  }}
+                  className="h-3 w-3 p-0"
                 >
-                  <MoreHorizontal className="h-3 w-3" />
+                  {isExpanded ? (
+                    <ChevronDown className="h-2 w-2" />
+                  ) : (
+                    <ChevronRight className="h-2 w-2" />
+                  )}
                 </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent side="right" align="start">
-                <DropdownMenuItem onClick={handleNavigate}>
-                  <Edit className="h-4 w-4 mr-2" />
-                  Edit
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => onDelete(page.id)}
-                  className="text-destructive"
-                >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Delete
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+              ) : (
+                <FileText className="h-3 w-3 text-muted-foreground" />
+              )}
+              <span className="truncate flex-1">{page.title}</span>
+              {isOwner && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-4 w-4 p-0 opacity-0 group-hover:opacity-100"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <MoreHorizontal className="h-3 w-3" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent side="right" align="start">
+                    <DropdownMenuItem onClick={handleNavigate}>
+                      <Edit className="h-4 w-4 mr-2" />
+                      Edit
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => onDelete(page.id)}
+                      className="text-destructive"
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Delete
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
+            </div>
+          </SidebarMenuSubButton>
+          {isExpanded && hasChildren && (
+            <Droppable droppableId={`sub-${page.id}`} type="page">
+              {(provided) => (
+                <SidebarMenuSub ref={provided.innerRef} {...provided.droppableProps}>
+                  {childPages.map((childPage, childIndex) => (
+                    <PageTreeItem
+                      key={childPage.id}
+                      page={childPage}
+                      pages={pages}
+                      workspaceId={workspaceId}
+                      onDelete={onDelete}
+                      level={level + 1}
+                      index={childIndex}
+                    />
+                  ))}
+                  {provided.placeholder}
+                </SidebarMenuSub>
+              )}
+            </Droppable>
           )}
-        </div>
-      </SidebarMenuSubButton>
-      {isExpanded && hasChildren && (
-        <SidebarMenuSub>
-          {childPages.map((childPage) => (
-            <PageTreeItem
-              key={childPage.id}
-              page={childPage}
-              pages={pages}
-              workspaceId={workspaceId}
-              onDelete={onDelete}
-              level={level + 1}
-            />
-          ))}
-        </SidebarMenuSub>
+        </SidebarMenuSubItem>
       )}
-    </SidebarMenuSubItem>
+    </Draggable>
   );
 }
 
@@ -194,11 +232,48 @@ interface WorkspacePagesGroupProps {
 }
 
 function WorkspacePagesGroup({ workspaceId, workspaceName }: WorkspacePagesGroupProps) {
-  const { pages, deletePage, createPage } = usePages(workspaceId);
+  const { pages, deletePage, createPage, updatePageHierarchy } = usePages(workspaceId);
   const { toast } = useToast();
   const navigate = useNavigate();
 
   const topLevelPages = pages.filter(page => !page.parent_page_id);
+
+  const handleDragEnd = async (result: DropResult) => {
+    if (!result.destination) return;
+
+    const { draggableId, source, destination } = result;
+    
+    // Parse destination droppable ID to get parent info
+    const isTopLevel = destination.droppableId === `workspace-${workspaceId}`;
+    const newParentId = isTopLevel ? null : destination.droppableId.replace('sub-', '');
+    
+    // If dropped in the same position, do nothing
+    if (
+      source.droppableId === destination.droppableId &&
+      source.index === destination.index
+    ) {
+      return;
+    }
+
+    const { error } = await updatePageHierarchy(
+      draggableId,
+      newParentId,
+      destination.index
+    );
+
+    if (error) {
+      toast({
+        title: "Error",
+        description: error,
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Success",
+        description: "Page moved successfully!",
+      });
+    }
+  };
 
   const handleDeletePage = async (pageId: string) => {
     const page = pages.find(p => p.id === pageId);
@@ -261,26 +336,34 @@ function WorkspacePagesGroup({ workspaceId, workspaceName }: WorkspacePagesGroup
         </Button>
       </SidebarGroupLabel>
       <SidebarGroupContent>
-        <SidebarMenu>
-          {topLevelPages.length === 0 ? (
-            <SidebarMenuItem>
-              <SidebarMenuButton onClick={handleCreatePage} className="text-muted-foreground">
-                <Plus className="h-4 w-4" />
-                <span>Create first page</span>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          ) : (
-            topLevelPages.map((page) => (
-              <PageTreeItem
-                key={page.id}
-                page={page}
-                pages={pages}
-                workspaceId={workspaceId}
-                onDelete={handleDeletePage}
-              />
-            ))
-          )}
-        </SidebarMenu>
+        <DragDropContext onDragEnd={handleDragEnd}>
+          <Droppable droppableId={`workspace-${workspaceId}`} type="page">
+            {(provided) => (
+              <SidebarMenu ref={provided.innerRef} {...provided.droppableProps}>
+                {topLevelPages.length === 0 ? (
+                  <SidebarMenuItem>
+                    <SidebarMenuButton onClick={handleCreatePage} className="text-muted-foreground">
+                      <Plus className="h-4 w-4" />
+                      <span>Create first page</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ) : (
+                  topLevelPages.map((page, index) => (
+                    <PageTreeItem
+                      key={page.id}
+                      page={page}
+                      pages={pages}
+                      workspaceId={workspaceId}
+                      onDelete={handleDeletePage}
+                      index={index}
+                    />
+                  ))
+                )}
+                {provided.placeholder}
+              </SidebarMenu>
+            )}
+          </Droppable>
+        </DragDropContext>
       </SidebarGroupContent>
     </SidebarGroup>
   );
