@@ -14,6 +14,7 @@ import { AppLayoutWithSidebar } from "@/components/layout/AppLayoutWithSidebar";
 import { WorkspaceList } from "@/components/workspaces/WorkspaceList";
 import { WorkspacePage } from "@/pages/WorkspacePage";
 import { PageEditor } from "@/pages/PageEditor";
+import { PageView } from "@/pages/PageView";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -50,6 +51,16 @@ function AppContent() {
           element={
             <ProtectedRoute>
               <PageEditor />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/:pageId" 
+          element={
+            <ProtectedRoute>
+              <AppLayoutWithSidebar>
+                <PageView />
+              </AppLayoutWithSidebar>
             </ProtectedRoute>
           } 
         />
