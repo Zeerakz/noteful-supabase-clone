@@ -68,8 +68,8 @@ export function BlockRenderer({ block, onUpdateBlock, onDeleteBlock, isEditable,
       return (
         <TwoColumnBlock
           block={block}
-          onUpdate={handleContentUpdate}
-          onDelete={handleDelete}
+          onUpdateBlock={onUpdateBlock}
+          onDeleteBlock={onDeleteBlock}
           isEditable={isEditable}
           childBlocks={childBlocks}
         />
