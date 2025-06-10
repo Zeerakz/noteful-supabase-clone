@@ -15,6 +15,7 @@ export function useYjsDocument({ pageId, onContentChange }: YjsDocumentOptions) 
   const [isConnected, setIsConnected] = useState(false);
   const channelRef = useRef<any>(null);
   const isLocalUpdateRef = useRef(false);
+  const isSubscribedRef = useRef<boolean>(false);
 
   // Create a shared text object for the document content
   const ytext = ydoc.getText('content');
@@ -27,7 +28,7 @@ export function useYjsDocument({ pageId, onContentChange }: YjsDocumentOptions) 
       const deltaBlob = btoa(String.fromCharCode(...update));
       
       // Broadcast the delta blob on the blocks channel
-      if (channelRef.current) {
+      if (channelRef.current && isSubscribedRef.current) {
         await channelRef.current.send({
           type: 'broadcast',
           event: 'yjs-update',
@@ -77,6 +78,20 @@ export function useYjsDocument({ pageId, onContentChange }: YjsDocumentOptions) 
     isLocalUpdateRef.current = false;
   }, [ytext]);
 
+  const cleanup = useCallback(() => {
+    if (channelRef.current && isSubscribedRef.current) {
+      try {
+        console.log('Cleaning up Y.js channel subscription');
+        supabase.removeChannel(channelRef.current);
+        isSubscribedRef.current = false;
+      } catch (error) {
+        console.warn('Error removing Y.js channel:', error);
+      }
+      channelRef.current = null;
+      setIsConnected(false);
+    }
+  }, []);
+
   // Set up Y.js update listener
   useEffect(() => {
     const updateHandler = (update: Uint8Array, origin: any) => {
@@ -100,9 +115,16 @@ export function useYjsDocument({ pageId, onContentChange }: YjsDocumentOptions) 
 
   // Set up real-time channel for Y.js updates
   useEffect(() => {
-    if (!user || !pageId) return;
+    if (!user || !pageId) {
+      cleanup();
+      return;
+    }
 
-    const channelName = `blocks-${pageId}`;
+    // Cleanup existing subscription
+    cleanup();
+
+    const timestamp = Date.now();
+    const channelName = `blocks-${pageId}-${timestamp}`;
     
     const channel = supabase
       .channel(channelName)
@@ -115,19 +137,19 @@ export function useYjsDocument({ pageId, onContentChange }: YjsDocumentOptions) 
       })
       .subscribe((status) => {
         console.log('Y.js channel status:', status);
-        setIsConnected(status === 'SUBSCRIBED');
+        if (status === 'SUBSCRIBED') {
+          isSubscribedRef.current = true;
+          setIsConnected(true);
+        } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
+          isSubscribedRef.current = false;
+          setIsConnected(false);
+        }
       });
 
     channelRef.current = channel;
 
-    return () => {
-      if (channelRef.current) {
-        supabase.removeChannel(channelRef.current);
-        channelRef.current = null;
-      }
-      setIsConnected(false);
-    };
-  }, [user, pageId, applyRemoteUpdate]);
+    return cleanup;
+  }, [user, pageId, applyRemoteUpdate, cleanup]);
 
   return {
     ydoc,

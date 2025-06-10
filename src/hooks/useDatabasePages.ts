@@ -11,6 +11,7 @@ export function useDatabasePages(databaseId: string, workspaceId: string) {
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
   const channelRef = useRef<any>(null);
+  const isSubscribedRef = useRef<boolean>(false);
 
   const fetchPages = async () => {
     if (!user || !databaseId) return;
@@ -39,38 +40,25 @@ export function useDatabasePages(databaseId: string, workspaceId: string) {
       { title, databaseId }
     );
     
-    if (!error) {
-      // Realtime will handle the update
-    }
-    
     return { data, error };
   };
 
   const updatePage = async (pageId: string, updates: Partial<Pick<Page, 'title'>>) => {
     const { data, error } = await PageService.updatePage(pageId, updates);
-    
-    if (!error) {
-      // Realtime will handle the update
-    }
-    
     return { data, error };
   };
 
   const deletePage = async (pageId: string) => {
     const { error } = await PageService.deletePage(pageId);
-    
-    if (!error) {
-      // Realtime will handle the update
-    }
-    
     return { error };
   };
 
   const cleanup = () => {
-    if (channelRef.current) {
+    if (channelRef.current && isSubscribedRef.current) {
       try {
-        channelRef.current.unsubscribe();
+        console.log('Cleaning up database pages channel subscription');
         supabase.removeChannel(channelRef.current);
+        isSubscribedRef.current = false;
       } catch (error) {
         console.warn('Error removing database pages channel:', error);
       }
@@ -91,8 +79,9 @@ export function useDatabasePages(databaseId: string, workspaceId: string) {
     // Cleanup existing subscription
     cleanup();
 
-    // Set up realtime subscription for pages in this database
-    const channelName = `database_pages_${databaseId}_${user.id}_${Date.now()}`;
+    // Create a unique channel name
+    const timestamp = Date.now();
+    const channelName = `database_pages_${databaseId}_${user.id}_${timestamp}`;
     console.log('Creating database pages channel:', channelName);
     
     const channel = supabase.channel(channelName);
@@ -114,7 +103,7 @@ export function useDatabasePages(databaseId: string, workspaceId: string) {
             if (prev.some(page => page.id === newPage.id)) {
               return prev;
             }
-            return [newPage, ...prev]; // Add new pages at the top
+            return [newPage, ...prev];
           });
         } else if (payload.eventType === 'UPDATE') {
           const updatedPage = payload.new as Page;
@@ -128,8 +117,14 @@ export function useDatabasePages(databaseId: string, workspaceId: string) {
       }
     );
 
+    // Subscribe only once and track status
     channel.subscribe((status) => {
       console.log('Database pages subscription status:', status);
+      if (status === 'SUBSCRIBED') {
+        isSubscribedRef.current = true;
+      } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
+        isSubscribedRef.current = false;
+      }
     });
 
     channelRef.current = channel;

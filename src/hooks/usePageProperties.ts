@@ -11,7 +11,7 @@ export function usePageProperties(pageId?: string) {
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
   const channelRef = useRef<any>(null);
-  const subscriptionAttemptRef = useRef<number>(0);
+  const isSubscribedRef = useRef<boolean>(false);
 
   const fetchProperties = async () => {
     if (!pageId) {
@@ -43,10 +43,6 @@ export function usePageProperties(pageId?: string) {
       user.id
     );
     
-    if (!error) {
-      // Don't refresh properties - realtime will handle the update
-    }
-    
     return { data, error };
   };
 
@@ -54,11 +50,6 @@ export function usePageProperties(pageId?: string) {
     if (!pageId) return { error: 'Page not selected' };
 
     const { error } = await PagePropertyService.deletePageProperty(pageId, fieldId);
-    
-    if (!error) {
-      // Don't refresh properties - realtime will handle the update
-    }
-    
     return { error };
   };
 
@@ -66,94 +57,87 @@ export function usePageProperties(pageId?: string) {
     if (!pageId) return { error: 'Page not selected' };
 
     const { error } = await PagePropertyService.deleteAllPageProperties(pageId);
-    
-    if (!error) {
-      // Don't refresh properties - realtime will handle the update
-    }
-    
     return { error };
+  };
+
+  const cleanup = () => {
+    if (channelRef.current && isSubscribedRef.current) {
+      try {
+        console.log('Cleaning up page properties channel subscription');
+        supabase.removeChannel(channelRef.current);
+        isSubscribedRef.current = false;
+      } catch (error) {
+        console.warn('Error removing page properties channel:', error);
+      }
+      channelRef.current = null;
+    }
   };
 
   useEffect(() => {
     if (!pageId) {
+      cleanup();
       setProperties([]);
       setLoading(false);
-      // Clean up existing channel
-      if (channelRef.current) {
-        try {
-          channelRef.current.unsubscribe();
-          supabase.removeChannel(channelRef.current);
-        } catch (error) {
-          console.warn('Error removing page properties channel:', error);
-        }
-        channelRef.current = null;
-      }
       return;
     }
 
     fetchProperties();
 
-    // Increment attempt counter to ensure unique channel names
-    subscriptionAttemptRef.current += 1;
-    const attemptId = subscriptionAttemptRef.current;
+    // Cleanup existing subscription
+    cleanup();
 
     // Create unique channel name to avoid conflicts
-    const channelName = `page_properties_${pageId}_${attemptId}`;
+    const timestamp = Date.now();
+    const channelName = `page_properties_${pageId}_${timestamp}`;
     console.log('Creating page properties channel:', channelName);
 
     // Set up realtime subscription for page properties
-    const channel = supabase
-      .channel(channelName)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'page_properties',
-          filter: `page_id=eq.${pageId}`
-        },
-        (payload) => {
-          console.log('Realtime page properties update:', payload);
-          
-          if (payload.eventType === 'INSERT') {
-            const newProperty = payload.new as PageProperty;
-            setProperties(prev => {
-              // Don't add if it's already in the list
-              if (prev.some(prop => prop.id === newProperty.id)) {
-                return prev;
-              }
-              return [...prev, newProperty];
-            });
-          } else if (payload.eventType === 'UPDATE') {
-            const updatedProperty = payload.new as PageProperty;
-            setProperties(prev => prev.map(prop => 
-              prop.id === updatedProperty.id ? updatedProperty : prop
-            ));
-          } else if (payload.eventType === 'DELETE') {
-            const deletedProperty = payload.old as PageProperty;
-            setProperties(prev => prev.filter(prop => prop.id !== deletedProperty.id));
-          }
+    const channel = supabase.channel(channelName);
+    
+    channel.on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'page_properties',
+        filter: `page_id=eq.${pageId}`
+      },
+      (payload) => {
+        console.log('Realtime page properties update:', payload);
+        
+        if (payload.eventType === 'INSERT') {
+          const newProperty = payload.new as PageProperty;
+          setProperties(prev => {
+            if (prev.some(prop => prop.id === newProperty.id)) {
+              return prev;
+            }
+            return [...prev, newProperty];
+          });
+        } else if (payload.eventType === 'UPDATE') {
+          const updatedProperty = payload.new as PageProperty;
+          setProperties(prev => prev.map(prop => 
+            prop.id === updatedProperty.id ? updatedProperty : prop
+          ));
+        } else if (payload.eventType === 'DELETE') {
+          const deletedProperty = payload.old as PageProperty;
+          setProperties(prev => prev.filter(prop => prop.id !== deletedProperty.id));
         }
-      );
+      }
+    );
 
-    // Subscribe only once
+    // Subscribe only once and track status
     channel.subscribe((status) => {
       console.log('Page properties subscription status:', status);
+      if (status === 'SUBSCRIBED') {
+        isSubscribedRef.current = true;
+      } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
+        isSubscribedRef.current = false;
+      }
     });
 
     channelRef.current = channel;
 
-    return () => {
-      if (channelRef.current) {
-        try {
-          channelRef.current.unsubscribe();
-          supabase.removeChannel(channelRef.current);
-        } catch (error) {
-          console.warn('Error removing page properties channel:', error);
-        }
-        channelRef.current = null;
-      }
-    };
+    return cleanup;
   }, [pageId]);
 
   return {
