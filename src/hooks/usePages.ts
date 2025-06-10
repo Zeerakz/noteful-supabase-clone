@@ -1,9 +1,10 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Page } from '@/types/page';
 import { PageService } from '@/services/pageService';
 import { usePageHierarchy } from '@/hooks/usePageHierarchy';
+import { supabase } from '@/integrations/supabase/client';
 
 export function usePages(workspaceId?: string) {
   const [pages, setPages] = useState<Page[]>([]);
@@ -11,6 +12,7 @@ export function usePages(workspaceId?: string) {
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
   const { updatePageHierarchy: updateHierarchy } = usePageHierarchy();
+  const channelRef = useRef<any>(null);
 
   const fetchPages = async () => {
     if (!user || !workspaceId) return;
@@ -38,8 +40,7 @@ export function usePages(workspaceId?: string) {
     );
     
     if (!error) {
-      // Refresh pages list
-      await fetchPages();
+      // Don't refresh pages list - realtime will handle the update
     }
     
     return { data, error };
@@ -49,8 +50,7 @@ export function usePages(workspaceId?: string) {
     const { data, error } = await PageService.updatePage(id, updates);
     
     if (!error) {
-      // Refresh pages list
-      await fetchPages();
+      // Don't refresh pages list - realtime will handle the update
     }
     
     return { data, error };
@@ -62,8 +62,7 @@ export function usePages(workspaceId?: string) {
     const { error } = await updateHierarchy(workspaceId, pages, pageId, newParentId, newIndex);
     
     if (!error) {
-      // Refresh pages list
-      await fetchPages();
+      // Don't refresh pages list - realtime will handle the update
     }
     
     return { error };
@@ -73,15 +72,60 @@ export function usePages(workspaceId?: string) {
     const { error } = await PageService.deletePage(id);
     
     if (!error) {
-      // Refresh pages list
-      await fetchPages();
+      // Don't refresh pages list - realtime will handle the update
     }
     
     return { error };
   };
 
   useEffect(() => {
+    if (!user || !workspaceId) return;
+
     fetchPages();
+
+    // Set up realtime subscription for pages in this workspace
+    const channel = supabase
+      .channel(`pages-${workspaceId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'pages',
+          filter: `workspace_id=eq.${workspaceId}`
+        },
+        (payload) => {
+          console.log('Realtime pages update:', payload);
+          
+          if (payload.eventType === 'INSERT') {
+            const newPage = payload.new as Page;
+            setPages(prev => {
+              // Don't add if it's already in the list
+              if (prev.some(page => page.id === newPage.id)) {
+                return prev;
+              }
+              return [...prev, newPage].sort((a, b) => a.order_index - b.order_index);
+            });
+          } else if (payload.eventType === 'UPDATE') {
+            const updatedPage = payload.new as Page;
+            setPages(prev => prev.map(page => 
+              page.id === updatedPage.id ? updatedPage : page
+            ).sort((a, b) => a.order_index - b.order_index));
+          } else if (payload.eventType === 'DELETE') {
+            const deletedPage = payload.old as Page;
+            setPages(prev => prev.filter(page => page.id !== deletedPage.id));
+          }
+        }
+      )
+      .subscribe();
+
+    channelRef.current = channel;
+
+    return () => {
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+      }
+    };
   }, [user, workspaceId]);
 
   return {

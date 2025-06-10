@@ -1,14 +1,16 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { PageProperty } from '@/types/database';
 import { PagePropertyService } from '@/services/pagePropertyService';
+import { supabase } from '@/integrations/supabase/client';
 
 export function usePageProperties(pageId?: string) {
   const [properties, setProperties] = useState<PageProperty[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
+  const channelRef = useRef<any>(null);
 
   const fetchProperties = async () => {
     if (!pageId) {
@@ -41,8 +43,7 @@ export function usePageProperties(pageId?: string) {
     );
     
     if (!error) {
-      // Refresh properties
-      await fetchProperties();
+      // Don't refresh properties - realtime will handle the update
     }
     
     return { data, error };
@@ -54,8 +55,7 @@ export function usePageProperties(pageId?: string) {
     const { error } = await PagePropertyService.deletePageProperty(pageId, fieldId);
     
     if (!error) {
-      // Refresh properties
-      await fetchProperties();
+      // Don't refresh properties - realtime will handle the update
     }
     
     return { error };
@@ -67,15 +67,64 @@ export function usePageProperties(pageId?: string) {
     const { error } = await PagePropertyService.deleteAllPageProperties(pageId);
     
     if (!error) {
-      // Refresh properties
-      await fetchProperties();
+      // Don't refresh properties - realtime will handle the update
     }
     
     return { error };
   };
 
   useEffect(() => {
+    if (!pageId) {
+      setProperties([]);
+      setLoading(false);
+      return;
+    }
+
     fetchProperties();
+
+    // Set up realtime subscription for page properties
+    const channel = supabase
+      .channel(`page-properties-${pageId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'page_properties',
+          filter: `page_id=eq.${pageId}`
+        },
+        (payload) => {
+          console.log('Realtime page properties update:', payload);
+          
+          if (payload.eventType === 'INSERT') {
+            const newProperty = payload.new as PageProperty;
+            setProperties(prev => {
+              // Don't add if it's already in the list
+              if (prev.some(prop => prop.id === newProperty.id)) {
+                return prev;
+              }
+              return [...prev, newProperty];
+            });
+          } else if (payload.eventType === 'UPDATE') {
+            const updatedProperty = payload.new as PageProperty;
+            setProperties(prev => prev.map(prop => 
+              prop.id === updatedProperty.id ? updatedProperty : prop
+            ));
+          } else if (payload.eventType === 'DELETE') {
+            const deletedProperty = payload.old as PageProperty;
+            setProperties(prev => prev.filter(prop => prop.id !== deletedProperty.id));
+          }
+        }
+      )
+      .subscribe();
+
+    channelRef.current = channel;
+
+    return () => {
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+      }
+    };
   }, [pageId]);
 
   return {
