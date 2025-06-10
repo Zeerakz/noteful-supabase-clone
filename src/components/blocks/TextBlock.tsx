@@ -4,7 +4,9 @@ import { Block } from '@/hooks/useBlocks';
 import { Button } from '@/components/ui/button';
 import { Trash2 } from 'lucide-react';
 import { CrdtTextEditor } from './CrdtTextEditor';
-import { CommentsSection } from './CommentsSection';
+import { CommentIcon } from './CommentIcon';
+import { CommentThreadPanel } from './CommentThreadPanel';
+import { useComments } from '@/hooks/useComments';
 
 interface TextBlockProps {
   block: Block;
@@ -15,6 +17,8 @@ interface TextBlockProps {
 
 export function TextBlock({ block, onUpdate, onDelete, isEditable }: TextBlockProps) {
   const [isHovered, setIsHovered] = useState(false);
+  const [isCommentPanelOpen, setIsCommentPanelOpen] = useState(false);
+  const { comments } = useComments(block.id);
 
   const handleContentChange = async (content: any) => {
     await onUpdate(content);
@@ -34,7 +38,6 @@ export function TextBlock({ block, onUpdate, onDelete, isEditable }: TextBlockPr
             <span className="text-muted-foreground italic">Empty text block</span>
           )}
         </div>
-        <CommentsSection blockId={block.id} />
       </div>
     );
   }
@@ -55,7 +58,19 @@ export function TextBlock({ block, onUpdate, onDelete, isEditable }: TextBlockPr
       />
       
       {isHovered && (
-        <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
+          <CommentThreadPanel
+            blockId={block.id}
+            isOpen={isCommentPanelOpen}
+            onOpenChange={setIsCommentPanelOpen}
+          >
+            <CommentIcon
+              hasComments={comments.length > 0}
+              commentCount={comments.length}
+              onClick={() => setIsCommentPanelOpen(true)}
+            />
+          </CommentThreadPanel>
+          
           <Button
             onClick={handleDelete}
             variant="ghost"
@@ -66,8 +81,6 @@ export function TextBlock({ block, onUpdate, onDelete, isEditable }: TextBlockPr
           </Button>
         </div>
       )}
-
-      <CommentsSection blockId={block.id} />
     </div>
   );
 }
