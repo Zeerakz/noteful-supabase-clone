@@ -27,10 +27,7 @@ export function WorkspaceView() {
     if (!workspaceId) return;
     
     try {
-      await createPage({
-        title: 'Untitled Page',
-        parentPageId: null,
-      });
+      await createPage('Untitled Page', null);
     } catch (error) {
       console.error('Error creating page:', error);
     }

@@ -22,5 +22,5 @@ export function WorkspacePage() {
     return <Navigate to="/" replace />;
   }
 
-  return <WorkspaceView workspace={workspace} />;
+  return <WorkspaceView />;
 }
