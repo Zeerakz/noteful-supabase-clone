@@ -18,10 +18,12 @@ interface BlockEditorProps {
 
 function BlockEditorContent({ pageId, isEditable }: BlockEditorProps) {
   const { blocks, loading, createBlock, updateBlock, deleteBlock } = useBlocks(pageId);
-  const { activeUsers, loading: presenceLoading } = usePresenceContext();
   const { toast } = useToast();
   const editorRef = useRef<HTMLDivElement>(null);
   const [focusedBlockId, setFocusedBlockId] = useState<string | null>(null);
+
+  // Get presence data from context instead of calling usePresence directly
+  const { activeUsers, loading: presenceLoading } = usePresenceContext();
 
   const { isOpen, position, openSlashMenu, closeSlashMenu, handleSelectItem } = useSlashMenu({
     onSelectCommand: handleCreateBlock,
