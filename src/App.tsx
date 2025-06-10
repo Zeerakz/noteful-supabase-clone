@@ -10,7 +10,7 @@ import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { AppLayoutWithSidebar } from "@/components/layout/AppLayoutWithSidebar";
 import Index from "./pages/Index";
 import { Login } from "./pages/Login";
-import { NotFound } from "./pages/NotFound";
+import NotFound from "./pages/NotFound";
 import { PageEditor } from "./pages/PageEditor";
 import { WorkspacePage } from "./pages/WorkspacePage";
 import { TemplatesPage } from "./pages/TemplatesPage";

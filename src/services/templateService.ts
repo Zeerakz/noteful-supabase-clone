@@ -2,116 +2,103 @@
 import { supabase } from '@/integrations/supabase/client';
 import { Template, TemplateCreateRequest } from '@/types/template';
 
-export class TemplateService {
-  static async fetchTemplates(workspaceId: string): Promise<{ data: Template[] | null; error: string | null }> {
-    try {
-      const { data, error } = await supabase
-        .from('templates')
-        .select('*')
-        .eq('workspace_id', workspaceId)
-        .order('created_at', { ascending: false });
+export const TemplateService = {
+  async fetchTemplates(workspaceId: string) {
+    const { data, error } = await supabase
+      .from('templates')
+      .select('*')
+      .eq('workspace_id', workspaceId)
+      .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      return { data, error: null };
-    } catch (err) {
-      return { 
-        data: null, 
-        error: err instanceof Error ? err.message : 'Failed to fetch templates' 
-      };
-    }
-  }
+    return { data, error: error?.message };
+  },
 
-  static async createTemplate(
-    userId: string,
-    request: TemplateCreateRequest
-  ): Promise<{ data: Template | null; error: string | null }> {
-    try {
-      const { data, error } = await supabase
-        .from('templates')
-        .insert([
-          {
-            name: request.name,
-            content: request.content,
-            workspace_id: request.workspace_id,
-            created_by: userId,
-          },
-        ])
-        .select()
-        .single();
+  async createTemplate(userId: string, request: TemplateCreateRequest) {
+    const { data, error } = await supabase
+      .from('templates')
+      .insert({
+        ...request,
+        created_by: userId,
+      })
+      .select()
+      .single();
 
-      if (error) throw error;
-      return { data, error: null };
-    } catch (err) {
-      return { 
-        data: null, 
-        error: err instanceof Error ? err.message : 'Failed to create template' 
-      };
-    }
-  }
+    return { data, error: error?.message };
+  },
 
-  static async deleteTemplate(id: string): Promise<{ error: string | null }> {
-    try {
-      const { error } = await supabase
-        .from('templates')
-        .delete()
-        .eq('id', id);
+  async deleteTemplate(id: string) {
+    const { error } = await supabase
+      .from('templates')
+      .delete()
+      .eq('id', id);
 
-      if (error) throw error;
-      return { error: null };
-    } catch (err) {
-      return { 
-        error: err instanceof Error ? err.message : 'Failed to delete template' 
-      };
-    }
-  }
+    return { error: error?.message };
+  },
 
-  static async createPageFromTemplate(
-    templateId: string,
-    userId: string,
-    workspaceId: string,
+  async createPageFromTemplate(
+    templateId: string, 
+    userId: string, 
+    workspaceId: string, 
     pageName?: string
-  ): Promise<{ data: any | null; error: string | null }> {
+  ) {
     try {
-      // First fetch the template
+      // Fetch the template
       const { data: template, error: templateError } = await supabase
         .from('templates')
         .select('*')
         .eq('id', templateId)
         .single();
 
-      if (templateError) throw templateError;
+      if (templateError) {
+        return { data: null, error: templateError.message };
+      }
 
-      // Create new page
+      if (!template) {
+        return { data: null, error: 'Template not found' };
+      }
+
+      // Create a new page
+      const pageTitle = pageName || `${template.name} (Copy)`;
       const { data: newPage, error: pageError } = await supabase
         .from('pages')
-        .insert([
-          {
-            workspace_id: workspaceId,
-            title: pageName || `${template.name} Page`,
-            created_by: userId,
-            order_index: 0,
-          },
-        ])
+        .insert({
+          title: pageTitle,
+          workspace_id: workspaceId,
+          created_by: userId,
+        })
         .select()
         .single();
 
-      if (pageError) throw pageError;
+      if (pageError) {
+        return { data: null, error: pageError.message };
+      }
 
-      // Create blocks from template content
-      if (template.content && template.content.blocks) {
-        const blocksToInsert = template.content.blocks.map((block: any, index: number) => ({
-          page_id: newPage.id,
-          type: block.type,
-          content: block.content,
-          pos: index,
-          created_by: userId,
-        }));
+      // Type-safe content parsing
+      const templateContent = template.content;
+      if (templateContent && typeof templateContent === 'object' && !Array.isArray(templateContent)) {
+        const contentObj = templateContent as { [key: string]: any };
+        
+        if (contentObj.blocks && Array.isArray(contentObj.blocks)) {
+          // Create blocks from template
+          const blocksToCreate = contentObj.blocks.map((block: any, index: number) => ({
+            page_id: newPage.id,
+            type: block.type || 'text',
+            content: block.content || {},
+            pos: block.pos !== undefined ? block.pos : index,
+            created_by: userId,
+          }));
 
-        const { error: blocksError } = await supabase
-          .from('blocks')
-          .insert(blocksToInsert);
+          if (blocksToCreate.length > 0) {
+            const { error: blocksError } = await supabase
+              .from('blocks')
+              .insert(blocksToCreate);
 
-        if (blocksError) throw blocksError;
+            if (blocksError) {
+              // If blocks creation fails, we should still return the page
+              console.error('Failed to create blocks from template:', blocksError);
+            }
+          }
+        }
       }
 
       return { data: newPage, error: null };
@@ -121,5 +108,5 @@ export class TemplateService {
         error: err instanceof Error ? err.message : 'Failed to create page from template' 
       };
     }
-  }
-}
+  },
+};
