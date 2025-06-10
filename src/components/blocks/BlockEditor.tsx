@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Plus, Type, Heading1, Heading2, Heading3, List, ListOrdered, Image } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -7,6 +8,9 @@ import { SlashMenu } from './SlashMenu';
 import { useBlocks } from '@/hooks/useBlocks';
 import { useSlashMenu } from '@/hooks/useSlashMenu';
 import { useToast } from '@/hooks/use-toast';
+import { PresenceProvider } from '@/components/collaboration/PresenceProvider';
+import { ActiveUsers } from '@/components/collaboration/ActiveUsers';
+import { usePresence } from '@/hooks/usePresence';
 
 interface BlockEditorProps {
   pageId: string;
@@ -15,6 +19,7 @@ interface BlockEditorProps {
 
 export function BlockEditor({ pageId, isEditable }: BlockEditorProps) {
   const { blocks, loading, createBlock, updateBlock, deleteBlock } = useBlocks(pageId);
+  const { activeUsers, loading: presenceLoading } = usePresence(pageId);
   const { toast } = useToast();
   const editorRef = useRef<HTMLDivElement>(null);
   const [focusedBlockId, setFocusedBlockId] = useState<string | null>(null);
@@ -105,9 +110,11 @@ export function BlockEditor({ pageId, isEditable }: BlockEditorProps) {
 
   if (loading) {
     return (
-      <div className="p-4">
-        <div className="text-muted-foreground">Loading content...</div>
-      </div>
+      <PresenceProvider pageId={pageId}>
+        <div className="p-4">
+          <div className="text-muted-foreground">Loading content...</div>
+        </div>
+      </PresenceProvider>
     );
   }
 
@@ -115,81 +122,91 @@ export function BlockEditor({ pageId, isEditable }: BlockEditorProps) {
   const childBlocks = blocks.filter(block => block.parent_block_id);
 
   return (
-    <div className="space-y-2 p-4" ref={editorRef}>
-      {parentBlocks.map((block) => (
-        <div 
-          key={block.id} 
-          className={`transition-opacity ${
-            block.id.startsWith('temp-') ? 'opacity-60' : 'opacity-100'
-          }`}
-          onFocus={() => setFocusedBlockId(block.id)}
-          onBlur={() => setFocusedBlockId(null)}
-        >
-          <BlockRenderer
-            block={block}
-            onUpdateBlock={handleUpdateBlock}
-            onDeleteBlock={handleDeleteBlock}
-            isEditable={isEditable}
-            childBlocks={childBlocks}
-          />
-        </div>
-      ))}
-      
-      {isEditable && (
-        <div className="pt-4">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" data-cy="add-block-button">
-                <Plus className="h-4 w-4 mr-2" />
-                Add Block
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent>
-              <DropdownMenuItem onClick={() => handleCreateBlock('text')} data-cy="text-block-option">
-                <Type className="h-4 w-4 mr-2" />
-                Text
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleCreateBlock('heading1')}>
-                <Heading1 className="h-4 w-4 mr-2" />
-                Heading 1
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleCreateBlock('heading2')}>
-                <Heading2 className="h-4 w-4 mr-2" />
-                Heading 2
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleCreateBlock('heading3')}>
-                <Heading3 className="h-4 w-4 mr-2" />
-                Heading 3
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleCreateBlock('bullet_list')}>
-                <List className="h-4 w-4 mr-2" />
-                Bullet List
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleCreateBlock('numbered_list')}>
-                <ListOrdered className="h-4 w-4 mr-2" />
-                Numbered List
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleCreateBlock('image')}>
-                <Image className="h-4 w-4 mr-2" />
-                Image
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      )}
-      
-      {parentBlocks.length === 0 && !isEditable && (
-        <div className="text-center py-8 text-muted-foreground">
-          This page is empty.
-        </div>
-      )}
+    <PresenceProvider pageId={pageId}>
+      <div className="space-y-2 p-4" ref={editorRef}>
+        {/* Show active users indicator */}
+        {isEditable && (
+          <div className="flex justify-between items-center mb-4">
+            <div></div>
+            <ActiveUsers activeUsers={activeUsers} loading={presenceLoading} />
+          </div>
+        )}
 
-      <SlashMenu
-        isOpen={isOpen}
-        onClose={closeSlashMenu}
-        onSelectItem={handleSelectItem}
-        position={position}
-      />
-    </div>
+        {parentBlocks.map((block) => (
+          <div 
+            key={block.id} 
+            className={`transition-opacity ${
+              block.id.startsWith('temp-') ? 'opacity-60' : 'opacity-100'
+            }`}
+            onFocus={() => setFocusedBlockId(block.id)}
+            onBlur={() => setFocusedBlockId(null)}
+          >
+            <BlockRenderer
+              block={block}
+              onUpdateBlock={handleUpdateBlock}
+              onDeleteBlock={handleDeleteBlock}
+              isEditable={isEditable}
+              childBlocks={childBlocks}
+            />
+          </div>
+        ))}
+        
+        {isEditable && (
+          <div className="pt-4">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" data-cy="add-block-button">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Block
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuItem onClick={() => handleCreateBlock('text')} data-cy="text-block-option">
+                  <Type className="h-4 w-4 mr-2" />
+                  Text
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleCreateBlock('heading1')}>
+                  <Heading1 className="h-4 w-4 mr-2" />
+                  Heading 1
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleCreateBlock('heading2')}>
+                  <Heading2 className="h-4 w-4 mr-2" />
+                  Heading 2
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleCreateBlock('heading3')}>
+                  <Heading3 className="h-4 w-4 mr-2" />
+                  Heading 3
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleCreateBlock('bullet_list')}>
+                  <List className="h-4 w-4 mr-2" />
+                  Bullet List
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleCreateBlock('numbered_list')}>
+                  <ListOrdered className="h-4 w-4 mr-2" />
+                  Numbered List
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleCreateBlock('image')}>
+                  <Image className="h-4 w-4 mr-2" />
+                  Image
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        )}
+        
+        {parentBlocks.length === 0 && !isEditable && (
+          <div className="text-center py-8 text-muted-foreground">
+            This page is empty.
+          </div>
+        )}
+
+        <SlashMenu
+          isOpen={isOpen}
+          onClose={closeSlashMenu}
+          onSelectItem={handleSelectItem}
+          position={position}
+        />
+      </div>
+    </PresenceProvider>
   );
 }

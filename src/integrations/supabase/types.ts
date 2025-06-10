@@ -216,6 +216,44 @@ export type Database = {
           },
         ]
       }
+      presence: {
+        Row: {
+          created_at: string
+          cursor: Json | null
+          id: string
+          last_heartbeat: string
+          page_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          cursor?: Json | null
+          id?: string
+          last_heartbeat?: string
+          page_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          cursor?: Json | null
+          id?: string
+          last_heartbeat?: string
+          page_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "presence_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: false
+            referencedRelation: "pages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       roles: {
         Row: {
           created_at: string | null
@@ -317,6 +355,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cleanup_old_presence: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       get_user_workspace_role: {
         Args: { workspace_uuid: string; user_uuid: string }
         Returns: string
