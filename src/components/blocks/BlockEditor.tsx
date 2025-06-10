@@ -63,13 +63,19 @@ export function BlockEditor({ pageId, isEditable }: BlockEditorProps) {
   return (
     <div className="space-y-2 p-4">
       {blocks.map((block) => (
-        <BlockRenderer
-          key={block.id}
-          block={block}
-          onUpdateBlock={handleUpdateBlock}
-          onDeleteBlock={handleDeleteBlock}
-          isEditable={isEditable}
-        />
+        <div 
+          key={block.id} 
+          className={`transition-opacity ${
+            block.id.startsWith('temp-') ? 'opacity-60' : 'opacity-100'
+          }`}
+        >
+          <BlockRenderer
+            block={block}
+            onUpdateBlock={handleUpdateBlock}
+            onDeleteBlock={handleDeleteBlock}
+            isEditable={isEditable}
+          />
+        </div>
       ))}
       
       {isEditable && (
