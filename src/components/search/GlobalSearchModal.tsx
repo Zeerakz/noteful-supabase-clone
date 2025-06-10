@@ -55,7 +55,12 @@ export function GlobalSearchModal({ isOpen, onClose }: GlobalSearchModalProps) {
         console.error('Search error:', error);
         setResults([]);
       } else {
-        setResults(data || []);
+        // Type assertion to ensure the data conforms to our SearchResult interface
+        const typedResults = (data || []).map((item: any) => ({
+          ...item,
+          type: item.type as 'page' | 'block'
+        })) as SearchResult[];
+        setResults(typedResults);
       }
     } catch (err) {
       console.error('Search error:', err);
