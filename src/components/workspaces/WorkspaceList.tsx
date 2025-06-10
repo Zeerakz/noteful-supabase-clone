@@ -1,6 +1,6 @@
-
 import React, { useState } from 'react';
 import { Plus, Settings, Users, Trash2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -20,6 +20,7 @@ export function WorkspaceList() {
   const { workspaces, loading, createWorkspace, deleteWorkspace } = useWorkspaces();
   const { user } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const handleCreateWorkspace = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -169,7 +170,11 @@ export function WorkspaceList() {
                     </span>
                   )}
                 </div>
-                <Button variant="outline" size="sm">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => navigate(`/workspace/${workspace.id}`)}
+                >
                   <Settings className="h-4 w-4 mr-2" />
                   Open
                 </Button>
