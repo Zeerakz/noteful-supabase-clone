@@ -20,55 +20,53 @@ import "./App.css";
 
 const queryClient = new QueryClient();
 
-function AppContent() {
+function AppWithRouter() {
   const { isSearchOpen, closeSearch } = useGlobalSearch();
 
   return (
     <>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route
-            path="/"
-            element={
-              <ProtectedRoute>
-                <AppLayoutWithSidebar>
-                  <Index />
-                </AppLayoutWithSidebar>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/workspace/:workspaceId"
-            element={
-              <ProtectedRoute>
-                <AppLayoutWithSidebar>
-                  <WorkspacePage />
-                </AppLayoutWithSidebar>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/workspace/:workspaceId/templates"
-            element={
-              <ProtectedRoute>
-                <AppLayoutWithSidebar>
-                  <TemplatesPage />
-                </AppLayoutWithSidebar>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/workspace/:workspaceId/page/:pageId"
-            element={
-              <ProtectedRoute>
-                <PageEditor />
-              </ProtectedRoute>
-            }
-          />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
+      <Routes>
+        <Route path="/login" element={<Login />} />
+        <Route
+          path="/"
+          element={
+            <ProtectedRoute>
+              <AppLayoutWithSidebar>
+                <Index />
+              </AppLayoutWithSidebar>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/workspace/:workspaceId"
+          element={
+            <ProtectedRoute>
+              <AppLayoutWithSidebar>
+                <WorkspacePage />
+              </AppLayoutWithSidebar>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/workspace/:workspaceId/templates"
+          element={
+            <ProtectedRoute>
+              <AppLayoutWithSidebar>
+                <TemplatesPage />
+              </AppLayoutWithSidebar>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/workspace/:workspaceId/page/:pageId"
+          element={
+            <ProtectedRoute>
+              <PageEditor />
+            </ProtectedRoute>
+          }
+        />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
       <GlobalSearchModal isOpen={isSearchOpen} onClose={closeSearch} />
     </>
   );
@@ -82,7 +80,9 @@ function App() {
           <TooltipProvider>
             <Toaster />
             <Sonner />
-            <AppContent />
+            <BrowserRouter>
+              <AppWithRouter />
+            </BrowserRouter>
           </TooltipProvider>
         </AuthProvider>
       </AnalyticsProvider>
