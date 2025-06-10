@@ -3,15 +3,17 @@ import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 
+interface CursorPosition {
+  x: number;
+  y: number;
+  blockId?: string;
+}
+
 interface PresenceData {
   id: string;
   page_id: string;
   user_id: string;
-  cursor?: {
-    x: number;
-    y: number;
-    blockId?: string;
-  };
+  cursor?: CursorPosition | null;
   last_heartbeat: string;
   created_at: string;
   updated_at: string;
@@ -19,12 +21,19 @@ interface PresenceData {
 
 interface ActiveUser {
   user_id: string;
-  cursor?: {
-    x: number;
-    y: number;
-    blockId?: string;
-  };
+  cursor?: CursorPosition;
   last_heartbeat: string;
+}
+
+// Type for the raw data from Supabase
+interface SupabasePresenceData {
+  id: string;
+  page_id: string;
+  user_id: string;
+  cursor: any; // Json type from Supabase
+  last_heartbeat: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export function usePresence(pageId?: string) {
@@ -33,7 +42,7 @@ export function usePresence(pageId?: string) {
   const { user } = useAuth();
   const channelRef = useRef<any>(null);
   const heartbeatIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const cursorPositionRef = useRef<{ x: number; y: number; blockId?: string } | null>(null);
+  const cursorPositionRef = useRef<CursorPosition | null>(null);
 
   const updateCursorPosition = async (x: number, y: number, blockId?: string) => {
     if (!user || !pageId) return;
@@ -100,11 +109,26 @@ export function usePresence(pageId?: string) {
 
       if (error) throw error;
 
-      const users: ActiveUser[] = data?.map((presence: PresenceData) => ({
-        user_id: presence.user_id,
-        cursor: presence.cursor,
-        last_heartbeat: presence.last_heartbeat,
-      })) || [];
+      const users: ActiveUser[] = data?.map((presence: SupabasePresenceData) => {
+        // Safely parse the cursor data
+        let cursor: CursorPosition | undefined;
+        if (presence.cursor && typeof presence.cursor === 'object') {
+          const cursorData = presence.cursor as any;
+          if (typeof cursorData.x === 'number' && typeof cursorData.y === 'number') {
+            cursor = {
+              x: cursorData.x,
+              y: cursorData.y,
+              blockId: cursorData.blockId
+            };
+          }
+        }
+
+        return {
+          user_id: presence.user_id,
+          cursor,
+          last_heartbeat: presence.last_heartbeat,
+        };
+      }) || [];
 
       // Filter out current user from the active users list
       setActiveUsers(users.filter(u => u.user_id !== user?.id));
