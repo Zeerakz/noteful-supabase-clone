@@ -11,8 +11,8 @@ export class DatabaseService {
     try {
       const tableName = `db_${request.name.toLowerCase().replace(/[^a-z0-9_]/g, '_')}`;
       
-      // Create database record
-      const { data: database, error: dbError } = await supabase
+      // Create database record - using type assertion since 'databases' table exists but isn't in generated types
+      const { data: database, error: dbError } = await (supabase as any)
         .from('databases')
         .insert([
           {
@@ -44,7 +44,7 @@ export class DatabaseService {
 
       if (fieldsError) throw fieldsError;
 
-      return { data: database, error: null };
+      return { data: database as Database, error: null };
     } catch (err) {
       return { 
         data: null, 
@@ -55,14 +55,15 @@ export class DatabaseService {
 
   static async fetchDatabases(workspaceId: string): Promise<{ data: Database[] | null; error: string | null }> {
     try {
-      const { data, error } = await supabase
+      // Using type assertion since 'databases' table exists but isn't in generated types
+      const { data, error } = await (supabase as any)
         .from('databases')
         .select('*')
         .eq('workspace_id', workspaceId)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      return { data: data || [], error: null };
+      return { data: (data || []) as Database[], error: null };
     } catch (err) {
       return { 
         data: null, 
@@ -80,7 +81,7 @@ export class DatabaseService {
         .order('pos', { ascending: true });
 
       if (error) throw error;
-      return { data: data || [], error: null };
+      return { data: (data || []) as DatabaseField[], error: null };
     } catch (err) {
       return { 
         data: null, 
@@ -91,7 +92,8 @@ export class DatabaseService {
 
   static async deleteDatabase(databaseId: string): Promise<{ error: string | null }> {
     try {
-      const { error } = await supabase
+      // Using type assertion since 'databases' table exists but isn't in generated types
+      const { error } = await (supabase as any)
         .from('databases')
         .delete()
         .eq('id', databaseId);
