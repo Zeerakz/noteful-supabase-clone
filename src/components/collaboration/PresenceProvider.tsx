@@ -52,36 +52,43 @@ export function PresenceProvider({ pageId, children }: PresenceProviderProps) {
   const { activeUsers, loading, updateCursorPosition, sendHeartbeat } = usePresence(pageId);
   const [cursorsVisible, setCursorsVisible] = useState(true);
 
-  // Track mouse movement
+  // Track mouse movement with improved throttling
   useEffect(() => {
     if (!pageId) return;
 
+    let lastUpdate = 0;
+    const throttleDelay = 150; // Reduced frequency for better performance
+
     const handleMouseMove = (event: MouseEvent) => {
-      if (cursorsVisible) {
-        updateCursorPosition(event.clientX, event.clientY);
-      }
-    };
-
-    // Throttle mouse movement updates
-    let throttleTimer: NodeJS.Timeout | null = null;
-    const throttledMouseMove = (event: MouseEvent) => {
-      if (throttleTimer) return;
+      if (!cursorsVisible) return;
       
-      throttleTimer = setTimeout(() => {
-        handleMouseMove(event);
-        throttleTimer = null;
-      }, 100); // Update every 100ms
+      const now = Date.now();
+      if (now - lastUpdate < throttleDelay) return;
+      
+      lastUpdate = now;
+      updateCursorPosition(event.clientX, event.clientY);
     };
 
-    document.addEventListener('mousemove', throttledMouseMove);
+    document.addEventListener('mousemove', handleMouseMove);
 
     return () => {
-      document.removeEventListener('mousemove', throttledMouseMove);
-      if (throttleTimer) {
-        clearTimeout(throttleTimer);
-      }
+      document.removeEventListener('mousemove', handleMouseMove);
     };
   }, [pageId, updateCursorPosition, cursorsVisible]);
+
+  // Hide cursors when mouse leaves the window
+  useEffect(() => {
+    const handleMouseLeave = () => setCursorsVisible(false);
+    const handleMouseEnter = () => setCursorsVisible(true);
+
+    document.addEventListener('mouseleave', handleMouseLeave);
+    document.addEventListener('mouseenter', handleMouseEnter);
+
+    return () => {
+      document.removeEventListener('mouseleave', handleMouseLeave);
+      document.removeEventListener('mouseenter', handleMouseEnter);
+    };
+  }, []);
 
   const contextValue: PresenceContextType = {
     activeUsers,
@@ -94,7 +101,7 @@ export function PresenceProvider({ pageId, children }: PresenceProviderProps) {
     <PresenceContext.Provider value={contextValue}>
       {children}
       
-      {/* Render user cursors */}
+      {/* Render user avatar chips at cursor positions */}
       {cursorsVisible && activeUsers.map((user) => 
         user.cursor ? (
           <UserCursor

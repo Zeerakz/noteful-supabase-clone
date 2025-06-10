@@ -2,6 +2,7 @@
 import React from 'react';
 import { Users } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
 interface ActiveUser {
   user_id: string;
@@ -17,6 +18,26 @@ interface ActiveUsersProps {
   activeUsers: ActiveUser[];
   loading?: boolean;
 }
+
+// Generate consistent colors for users (same as PresenceProvider)
+const getUserColor = (userId: string): string => {
+  const colors = [
+    '#ef4444', // red
+    '#f97316', // orange  
+    '#eab308', // yellow
+    '#22c55e', // green
+    '#06b6d4', // cyan
+    '#3b82f6', // blue
+    '#8b5cf6', // violet
+    '#ec4899', // pink
+  ];
+  
+  let hash = 0;
+  for (let i = 0; i < userId.length; i++) {
+    hash = userId.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return colors[Math.abs(hash) % colors.length];
+};
 
 export function ActiveUsers({ activeUsers, loading }: ActiveUsersProps) {
   if (loading) {
@@ -43,23 +64,36 @@ export function ActiveUsers({ activeUsers, loading }: ActiveUsersProps) {
       
       {/* Show user avatars */}
       <div className="flex -space-x-2">
-        {activeUsers.slice(0, 3).map((user, index) => (
-          <div
-            key={user.user_id}
-            className="w-6 h-6 rounded-full border-2 border-white bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-xs text-white font-medium"
-            title={`User ${user.user_id.slice(0, 8)}`}
-            style={{
-              zIndex: 10 - index,
-            }}
-          >
-            {user.user_id.charAt(0).toUpperCase()}
-          </div>
-        ))}
+        {activeUsers.slice(0, 3).map((user, index) => {
+          const userColor = getUserColor(user.user_id);
+          const initials = user.user_id.slice(0, 2).toUpperCase();
+          
+          return (
+            <Avatar
+              key={user.user_id}
+              className="w-6 h-6 border-2 border-white"
+              style={{
+                zIndex: 10 - index,
+                backgroundColor: userColor,
+              }}
+              title={`User ${user.user_id.slice(0, 8)}`}
+            >
+              <AvatarFallback 
+                className="text-xs text-white font-medium"
+                style={{ backgroundColor: userColor }}
+              >
+                {initials}
+              </AvatarFallback>
+            </Avatar>
+          );
+        })}
         
         {activeCount > 3 && (
-          <div className="w-6 h-6 rounded-full border-2 border-white bg-gray-400 flex items-center justify-center text-xs text-white font-medium">
-            +{activeCount - 3}
-          </div>
+          <Avatar className="w-6 h-6 border-2 border-white bg-gray-400">
+            <AvatarFallback className="text-xs text-white font-medium bg-gray-400">
+              +{activeCount - 3}
+            </AvatarFallback>
+          </Avatar>
         )}
       </div>
     </div>
