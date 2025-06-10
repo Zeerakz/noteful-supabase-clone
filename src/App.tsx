@@ -12,6 +12,7 @@ import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { WorkspaceList } from "@/components/workspaces/WorkspaceList";
 import { WorkspacePage } from "@/pages/WorkspacePage";
+import { PageEditor } from "@/pages/PageEditor";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -40,6 +41,14 @@ function AppContent() {
               <AppLayout>
                 <WorkspacePage />
               </AppLayout>
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/workspace/:workspaceId/page/:pageId" 
+          element={
+            <ProtectedRoute>
+              <PageEditor />
             </ProtectedRoute>
           } 
         />

@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
-import { FileText, Plus, ChevronRight, ChevronDown, Trash2 } from 'lucide-react';
+import { FileText, Plus, ChevronRight, ChevronDown, Trash2, Edit } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -19,9 +20,10 @@ interface PageTreeItemProps {
   page: Page;
   pages: Page[];
   onDeletePage: (pageId: string, pageTitle: string) => void;
+  onNavigateToPage: (pageId: string) => void;
 }
 
-function PageTreeItem({ page, pages, onDeletePage }: PageTreeItemProps) {
+function PageTreeItem({ page, pages, onDeletePage, onNavigateToPage }: PageTreeItemProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const { user } = useAuth();
   
@@ -32,7 +34,7 @@ function PageTreeItem({ page, pages, onDeletePage }: PageTreeItemProps) {
   return (
     <div className="ml-4">
       <div className="flex items-center justify-between group py-1">
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-2 flex-1">
           {hasChildren ? (
             <Button
               variant="ghost"
@@ -51,20 +53,33 @@ function PageTreeItem({ page, pages, onDeletePage }: PageTreeItemProps) {
               <FileText className="h-3 w-3 text-gray-400" />
             </div>
           )}
-          <span className="text-sm hover:text-blue-600 cursor-pointer">
+          <span 
+            className="text-sm hover:text-blue-600 cursor-pointer flex-1"
+            onClick={() => onNavigateToPage(page.id)}
+          >
             {page.title}
           </span>
         </div>
-        {isOwner && (
+        <div className="flex items-center space-x-1">
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => onDeletePage(page.id, page.title)}
-            className="opacity-0 group-hover:opacity-100 h-6 w-6 p-0 text-red-500 hover:text-red-700"
+            onClick={() => onNavigateToPage(page.id)}
+            className="opacity-0 group-hover:opacity-100 h-6 w-6 p-0"
           >
-            <Trash2 className="h-3 w-3" />
+            <Edit className="h-3 w-3" />
           </Button>
-        )}
+          {isOwner && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onDeletePage(page.id, page.title)}
+              className="opacity-0 group-hover:opacity-100 h-6 w-6 p-0 text-red-500 hover:text-red-700"
+            >
+              <Trash2 className="h-3 w-3" />
+            </Button>
+          )}
+        </div>
       </div>
       {isExpanded && hasChildren && (
         <div className="ml-2">
@@ -74,6 +89,7 @@ function PageTreeItem({ page, pages, onDeletePage }: PageTreeItemProps) {
               page={childPage}
               pages={pages}
               onDeletePage={onDeletePage}
+              onNavigateToPage={onNavigateToPage}
             />
           ))}
         </div>
@@ -90,6 +106,7 @@ export function WorkspaceView({ workspace }: WorkspaceViewProps) {
   const { pages, loading, createPage, deletePage } = usePages(workspace.id);
   const { user } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   // Get top-level pages (no parent)
   const topLevelPages = pages.filter(page => !page.parent_page_id);
@@ -99,7 +116,7 @@ export function WorkspaceView({ workspace }: WorkspaceViewProps) {
     if (!newPageTitle.trim()) return;
 
     setIsCreating(true);
-    const { error } = await createPage(newPageTitle);
+    const { data, error } = await createPage(newPageTitle);
     
     if (error) {
       toast({
@@ -114,6 +131,11 @@ export function WorkspaceView({ workspace }: WorkspaceViewProps) {
       });
       setIsCreateOpen(false);
       setNewPageTitle('');
+      
+      // Navigate to the new page
+      if (data) {
+        navigate(`/workspace/${workspace.id}/page/${data.id}`);
+      }
     }
     
     setIsCreating(false);
@@ -138,6 +160,10 @@ export function WorkspaceView({ workspace }: WorkspaceViewProps) {
         description: "Page deleted successfully!",
       });
     }
+  };
+
+  const handleNavigateToPage = (pageId: string) => {
+    navigate(`/workspace/${workspace.id}/page/${pageId}`);
   };
 
   if (loading) {
@@ -232,6 +258,7 @@ export function WorkspaceView({ workspace }: WorkspaceViewProps) {
                   page={page}
                   pages={pages}
                   onDeletePage={handleDeletePage}
+                  onNavigateToPage={handleNavigateToPage}
                 />
               ))}
             </div>

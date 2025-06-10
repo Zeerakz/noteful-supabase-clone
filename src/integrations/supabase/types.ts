@@ -9,6 +9,57 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      blocks: {
+        Row: {
+          content: Json | null
+          created_at: string | null
+          created_by: string
+          id: string
+          page_id: string
+          parent_block_id: string | null
+          pos: number
+          type: string
+          updated_at: string | null
+        }
+        Insert: {
+          content?: Json | null
+          created_at?: string | null
+          created_by: string
+          id?: string
+          page_id: string
+          parent_block_id?: string | null
+          pos?: number
+          type: string
+          updated_at?: string | null
+        }
+        Update: {
+          content?: Json | null
+          created_at?: string | null
+          created_by?: string
+          id?: string
+          page_id?: string
+          parent_block_id?: string | null
+          pos?: number
+          type?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "blocks_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: false
+            referencedRelation: "pages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blocks_parent_block_id_fkey"
+            columns: ["parent_block_id"]
+            isOneToOne: false
+            referencedRelation: "blocks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pages: {
         Row: {
           created_at: string | null
