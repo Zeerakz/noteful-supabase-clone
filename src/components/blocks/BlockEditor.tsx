@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Plus, Type, Heading1, Heading2, Heading3, List, ListOrdered, Image } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -9,15 +8,21 @@ import { useBlocks } from '@/hooks/useBlocks';
 import { useSlashMenu } from '@/hooks/useSlashMenu';
 import { useToast } from '@/hooks/use-toast';
 import { usePresenceContext } from '@/components/collaboration/PresenceProvider';
+import { useAuth } from '@/contexts/AuthContext';
+import { PageDuplicationService } from '@/services/pageDuplicationService';
+import { useNavigate } from 'react-router-dom';
 
 interface BlockEditorProps {
   pageId: string;
   isEditable: boolean;
+  workspaceId?: string;
 }
 
-export function BlockEditor({ pageId, isEditable }: BlockEditorProps) {
+export function BlockEditor({ pageId, isEditable, workspaceId }: BlockEditorProps) {
   const { blocks, loading, createBlock, updateBlock, deleteBlock } = useBlocks(pageId);
   const { toast } = useToast();
+  const { user } = useAuth();
+  const navigate = useNavigate();
   const editorRef = useRef<HTMLDivElement>(null);
   const [focusedBlockId, setFocusedBlockId] = useState<string | null>(null);
 
@@ -29,6 +34,47 @@ export function BlockEditor({ pageId, isEditable }: BlockEditorProps) {
   });
 
   async function handleCreateBlock(type: string) {
+    if (type === 'duplicate_page') {
+      if (!user || !workspaceId) {
+        toast({
+          title: "Error",
+          description: "Unable to duplicate page - user not authenticated or workspace not found",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      try {
+        const { data: newPage, error } = await PageDuplicationService.duplicatePage(pageId, user.id);
+        
+        if (error) {
+          toast({
+            title: "Error",
+            description: error,
+            variant: "destructive",
+          });
+          return;
+        }
+
+        if (newPage) {
+          toast({
+            title: "Success",
+            description: "Page duplicated successfully",
+          });
+          
+          // Navigate to the new page
+          navigate(`/workspace/${workspaceId}/page/${newPage.id}`);
+        }
+      } catch (err) {
+        toast({
+          title: "Error",
+          description: "Failed to duplicate page",
+          variant: "destructive",
+        });
+      }
+      return;
+    }
+
     if (type === 'two_column') {
       const { data: containerBlock, error: containerError } = await createBlock('two_column', {});
       

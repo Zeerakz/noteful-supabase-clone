@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect, useRef } from 'react';
-import { Type, Heading1, CheckSquare, Image, Columns2 } from 'lucide-react';
+import { Type, Heading1, CheckSquare, Image, Columns2, Copy } from 'lucide-react';
 import {
   Command,
   CommandEmpty,
@@ -53,6 +52,13 @@ const SLASH_MENU_ITEMS: SlashMenuItem[] = [
     description: 'Create a two-column layout',
     icon: Columns2,
     command: 'two_column',
+  },
+  {
+    id: 'duplicate-page',
+    title: 'Duplicate Page',
+    description: 'Create a copy of the current page',
+    icon: Copy,
+    command: 'duplicate_page',
   },
 ];
 

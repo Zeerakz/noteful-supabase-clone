@@ -68,7 +68,7 @@ export function PageEditor() {
         </div>
         
         <div className="container mx-auto max-w-4xl">
-          <BlockEditor pageId={page.id} isEditable={isEditable} />
+          <BlockEditor pageId={page.id} isEditable={isEditable} workspaceId={workspaceId} />
         </div>
       </div>
     </PresenceProvider>
