@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { DatabaseViewSelector, DatabaseViewType } from './DatabaseViewSelector';
 import { DatabaseTableView } from './DatabaseTableView';
+import { DatabaseListView } from './DatabaseListView';
 
 interface DatabaseViewProps {
   databaseId: string;
@@ -23,9 +24,10 @@ export function DatabaseView({ databaseId, workspaceId, className }: DatabaseVie
         );
       case 'list':
         return (
-          <div className="text-center py-8 text-muted-foreground">
-            List view coming soon...
-          </div>
+          <DatabaseListView
+            databaseId={databaseId}
+            workspaceId={workspaceId}
+          />
         );
       case 'calendar':
         return (
