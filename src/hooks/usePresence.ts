@@ -2,28 +2,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-
-interface CursorPosition {
-  x: number;
-  y: number;
-  blockId?: string;
-}
-
-interface PresenceData {
-  id: string;
-  page_id: string;
-  user_id: string;
-  cursor?: CursorPosition | null;
-  last_heartbeat: string;
-  created_at: string;
-  updated_at: string;
-}
-
-interface ActiveUser {
-  user_id: string;
-  cursor?: CursorPosition;
-  last_heartbeat: string;
-}
+import { CursorPosition, ActiveUser, PresenceData } from '@/types/presence';
 
 // Type for the raw data from Supabase
 interface SupabasePresenceData {
@@ -43,6 +22,7 @@ export function usePresence(pageId?: string) {
   const channelRef = useRef<any>(null);
   const heartbeatIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const cursorPositionRef = useRef<CursorPosition | null>(null);
+  const isSubscribedRef = useRef<boolean>(false);
 
   const updateCursorPosition = async (x: number, y: number, blockId?: string) => {
     if (!user || !pageId) return;
@@ -153,6 +133,20 @@ export function usePresence(pageId?: string) {
     }
   };
 
+  const cleanup = () => {
+    if (channelRef.current && isSubscribedRef.current) {
+      console.log('Cleaning up presence channel subscription');
+      supabase.removeChannel(channelRef.current);
+      channelRef.current = null;
+      isSubscribedRef.current = false;
+    }
+    if (heartbeatIntervalRef.current) {
+      clearInterval(heartbeatIntervalRef.current);
+      heartbeatIntervalRef.current = null;
+    }
+    cleanupPresence();
+  };
+
   useEffect(() => {
     if (!user || !pageId) {
       setActiveUsers([]);
@@ -160,11 +154,17 @@ export function usePresence(pageId?: string) {
       return;
     }
 
+    // Cleanup any existing subscription first
+    cleanup();
+
     fetchActiveUsers();
 
+    // Create a unique channel name to avoid conflicts
+    const channelName = `presence-${pageId}-${user.id}-${Date.now()}`;
+    
     // Set up realtime subscription for presence updates
     const channel = supabase
-      .channel(`presence-${pageId}`)
+      .channel(channelName)
       .on(
         'postgres_changes',
         {
@@ -178,7 +178,12 @@ export function usePresence(pageId?: string) {
           fetchActiveUsers(); // Refresh active users list
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('Presence subscription status:', status);
+        if (status === 'SUBSCRIBED') {
+          isSubscribedRef.current = true;
+        }
+      });
 
     channelRef.current = channel;
 
@@ -186,15 +191,7 @@ export function usePresence(pageId?: string) {
     heartbeatIntervalRef.current = setInterval(sendHeartbeat, 5000); // Every 5 seconds
 
     // Cleanup on unmount or page change
-    return () => {
-      if (channelRef.current) {
-        supabase.removeChannel(channelRef.current);
-      }
-      if (heartbeatIntervalRef.current) {
-        clearInterval(heartbeatIntervalRef.current);
-      }
-      cleanupPresence();
-    };
+    return cleanup;
   }, [user, pageId]);
 
   // Cleanup presence when user navigates away or closes tab
