@@ -1,74 +1,20 @@
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
-import { CursorPosition, ActiveUser, PresenceData } from '@/types/presence';
+import { CursorPosition, ActiveUser } from '@/types/presence';
+import { UsePresenceReturn } from './presence/types';
+import { updateCursorPosition, fetchActiveUsers, cleanupPresence } from './presence/utils';
+import { usePresenceSubscription } from './presence/usePresenceSubscription';
+import { usePresenceHeartbeat } from './presence/usePresenceHeartbeat';
+import { usePresenceLifecycle } from './presence/usePresenceLifecycle';
 
-// Type for the raw data from Supabase
-interface SupabasePresenceData {
-  id: string;
-  page_id: string;
-  user_id: string;
-  cursor: any; // Json type from Supabase
-  last_heartbeat: string;
-  created_at: string;
-  updated_at: string;
-}
-
-export function usePresence(pageId?: string) {
+export function usePresence(pageId?: string): UsePresenceReturn {
   const [activeUsers, setActiveUsers] = useState<ActiveUser[]>([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
-  const channelRef = useRef<any>(null);
-  const heartbeatIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const cursorPositionRef = useRef<CursorPosition | null>(null);
-  const isSubscribedRef = useRef<boolean>(false);
 
-  const updateCursorPosition = async (x: number, y: number, blockId?: string) => {
-    if (!user || !pageId) return;
-
-    cursorPositionRef.current = { x, y, blockId };
-
-    try {
-      const { error } = await supabase
-        .from('presence')
-        .upsert({
-          page_id: pageId,
-          user_id: user.id,
-          cursor: { x, y, blockId } as any, // Cast to any to satisfy Json type
-          last_heartbeat: new Date().toISOString(),
-        });
-
-      if (error) {
-        console.error('Error updating cursor position:', error);
-      }
-    } catch (err) {
-      console.error('Failed to update cursor position:', err);
-    }
-  };
-
-  const sendHeartbeat = async () => {
-    if (!user || !pageId) return;
-
-    try {
-      const { error } = await supabase
-        .from('presence')
-        .upsert({
-          page_id: pageId,
-          user_id: user.id,
-          cursor: cursorPositionRef.current as any, // Cast to any to satisfy Json type
-          last_heartbeat: new Date().toISOString(),
-        });
-
-      if (error) {
-        console.error('Error sending heartbeat:', error);
-      }
-    } catch (err) {
-      console.error('Failed to send heartbeat:', err);
-    }
-  };
-
-  const fetchActiveUsers = async () => {
+  const handleFetchActiveUsers = useCallback(async () => {
     if (!pageId) {
       setActiveUsers([]);
       setLoading(false);
@@ -77,151 +23,54 @@ export function usePresence(pageId?: string) {
 
     try {
       setLoading(true);
-      
-      // Clean up old presence records first
-      await supabase.rpc('cleanup_old_presence');
-
-      const { data, error } = await supabase
-        .from('presence')
-        .select('*')
-        .eq('page_id', pageId)
-        .gte('last_heartbeat', new Date(Date.now() - 30000).toISOString()); // Within last 30 seconds
-
-      if (error) throw error;
-
-      const users: ActiveUser[] = data?.map((presence: SupabasePresenceData) => {
-        // Safely parse the cursor data
-        let cursor: CursorPosition | undefined;
-        if (presence.cursor && typeof presence.cursor === 'object') {
-          const cursorData = presence.cursor as any;
-          if (typeof cursorData.x === 'number' && typeof cursorData.y === 'number') {
-            cursor = {
-              x: cursorData.x,
-              y: cursorData.y,
-              blockId: cursorData.blockId
-            };
-          }
-        }
-
-        return {
-          user_id: presence.user_id,
-          cursor,
-          last_heartbeat: presence.last_heartbeat,
-        };
-      }) || [];
-
-      // Filter out current user from the active users list
-      setActiveUsers(users.filter(u => u.user_id !== user?.id));
+      const users = await fetchActiveUsers(pageId, user?.id);
+      setActiveUsers(users);
     } catch (err) {
       console.error('Failed to fetch active users:', err);
     } finally {
       setLoading(false);
     }
-  };
+  }, [pageId, user?.id]);
 
-  const cleanupPresence = async () => {
-    if (!user || !pageId) return;
-
-    try {
-      await supabase
-        .from('presence')
-        .delete()
-        .eq('page_id', pageId)
-        .eq('user_id', user.id);
-    } catch (err) {
-      console.error('Failed to cleanup presence:', err);
-    }
-  };
-
-  const cleanup = () => {
-    if (channelRef.current && isSubscribedRef.current) {
-      console.log('Cleaning up presence channel subscription');
-      supabase.removeChannel(channelRef.current);
-      channelRef.current = null;
-      isSubscribedRef.current = false;
-    }
-    if (heartbeatIntervalRef.current) {
-      clearInterval(heartbeatIntervalRef.current);
-      heartbeatIntervalRef.current = null;
-    }
-    cleanupPresence();
-  };
-
-  useEffect(() => {
-    if (!user || !pageId) {
-      setActiveUsers([]);
-      setLoading(false);
-      return;
-    }
-
-    // Cleanup any existing subscription first
-    cleanup();
-
-    fetchActiveUsers();
-
-    // Create a unique channel name to avoid conflicts
-    const channelName = `presence-${pageId}-${user.id}-${Date.now()}`;
-    
-    // Set up realtime subscription for presence updates
-    const channel = supabase
-      .channel(channelName)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'presence',
-          filter: `page_id=eq.${pageId}`,
-        },
-        (payload) => {
-          console.log('Realtime presence update:', payload);
-          fetchActiveUsers(); // Refresh active users list
-        }
-      )
-      .subscribe((status) => {
-        console.log('Presence subscription status:', status);
-        if (status === 'SUBSCRIBED') {
-          isSubscribedRef.current = true;
-        }
-      });
-
-    channelRef.current = channel;
-
-    // Start heartbeat to maintain presence
-    heartbeatIntervalRef.current = setInterval(sendHeartbeat, 5000); // Every 5 seconds
-
-    // Cleanup on unmount or page change
-    return cleanup;
+  const handleUpdateCursorPosition = useCallback(async (x: number, y: number, blockId?: string) => {
+    if (!pageId) return;
+    await updateCursorPosition(user, pageId, x, y, blockId, cursorPositionRef);
   }, [user, pageId]);
 
-  // Cleanup presence when user navigates away or closes tab
-  useEffect(() => {
-    const handleBeforeUnload = () => {
-      cleanupPresence();
-    };
+  const handleSendHeartbeat = useCallback(async () => {
+    if (!pageId) return;
+    const { sendHeartbeat } = await import('./presence/utils');
+    await sendHeartbeat(user, pageId, cursorPositionRef);
+  }, [user, pageId]);
 
-    const handleVisibilityChange = () => {
-      if (document.hidden) {
-        cleanupPresence();
-      } else if (!document.hidden && user && pageId) {
-        // Re-establish presence when tab becomes visible again
-        sendHeartbeat();
+  // Set up subscription for real-time updates
+  const { cleanup } = usePresenceSubscription(user, pageId, handleFetchActiveUsers);
+
+  // Set up heartbeat
+  usePresenceHeartbeat(user, pageId, cursorPositionRef);
+
+  // Set up lifecycle management
+  usePresenceLifecycle(user, pageId, cursorPositionRef);
+
+  // Initial fetch
+  useEffect(() => {
+    handleFetchActiveUsers();
+  }, [handleFetchActiveUsers]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      cleanup();
+      if (user && pageId) {
+        cleanupPresence(user, pageId);
       }
     };
-
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-
-    return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
-  }, [user, pageId]);
+  }, [user, pageId, cleanup]);
 
   return {
     activeUsers,
     loading,
-    updateCursorPosition,
-    sendHeartbeat,
+    updateCursorPosition: handleUpdateCursorPosition,
+    sendHeartbeat: handleSendHeartbeat,
   };
 }
