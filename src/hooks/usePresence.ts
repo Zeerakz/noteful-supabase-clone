@@ -55,7 +55,7 @@ export function usePresence(pageId?: string) {
         .upsert({
           page_id: pageId,
           user_id: user.id,
-          cursor: { x, y, blockId },
+          cursor: { x, y, blockId } as any, // Cast to any to satisfy Json type
           last_heartbeat: new Date().toISOString(),
         });
 
@@ -76,7 +76,7 @@ export function usePresence(pageId?: string) {
         .upsert({
           page_id: pageId,
           user_id: user.id,
-          cursor: cursorPositionRef.current,
+          cursor: cursorPositionRef.current as any, // Cast to any to satisfy Json type
           last_heartbeat: new Date().toISOString(),
         });
 
