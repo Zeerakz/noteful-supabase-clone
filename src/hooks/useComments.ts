@@ -1,7 +1,7 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useMentionNotifications } from './useMentionNotifications';
 
 export interface Comment {
   id: string;
@@ -17,6 +17,7 @@ export function useComments(blockId?: string) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
+  const { sendMentionNotification, extractMentions } = useMentionNotifications();
 
   const fetchComments = async () => {
     if (!blockId || !user) return;
@@ -58,6 +59,50 @@ export function useComments(blockId?: string) {
       if (error) throw error;
       
       setComments(prev => [...prev, data]);
+
+      // Handle mentions in the comment
+      const mentions = extractMentions(body);
+      if (mentions.length > 0) {
+        try {
+          // Get page information for the notification
+          const { data: blockData } = await supabase
+            .from('blocks')
+            .select('page_id')
+            .eq('id', blockId)
+            .single();
+
+          if (blockData) {
+            const { data: pageData } = await supabase
+              .from('pages')
+              .select('title, workspace_id')
+              .eq('id', blockData.page_id)
+              .single();
+
+            if (pageData) {
+              const pageUrl = `${window.location.origin}/workspace/${pageData.workspace_id}/page/${blockData.page_id}`;
+              
+              // Send notifications to mentioned users
+              for (const email of mentions) {
+                try {
+                  await sendMentionNotification(
+                    email,
+                    body,
+                    pageData.title,
+                    pageUrl
+                  );
+                } catch (notificationError) {
+                  console.warn(`Failed to send notification to ${email}:`, notificationError);
+                  // Don't fail the comment creation if notification fails
+                }
+              }
+            }
+          }
+        } catch (mentionError) {
+          console.warn('Failed to process mentions:', mentionError);
+          // Don't fail the comment creation if mention processing fails
+        }
+      }
+
       return { data, error: null };
     } catch (err) {
       const error = err instanceof Error ? err.message : 'Failed to create comment';
