@@ -4,6 +4,7 @@ import { Block } from '@/hooks/useBlocks';
 import { Button } from '@/components/ui/button';
 import { Trash2 } from 'lucide-react';
 import { CrdtTextEditor } from './CrdtTextEditor';
+import { CommentsSection } from './CommentsSection';
 
 interface TextBlockProps {
   block: Block;
@@ -33,6 +34,7 @@ export function TextBlock({ block, onUpdate, onDelete, isEditable }: TextBlockPr
             <span className="text-muted-foreground italic">Empty text block</span>
           )}
         </div>
+        <CommentsSection blockId={block.id} />
       </div>
     );
   }
@@ -64,6 +66,8 @@ export function TextBlock({ block, onUpdate, onDelete, isEditable }: TextBlockPr
           </Button>
         </div>
       )}
+
+      <CommentsSection blockId={block.id} />
     </div>
   );
 }

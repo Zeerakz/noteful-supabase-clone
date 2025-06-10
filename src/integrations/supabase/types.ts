@@ -60,6 +60,48 @@ export type Database = {
           },
         ]
       }
+      comments: {
+        Row: {
+          block_id: string
+          body: string
+          created_at: string
+          id: string
+          parent_comment_id: string | null
+          user_id: string
+        }
+        Insert: {
+          block_id: string
+          body: string
+          created_at?: string
+          id?: string
+          parent_comment_id?: string | null
+          user_id: string
+        }
+        Update: {
+          block_id?: string
+          body?: string
+          created_at?: string
+          id?: string
+          parent_comment_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comments_block_id_fkey"
+            columns: ["block_id"]
+            isOneToOne: false
+            referencedRelation: "blocks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comments_parent_comment_id_fkey"
+            columns: ["parent_comment_id"]
+            isOneToOne: false
+            referencedRelation: "comments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       database_views: {
         Row: {
           created_at: string
