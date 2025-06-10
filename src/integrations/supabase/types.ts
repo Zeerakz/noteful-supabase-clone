@@ -96,6 +96,51 @@ export type Database = {
         }
         Relationships: []
       }
+      page_properties: {
+        Row: {
+          created_at: string | null
+          created_by: string
+          field_id: string
+          id: string
+          page_id: string
+          updated_at: string | null
+          value: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by: string
+          field_id: string
+          id?: string
+          page_id: string
+          updated_at?: string | null
+          value?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string
+          field_id?: string
+          id?: string
+          page_id?: string
+          updated_at?: string | null
+          value?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "page_properties_field_id_fkey"
+            columns: ["field_id"]
+            isOneToOne: false
+            referencedRelation: "fields"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "page_properties_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: false
+            referencedRelation: "pages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pages: {
         Row: {
           created_at: string | null

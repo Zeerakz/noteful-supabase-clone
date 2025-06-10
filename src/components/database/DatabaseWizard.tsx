@@ -7,8 +7,8 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus, Trash2, Database } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
 import { useParams } from 'react-router-dom';
+import { useDatabases } from '@/hooks/useDatabases';
 
 interface DatabaseField {
   id: string;
@@ -32,6 +32,7 @@ export function DatabaseWizard() {
   const [open, setOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [databaseName, setDatabaseName] = useState('');
+  const [description, setDescription] = useState('');
   const [fields, setFields] = useState<DatabaseField[]>([
     {
       id: '1',
@@ -41,6 +42,7 @@ export function DatabaseWizard() {
     }
   ]);
   const { toast } = useToast();
+  const { createDatabase } = useDatabases(workspaceId);
 
   const addField = () => {
     const newField: DatabaseField = {
@@ -60,76 +62,6 @@ export function DatabaseWizard() {
     setFields(fields.map(field => 
       field.id === id ? { ...field, ...updates } : field
     ));
-  };
-
-  const generateSQL = () => {
-    if (!databaseName.trim()) return '';
-
-    const tableName = `db_${databaseName.toLowerCase().replace(/[^a-z0-9_]/g, '_')}`;
-    
-    const fieldDefinitions = fields
-      .filter(field => field.name.trim())
-      .map(field => {
-        const columnName = field.name.toLowerCase().replace(/[^a-z0-9_]/g, '_');
-        let definition = `  ${columnName} ${field.type}`;
-        
-        if (!field.nullable) {
-          definition += ' NOT NULL';
-        }
-        
-        if (field.defaultValue) {
-          definition += ` DEFAULT ${field.defaultValue}`;
-        }
-        
-        return definition;
-      });
-
-    if (fieldDefinitions.length === 0) return '';
-
-    const sql = `-- Create ${databaseName} database table
-CREATE TABLE public.${tableName} (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-${fieldDefinitions.join(',\n')},
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  created_by UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL
-);
-
--- Enable RLS on ${tableName} table
-ALTER TABLE public.${tableName} ENABLE ROW LEVEL SECURITY;
-
--- Create policy for users to view records in their workspaces
-CREATE POLICY "Users can view ${tableName} in accessible workspaces" ON public.${tableName}
-  FOR SELECT TO authenticated
-  USING (
-    created_by = auth.uid()
-  );
-
--- Create policy for users to create records
-CREATE POLICY "Users can create ${tableName}" ON public.${tableName}
-  FOR INSERT TO authenticated
-  WITH CHECK (created_by = auth.uid());
-
--- Create policy for users to update records
-CREATE POLICY "Users can update their ${tableName}" ON public.${tableName}
-  FOR UPDATE TO authenticated
-  USING (created_by = auth.uid());
-
--- Create policy for users to delete records
-CREATE POLICY "Users can delete their ${tableName}" ON public.${tableName}
-  FOR DELETE TO authenticated
-  USING (created_by = auth.uid());
-
--- Create indexes for better performance
-CREATE INDEX idx_${tableName}_created_by ON public.${tableName}(created_by);
-CREATE INDEX idx_${tableName}_created_at ON public.${tableName}(created_at);
-
--- Create trigger to update updated_at timestamp
-CREATE TRIGGER update_${tableName}_updated_at 
-  BEFORE UPDATE ON public.${tableName} 
-  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();`;
-
-    return sql;
   };
 
   const handleCreate = async () => {
@@ -164,36 +96,26 @@ CREATE TRIGGER update_${tableName}_updated_at
     setIsCreating(true);
 
     try {
-      // Get current user
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        throw new Error('You must be logged in to create a database');
-      }
+      const { data, error } = await createDatabase({
+        name: databaseName,
+        description: description || undefined,
+        fields: validFields.map(field => ({
+          name: field.name,
+          type: field.type,
+          settings: { nullable: field.nullable }
+        }))
+      });
 
-      // Create database record (we'll implement this when we have a databases table)
-      // For now, just create the fields
-      const fieldsToCreate = validFields.map((field, index) => ({
-        database_id: `temp_${Date.now()}`, // We'll need a proper database_id later
-        name: field.name,
-        type: field.type,
-        settings: field.nullable ? { nullable: true } : { nullable: false },
-        pos: index,
-        created_by: user.id,
-      }));
-
-      // For MVP, just show the SQL to copy
-      const sql = generateSQL();
-      
-      // Copy SQL to clipboard
-      await navigator.clipboard.writeText(sql);
+      if (error) throw new Error(error);
 
       toast({
-        title: "Database SQL Generated!",
-        description: "The database creation SQL has been copied to your clipboard. Please run it in your Supabase SQL editor to create the database table.",
+        title: "Database created successfully!",
+        description: `Your database "${databaseName}" has been created.`,
       });
 
       // Reset form
       setDatabaseName('');
+      setDescription('');
       setFields([{
         id: '1',
         name: 'title',
@@ -242,6 +164,17 @@ CREATE TRIGGER update_${tableName}_updated_at
                 Table will be created as: <code>db_{databaseName.toLowerCase().replace(/[^a-z0-9_]/g, '_')}</code>
               </p>
             )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="database-description">Description (optional)</Label>
+            <Input
+              id="database-description"
+              placeholder="Describe what this database is for"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              disabled={isCreating}
+            />
           </div>
 
           <div className="space-y-4">
@@ -338,7 +271,7 @@ CREATE TRIGGER update_${tableName}_updated_at
               onClick={handleCreate}
               disabled={isCreating}
             >
-              {isCreating ? 'Creating...' : 'Generate Database'}
+              {isCreating ? 'Creating...' : 'Create Database'}
             </Button>
           </div>
         </div>
