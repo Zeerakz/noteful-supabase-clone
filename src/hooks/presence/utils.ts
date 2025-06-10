@@ -8,8 +8,8 @@ export const updateCursorPosition = async (
   pageId: string,
   x: number,
   y: number,
-  blockId?: string,
-  cursorPositionRef: React.MutableRefObject<CursorPosition | null>
+  cursorPositionRef: React.MutableRefObject<CursorPosition | null>,
+  blockId?: string
 ) => {
   if (!user || !pageId) return;
 

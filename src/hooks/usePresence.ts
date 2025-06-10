@@ -34,7 +34,7 @@ export function usePresence(pageId?: string): UsePresenceReturn {
 
   const handleUpdateCursorPosition = useCallback(async (x: number, y: number, blockId?: string) => {
     if (!pageId) return;
-    await updateCursorPosition(user, pageId, x, y, blockId, cursorPositionRef);
+    await updateCursorPosition(user, pageId, x, y, cursorPositionRef, blockId);
   }, [user, pageId]);
 
   const handleSendHeartbeat = useCallback(async () => {
