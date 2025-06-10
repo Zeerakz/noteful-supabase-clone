@@ -194,7 +194,7 @@ interface WorkspacePagesGroupProps {
 }
 
 function WorkspacePagesGroup({ workspaceId, workspaceName }: WorkspacePagesGroupProps) {
-  const { pages, deletePage } = usePages(workspaceId);
+  const { pages, deletePage, createPage } = usePages(workspaceId);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -224,8 +224,26 @@ function WorkspacePagesGroup({ workspaceId, workspaceName }: WorkspacePagesGroup
     }
   };
 
-  const handleCreatePage = () => {
-    navigate(`/workspace/${workspaceId}`);
+  const handleCreatePage = async () => {
+    const { data, error } = await createPage('Untitled Page');
+    
+    if (error) {
+      toast({
+        title: "Error",
+        description: error,
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Success",
+        description: "Page created successfully!",
+      });
+      
+      // Navigate to the new page
+      if (data) {
+        navigate(`/workspace/${workspaceId}/page/${data.id}`);
+      }
+    }
   };
 
   return (
@@ -237,6 +255,7 @@ function WorkspacePagesGroup({ workspaceId, workspaceName }: WorkspacePagesGroup
           size="sm"
           onClick={handleCreatePage}
           className="h-4 w-4 p-0 opacity-70 hover:opacity-100"
+          title="New Page"
         >
           <Plus className="h-3 w-3" />
         </Button>
