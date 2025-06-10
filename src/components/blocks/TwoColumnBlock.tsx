@@ -2,6 +2,9 @@
 import React from 'react';
 import { Block } from '@/hooks/useBlocks';
 import { BlockRenderer } from './BlockRenderer';
+import { ResizableBlock } from './ResizableBlock';
+import { Button } from '@/components/ui/button';
+import { Trash2 } from 'lucide-react';
 
 interface TwoColumnBlockProps {
   block: Block;
@@ -31,61 +34,84 @@ export function TwoColumnBlock({
     await onDeleteBlock(block.id);
   };
 
+  const handleSizeChange = async (sizes: number[]) => {
+    // Store the column sizes in the block content
+    await onUpdateBlock(block.id, {
+      content: {
+        ...block.content,
+        columnSizes: sizes
+      }
+    });
+  };
+
+  const defaultSizes = block.content?.columnSizes || [50, 50];
+
+  const leftColumn = (
+    <div className="space-y-2">
+      <div className="text-xs text-muted-foreground mb-2">Left Column</div>
+      {leftColumnBlocks.length > 0 ? (
+        leftColumnBlocks.map((childBlock) => (
+          <BlockRenderer
+            key={childBlock.id}
+            block={childBlock}
+            onUpdateBlock={onUpdateBlock}
+            onDeleteBlock={onDeleteBlock}
+            isEditable={isEditable}
+          />
+        ))
+      ) : (
+        <div className="text-sm text-muted-foreground italic min-h-[60px] flex items-center">
+          Add content to left column...
+        </div>
+      )}
+    </div>
+  );
+
+  const rightColumn = (
+    <div className="space-y-2">
+      <div className="text-xs text-muted-foreground mb-2">Right Column</div>
+      {rightColumnBlocks.length > 0 ? (
+        rightColumnBlocks.map((childBlock) => (
+          <BlockRenderer
+            key={childBlock.id}
+            block={childBlock}
+            onUpdateBlock={onUpdateBlock}
+            onDeleteBlock={onDeleteBlock}
+            isEditable={isEditable}
+          />
+        ))
+      ) : (
+        <div className="text-sm text-muted-foreground italic min-h-[60px] flex items-center">
+          Add content to right column...
+        </div>
+      )}
+    </div>
+  );
+
   return (
-    <div className="w-full border border-border rounded-md p-4 space-y-2">
-      <div className="flex items-center justify-between">
+    <div className="w-full border border-border rounded-md p-4 space-y-2 relative">
+      <div className="flex items-center justify-between mb-2">
         <span className="text-sm text-muted-foreground">Two Column Layout</span>
         {isEditable && (
-          <button
+          <Button
             onClick={handleDelete}
-            className="text-xs text-destructive hover:text-destructive/80"
+            variant="ghost"
+            size="sm"
+            className="h-8 w-8 p-0 text-destructive hover:text-destructive/80"
           >
-            Delete
-          </button>
+            <Trash2 className="h-4 w-4" />
+          </Button>
         )}
       </div>
       
-      <div className="flex gap-4">
-        {/* Left Column */}
-        <div className="flex-1 min-h-[100px] border border-dashed border-border rounded p-3 space-y-2">
-          <div className="text-xs text-muted-foreground mb-2">Left Column</div>
-          {leftColumnBlocks.length > 0 ? (
-            leftColumnBlocks.map((childBlock) => (
-              <BlockRenderer
-                key={childBlock.id}
-                block={childBlock}
-                onUpdateBlock={onUpdateBlock}
-                onDeleteBlock={onDeleteBlock}
-                isEditable={isEditable}
-              />
-            ))
-          ) : (
-            <div className="text-sm text-muted-foreground italic">
-              Add content to left column...
-            </div>
-          )}
-        </div>
-
-        {/* Right Column */}
-        <div className="flex-1 min-h-[100px] border border-dashed border-border rounded p-3 space-y-2">
-          <div className="text-xs text-muted-foreground mb-2">Right Column</div>
-          {rightColumnBlocks.length > 0 ? (
-            rightColumnBlocks.map((childBlock) => (
-              <BlockRenderer
-                key={childBlock.id}
-                block={childBlock}
-                onUpdateBlock={onUpdateBlock}
-                onDeleteBlock={onDeleteBlock}
-                isEditable={isEditable}
-              />
-            ))
-          ) : (
-            <div className="text-sm text-muted-foreground italic">
-              Add content to right column...
-            </div>
-          )}
-        </div>
-      </div>
+      <ResizableBlock
+        defaultSizes={defaultSizes}
+        onSizeChange={handleSizeChange}
+        showControls={isEditable}
+        className="min-h-[150px]"
+      >
+        {[leftColumn, rightColumn]}
+      </ResizableBlock>
     </div>
   );
 }
