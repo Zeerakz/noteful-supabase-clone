@@ -55,7 +55,7 @@ export function PageView() {
       </div>
       
       <div className="container mx-auto max-w-4xl">
-        <BlockEditor pageId={page.id} isEditable={false} />
+        <BlockEditor pageId={page.id} isEditable={true} />
       </div>
     </div>
   );

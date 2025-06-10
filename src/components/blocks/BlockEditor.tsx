@@ -1,10 +1,12 @@
 
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Plus, Type, Heading1, Heading2, Heading3, List, ListOrdered, Image } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { BlockRenderer } from './BlockRenderer';
+import { SlashMenu } from './SlashMenu';
 import { useBlocks } from '@/hooks/useBlocks';
+import { useSlashMenu } from '@/hooks/useSlashMenu';
 import { useToast } from '@/hooks/use-toast';
 
 interface BlockEditorProps {
@@ -15,8 +17,14 @@ interface BlockEditorProps {
 export function BlockEditor({ pageId, isEditable }: BlockEditorProps) {
   const { blocks, loading, createBlock, updateBlock, deleteBlock } = useBlocks(pageId);
   const { toast } = useToast();
+  const editorRef = useRef<HTMLDivElement>(null);
+  const [focusedBlockId, setFocusedBlockId] = useState<string | null>(null);
 
-  const handleCreateBlock = async (type: string) => {
+  const { isOpen, position, openSlashMenu, closeSlashMenu, handleSelectItem } = useSlashMenu({
+    onSelectCommand: handleCreateBlock,
+  });
+
+  async function handleCreateBlock(type: string) {
     const { error } = await createBlock(type);
     
     if (error) {
@@ -26,7 +34,7 @@ export function BlockEditor({ pageId, isEditable }: BlockEditorProps) {
         variant: "destructive",
       });
     }
-  };
+  }
 
   const handleUpdateBlock = async (id: string, updates: any) => {
     const { error } = await updateBlock(id, updates);
@@ -52,22 +60,44 @@ export function BlockEditor({ pageId, isEditable }: BlockEditorProps) {
     }
   };
 
+  // Handle slash command detection
+  useEffect(() => {
+    if (!isEditable) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === '/' && !isOpen) {
+        const target = event.target as HTMLElement;
+        if (target && (target.contentEditable === 'true' || target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) {
+          // Small delay to allow the '/' to be typed before opening menu
+          setTimeout(() => {
+            openSlashMenu(target);
+          }, 50);
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isEditable, isOpen, openSlashMenu]);
+
   if (loading) {
     return (
       <div className="p-4">
-        <div className="text-gray-500">Loading content...</div>
+        <div className="text-muted-foreground">Loading content...</div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-2 p-4">
+    <div className="space-y-2 p-4" ref={editorRef}>
       {blocks.map((block) => (
         <div 
           key={block.id} 
           className={`transition-opacity ${
             block.id.startsWith('temp-') ? 'opacity-60' : 'opacity-100'
           }`}
+          onFocus={() => setFocusedBlockId(block.id)}
+          onBlur={() => setFocusedBlockId(null)}
         >
           <BlockRenderer
             block={block}
@@ -122,10 +152,18 @@ export function BlockEditor({ pageId, isEditable }: BlockEditorProps) {
       )}
       
       {blocks.length === 0 && !isEditable && (
-        <div className="text-center py-8 text-gray-500">
+        <div className="text-center py-8 text-muted-foreground">
           This page is empty.
         </div>
       )}
+
+      {/* Slash Menu */}
+      <SlashMenu
+        isOpen={isOpen}
+        onClose={closeSlashMenu}
+        onSelectItem={handleSelectItem}
+        position={position}
+      />
     </div>
   );
 }
