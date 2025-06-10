@@ -1,5 +1,5 @@
-
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -19,6 +19,7 @@ export function AuthForm() {
   const [resendLoading, setResendLoading] = useState(false);
   const { signIn, signUp, resendConfirmation } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,6 +49,8 @@ export function AuthForm() {
         title: "Success",
         description: "Successfully signed in!",
       });
+      // Navigate to main app after successful sign in
+      navigate('/', { replace: true });
     }
     
     setLoading(false);
@@ -86,6 +89,8 @@ export function AuthForm() {
         title: "Success",
         description: "Account created and signed in!",
       });
+      // Navigate to main app after successful sign up
+      navigate('/', { replace: true });
     }
     
     setLoading(false);
