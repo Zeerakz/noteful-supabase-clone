@@ -5,6 +5,7 @@ import { Block } from '@/hooks/useBlocks';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface ImageBlockProps {
   block: Block;
@@ -17,28 +18,23 @@ export function ImageBlock({ block, onUpdate, onDelete, isEditable }: ImageBlock
   const [isUploading, setIsUploading] = useState(false);
   const [signedUrl, setSignedUrl] = useState<string | null>(null);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   // Generate signed URL when component mounts if there's a stored path
   useEffect(() => {
     const generateSignedUrl = async () => {
       if (block.content?.path) {
         try {
-          const { data: { session } } = await supabase.auth.getSession();
-          if (!session) return;
+          const { data, error } = await supabase.storage
+            .from('planna_uploads')
+            .createSignedUrl(block.content.path, 3600); // 1 hour expiry
 
-          const response = await fetch(
-            `https://vwntvuhhplzkbvogggkg.supabase.co/functions/v1/image-upload?path=${encodeURIComponent(block.content.path)}`,
-            {
-              headers: {
-                'Authorization': `Bearer ${session.access_token}`,
-              },
-            }
-          );
-
-          if (response.ok) {
-            const data = await response.json();
-            setSignedUrl(data.signedUrl);
+          if (error) {
+            console.error('Error generating signed URL:', error);
+            return;
           }
+
+          setSignedUrl(data.signedUrl);
         } catch (error) {
           console.error('Error generating signed URL:', error);
         }
@@ -50,7 +46,7 @@ export function ImageBlock({ block, onUpdate, onDelete, isEditable }: ImageBlock
 
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file) return;
+    if (!file || !user) return;
 
     // Validate file type
     const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
@@ -76,32 +72,25 @@ export function ImageBlock({ block, onUpdate, onDelete, isEditable }: ImageBlock
     setIsUploading(true);
     
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        throw new Error('Not authenticated');
+      // Generate unique filename
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+
+      // Upload to Supabase Storage
+      const { data, error } = await supabase.storage
+        .from('planna_uploads')
+        .upload(fileName, file);
+
+      if (error) {
+        throw new Error(error.message);
       }
 
-      const formData = new FormData();
-      formData.append('file', file);
+      // Generate signed URL for immediate display
+      const { data: signedUrlData } = await supabase.storage
+        .from('planna_uploads')
+        .createSignedUrl(data.path, 3600);
 
-      const response = await fetch(
-        'https://vwntvuhhplzkbvogggkg.supabase.co/functions/v1/image-upload',
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-          },
-          body: formData,
-        }
-      );
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Upload failed');
-      }
-
-      const data = await response.json();
-      
+      // Update block content with file metadata
       await onUpdate({
         path: data.path,
         alt: file.name,
@@ -111,7 +100,9 @@ export function ImageBlock({ block, onUpdate, onDelete, isEditable }: ImageBlock
         type: file.type,
       });
 
-      setSignedUrl(data.signedUrl);
+      if (signedUrlData) {
+        setSignedUrl(signedUrlData.signedUrl);
+      }
       
       toast({
         title: "Image uploaded successfully",
@@ -127,6 +118,23 @@ export function ImageBlock({ block, onUpdate, onDelete, isEditable }: ImageBlock
     } finally {
       setIsUploading(false);
     }
+  };
+
+  const handleDrop = async (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    const file = event.dataTransfer.files?.[0];
+    if (!file) return;
+
+    // Create a synthetic event to reuse the upload logic
+    const syntheticEvent = {
+      target: { files: [file] }
+    } as React.ChangeEvent<HTMLInputElement>;
+    
+    await handleImageUpload(syntheticEvent);
+  };
+
+  const handleDragOver = (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
   };
 
   const alt = block.content?.alt || '';
@@ -147,22 +155,36 @@ export function ImageBlock({ block, onUpdate, onDelete, isEditable }: ImageBlock
               alt={alt}
               className="max-w-full h-auto rounded border"
               onError={() => {
-                // If image fails to load, try to refresh the signed URL
                 console.log('Image failed to load, signed URL may have expired');
+                // Try to refresh the signed URL
+                if (block.content?.path) {
+                  supabase.storage
+                    .from('planna_uploads')
+                    .createSignedUrl(block.content.path, 3600)
+                    .then(({ data }) => {
+                      if (data) {
+                        setSignedUrl(data.signedUrl);
+                      }
+                    });
+                }
               }}
             />
           </div>
           {caption && (
-            <p className="text-sm text-gray-600 italic text-center">
+            <p className="text-sm text-muted-foreground italic text-center">
               {caption}
             </p>
           )}
         </div>
       ) : isEditable ? (
-        <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-          <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-          <p className="text-gray-500 mb-4">Click to upload an image</p>
-          <p className="text-xs text-gray-400 mb-4">
+        <div 
+          className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8 text-center hover:border-muted-foreground/50 transition-colors"
+          onDrop={handleDrop}
+          onDragOver={handleDragOver}
+        >
+          <Upload className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+          <p className="text-muted-foreground mb-4">Drop an image here or click to upload</p>
+          <p className="text-xs text-muted-foreground/70 mb-4">
             Supported: JPEG, PNG, GIF, WebP (max 50MB)
           </p>
           <input
@@ -190,7 +212,7 @@ export function ImageBlock({ block, onUpdate, onDelete, isEditable }: ImageBlock
           variant="ghost"
           size="sm"
           onClick={onDelete}
-          className="absolute right-1 top-1 opacity-0 group-hover:opacity-100 h-6 w-6 p-0 text-red-500 hover:text-red-700"
+          className="absolute right-1 top-1 opacity-0 group-hover:opacity-100 h-6 w-6 p-0 text-destructive hover:text-destructive/80"
         >
           <Trash2 className="h-3 w-3" />
         </Button>
