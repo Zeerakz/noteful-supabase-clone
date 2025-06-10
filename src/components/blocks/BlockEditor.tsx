@@ -8,7 +8,7 @@ import { SlashMenu } from './SlashMenu';
 import { useBlocks } from '@/hooks/useBlocks';
 import { useSlashMenu } from '@/hooks/useSlashMenu';
 import { useToast } from '@/hooks/use-toast';
-import { PresenceProvider, usePresenceContext } from '@/components/collaboration/PresenceProvider';
+import { usePresence } from '@/hooks/usePresence';
 import { ActiveUsers } from '@/components/collaboration/ActiveUsers';
 
 interface BlockEditorProps {
@@ -16,14 +16,14 @@ interface BlockEditorProps {
   isEditable: boolean;
 }
 
-function BlockEditorContent({ pageId, isEditable }: BlockEditorProps) {
+export function BlockEditor({ pageId, isEditable }: BlockEditorProps) {
   const { blocks, loading, createBlock, updateBlock, deleteBlock } = useBlocks(pageId);
   const { toast } = useToast();
   const editorRef = useRef<HTMLDivElement>(null);
   const [focusedBlockId, setFocusedBlockId] = useState<string | null>(null);
 
-  // Get presence data from context instead of calling usePresence directly
-  const { activeUsers, loading: presenceLoading } = usePresenceContext();
+  // Use usePresence directly instead of usePresenceContext
+  const { activeUsers, loading: presenceLoading } = usePresence(pageId);
 
   const { isOpen, position, openSlashMenu, closeSlashMenu, handleSelectItem } = useSlashMenu({
     onSelectCommand: handleCreateBlock,
@@ -205,13 +205,5 @@ function BlockEditorContent({ pageId, isEditable }: BlockEditorProps) {
         position={position}
       />
     </div>
-  );
-}
-
-export function BlockEditor({ pageId, isEditable }: BlockEditorProps) {
-  return (
-    <PresenceProvider pageId={pageId}>
-      <BlockEditorContent pageId={pageId} isEditable={isEditable} />
-    </PresenceProvider>
   );
 }
