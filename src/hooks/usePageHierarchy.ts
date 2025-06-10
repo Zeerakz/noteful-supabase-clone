@@ -29,12 +29,11 @@ export function usePageHierarchy() {
       const filteredPages = siblingPages.filter(p => p.id !== pageId);
       
       // Create a properly typed copy of the moving page for ordering
-      const movingPageForOrdering = {
-        ...movingPage,
-        parent_page_id: newParentId || undefined,
-        // Ensure all required fields are present with correct types
+      const movingPageForOrdering: Page = {
         id: movingPage.id,
         workspace_id: movingPage.workspace_id,
+        parent_page_id: newParentId,
+        database_id: movingPage.database_id,
         title: movingPage.title,
         created_by: movingPage.created_by,
         order_index: movingPage.order_index,
