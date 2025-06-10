@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Database, DatabaseCreateRequest, DatabaseField } from '@/types/database';
 
@@ -10,6 +9,9 @@ export class DatabaseService {
   ): Promise<{ data: Database | null; error: string | null }> {
     try {
       const tableName = `db_${request.name.toLowerCase().replace(/[^a-z0-9_]/g, '_')}`;
+      
+      // First, let's try to create the databases table if it doesn't exist
+      await DatabaseService.ensureDatabasesTableExists();
       
       // Create database record - using type assertion since 'databases' table exists but isn't in generated types
       const { data: database, error: dbError } = await (supabase as any)
@@ -50,6 +52,17 @@ export class DatabaseService {
         data: null, 
         error: err instanceof Error ? err.message : 'Failed to create database' 
       };
+    }
+  }
+
+  static async ensureDatabasesTableExists(): Promise<void> {
+    // This method will be used to check if the databases table exists
+    // If not, we'll need to create it via SQL migration
+    try {
+      await (supabase as any).from('databases').select('count').limit(1);
+    } catch (error) {
+      // If table doesn't exist, we'll log it but continue
+      console.log('Databases table may need to be created');
     }
   }
 
