@@ -6,7 +6,7 @@ import { usePages } from '@/hooks/usePages';
 import { useDatabases } from '@/hooks/useDatabases';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, FileText, Database } from 'lucide-react';
+import { Plus, FileText, Database, Bookmark } from 'lucide-react';
 import { DatabaseWizard } from '@/components/database/DatabaseWizard';
 
 export function WorkspaceView() {
@@ -45,6 +45,10 @@ export function WorkspaceView() {
     console.log('Database clicked:', databaseId);
   };
 
+  const handleTemplateGalleryClick = () => {
+    navigate(`/workspace/${workspaceId}/templates`);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -55,6 +59,10 @@ export function WorkspaceView() {
           )}
         </div>
         <div className="flex gap-2">
+          <Button variant="outline" onClick={handleTemplateGalleryClick} className="gap-2">
+            <Bookmark className="h-4 w-4" />
+            Templates
+          </Button>
           <DatabaseWizard />
           <Button onClick={handleCreatePage} className="gap-2">
             <Plus className="h-4 w-4" />

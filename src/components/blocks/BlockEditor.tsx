@@ -34,6 +34,21 @@ export function BlockEditor({ pageId, isEditable, workspaceId }: BlockEditorProp
   });
 
   async function handleCreateBlock(type: string) {
+    if (type === 'from_template') {
+      if (!workspaceId) {
+        toast({
+          title: "Error",
+          description: "Workspace not found",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Navigate to templates page
+      navigate(`/workspace/${workspaceId}/templates`);
+      return;
+    }
+
     if (type === 'duplicate_page') {
       if (!user || !workspaceId) {
         toast({

@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect, useRef } from 'react';
-import { Type, Heading1, CheckSquare, Image, Columns2, Copy } from 'lucide-react';
+import { Type, Heading1, CheckSquare, Image, Columns2, Copy, Bookmark } from 'lucide-react';
 import {
   Command,
   CommandEmpty,
@@ -59,6 +60,13 @@ const SLASH_MENU_ITEMS: SlashMenuItem[] = [
     description: 'Create a copy of the current page',
     icon: Copy,
     command: 'duplicate_page',
+  },
+  {
+    id: 'from-template',
+    title: 'From Template',
+    description: 'Create a page from an existing template',
+    icon: Bookmark,
+    command: 'from_template',
   },
 ];
 

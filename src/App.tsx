@@ -6,83 +6,75 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { AnalyticsProvider } from "@/contexts/AnalyticsContext";
-import { useSessionTracking } from "@/hooks/useSessionTracking";
-import { Login } from "@/pages/Login";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
-import { AppLayout } from "@/components/layout/AppLayout";
 import { AppLayoutWithSidebar } from "@/components/layout/AppLayoutWithSidebar";
-import { WorkspaceList } from "@/components/workspaces/WorkspaceList";
-import { WorkspacePage } from "@/pages/WorkspacePage";
-import { PageEditor } from "@/pages/PageEditor";
-import { PageView } from "@/pages/PageView";
-import NotFound from "./pages/NotFound";
+import Index from "./pages/Index";
+import { Login } from "./pages/Login";
+import { NotFound } from "./pages/NotFound";
+import { PageEditor } from "./pages/PageEditor";
+import { WorkspacePage } from "./pages/WorkspacePage";
+import { TemplatesPage } from "./pages/TemplatesPage";
+import "./App.css";
 
 const queryClient = new QueryClient();
 
-function AppContent() {
-  useSessionTracking();
-  
+function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route 
-          path="/" 
-          element={
-            <ProtectedRoute>
-              <AppLayoutWithSidebar>
-                <WorkspaceList />
-              </AppLayoutWithSidebar>
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="/workspace/:workspaceId" 
-          element={
-            <ProtectedRoute>
-              <AppLayoutWithSidebar>
-                <WorkspacePage />
-              </AppLayoutWithSidebar>
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="/workspace/:workspaceId/page/:pageId" 
-          element={
-            <ProtectedRoute>
-              <PageEditor />
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="/:pageId" 
-          element={
-            <ProtectedRoute>
-              <AppLayoutWithSidebar>
-                <PageView />
-              </AppLayoutWithSidebar>
-            </ProtectedRoute>
-          } 
-        />
-        {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-    </BrowserRouter>
+    <QueryClientProvider client={queryClient}>
+      <AnalyticsProvider>
+        <AuthProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <Routes>
+                <Route path="/login" element={<Login />} />
+                <Route
+                  path="/"
+                  element={
+                    <ProtectedRoute>
+                      <AppLayoutWithSidebar>
+                        <Index />
+                      </AppLayoutWithSidebar>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/workspace/:workspaceId"
+                  element={
+                    <ProtectedRoute>
+                      <AppLayoutWithSidebar>
+                        <WorkspacePage />
+                      </AppLayoutWithSidebar>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/workspace/:workspaceId/templates"
+                  element={
+                    <ProtectedRoute>
+                      <AppLayoutWithSidebar>
+                        <TemplatesPage />
+                      </AppLayoutWithSidebar>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/workspace/:workspaceId/page/:pageId"
+                  element={
+                    <ProtectedRoute>
+                      <PageEditor />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </BrowserRouter>
+          </TooltipProvider>
+        </AuthProvider>
+      </AnalyticsProvider>
+    </QueryClientProvider>
   );
 }
-
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <AnalyticsProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <AppContent />
-        </TooltipProvider>
-      </AnalyticsProvider>
-    </AuthProvider>
-  </QueryClientProvider>
-);
 
 export default App;

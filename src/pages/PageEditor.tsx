@@ -6,9 +6,11 @@ import { Button } from '@/components/ui/button';
 import { BlockEditor } from '@/components/blocks/BlockEditor';
 import { PresenceProvider } from '@/components/collaboration/PresenceProvider';
 import { ActiveUsers } from '@/components/collaboration/ActiveUsers';
+import { SaveAsTemplateDialog } from '@/components/templates/SaveAsTemplateDialog';
 import { usePages } from '@/hooks/usePages';
 import { useWorkspaces } from '@/hooks/useWorkspaces';
 import { usePresence } from '@/hooks/usePresence';
+import { useBlocks } from '@/hooks/useBlocks';
 
 export function PageEditor() {
   const { workspaceId, pageId } = useParams<{ workspaceId: string; pageId: string }>();
@@ -16,6 +18,7 @@ export function PageEditor() {
   const { pages, loading: pagesLoading } = usePages(workspaceId);
   const { workspaces, loading: workspacesLoading } = useWorkspaces();
   const { activeUsers, loading: presenceLoading } = usePresence(pageId);
+  const { blocks } = useBlocks(pageId!);
 
   if (pagesLoading || workspacesLoading) {
     return (
@@ -61,8 +64,19 @@ export function PageEditor() {
                 </div>
               </div>
               
-              {/* Show active users */}
-              <ActiveUsers activeUsers={activeUsers} loading={presenceLoading} />
+              <div className="flex items-center gap-3">
+                {/* Save as Template button */}
+                {blocks.length > 0 && (
+                  <SaveAsTemplateDialog
+                    pageId={page.id}
+                    workspaceId={workspaceId!}
+                    blocks={blocks}
+                  />
+                )}
+                
+                {/* Show active users */}
+                <ActiveUsers activeUsers={activeUsers} loading={presenceLoading} />
+              </div>
             </div>
           </div>
         </div>
