@@ -9,11 +9,13 @@ export function usePresenceSubscription(
 ) {
   const channelRef = useRef<any>(null);
   const isSubscribedRef = useRef<boolean>(false);
+  const subscriptionAttemptRef = useRef<number>(0);
 
   const cleanup = () => {
     if (channelRef.current && isSubscribedRef.current) {
       console.log('Cleaning up presence channel subscription');
       try {
+        channelRef.current.unsubscribe();
         supabase.removeChannel(channelRef.current);
       } catch (error) {
         console.warn('Error removing channel:', error);
@@ -32,8 +34,12 @@ export function usePresenceSubscription(
     // Cleanup any existing subscription first
     cleanup();
 
-    // Create a unique channel name with timestamp to avoid conflicts
-    const channelName = `presence_${pageId}_${user.id}_${Date.now()}`;
+    // Increment attempt counter to ensure unique channel names
+    subscriptionAttemptRef.current += 1;
+    const attemptId = subscriptionAttemptRef.current;
+
+    // Create a unique channel name with user ID and attempt counter
+    const channelName = `presence_${pageId}_${user.id}_${attemptId}`;
     
     console.log('Creating presence channel:', channelName);
     
@@ -52,16 +58,20 @@ export function usePresenceSubscription(
           console.log('Realtime presence update:', payload);
           onPresenceUpdate(); // Refresh active users list
         }
-      )
-      .subscribe((status) => {
-        console.log('Presence subscription status:', status);
-        if (status === 'SUBSCRIBED') {
-          isSubscribedRef.current = true;
-        } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
-          isSubscribedRef.current = false;
+      );
+
+    // Subscribe only once and track status
+    channel.subscribe((status) => {
+      console.log('Presence subscription status:', status);
+      if (status === 'SUBSCRIBED') {
+        isSubscribedRef.current = true;
+      } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
+        isSubscribedRef.current = false;
+        if (channelRef.current === channel) {
           channelRef.current = null;
         }
-      });
+      }
+    });
 
     channelRef.current = channel;
 

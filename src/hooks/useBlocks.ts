@@ -21,6 +21,7 @@ export function useBlocks(pageId?: string) {
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
   const channelRef = useRef<any>(null);
+  const subscriptionAttemptRef = useRef<number>(0);
 
   const fetchBlocks = async () => {
     if (!user || !pageId) return;
@@ -157,6 +158,7 @@ export function useBlocks(pageId?: string) {
       // Clean up existing channel if pageId or user changes
       if (channelRef.current) {
         try {
+          channelRef.current.unsubscribe();
           supabase.removeChannel(channelRef.current);
         } catch (error) {
           console.warn('Error removing blocks channel:', error);
@@ -168,8 +170,12 @@ export function useBlocks(pageId?: string) {
 
     fetchBlocks();
 
+    // Increment attempt counter to ensure unique channel names
+    subscriptionAttemptRef.current += 1;
+    const attemptId = subscriptionAttemptRef.current;
+
     // Create unique channel name to avoid conflicts
-    const channelName = `blocks_${pageId}_${user.id}_${Date.now()}`;
+    const channelName = `blocks_${pageId}_${user.id}_${attemptId}`;
     console.log('Creating blocks channel:', channelName);
 
     // Set up realtime subscription for both block changes and Y.js updates
@@ -208,16 +214,19 @@ export function useBlocks(pageId?: string) {
       .on('broadcast', { event: 'yjs-update' }, (payload) => {
         // Y.js updates are handled by the useYjsDocument hook
         console.log('Y.js delta received:', payload);
-      })
-      .subscribe((status) => {
-        console.log('Blocks subscription status:', status);
       });
+
+    // Subscribe only once
+    channel.subscribe((status) => {
+      console.log('Blocks subscription status:', status);
+    });
 
     channelRef.current = channel;
 
     return () => {
       if (channelRef.current) {
         try {
+          channelRef.current.unsubscribe();
           supabase.removeChannel(channelRef.current);
         } catch (error) {
           console.warn('Error removing blocks channel:', error);

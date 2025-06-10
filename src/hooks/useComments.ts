@@ -20,6 +20,7 @@ export function useComments(blockId?: string) {
   const { user } = useAuth();
   const { extractMentions, notifyMention } = useMentionNotifications();
   const channelRef = useRef<any>(null);
+  const subscriptionAttemptRef = useRef<number>(0);
 
   const fetchComments = async () => {
     if (!blockId || !user) return;
@@ -144,6 +145,7 @@ export function useComments(blockId?: string) {
       // Clean up existing channel
       if (channelRef.current) {
         try {
+          channelRef.current.unsubscribe();
           supabase.removeChannel(channelRef.current);
         } catch (error) {
           console.warn('Error removing comments channel:', error);
@@ -155,8 +157,12 @@ export function useComments(blockId?: string) {
 
     fetchComments();
 
+    // Increment attempt counter to ensure unique channel names
+    subscriptionAttemptRef.current += 1;
+    const attemptId = subscriptionAttemptRef.current;
+
     // Create unique channel name to avoid conflicts
-    const channelName = `comments_${blockId}_${user.id}_${Date.now()}`;
+    const channelName = `comments_${blockId}_${user.id}_${attemptId}`;
     console.log('Creating comments channel:', channelName);
 
     // Set up realtime subscription for comments
@@ -193,16 +199,19 @@ export function useComments(blockId?: string) {
             setComments(prev => prev.filter(comment => comment.id !== deletedComment.id));
           }
         }
-      )
-      .subscribe((status) => {
-        console.log('Comments subscription status:', status);
-      });
+      );
+
+    // Subscribe only once
+    channel.subscribe((status) => {
+      console.log('Comments subscription status:', status);
+    });
 
     channelRef.current = channel;
 
     return () => {
       if (channelRef.current) {
         try {
+          channelRef.current.unsubscribe();
           supabase.removeChannel(channelRef.current);
         } catch (error) {
           console.warn('Error removing comments channel:', error);

@@ -11,6 +11,7 @@ export function usePageProperties(pageId?: string) {
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
   const channelRef = useRef<any>(null);
+  const subscriptionAttemptRef = useRef<number>(0);
 
   const fetchProperties = async () => {
     if (!pageId) {
@@ -80,6 +81,7 @@ export function usePageProperties(pageId?: string) {
       // Clean up existing channel
       if (channelRef.current) {
         try {
+          channelRef.current.unsubscribe();
           supabase.removeChannel(channelRef.current);
         } catch (error) {
           console.warn('Error removing page properties channel:', error);
@@ -91,8 +93,12 @@ export function usePageProperties(pageId?: string) {
 
     fetchProperties();
 
+    // Increment attempt counter to ensure unique channel names
+    subscriptionAttemptRef.current += 1;
+    const attemptId = subscriptionAttemptRef.current;
+
     // Create unique channel name to avoid conflicts
-    const channelName = `page_properties_${pageId}_${Date.now()}`;
+    const channelName = `page_properties_${pageId}_${attemptId}`;
     console.log('Creating page properties channel:', channelName);
 
     // Set up realtime subscription for page properties
@@ -128,16 +134,19 @@ export function usePageProperties(pageId?: string) {
             setProperties(prev => prev.filter(prop => prop.id !== deletedProperty.id));
           }
         }
-      )
-      .subscribe((status) => {
-        console.log('Page properties subscription status:', status);
-      });
+      );
+
+    // Subscribe only once
+    channel.subscribe((status) => {
+      console.log('Page properties subscription status:', status);
+    });
 
     channelRef.current = channel;
 
     return () => {
       if (channelRef.current) {
         try {
+          channelRef.current.unsubscribe();
           supabase.removeChannel(channelRef.current);
         } catch (error) {
           console.warn('Error removing page properties channel:', error);

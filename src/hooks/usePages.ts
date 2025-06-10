@@ -13,6 +13,7 @@ export function usePages(workspaceId?: string) {
   const { user } = useAuth();
   const { updatePageHierarchy: updateHierarchy } = usePageHierarchy();
   const channelRef = useRef<any>(null);
+  const subscriptionAttemptRef = useRef<number>(0);
 
   const fetchPages = async () => {
     if (!user || !workspaceId) return;
@@ -79,13 +80,30 @@ export function usePages(workspaceId?: string) {
   };
 
   useEffect(() => {
-    if (!user || !workspaceId) return;
+    if (!user || !workspaceId) {
+      // Clean up existing channel
+      if (channelRef.current) {
+        try {
+          channelRef.current.unsubscribe();
+          supabase.removeChannel(channelRef.current);
+        } catch (error) {
+          console.warn('Error removing pages channel:', error);
+        }
+        channelRef.current = null;
+      }
+      return;
+    }
 
     fetchPages();
 
+    // Increment attempt counter to ensure unique channel names
+    subscriptionAttemptRef.current += 1;
+    const attemptId = subscriptionAttemptRef.current;
+
     // Set up realtime subscription for pages in this workspace
+    const channelName = `pages_${workspaceId}_${attemptId}`;
     const channel = supabase
-      .channel(`pages-${workspaceId}`)
+      .channel(channelName)
       .on(
         'postgres_changes',
         {
@@ -116,14 +134,24 @@ export function usePages(workspaceId?: string) {
             setPages(prev => prev.filter(page => page.id !== deletedPage.id));
           }
         }
-      )
-      .subscribe();
+      );
+
+    // Subscribe only once
+    channel.subscribe((status) => {
+      console.log('Pages subscription status:', status);
+    });
 
     channelRef.current = channel;
 
     return () => {
       if (channelRef.current) {
-        supabase.removeChannel(channelRef.current);
+        try {
+          channelRef.current.unsubscribe();
+          supabase.removeChannel(channelRef.current);
+        } catch (error) {
+          console.warn('Error removing pages channel:', error);
+        }
+        channelRef.current = null;
       }
     };
   }, [user, workspaceId]);
