@@ -255,6 +255,7 @@ export type Database = {
         Row: {
           created_at: string | null
           created_by: string
+          database_id: string | null
           id: string
           order_index: number
           parent_page_id: string | null
@@ -265,6 +266,7 @@ export type Database = {
         Insert: {
           created_at?: string | null
           created_by: string
+          database_id?: string | null
           id?: string
           order_index?: number
           parent_page_id?: string | null
@@ -275,6 +277,7 @@ export type Database = {
         Update: {
           created_at?: string | null
           created_by?: string
+          database_id?: string | null
           id?: string
           order_index?: number
           parent_page_id?: string | null
@@ -283,6 +286,13 @@ export type Database = {
           workspace_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "pages_database_id_fkey"
+            columns: ["database_id"]
+            isOneToOne: false
+            referencedRelation: "databases"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "pages_parent_page_id_fkey"
             columns: ["parent_page_id"]

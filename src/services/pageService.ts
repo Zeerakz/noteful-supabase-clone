@@ -21,24 +21,60 @@ export class PageService {
     }
   }
 
+  static async fetchDatabasePages(databaseId: string): Promise<{ data: Page[] | null; error: string | null }> {
+    try {
+      const { data, error } = await supabase
+        .from('pages')
+        .select('*')
+        .eq('database_id', databaseId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return { data: data || [], error: null };
+    } catch (err) {
+      return { 
+        data: null, 
+        error: err instanceof Error ? err.message : 'Failed to fetch database pages' 
+      };
+    }
+  }
+
   static async createPage(
     workspaceId: string, 
     userId: string, 
-    { title, parentPageId }: PageCreateRequest
+    { title, parentPageId, databaseId }: PageCreateRequest
   ): Promise<{ data: Page | null; error: string | null }> {
     try {
-      // Get the next order index for this parent
-      const { data: existingPages } = await supabase
-        .from('pages')
-        .select('order_index')
-        .eq('workspace_id', workspaceId)
-        .eq('parent_page_id', parentPageId || null)
-        .order('order_index', { ascending: false })
-        .limit(1);
+      // Get the next order index for this parent or database
+      let nextOrderIndex = 0;
+      
+      if (databaseId) {
+        // For database pages, order by creation time (newest first)
+        const { data: existingPages } = await supabase
+          .from('pages')
+          .select('order_index')
+          .eq('database_id', databaseId)
+          .order('order_index', { ascending: false })
+          .limit(1);
 
-      const nextOrderIndex = existingPages && existingPages.length > 0 
-        ? existingPages[0].order_index + 1 
-        : 0;
+        nextOrderIndex = existingPages && existingPages.length > 0 
+          ? existingPages[0].order_index + 1 
+          : 0;
+      } else {
+        // For regular pages, maintain hierarchy order
+        const { data: existingPages } = await supabase
+          .from('pages')
+          .select('order_index')
+          .eq('workspace_id', workspaceId)
+          .eq('parent_page_id', parentPageId || null)
+          .is('database_id', null)
+          .order('order_index', { ascending: false })
+          .limit(1);
+
+        nextOrderIndex = existingPages && existingPages.length > 0 
+          ? existingPages[0].order_index + 1 
+          : 0;
+      }
 
       const { data, error } = await supabase
         .from('pages')
@@ -46,6 +82,7 @@ export class PageService {
           {
             workspace_id: workspaceId,
             parent_page_id: parentPageId || null,
+            database_id: databaseId || null,
             title,
             created_by: userId,
             order_index: nextOrderIndex,
