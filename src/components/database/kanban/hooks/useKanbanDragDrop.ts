@@ -3,7 +3,7 @@ import { useCallback } from 'react';
 import { DropResult } from 'react-beautiful-dnd';
 import { useAuth } from '@/contexts/AuthContext';
 import { PagePropertyService } from '@/services/pagePropertyService';
-import { toast } from '@/components/ui/use-toast';
+import { toast } from '@/hooks/use-toast';
 import { DatabaseField } from '@/types/database';
 import { PageWithProperties, KanbanColumn } from '../types';
 
@@ -13,7 +13,7 @@ interface UseKanbanDragDropProps {
   columns: KanbanColumn[];
   selectField: DatabaseField | undefined;
   setColumns: (columns: KanbanColumn[]) => void;
-  setPages: (pages: PageWithProperties[]) => void;
+  setPages: React.Dispatch<React.SetStateAction<PageWithProperties[]>>;
 }
 
 export function useKanbanDragDrop({
