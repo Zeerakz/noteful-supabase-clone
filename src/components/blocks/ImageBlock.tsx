@@ -20,21 +20,24 @@ export function ImageBlock({ block, onUpdate, onDelete, isEditable }: ImageBlock
   const { toast } = useToast();
   const { user } = useAuth();
 
-  // Generate signed URL when component mounts if there's a stored path
+  // Generate signed URL using the Edge Function when component mounts
   useEffect(() => {
     const generateSignedUrl = async () => {
       if (block.content?.path) {
         try {
-          const { data, error } = await supabase.storage
-            .from('planna_uploads')
-            .createSignedUrl(block.content.path, 3600); // 1 hour expiry
+          const { data, error } = await supabase.functions.invoke('image-upload', {
+            method: 'GET',
+            body: JSON.stringify({ path: block.content.path })
+          });
 
           if (error) {
             console.error('Error generating signed URL:', error);
             return;
           }
 
-          setSignedUrl(data.signedUrl);
+          if (data?.signedUrl) {
+            setSignedUrl(data.signedUrl);
+          }
         } catch (error) {
           console.error('Error generating signed URL:', error);
         }
@@ -71,23 +74,23 @@ export function ImageBlock({ block, onUpdate, onDelete, isEditable }: ImageBlock
     setIsUploading(true);
     
     try {
-      // Generate unique filename
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+      // Create FormData for file upload
+      const formData = new FormData();
+      formData.append('file', file);
 
-      // Upload to Supabase Storage
-      const { data, error } = await supabase.storage
-        .from('planna_uploads')
-        .upload(fileName, file);
+      // Upload using the Edge Function
+      const { data, error } = await supabase.functions.invoke('image-upload', {
+        method: 'POST',
+        body: formData
+      });
 
       if (error) {
-        throw new Error(error.message);
+        throw new Error(error.message || 'Upload failed');
       }
 
-      // Generate signed URL for immediate display
-      const { data: signedUrlData } = await supabase.storage
-        .from('planna_uploads')
-        .createSignedUrl(data.path, 3600);
+      if (!data?.path) {
+        throw new Error('No file path returned from upload');
+      }
 
       // Update block content with file metadata
       await onUpdate({
@@ -99,8 +102,9 @@ export function ImageBlock({ block, onUpdate, onDelete, isEditable }: ImageBlock
         type: file.type,
       });
 
-      if (signedUrlData) {
-        setSignedUrl(signedUrlData.signedUrl);
+      // Set the signed URL for immediate display
+      if (data.signedUrl) {
+        setSignedUrl(data.signedUrl);
       }
       
       toast({
@@ -155,18 +159,22 @@ export function ImageBlock({ block, onUpdate, onDelete, isEditable }: ImageBlock
               src={signedUrl}
               alt={alt}
               className="max-w-full h-auto rounded border"
-              onError={() => {
-                console.log('Image failed to load, signed URL may have expired');
-                // Try to refresh the signed URL
+              onError={async () => {
+                console.log('Image failed to load, refreshing signed URL');
+                // Try to refresh the signed URL using the Edge Function
                 if (block.content?.path) {
-                  supabase.storage
-                    .from('planna_uploads')
-                    .createSignedUrl(block.content.path, 3600)
-                    .then(({ data }) => {
-                      if (data) {
-                        setSignedUrl(data.signedUrl);
-                      }
+                  try {
+                    const { data } = await supabase.functions.invoke('image-upload', {
+                      method: 'GET',
+                      body: JSON.stringify({ path: block.content.path })
                     });
+                    
+                    if (data?.signedUrl) {
+                      setSignedUrl(data.signedUrl);
+                    }
+                  } catch (error) {
+                    console.error('Error refreshing signed URL:', error);
+                  }
                 }
               }}
             />
