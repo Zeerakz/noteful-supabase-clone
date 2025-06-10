@@ -8,6 +8,7 @@ import { PagePropertyService } from '@/services/pagePropertyService';
 import { DatabaseField, PageProperty } from '@/types/database';
 import { useAuth } from '@/contexts/AuthContext';
 import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
+import { toast } from '@/components/ui/use-toast';
 
 interface DatabaseKanbanViewProps {
   databaseId: string;
@@ -18,6 +19,7 @@ interface PageWithProperties {
   pageId: string;
   title: string;
   properties: Record<string, string>;
+  pos?: number;
 }
 
 interface KanbanColumn {
@@ -83,25 +85,56 @@ export function DatabaseKanbanView({ databaseId, workspaceId }: DatabaseKanbanVi
       pages: [],
     });
 
-    // Group pages by select field value
+    // Group pages by select field value and sort by position
     const groupedColumns = defaultColumns.map(column => ({
       ...column,
-      pages: pages.filter(page => {
-        const fieldValue = page.properties[selectField.id];
-        if (column.id === 'no-status') {
-          return !fieldValue || fieldValue.trim() === '';
-        }
-        return fieldValue === column.title;
-      }),
+      pages: pages
+        .filter(page => {
+          const fieldValue = page.properties[selectField.id];
+          if (column.id === 'no-status') {
+            return !fieldValue || fieldValue.trim() === '';
+          }
+          return fieldValue === column.title;
+        })
+        .sort((a, b) => (a.pos || 0) - (b.pos || 0)),
     }));
 
     setColumns(groupedColumns);
   }, [selectField, pages]);
 
+  const updatePositionsInColumn = async (columnPages: PageWithProperties[], columnValue: string) => {
+    if (!user || !selectField) return;
+
+    // Update positions for all pages in the column
+    const updatePromises = columnPages.map(async (page, index) => {
+      // Update position property if it exists
+      const positionField = fields.find(f => f.name.toLowerCase() === 'position' || f.name.toLowerCase() === 'pos');
+      if (positionField) {
+        await PagePropertyService.upsertPageProperty(
+          page.pageId,
+          positionField.id,
+          index.toString(),
+          user.id
+        );
+      }
+    });
+
+    try {
+      await Promise.all(updatePromises);
+    } catch (error) {
+      console.error('Failed to update positions:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update card positions",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleDragEnd = async (result: DropResult) => {
     const { destination, source, draggableId } = result;
 
-    if (!destination || !selectField) return;
+    if (!destination || !selectField || !user) return;
 
     // If dropped in the same position, do nothing
     if (
@@ -111,55 +144,114 @@ export function DatabaseKanbanView({ databaseId, workspaceId }: DatabaseKanbanVi
       return;
     }
 
-    // Find the page being moved
     const pageId = draggableId;
-    const newColumnId = destination.droppableId;
-    const newStatus = newColumnId === 'no-status' ? '' : 
-      columns.find(col => col.id === newColumnId)?.title || '';
+    const sourceColumnId = source.droppableId;
+    const destColumnId = destination.droppableId;
+    const newStatus = destColumnId === 'no-status' ? '' : 
+      columns.find(col => col.id === destColumnId)?.title || '';
 
-    // Update the page property in the database
-    if (user) {
-      await PagePropertyService.upsertPageProperty(
-        pageId,
-        selectField.id,
-        newStatus,
-        user.id
-      );
-    }
+    // Find the page being moved
+    const movedPage = pages.find(page => page.pageId === pageId);
+    if (!movedPage) return;
 
-    // Update local state optimistically
+    // Optimistic update: Update local state immediately
     const updatedColumns = columns.map(column => {
       // Remove page from source column
-      if (column.id === source.droppableId) {
+      if (column.id === sourceColumnId) {
         return {
           ...column,
           pages: column.pages.filter(page => page.pageId !== pageId),
         };
       }
       
-      // Add page to destination column
-      if (column.id === destination.droppableId) {
-        const movedPage = pages.find(page => page.pageId === pageId);
-        if (movedPage) {
-          const newPages = [...column.pages];
-          newPages.splice(destination.index, 0, {
-            ...movedPage,
-            properties: {
-              ...movedPage.properties,
-              [selectField.id]: newStatus,
-            },
-          });
-          return {
-            ...column,
-            pages: newPages,
-          };
-        }
+      // Add page to destination column at the correct position
+      if (column.id === destColumnId) {
+        const newPages = [...column.pages];
+        const updatedMovedPage = {
+          ...movedPage,
+          properties: {
+            ...movedPage.properties,
+            [selectField.id]: newStatus,
+          },
+          pos: destination.index,
+        };
+        
+        newPages.splice(destination.index, 0, updatedMovedPage);
+        
+        // Update positions for all pages in the new arrangement
+        newPages.forEach((page, index) => {
+          page.pos = index;
+        });
+        
+        return {
+          ...column,
+          pages: newPages,
+        };
       }
 
       return column;
     });
 
+    // Update local state optimistically
     setColumns(updatedColumns);
+
+    // Update the moved page's properties in local state
+    setPages(prevPages => prevPages.map(page => 
+      page.pageId === pageId 
+        ? {
+            ...page,
+            properties: {
+              ...page.properties,
+              [selectField.id]: newStatus,
+            },
+            pos: destination.index,
+          }
+        : page
+    ));
+
+    try {
+      // 1. First, update the group field value
+      await PagePropertyService.upsertPageProperty(
+        pageId,
+        selectField.id,
+        newStatus,
+        user.id
+      );
+
+      // 2. Then reorder positions in the destination column
+      const destColumn = updatedColumns.find(col => col.id === destColumnId);
+      if (destColumn) {
+        await updatePositionsInColumn(destColumn.pages, newStatus);
+      }
+
+      // 3. Also reorder positions in the source column if it's different
+      if (sourceColumnId !== destColumnId) {
+        const sourceColumn = updatedColumns.find(col => col.id === sourceColumnId);
+        if (sourceColumn) {
+          const sourceColumnValue = sourceColumnId === 'no-status' ? '' : 
+            columns.find(col => col.id === sourceColumnId)?.title || '';
+          await updatePositionsInColumn(sourceColumn.pages, sourceColumnValue);
+        }
+      }
+
+      toast({
+        title: "Success",
+        description: "Card moved successfully",
+      });
+
+    } catch (error) {
+      console.error('Failed to update card position:', error);
+      
+      // Revert optimistic update on error
+      setColumns(columns);
+      setPages(pages);
+      
+      toast({
+        title: "Error",
+        description: "Failed to move card. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   if (loading) {
