@@ -25,8 +25,9 @@ export function usePageHierarchy() {
       const movingPage = pages.find(p => p.id === pageId);
       if (!movingPage) throw new Error('Page not found');
 
-      // Remove the page being moved from its current position in siblings
-      const filteredPages = siblingPages.filter(p => p.id !== pageId);
+      // Convert sibling pages to our Page type and remove the page being moved
+      const typedSiblingPages = siblingPages as Page[];
+      const filteredPages = typedSiblingPages.filter(p => p.id !== pageId);
       
       // Create a properly typed copy of the moving page for ordering
       const movingPageForOrdering: Page = {
