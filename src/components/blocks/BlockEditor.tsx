@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Plus, Type, Heading1, Heading2, Heading3, List, ListOrdered, Image } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -26,7 +25,6 @@ export function BlockEditor({ pageId, isEditable }: BlockEditorProps) {
 
   async function handleCreateBlock(type: string) {
     if (type === 'two_column') {
-      // Create the two-column container block first
       const { data: containerBlock, error: containerError } = await createBlock('two_column', {});
       
       if (containerError) {
@@ -38,7 +36,6 @@ export function BlockEditor({ pageId, isEditable }: BlockEditorProps) {
         return;
       }
 
-      // Then create two text blocks as children - one for each column
       if (containerBlock) {
         const { error: leftError } = await createBlock('text', { column: 'left' }, containerBlock.id);
         const { error: rightError } = await createBlock('text', { column: 'right' }, containerBlock.id);
@@ -88,7 +85,6 @@ export function BlockEditor({ pageId, isEditable }: BlockEditorProps) {
     }
   };
 
-  // Handle slash command detection
   useEffect(() => {
     if (!isEditable) return;
 
@@ -96,7 +92,6 @@ export function BlockEditor({ pageId, isEditable }: BlockEditorProps) {
       if (event.key === '/' && !isOpen) {
         const target = event.target as HTMLElement;
         if (target && (target.contentEditable === 'true' || target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) {
-          // Small delay to allow the '/' to be typed before opening menu
           setTimeout(() => {
             openSlashMenu(target);
           }, 50);
@@ -116,7 +111,6 @@ export function BlockEditor({ pageId, isEditable }: BlockEditorProps) {
     );
   }
 
-  // Separate parent blocks from child blocks
   const parentBlocks = blocks.filter(block => !block.parent_block_id);
   const childBlocks = blocks.filter(block => block.parent_block_id);
 
@@ -145,13 +139,13 @@ export function BlockEditor({ pageId, isEditable }: BlockEditorProps) {
         <div className="pt-4">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" data-cy="add-block-button">
                 <Plus className="h-4 w-4 mr-2" />
                 Add Block
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent>
-              <DropdownMenuItem onClick={() => handleCreateBlock('text')}>
+              <DropdownMenuItem onClick={() => handleCreateBlock('text')} data-cy="text-block-option">
                 <Type className="h-4 w-4 mr-2" />
                 Text
               </DropdownMenuItem>
@@ -190,7 +184,6 @@ export function BlockEditor({ pageId, isEditable }: BlockEditorProps) {
         </div>
       )}
 
-      {/* Slash Menu */}
       <SlashMenu
         isOpen={isOpen}
         onClose={closeSlashMenu}

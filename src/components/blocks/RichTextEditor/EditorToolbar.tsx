@@ -14,11 +14,15 @@ export function EditorToolbar({ onCommand }: EditorToolbarProps) {
   };
 
   return (
-    <div className="flex items-center gap-1 p-1 mb-2 border border-border rounded-md bg-background">
+    <div 
+      className="flex items-center gap-1 p-1 mb-2 border border-border rounded-md bg-background"
+      data-testid="editor-toolbar"
+    >
       <Button
         variant="ghost"
         size="sm"
         className="h-8 w-8 p-0"
+        data-testid="bold-button"
         onMouseDown={(e) => handleMouseDown(e, 'bold')}
       >
         <Bold className="h-3 w-3" />
@@ -27,6 +31,7 @@ export function EditorToolbar({ onCommand }: EditorToolbarProps) {
         variant="ghost"
         size="sm"
         className="h-8 w-8 p-0"
+        data-testid="italic-button"
         onMouseDown={(e) => handleMouseDown(e, 'italic')}
       >
         <Italic className="h-3 w-3" />
@@ -35,6 +40,7 @@ export function EditorToolbar({ onCommand }: EditorToolbarProps) {
         variant="ghost"
         size="sm"
         className="h-8 w-8 p-0"
+        data-testid="underline-button"
         onMouseDown={(e) => handleMouseDown(e, 'underline')}
       >
         <Underline className="h-3 w-3" />
@@ -43,6 +49,7 @@ export function EditorToolbar({ onCommand }: EditorToolbarProps) {
         variant="ghost"
         size="sm"
         className="h-8 w-8 p-0"
+        data-testid="strikethrough-button"
         onMouseDown={(e) => handleMouseDown(e, 'strikeThrough')}
       >
         <Strikethrough className="h-3 w-3" />
@@ -52,6 +59,7 @@ export function EditorToolbar({ onCommand }: EditorToolbarProps) {
         variant="ghost"
         size="sm"
         className="h-8 w-8 p-0"
+        data-testid="bullet-list-button"
         onMouseDown={(e) => handleMouseDown(e, 'insertUnorderedList')}
       >
         <List className="h-3 w-3" />
@@ -60,6 +68,7 @@ export function EditorToolbar({ onCommand }: EditorToolbarProps) {
         variant="ghost"
         size="sm"
         className="h-8 w-8 p-0"
+        data-testid="ordered-list-button"
         onMouseDown={(e) => handleMouseDown(e, 'insertOrderedList')}
       >
         <ListOrdered className="h-3 w-3" />
