@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Page } from '@/types/page';
@@ -14,6 +13,7 @@ export function usePages(workspaceId?: string) {
   const { updatePageHierarchy: updateHierarchy } = usePageHierarchy();
   const channelRef = useRef<any>(null);
   const subscriptionAttemptRef = useRef<number>(0);
+  const cleanupTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const fetchPages = async () => {
     if (!user || !workspaceId) return;
@@ -79,32 +79,50 @@ export function usePages(workspaceId?: string) {
     return { error };
   };
 
+  const cleanup = () => {
+    if (cleanupTimeoutRef.current) {
+      clearTimeout(cleanupTimeoutRef.current);
+      cleanupTimeoutRef.current = null;
+    }
+
+    if (channelRef.current) {
+      try {
+        channelRef.current.unsubscribe();
+        supabase.removeChannel(channelRef.current);
+      } catch (error) {
+        console.warn('Error removing pages channel:', error);
+      }
+      channelRef.current = null;
+    }
+  };
+
   useEffect(() => {
     if (!user || !workspaceId) {
-      // Clean up existing channel
-      if (channelRef.current) {
-        try {
-          channelRef.current.unsubscribe();
-          supabase.removeChannel(channelRef.current);
-        } catch (error) {
-          console.warn('Error removing pages channel:', error);
-        }
-        channelRef.current = null;
-      }
+      cleanup();
+      setPages([]);
+      setLoading(false);
       return;
     }
 
     fetchPages();
 
-    // Increment attempt counter to ensure unique channel names
-    subscriptionAttemptRef.current += 1;
-    const attemptId = subscriptionAttemptRef.current;
+    // Cleanup existing subscription
+    cleanup();
 
-    // Set up realtime subscription for pages in this workspace
-    const channelName = `pages_${workspaceId}_${attemptId}`;
-    const channel = supabase
-      .channel(channelName)
-      .on(
+    // Add delay to ensure cleanup is complete
+    cleanupTimeoutRef.current = setTimeout(() => {
+      // Increment attempt counter to ensure unique channel names
+      subscriptionAttemptRef.current += 1;
+      const attemptId = subscriptionAttemptRef.current;
+      const timestamp = Date.now();
+
+      // Set up realtime subscription for pages in this workspace
+      const channelName = `pages_${workspaceId}_${user.id}_${attemptId}_${timestamp}`;
+      console.log('Creating pages channel:', channelName);
+      
+      const channel = supabase.channel(channelName);
+
+      channel.on(
         'postgres_changes',
         {
           event: '*',
@@ -136,25 +154,16 @@ export function usePages(workspaceId?: string) {
         }
       );
 
-    // Subscribe only once
-    channel.subscribe((status) => {
-      console.log('Pages subscription status:', status);
-    });
+      // Subscribe only once
+      channel.subscribe((status) => {
+        console.log('Pages subscription status:', status);
+      });
 
-    channelRef.current = channel;
+      channelRef.current = channel;
+    }, 200); // Different delay from other hooks
 
-    return () => {
-      if (channelRef.current) {
-        try {
-          channelRef.current.unsubscribe();
-          supabase.removeChannel(channelRef.current);
-        } catch (error) {
-          console.warn('Error removing pages channel:', error);
-        }
-        channelRef.current = null;
-      }
-    };
-  }, [user, workspaceId]);
+    return cleanup;
+  }, [user?.id, workspaceId]);
 
   return {
     pages,

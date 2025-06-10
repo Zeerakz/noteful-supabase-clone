@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -22,6 +21,7 @@ export function useBlocks(pageId?: string) {
   const { user } = useAuth();
   const channelRef = useRef<any>(null);
   const subscriptionAttemptRef = useRef<number>(0);
+  const cleanupTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const fetchBlocks = async () => {
     if (!user || !pageId) return;
@@ -153,35 +153,51 @@ export function useBlocks(pageId?: string) {
     }
   };
 
+  const cleanup = () => {
+    if (cleanupTimeoutRef.current) {
+      clearTimeout(cleanupTimeoutRef.current);
+      cleanupTimeoutRef.current = null;
+    }
+
+    if (channelRef.current) {
+      try {
+        channelRef.current.unsubscribe();
+        supabase.removeChannel(channelRef.current);
+      } catch (error) {
+        console.warn('Error removing blocks channel:', error);
+      }
+      channelRef.current = null;
+    }
+  };
+
   useEffect(() => {
     if (!pageId || !user) {
-      // Clean up existing channel if pageId or user changes
-      if (channelRef.current) {
-        try {
-          channelRef.current.unsubscribe();
-          supabase.removeChannel(channelRef.current);
-        } catch (error) {
-          console.warn('Error removing blocks channel:', error);
-        }
-        channelRef.current = null;
-      }
+      cleanup();
+      setBlocks([]);
+      setLoading(false);
       return;
     }
 
     fetchBlocks();
 
-    // Increment attempt counter to ensure unique channel names
-    subscriptionAttemptRef.current += 1;
-    const attemptId = subscriptionAttemptRef.current;
+    // Cleanup existing subscription
+    cleanup();
 
-    // Create unique channel name to avoid conflicts
-    const channelName = `blocks_${pageId}_${user.id}_${attemptId}`;
-    console.log('Creating blocks channel:', channelName);
+    // Add small delay to ensure cleanup is complete
+    cleanupTimeoutRef.current = setTimeout(() => {
+      // Increment attempt counter to ensure unique channel names
+      subscriptionAttemptRef.current += 1;
+      const attemptId = subscriptionAttemptRef.current;
+      const timestamp = Date.now();
 
-    // Set up realtime subscription for both block changes and Y.js updates
-    const channel = supabase
-      .channel(channelName)
-      .on(
+      // Create unique channel name to avoid conflicts
+      const channelName = `blocks_${pageId}_${user.id}_${attemptId}_${timestamp}`;
+      console.log('Creating blocks channel:', channelName);
+
+      // Create a new channel instance
+      const channel = supabase.channel(channelName);
+
+      channel.on(
         'postgres_changes',
         {
           event: '*',
@@ -210,31 +226,18 @@ export function useBlocks(pageId?: string) {
             setBlocks(prev => prev.filter(block => block.id !== deletedBlock.id));
           }
         }
-      )
-      .on('broadcast', { event: 'yjs-update' }, (payload) => {
-        // Y.js updates are handled by the useYjsDocument hook
-        console.log('Y.js delta received:', payload);
+      );
+
+      // Subscribe only once
+      channel.subscribe((status) => {
+        console.log('Blocks subscription status:', status);
       });
 
-    // Subscribe only once
-    channel.subscribe((status) => {
-      console.log('Blocks subscription status:', status);
-    });
+      channelRef.current = channel;
+    }, 150); // Slightly longer delay than presence
 
-    channelRef.current = channel;
-
-    return () => {
-      if (channelRef.current) {
-        try {
-          channelRef.current.unsubscribe();
-          supabase.removeChannel(channelRef.current);
-        } catch (error) {
-          console.warn('Error removing blocks channel:', error);
-        }
-        channelRef.current = null;
-      }
-    };
-  }, [user?.id, pageId]); // Added user.id to dependencies
+    return cleanup;
+  }, [user?.id, pageId]);
 
   return {
     blocks,

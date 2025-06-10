@@ -8,8 +8,7 @@ import { SlashMenu } from './SlashMenu';
 import { useBlocks } from '@/hooks/useBlocks';
 import { useSlashMenu } from '@/hooks/useSlashMenu';
 import { useToast } from '@/hooks/use-toast';
-import { usePresence } from '@/hooks/usePresence';
-import { ActiveUsers } from '@/components/collaboration/ActiveUsers';
+import { usePresenceContext } from '@/components/collaboration/PresenceProvider';
 
 interface BlockEditorProps {
   pageId: string;
@@ -22,8 +21,8 @@ export function BlockEditor({ pageId, isEditable }: BlockEditorProps) {
   const editorRef = useRef<HTMLDivElement>(null);
   const [focusedBlockId, setFocusedBlockId] = useState<string | null>(null);
 
-  // Use usePresence directly instead of usePresenceContext
-  const { activeUsers, loading: presenceLoading } = usePresence(pageId);
+  // Use presence context instead of calling usePresence directly
+  const { activeUsers, loading: presenceLoading } = usePresenceContext();
 
   const { isOpen, position, openSlashMenu, closeSlashMenu, handleSelectItem } = useSlashMenu({
     onSelectCommand: handleCreateBlock,
@@ -122,14 +121,6 @@ export function BlockEditor({ pageId, isEditable }: BlockEditorProps) {
 
   return (
     <div className="space-y-2 p-4" ref={editorRef}>
-      {/* Show active users indicator */}
-      {isEditable && (
-        <div className="flex justify-between items-center mb-4">
-          <div></div>
-          <ActiveUsers activeUsers={activeUsers} loading={presenceLoading} />
-        </div>
-      )}
-
       {parentBlocks.map((block) => (
         <div 
           key={block.id} 
