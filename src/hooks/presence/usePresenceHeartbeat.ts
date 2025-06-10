@@ -14,8 +14,17 @@ export function usePresenceHeartbeat(
     if (heartbeatIntervalRef.current) {
       clearInterval(heartbeatIntervalRef.current);
     }
+    
+    // Send initial heartbeat immediately
+    if (user && pageId) {
+      sendHeartbeat(user, pageId, cursorPositionRef);
+    }
+    
+    // Set up recurring heartbeat every 5 seconds
     heartbeatIntervalRef.current = setInterval(() => {
-      sendHeartbeat(user, pageId!, cursorPositionRef);
+      if (user && pageId) {
+        sendHeartbeat(user, pageId, cursorPositionRef);
+      }
     }, 5000); // Every 5 seconds
   };
 
@@ -32,7 +41,9 @@ export function usePresenceHeartbeat(
       return;
     }
 
+    // Start heartbeat when user and pageId are available
     startHeartbeat();
+    
     return stopHeartbeat;
   }, [user, pageId]);
 
