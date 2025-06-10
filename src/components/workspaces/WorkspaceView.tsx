@@ -4,9 +4,10 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useWorkspaces } from '@/hooks/useWorkspaces';
 import { usePages } from '@/hooks/usePages';
 import { useDatabases } from '@/hooks/useDatabases';
+import { useGlobalSearch } from '@/hooks/useGlobalSearch';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, FileText, Database, Bookmark } from 'lucide-react';
+import { Plus, FileText, Database, Bookmark, Search } from 'lucide-react';
 import { DatabaseWizard } from '@/components/database/DatabaseWizard';
 
 export function WorkspaceView() {
@@ -15,6 +16,7 @@ export function WorkspaceView() {
   const { workspaces } = useWorkspaces();
   const { pages, createPage } = usePages(workspaceId!);
   const { databases } = useDatabases(workspaceId!);
+  const { openSearch } = useGlobalSearch();
 
   const workspace = workspaces?.find(w => w.id === workspaceId);
 
@@ -59,6 +61,13 @@ export function WorkspaceView() {
           )}
         </div>
         <div className="flex gap-2">
+          <Button variant="outline" onClick={openSearch} className="gap-2">
+            <Search className="h-4 w-4" />
+            Search
+            <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-100">
+              <span className="text-xs">⌘</span>K
+            </kbd>
+          </Button>
           <Button variant="outline" onClick={handleTemplateGalleryClick} className="gap-2">
             <Bookmark className="h-4 w-4" />
             Templates

@@ -473,7 +473,20 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      search_index: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          display_content: string | null
+          display_title: string | null
+          id: string | null
+          search_vector: unknown | null
+          title: string | null
+          type: string | null
+          workspace_id: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       cleanup_old_presence: {
@@ -498,9 +511,17 @@ export type Database = {
           rank: number
         }[]
       }
+      is_small_workspace: {
+        Args: { workspace_uuid: string }
+        Returns: boolean
+      }
       is_workspace_owner: {
         Args: { workspace_uuid: string; user_uuid: string }
         Returns: boolean
+      }
+      refresh_search_index_for_workspace: {
+        Args: { workspace_uuid: string }
+        Returns: undefined
       }
     }
     Enums: {

@@ -10,20 +10,8 @@ import {
   CommandItem,
   CommandList,
 } from '@/components/ui/command';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-
-interface SearchResult {
-  type: 'page' | 'block';
-  id: string;
-  title: string;
-  workspace_id: string;
-  created_by: string;
-  created_at: string;
-  display_title: string;
-  display_content: string;
-  rank: number;
-}
+import { SearchService, SearchResult } from '@/services/searchService';
 
 interface GlobalSearchModalProps {
   isOpen: boolean;
@@ -46,22 +34,8 @@ export function GlobalSearchModal({ isOpen, onClose }: GlobalSearchModalProps) {
 
     setLoading(true);
     try {
-      const { data, error } = await supabase.rpc('global_search', {
-        search_query: query.trim(),
-        user_workspace_id: workspaceId || null
-      });
-
-      if (error) {
-        console.error('Search error:', error);
-        setResults([]);
-      } else {
-        // Type assertion to ensure the data conforms to our SearchResult interface
-        const typedResults = (data || []).map((item: any) => ({
-          ...item,
-          type: item.type as 'page' | 'block'
-        })) as SearchResult[];
-        setResults(typedResults);
-      }
+      const searchResults = await SearchService.globalSearch(query, workspaceId);
+      setResults(searchResults);
     } catch (err) {
       console.error('Search error:', err);
       setResults([]);
@@ -84,13 +58,15 @@ export function GlobalSearchModal({ isOpen, onClose }: GlobalSearchModalProps) {
     return () => clearTimeout(timeoutId);
   }, [searchQuery, performSearch]);
 
-  const handleResultSelect = (result: SearchResult) => {
+  const handleResultSelect = async (result: SearchResult) => {
     if (result.type === 'page') {
       navigate(`/workspace/${result.workspace_id}/page/${result.id}`);
     } else if (result.type === 'block') {
       // For blocks, we need to find the page they belong to
-      // The result.title is actually the page title for blocks
-      navigate(`/workspace/${result.workspace_id}/page/${result.id}`);
+      const pageId = await SearchService.getBlockPageId(result.id);
+      if (pageId) {
+        navigate(`/workspace/${result.workspace_id}/page/${pageId}`);
+      }
     }
     onClose();
     setSearchQuery('');
@@ -102,13 +78,6 @@ export function GlobalSearchModal({ isOpen, onClose }: GlobalSearchModalProps) {
       setSearchQuery('');
       setResults([]);
     }
-  };
-
-  const formatContent = (content: string, maxLength: number = 100) => {
-    if (!content) return '';
-    return content.length > maxLength 
-      ? `${content.substring(0, maxLength)}...` 
-      : content;
   };
 
   return (
@@ -150,11 +119,11 @@ export function GlobalSearchModal({ isOpen, onClose }: GlobalSearchModalProps) {
                   </div>
                   {result.display_content && (
                     <div className="text-xs text-muted-foreground mt-1">
-                      {formatContent(result.display_content)}
+                      {SearchService.formatContent(result.display_content)}
                     </div>
                   )}
                   <div className="text-xs text-muted-foreground mt-1">
-                    {result.type === 'page' ? 'Page' : 'Block'}
+                    {result.type === 'page' ? 'Page' : 'Block'} • Score: {result.rank.toFixed(2)}
                   </div>
                 </div>
               </CommandItem>
