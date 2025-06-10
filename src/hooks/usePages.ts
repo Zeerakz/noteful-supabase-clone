@@ -123,10 +123,18 @@ export function usePages(workspaceId?: string) {
       // Remove the page being moved from its current position in siblings
       const filteredPages = siblingPages.filter(p => p.id !== pageId);
       
-      // Create a copy of the moving page with the new parent_page_id for ordering
-      const movingPageForOrdering: Page = {
+      // Create a properly typed copy of the moving page for ordering
+      const movingPageForOrdering = {
         ...movingPage,
-        parent_page_id: newParentId || undefined
+        parent_page_id: newParentId || undefined,
+        // Ensure all required fields are present with correct types
+        id: movingPage.id,
+        workspace_id: movingPage.workspace_id,
+        title: movingPage.title,
+        created_by: movingPage.created_by,
+        order_index: movingPage.order_index,
+        created_at: movingPage.created_at,
+        updated_at: movingPage.updated_at
       };
       
       // Insert the moving page at the new position
