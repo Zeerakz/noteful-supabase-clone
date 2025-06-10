@@ -25,14 +25,42 @@ export function BlockEditor({ pageId, isEditable }: BlockEditorProps) {
   });
 
   async function handleCreateBlock(type: string) {
-    const { error } = await createBlock(type);
-    
-    if (error) {
-      toast({
-        title: "Error",
-        description: error,
-        variant: "destructive",
-      });
+    if (type === 'two_column') {
+      // Create the two-column container block first
+      const { data: containerBlock, error: containerError } = await createBlock('two_column', {});
+      
+      if (containerError) {
+        toast({
+          title: "Error",
+          description: containerError,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Then create two text blocks as children - one for each column
+      if (containerBlock) {
+        const { error: leftError } = await createBlock('text', { column: 'left' }, containerBlock.id);
+        const { error: rightError } = await createBlock('text', { column: 'right' }, containerBlock.id);
+        
+        if (leftError || rightError) {
+          toast({
+            title: "Error",
+            description: leftError || rightError || "Failed to create column blocks",
+            variant: "destructive",
+          });
+        }
+      }
+    } else {
+      const { error } = await createBlock(type);
+      
+      if (error) {
+        toast({
+          title: "Error",
+          description: error,
+          variant: "destructive",
+        });
+      }
     }
   }
 
@@ -88,9 +116,13 @@ export function BlockEditor({ pageId, isEditable }: BlockEditorProps) {
     );
   }
 
+  // Separate parent blocks from child blocks
+  const parentBlocks = blocks.filter(block => !block.parent_block_id);
+  const childBlocks = blocks.filter(block => block.parent_block_id);
+
   return (
     <div className="space-y-2 p-4" ref={editorRef}>
-      {blocks.map((block) => (
+      {parentBlocks.map((block) => (
         <div 
           key={block.id} 
           className={`transition-opacity ${
@@ -104,6 +136,7 @@ export function BlockEditor({ pageId, isEditable }: BlockEditorProps) {
             onUpdateBlock={handleUpdateBlock}
             onDeleteBlock={handleDeleteBlock}
             isEditable={isEditable}
+            childBlocks={childBlocks}
           />
         </div>
       ))}
@@ -151,7 +184,7 @@ export function BlockEditor({ pageId, isEditable }: BlockEditorProps) {
         </div>
       )}
       
-      {blocks.length === 0 && !isEditable && (
+      {parentBlocks.length === 0 && !isEditable && (
         <div className="text-center py-8 text-muted-foreground">
           This page is empty.
         </div>

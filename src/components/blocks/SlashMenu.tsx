@@ -9,11 +9,6 @@ import {
   CommandItem,
   CommandList,
 } from '@/components/ui/command';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
 
 interface SlashMenuItem {
   id: string;
@@ -54,7 +49,7 @@ const SLASH_MENU_ITEMS: SlashMenuItem[] = [
   },
   {
     id: 'two-column',
-    title: '/two-column',
+    title: 'Two Column',
     description: 'Create a two-column layout',
     icon: Columns2,
     command: 'two_column',

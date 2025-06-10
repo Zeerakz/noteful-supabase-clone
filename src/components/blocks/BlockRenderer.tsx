@@ -5,15 +5,17 @@ import { TextBlock } from './TextBlock';
 import { HeadingBlock } from './HeadingBlock';
 import { ListBlock } from './ListBlock';
 import { ImageBlock } from './ImageBlock';
+import { TwoColumnBlock } from './TwoColumnBlock';
 
 interface BlockRendererProps {
   block: Block;
   onUpdateBlock: (id: string, updates: any) => Promise<void>;
   onDeleteBlock: (id: string) => Promise<void>;
   isEditable: boolean;
+  childBlocks?: Block[];
 }
 
-export function BlockRenderer({ block, onUpdateBlock, onDeleteBlock, isEditable }: BlockRendererProps) {
+export function BlockRenderer({ block, onUpdateBlock, onDeleteBlock, isEditable, childBlocks = [] }: BlockRendererProps) {
   const handleContentUpdate = async (content: any) => {
     await onUpdateBlock(block.id, { content });
   };
@@ -60,6 +62,16 @@ export function BlockRenderer({ block, onUpdateBlock, onDeleteBlock, isEditable 
           onUpdate={handleContentUpdate}
           onDelete={handleDelete}
           isEditable={isEditable}
+        />
+      );
+    case 'two_column':
+      return (
+        <TwoColumnBlock
+          block={block}
+          onUpdate={handleContentUpdate}
+          onDelete={handleDelete}
+          isEditable={isEditable}
+          childBlocks={childBlocks}
         />
       );
     default:
