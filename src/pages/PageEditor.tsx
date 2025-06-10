@@ -1,8 +1,9 @@
 
-import React from 'react';
+import React, { useState, useRef } from 'react';
 import { useParams, Navigate, useNavigate } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Edit2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { BlockEditor } from '@/components/blocks/BlockEditor';
 import { PresenceProvider } from '@/components/collaboration/PresenceProvider';
 import { ActiveUsers } from '@/components/collaboration/ActiveUsers';
@@ -11,14 +12,20 @@ import { usePages } from '@/hooks/usePages';
 import { useWorkspaces } from '@/hooks/useWorkspaces';
 import { usePresence } from '@/hooks/usePresence';
 import { useBlocks } from '@/hooks/useBlocks';
+import { useToast } from '@/hooks/use-toast';
 
 export function PageEditor() {
   const { workspaceId, pageId } = useParams<{ workspaceId: string; pageId: string }>();
   const navigate = useNavigate();
-  const { pages, loading: pagesLoading } = usePages(workspaceId);
+  const { pages, loading: pagesLoading, updatePage } = usePages(workspaceId);
   const { workspaces, loading: workspacesLoading } = useWorkspaces();
   const { activeUsers, loading: presenceLoading } = usePresence(pageId);
   const { blocks } = useBlocks(pageId!);
+  const { toast } = useToast();
+
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [titleValue, setTitleValue] = useState('');
+  const titleInputRef = useRef<HTMLInputElement>(null);
 
   if (pagesLoading || workspacesLoading) {
     return (
@@ -43,6 +50,63 @@ export function PageEditor() {
     navigate(`/workspace/${workspaceId}`);
   };
 
+  const startEditingTitle = () => {
+    setTitleValue(page.title);
+    setIsEditingTitle(true);
+    // Focus the input after it renders
+    setTimeout(() => {
+      titleInputRef.current?.focus();
+      titleInputRef.current?.select();
+    }, 0);
+  };
+
+  const handleTitleSave = async () => {
+    if (!titleValue.trim()) {
+      toast({
+        title: "Error",
+        description: "Page title cannot be empty",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (titleValue.trim() === page.title) {
+      setIsEditingTitle(false);
+      return;
+    }
+
+    const { error } = await updatePage(page.id, { title: titleValue.trim() });
+    
+    if (error) {
+      toast({
+        title: "Error",
+        description: error,
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Success",
+        description: "Page title updated",
+      });
+      setIsEditingTitle(false);
+    }
+  };
+
+  const handleTitleCancel = () => {
+    setTitleValue(page.title);
+    setIsEditingTitle(false);
+  };
+
+  const handleTitleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleTitleSave();
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      handleTitleCancel();
+    }
+  };
+
   return (
     <PresenceProvider pageId={pageId}>
       <div className="min-h-screen bg-background">
@@ -58,8 +122,34 @@ export function PageEditor() {
                   <ArrowLeft className="h-4 w-4 mr-2" />
                   Back
                 </Button>
-                <div>
-                  <h1 className="text-xl font-semibold">{page.title}</h1>
+                <div className="flex-1">
+                  {isEditingTitle ? (
+                    <div className="flex items-center gap-2">
+                      <Input
+                        ref={titleInputRef}
+                        value={titleValue}
+                        onChange={(e) => setTitleValue(e.target.value)}
+                        onBlur={handleTitleSave}
+                        onKeyDown={handleTitleKeyDown}
+                        className="text-xl font-semibold border-none bg-transparent p-0 focus-visible:ring-1"
+                        placeholder="Page title"
+                      />
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2 group">
+                      <h1 className="text-xl font-semibold">{page.title}</h1>
+                      {isEditable && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={startEditingTitle}
+                          className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0"
+                        >
+                          <Edit2 className="h-3 w-3" />
+                        </Button>
+                      )}
+                    </div>
+                  )}
                   <p className="text-sm text-muted-foreground">in {workspace.name}</p>
                 </div>
               </div>
