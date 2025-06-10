@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { Database, DatabaseCreateRequest, DatabaseField } from '@/types/database';
 
@@ -10,11 +11,8 @@ export class DatabaseService {
     try {
       const tableName = `db_${request.name.toLowerCase().replace(/[^a-z0-9_]/g, '_')}`;
       
-      // First, let's try to create the databases table if it doesn't exist
-      await DatabaseService.ensureDatabasesTableExists();
-      
-      // Create database record - using type assertion since 'databases' table exists but isn't in generated types
-      const { data: database, error: dbError } = await (supabase as any)
+      // Create database record - now using proper types
+      const { data: database, error: dbError } = await supabase
         .from('databases')
         .insert([
           {
@@ -55,21 +53,10 @@ export class DatabaseService {
     }
   }
 
-  static async ensureDatabasesTableExists(): Promise<void> {
-    // This method will be used to check if the databases table exists
-    // If not, we'll need to create it via SQL migration
-    try {
-      await (supabase as any).from('databases').select('count').limit(1);
-    } catch (error) {
-      // If table doesn't exist, we'll log it but continue
-      console.log('Databases table may need to be created');
-    }
-  }
-
   static async fetchDatabases(workspaceId: string): Promise<{ data: Database[] | null; error: string | null }> {
     try {
-      // Using type assertion since 'databases' table exists but isn't in generated types
-      const { data, error } = await (supabase as any)
+      // Now using proper types without type assertion
+      const { data, error } = await supabase
         .from('databases')
         .select('*')
         .eq('workspace_id', workspaceId)
@@ -105,8 +92,8 @@ export class DatabaseService {
 
   static async deleteDatabase(databaseId: string): Promise<{ error: string | null }> {
     try {
-      // Using type assertion since 'databases' table exists but isn't in generated types
-      const { error } = await (supabase as any)
+      // Now using proper types without type assertion
+      const { error } = await supabase
         .from('databases')
         .delete()
         .eq('id', databaseId);
