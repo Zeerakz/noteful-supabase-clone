@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useWorkspaces } from '@/hooks/useWorkspaces';
@@ -43,8 +42,7 @@ export function WorkspaceView() {
   };
 
   const handleDatabaseClick = (databaseId: string) => {
-    // Navigate to database view when implemented
-    console.log('Database clicked:', databaseId);
+    navigate(`/workspace/${workspaceId}/database/${databaseId}`);
   };
 
   const handleTemplateGalleryClick = () => {
