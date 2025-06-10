@@ -44,9 +44,8 @@ export function ImageBlock({ block, onUpdate, onDelete, isEditable }: ImageBlock
     generateSignedUrl();
   }, [block.content?.path]);
 
-  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file || !user) return;
+  const uploadFile = async (file: File) => {
+    if (!user) return;
 
     // Validate file type
     const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
@@ -120,17 +119,19 @@ export function ImageBlock({ block, onUpdate, onDelete, isEditable }: ImageBlock
     }
   };
 
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    
+    await uploadFile(file);
+  };
+
   const handleDrop = async (event: React.DragEvent<HTMLDivElement>) => {
     event.preventDefault();
     const file = event.dataTransfer.files?.[0];
     if (!file) return;
 
-    // Create a synthetic event to reuse the upload logic
-    const syntheticEvent = {
-      target: { files: [file] }
-    } as React.ChangeEvent<HTMLInputElement>;
-    
-    await handleImageUpload(syntheticEvent);
+    await uploadFile(file);
   };
 
   const handleDragOver = (event: React.DragEvent<HTMLDivElement>) => {
