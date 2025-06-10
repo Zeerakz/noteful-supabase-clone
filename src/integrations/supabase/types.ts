@@ -484,6 +484,20 @@ export type Database = {
         Args: { workspace_uuid: string; user_uuid: string }
         Returns: string
       }
+      global_search: {
+        Args: { search_query: string; user_workspace_id?: string }
+        Returns: {
+          type: string
+          id: string
+          title: string
+          workspace_id: string
+          created_by: string
+          created_at: string
+          display_title: string
+          display_content: string
+          rank: number
+        }[]
+      }
       is_workspace_owner: {
         Args: { workspace_uuid: string; user_uuid: string }
         Returns: boolean

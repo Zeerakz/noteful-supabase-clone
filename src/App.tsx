@@ -8,6 +8,8 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { AnalyticsProvider } from "@/contexts/AnalyticsContext";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { AppLayoutWithSidebar } from "@/components/layout/AppLayoutWithSidebar";
+import { GlobalSearchModal } from "@/components/search/GlobalSearchModal";
+import { useGlobalSearch } from "@/hooks/useGlobalSearch";
 import Index from "./pages/Index";
 import { Login } from "./pages/Login";
 import NotFound from "./pages/NotFound";
@@ -18,6 +20,60 @@ import "./App.css";
 
 const queryClient = new QueryClient();
 
+function AppContent() {
+  const { isSearchOpen, closeSearch } = useGlobalSearch();
+
+  return (
+    <>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route
+            path="/"
+            element={
+              <ProtectedRoute>
+                <AppLayoutWithSidebar>
+                  <Index />
+                </AppLayoutWithSidebar>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/workspace/:workspaceId"
+            element={
+              <ProtectedRoute>
+                <AppLayoutWithSidebar>
+                  <WorkspacePage />
+                </AppLayoutWithSidebar>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/workspace/:workspaceId/templates"
+            element={
+              <ProtectedRoute>
+                <AppLayoutWithSidebar>
+                  <TemplatesPage />
+                </AppLayoutWithSidebar>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/workspace/:workspaceId/page/:pageId"
+            element={
+              <ProtectedRoute>
+                <PageEditor />
+              </ProtectedRoute>
+            }
+          />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </BrowserRouter>
+      <GlobalSearchModal isOpen={isSearchOpen} onClose={closeSearch} />
+    </>
+  );
+}
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
@@ -26,50 +82,7 @@ function App() {
           <TooltipProvider>
             <Toaster />
             <Sonner />
-            <BrowserRouter>
-              <Routes>
-                <Route path="/login" element={<Login />} />
-                <Route
-                  path="/"
-                  element={
-                    <ProtectedRoute>
-                      <AppLayoutWithSidebar>
-                        <Index />
-                      </AppLayoutWithSidebar>
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/workspace/:workspaceId"
-                  element={
-                    <ProtectedRoute>
-                      <AppLayoutWithSidebar>
-                        <WorkspacePage />
-                      </AppLayoutWithSidebar>
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/workspace/:workspaceId/templates"
-                  element={
-                    <ProtectedRoute>
-                      <AppLayoutWithSidebar>
-                        <TemplatesPage />
-                      </AppLayoutWithSidebar>
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/workspace/:workspaceId/page/:pageId"
-                  element={
-                    <ProtectedRoute>
-                      <PageEditor />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </BrowserRouter>
+            <AppContent />
           </TooltipProvider>
         </AuthProvider>
       </AnalyticsProvider>
