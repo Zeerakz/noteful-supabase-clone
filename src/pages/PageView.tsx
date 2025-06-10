@@ -1,26 +1,66 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, Navigate, useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { BlockEditor } from '@/components/blocks/BlockEditor';
-import { usePages } from '@/hooks/usePages';
 import { useWorkspaces } from '@/hooks/useWorkspaces';
+import { supabase } from '@/integrations/supabase/client';
+import { Page } from '@/types/page';
+
+interface PageWithWorkspace extends Page {
+  workspace: {
+    id: string;
+    name: string;
+  };
+}
 
 export function PageView() {
   const { pageId } = useParams<{ pageId: string }>();
   const navigate = useNavigate();
   const { workspaces, loading: workspacesLoading } = useWorkspaces();
-  
-  // Find the page across all workspaces
-  const allPages = workspaces.flatMap(workspace => {
-    const { pages } = usePages(workspace.id);
-    return pages.map(page => ({ ...page, workspace }));
-  });
-  
-  const pageWithWorkspace = allPages.find(p => p.id === pageId);
+  const [pageWithWorkspace, setPageWithWorkspace] = useState<PageWithWorkspace | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  if (workspacesLoading) {
+  useEffect(() => {
+    const fetchPageWithWorkspace = async () => {
+      if (!pageId || workspacesLoading) return;
+
+      try {
+        // Fetch the page directly with its workspace info
+        const { data: pageData, error } = await supabase
+          .from('pages')
+          .select(`
+            *,
+            workspaces!inner (
+              id,
+              name
+            )
+          `)
+          .eq('id', pageId)
+          .single();
+
+        if (error) {
+          console.error('Error fetching page:', error);
+          setPageWithWorkspace(null);
+        } else if (pageData) {
+          setPageWithWorkspace({
+            ...pageData,
+            workspace: pageData.workspaces
+          });
+        }
+      } catch (err) {
+        console.error('Error fetching page with workspace:', err);
+        setPageWithWorkspace(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPageWithWorkspace();
+  }, [pageId, workspacesLoading]);
+
+  if (workspacesLoading || loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-lg">Loading...</div>
