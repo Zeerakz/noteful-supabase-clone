@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMentionNotifications } from './useMentionNotifications';
@@ -18,6 +19,7 @@ export function useComments(blockId?: string) {
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
   const { extractMentions, notifyMention } = useMentionNotifications();
+  const channelRef = useRef<any>(null);
 
   const fetchComments = async () => {
     if (!blockId || !user) return;
@@ -138,13 +140,28 @@ export function useComments(blockId?: string) {
   };
 
   useEffect(() => {
-    if (!blockId || !user) return;
+    if (!blockId || !user) {
+      // Clean up existing channel
+      if (channelRef.current) {
+        try {
+          supabase.removeChannel(channelRef.current);
+        } catch (error) {
+          console.warn('Error removing comments channel:', error);
+        }
+        channelRef.current = null;
+      }
+      return;
+    }
 
     fetchComments();
 
+    // Create unique channel name to avoid conflicts
+    const channelName = `comments_${blockId}_${user.id}_${Date.now()}`;
+    console.log('Creating comments channel:', channelName);
+
     // Set up realtime subscription for comments
     const channel = supabase
-      .channel(`comments-${blockId}`)
+      .channel(channelName)
       .on(
         'postgres_changes',
         {
@@ -154,6 +171,8 @@ export function useComments(blockId?: string) {
           filter: `block_id=eq.${blockId}`
         },
         (payload) => {
+          console.log('Realtime comments update:', payload);
+          
           if (payload.eventType === 'INSERT') {
             const newComment = payload.new as Comment;
             setComments(prev => {
@@ -175,12 +194,23 @@ export function useComments(blockId?: string) {
           }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('Comments subscription status:', status);
+      });
+
+    channelRef.current = channel;
 
     return () => {
-      supabase.removeChannel(channel);
+      if (channelRef.current) {
+        try {
+          supabase.removeChannel(channelRef.current);
+        } catch (error) {
+          console.warn('Error removing comments channel:', error);
+        }
+        channelRef.current = null;
+      }
     };
-  }, [user, blockId]);
+  }, [user?.id, blockId]); // Added user.id to dependencies
 
   return {
     comments,

@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -152,13 +153,28 @@ export function useBlocks(pageId?: string) {
   };
 
   useEffect(() => {
-    if (!pageId || !user) return;
+    if (!pageId || !user) {
+      // Clean up existing channel if pageId or user changes
+      if (channelRef.current) {
+        try {
+          supabase.removeChannel(channelRef.current);
+        } catch (error) {
+          console.warn('Error removing blocks channel:', error);
+        }
+        channelRef.current = null;
+      }
+      return;
+    }
 
     fetchBlocks();
 
+    // Create unique channel name to avoid conflicts
+    const channelName = `blocks_${pageId}_${user.id}_${Date.now()}`;
+    console.log('Creating blocks channel:', channelName);
+
     // Set up realtime subscription for both block changes and Y.js updates
     const channel = supabase
-      .channel(`blocks-${pageId}`)
+      .channel(channelName)
       .on(
         'postgres_changes',
         {
@@ -193,16 +209,23 @@ export function useBlocks(pageId?: string) {
         // Y.js updates are handled by the useYjsDocument hook
         console.log('Y.js delta received:', payload);
       })
-      .subscribe();
+      .subscribe((status) => {
+        console.log('Blocks subscription status:', status);
+      });
 
     channelRef.current = channel;
 
     return () => {
       if (channelRef.current) {
-        supabase.removeChannel(channelRef.current);
+        try {
+          supabase.removeChannel(channelRef.current);
+        } catch (error) {
+          console.warn('Error removing blocks channel:', error);
+        }
+        channelRef.current = null;
       }
     };
-  }, [user, pageId]);
+  }, [user?.id, pageId]); // Added user.id to dependencies
 
   return {
     blocks,

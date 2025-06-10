@@ -77,14 +77,27 @@ export function usePageProperties(pageId?: string) {
     if (!pageId) {
       setProperties([]);
       setLoading(false);
+      // Clean up existing channel
+      if (channelRef.current) {
+        try {
+          supabase.removeChannel(channelRef.current);
+        } catch (error) {
+          console.warn('Error removing page properties channel:', error);
+        }
+        channelRef.current = null;
+      }
       return;
     }
 
     fetchProperties();
 
+    // Create unique channel name to avoid conflicts
+    const channelName = `page_properties_${pageId}_${Date.now()}`;
+    console.log('Creating page properties channel:', channelName);
+
     // Set up realtime subscription for page properties
     const channel = supabase
-      .channel(`page-properties-${pageId}`)
+      .channel(channelName)
       .on(
         'postgres_changes',
         {
@@ -116,13 +129,20 @@ export function usePageProperties(pageId?: string) {
           }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('Page properties subscription status:', status);
+      });
 
     channelRef.current = channel;
 
     return () => {
       if (channelRef.current) {
-        supabase.removeChannel(channelRef.current);
+        try {
+          supabase.removeChannel(channelRef.current);
+        } catch (error) {
+          console.warn('Error removing page properties channel:', error);
+        }
+        channelRef.current = null;
       }
     };
   }, [pageId]);

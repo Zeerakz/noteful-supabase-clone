@@ -13,7 +13,11 @@ export function usePresenceSubscription(
   const cleanup = () => {
     if (channelRef.current && isSubscribedRef.current) {
       console.log('Cleaning up presence channel subscription');
-      supabase.removeChannel(channelRef.current);
+      try {
+        supabase.removeChannel(channelRef.current);
+      } catch (error) {
+        console.warn('Error removing channel:', error);
+      }
       channelRef.current = null;
       isSubscribedRef.current = false;
     }
@@ -21,14 +25,17 @@ export function usePresenceSubscription(
 
   useEffect(() => {
     if (!user || !pageId) {
+      cleanup();
       return;
     }
 
     // Cleanup any existing subscription first
     cleanup();
 
-    // Create a unique channel name to avoid conflicts
-    const channelName = `presence-${pageId}-${user.id}-${Date.now()}`;
+    // Create a unique channel name with timestamp to avoid conflicts
+    const channelName = `presence_${pageId}_${user.id}_${Date.now()}`;
+    
+    console.log('Creating presence channel:', channelName);
     
     // Set up realtime subscription for presence updates
     const channel = supabase
@@ -50,6 +57,9 @@ export function usePresenceSubscription(
         console.log('Presence subscription status:', status);
         if (status === 'SUBSCRIBED') {
           isSubscribedRef.current = true;
+        } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
+          isSubscribedRef.current = false;
+          channelRef.current = null;
         }
       });
 
@@ -57,7 +67,7 @@ export function usePresenceSubscription(
 
     // Cleanup on unmount or page change
     return cleanup;
-  }, [user, pageId, onPresenceUpdate]);
+  }, [user?.id, pageId]); // Added user.id to dependencies to ensure proper cleanup
 
   return { cleanup };
 }
