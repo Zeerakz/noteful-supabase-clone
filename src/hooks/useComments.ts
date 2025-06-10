@@ -17,7 +17,7 @@ export function useComments(blockId?: string) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
-  const { sendMentionNotification, extractMentions } = useMentionNotifications();
+  const { extractMentions, notifyMention } = useMentionNotifications();
 
   const fetchComments = async () => {
     if (!blockId || !user) return;
@@ -60,9 +60,9 @@ export function useComments(blockId?: string) {
       
       setComments(prev => [...prev, data]);
 
-      // Handle mentions in the comment
-      const mentions = extractMentions(body);
-      if (mentions.length > 0) {
+      // Extract mentions from the comment body and send notifications
+      const mentionedEmails = extractMentions(body);
+      if (mentionedEmails.length > 0) {
         try {
           // Get page information for the notification
           const { data: blockData } = await supabase
@@ -81,20 +81,8 @@ export function useComments(blockId?: string) {
             if (pageData) {
               const pageUrl = `${window.location.origin}/workspace/${pageData.workspace_id}/page/${blockData.page_id}`;
               
-              // Send notifications to mentioned users
-              for (const email of mentions) {
-                try {
-                  await sendMentionNotification(
-                    email,
-                    body,
-                    pageData.title,
-                    pageUrl
-                  );
-                } catch (notificationError) {
-                  console.warn(`Failed to send notification to ${email}:`, notificationError);
-                  // Don't fail the comment creation if notification fails
-                }
-              }
+              // Call notifyMention with the list of mentioned emails
+              await notifyMention(mentionedEmails, body, pageData.title, pageUrl);
             }
           }
         } catch (mentionError) {

@@ -40,6 +40,7 @@ export function useMentionNotifications() {
   };
 
   const extractMentions = (text: string): string[] => {
+    // Updated regex to detect @email patterns more accurately
     const mentionRegex = /@([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/g;
     const mentions: string[] = [];
     let match;
@@ -51,8 +52,28 @@ export function useMentionNotifications() {
     return [...new Set(mentions)]; // Remove duplicates
   };
 
+  const notifyMention = async (
+    mentionedEmails: string[],
+    commentBody: string,
+    pageTitle: string,
+    pageUrl: string
+  ) => {
+    if (!mentionedEmails.length) return;
+
+    const notificationPromises = mentionedEmails.map(email =>
+      sendMentionNotification(email, commentBody, pageTitle, pageUrl)
+    );
+
+    try {
+      await Promise.allSettled(notificationPromises);
+    } catch (error) {
+      console.error('Error sending mention notifications:', error);
+    }
+  };
+
   return {
     sendMentionNotification,
     extractMentions,
+    notifyMention,
   };
 }
