@@ -10,6 +10,7 @@ import { useSessionTracking } from "@/hooks/useSessionTracking";
 import { Login } from "@/pages/Login";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { AppLayoutWithSidebar } from "@/components/layout/AppLayoutWithSidebar";
 import { WorkspaceList } from "@/components/workspaces/WorkspaceList";
 import { WorkspacePage } from "@/pages/WorkspacePage";
 import { PageEditor } from "@/pages/PageEditor";
@@ -28,9 +29,9 @@ function AppContent() {
           path="/" 
           element={
             <ProtectedRoute>
-              <AppLayout>
+              <AppLayoutWithSidebar>
                 <WorkspaceList />
-              </AppLayout>
+              </AppLayoutWithSidebar>
             </ProtectedRoute>
           } 
         />
@@ -38,9 +39,9 @@ function AppContent() {
           path="/workspace/:workspaceId" 
           element={
             <ProtectedRoute>
-              <AppLayout>
+              <AppLayoutWithSidebar>
                 <WorkspacePage />
-              </AppLayout>
+              </AppLayoutWithSidebar>
             </ProtectedRoute>
           } 
         />
