@@ -3,6 +3,7 @@ import React from 'react';
 import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import { PagesSidebar } from '@/components/sidebar/PagesSidebar';
 import { Separator } from '@/components/ui/separator';
+import { DarkModeToggle } from '@/components/ui/dark-mode-toggle';
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -51,6 +52,9 @@ export function AppLayoutWithSidebar({ children, breadcrumbs }: AppLayoutWithSid
                 </BreadcrumbList>
               </Breadcrumb>
             )}
+            <div className="ml-auto">
+              <DarkModeToggle />
+            </div>
           </header>
           <div className="flex flex-1 flex-col gap-4 p-4">
             {children}
