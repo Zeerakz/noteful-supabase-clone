@@ -60,6 +60,33 @@ export type Database = {
           },
         ]
       }
+      database_views: {
+        Row: {
+          created_at: string
+          database_id: string
+          default_view_type: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          database_id: string
+          default_view_type: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          database_id?: string
+          default_view_type?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       fields: {
         Row: {
           created_at: string | null

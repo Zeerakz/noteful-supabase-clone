@@ -41,3 +41,12 @@ export interface PageProperty {
   created_at: string;
   updated_at: string;
 }
+
+export interface DatabaseView {
+  id: string;
+  database_id: string;
+  user_id: string;
+  default_view_type: 'table' | 'list' | 'calendar' | 'kanban';
+  created_at: string;
+  updated_at: string;
+}
