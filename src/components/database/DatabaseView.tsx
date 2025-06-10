@@ -4,6 +4,7 @@ import { DatabaseViewSelector, DatabaseViewType } from './DatabaseViewSelector';
 import { DatabaseTableView } from './DatabaseTableView';
 import { DatabaseListView } from './DatabaseListView';
 import { DatabaseCalendarView } from './DatabaseCalendarView';
+import { DatabaseKanbanView } from './DatabaseKanbanView';
 
 interface DatabaseViewProps {
   databaseId: string;
@@ -39,9 +40,10 @@ export function DatabaseView({ databaseId, workspaceId, className }: DatabaseVie
         );
       case 'kanban':
         return (
-          <div className="text-center py-8 text-muted-foreground">
-            Kanban view coming soon...
-          </div>
+          <DatabaseKanbanView
+            databaseId={databaseId}
+            workspaceId={workspaceId}
+          />
         );
       default:
         return null;
