@@ -16,13 +16,16 @@ export const updateCursorPosition = async (
   cursorPositionRef.current = { x, y, blockId };
 
   try {
+    // Use upsert with conflict resolution on the unique constraint
     const { error } = await supabase
       .from('presence')
       .upsert({
         page_id: pageId,
         user_id: user.id,
-        cursor: { x, y, blockId } as any, // Cast to any to satisfy Json type
+        cursor: { x, y, blockId } as any,
         last_heartbeat: new Date().toISOString(),
+      }, {
+        onConflict: 'page_id,user_id'
       });
 
     if (error) {
@@ -41,13 +44,16 @@ export const sendHeartbeat = async (
   if (!user || !pageId) return;
 
   try {
+    // Use upsert with conflict resolution on the unique constraint
     const { error } = await supabase
       .from('presence')
       .upsert({
         page_id: pageId,
         user_id: user.id,
-        cursor: cursorPositionRef.current as any, // Cast to any to satisfy Json type
+        cursor: cursorPositionRef.current as any,
         last_heartbeat: new Date().toISOString(),
+      }, {
+        onConflict: 'page_id,user_id'
       });
 
     if (error) {

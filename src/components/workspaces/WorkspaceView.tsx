@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useWorkspaces } from '@/hooks/useWorkspaces';
 import { usePages } from '@/hooks/usePages';
 import { useDatabases } from '@/hooks/useDatabases';
@@ -11,6 +11,7 @@ import { DatabaseWizard } from '@/components/database/DatabaseWizard';
 
 export function WorkspaceView() {
   const { workspaceId } = useParams<{ workspaceId: string }>();
+  const navigate = useNavigate();
   const { workspaces } = useWorkspaces();
   const { pages, createPage } = usePages(workspaceId!);
   const { databases } = useDatabases(workspaceId!);
@@ -33,6 +34,15 @@ export function WorkspaceView() {
     } catch (error) {
       console.error('Error creating page:', error);
     }
+  };
+
+  const handlePageClick = (pageId: string) => {
+    navigate(`/workspace/${workspaceId}/page/${pageId}`);
+  };
+
+  const handleDatabaseClick = (databaseId: string) => {
+    // Navigate to database view when implemented
+    console.log('Database clicked:', databaseId);
   };
 
   return (
@@ -59,7 +69,11 @@ export function WorkspaceView() {
           <h2 className="text-lg font-semibold">Databases</h2>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {databases.map((database) => (
-              <Card key={database.id} className="hover:shadow-md transition-shadow cursor-pointer">
+              <Card 
+                key={database.id} 
+                className="hover:shadow-md transition-shadow cursor-pointer"
+                onClick={() => handleDatabaseClick(database.id)}
+              >
                 <CardHeader className="pb-3">
                   <CardTitle className="text-base flex items-center gap-2">
                     <Database className="h-4 w-4" />
@@ -90,7 +104,11 @@ export function WorkspaceView() {
         <h2 className="text-lg font-semibold">Pages</h2>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {pages?.map((page) => (
-            <Card key={page.id} className="hover:shadow-md transition-shadow cursor-pointer">
+            <Card 
+              key={page.id} 
+              className="hover:shadow-md transition-shadow cursor-pointer"
+              onClick={() => handlePageClick(page.id)}
+            >
               <CardHeader className="pb-3">
                 <CardTitle className="text-base flex items-center gap-2">
                   <FileText className="h-4 w-4" />

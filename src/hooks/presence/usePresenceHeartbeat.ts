@@ -9,6 +9,7 @@ export function usePresenceHeartbeat(
   cursorPositionRef: React.MutableRefObject<CursorPosition | null>
 ) {
   const heartbeatIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const isActiveRef = useRef<boolean>(true);
 
   const startHeartbeat = () => {
     if (heartbeatIntervalRef.current) {
@@ -16,19 +17,20 @@ export function usePresenceHeartbeat(
     }
     
     // Send initial heartbeat immediately
-    if (user && pageId) {
+    if (user && pageId && isActiveRef.current) {
       sendHeartbeat(user, pageId, cursorPositionRef);
     }
     
-    // Set up recurring heartbeat every 5 seconds
+    // Set up recurring heartbeat every 10 seconds (reduced frequency)
     heartbeatIntervalRef.current = setInterval(() => {
-      if (user && pageId) {
+      if (user && pageId && isActiveRef.current) {
         sendHeartbeat(user, pageId, cursorPositionRef);
       }
-    }, 5000); // Every 5 seconds
+    }, 10000); // Every 10 seconds instead of 5
   };
 
   const stopHeartbeat = () => {
+    isActiveRef.current = false;
     if (heartbeatIntervalRef.current) {
       clearInterval(heartbeatIntervalRef.current);
       heartbeatIntervalRef.current = null;
@@ -41,11 +43,33 @@ export function usePresenceHeartbeat(
       return;
     }
 
+    isActiveRef.current = true;
     // Start heartbeat when user and pageId are available
     startHeartbeat();
     
     return stopHeartbeat;
   }, [user, pageId]);
+
+  // Handle page visibility changes to pause/resume heartbeat
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        isActiveRef.current = false;
+      } else {
+        isActiveRef.current = true;
+        // Resume heartbeat when page becomes visible
+        if (user && pageId) {
+          sendHeartbeat(user, pageId, cursorPositionRef);
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [user, pageId, cursorPositionRef]);
 
   return { stopHeartbeat };
 }

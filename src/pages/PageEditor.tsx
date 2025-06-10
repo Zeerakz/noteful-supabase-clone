@@ -4,14 +4,18 @@ import { useParams, Navigate, useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { BlockEditor } from '@/components/blocks/BlockEditor';
+import { PresenceProvider } from '@/components/collaboration/PresenceProvider';
+import { ActiveUsers } from '@/components/collaboration/ActiveUsers';
 import { usePages } from '@/hooks/usePages';
 import { useWorkspaces } from '@/hooks/useWorkspaces';
+import { usePresence } from '@/hooks/usePresence';
 
 export function PageEditor() {
   const { workspaceId, pageId } = useParams<{ workspaceId: string; pageId: string }>();
   const navigate = useNavigate();
   const { pages, loading: pagesLoading } = usePages(workspaceId);
   const { workspaces, loading: workspacesLoading } = useWorkspaces();
+  const { activeUsers, loading: presenceLoading } = usePresence(pageId);
 
   if (pagesLoading || workspacesLoading) {
     return (
@@ -37,29 +41,36 @@ export function PageEditor() {
   };
 
   return (
-    <div className="min-h-screen bg-white">
-      <div className="border-b border-gray-200 bg-white sticky top-0 z-10">
-        <div className="container mx-auto px-4 py-3">
-          <div className="flex items-center space-x-4">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleBack}
-            >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back
-            </Button>
-            <div>
-              <h1 className="text-xl font-semibold">{page.title}</h1>
-              <p className="text-sm text-gray-500">in {workspace.name}</p>
+    <PresenceProvider pageId={pageId}>
+      <div className="min-h-screen bg-background">
+        <div className="border-b border-border bg-background sticky top-0 z-10">
+          <div className="container mx-auto px-4 py-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleBack}
+                >
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Back
+                </Button>
+                <div>
+                  <h1 className="text-xl font-semibold">{page.title}</h1>
+                  <p className="text-sm text-muted-foreground">in {workspace.name}</p>
+                </div>
+              </div>
+              
+              {/* Show active users */}
+              <ActiveUsers activeUsers={activeUsers} loading={presenceLoading} />
             </div>
           </div>
         </div>
+        
+        <div className="container mx-auto max-w-4xl">
+          <BlockEditor pageId={page.id} isEditable={isEditable} />
+        </div>
       </div>
-      
-      <div className="container mx-auto max-w-4xl">
-        <BlockEditor pageId={page.id} isEditable={isEditable} />
-      </div>
-    </div>
+    </PresenceProvider>
   );
 }
