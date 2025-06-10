@@ -7,6 +7,8 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus, Trash2, Database } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { useParams } from 'react-router-dom';
 
 interface DatabaseField {
   id: string;
@@ -26,7 +28,9 @@ const FIELD_TYPES = [
 ];
 
 export function DatabaseWizard() {
+  const { workspaceId } = useParams<{ workspaceId: string }>();
   const [open, setOpen] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
   const [databaseName, setDatabaseName] = useState('');
   const [fields, setFields] = useState<DatabaseField[]>([
     {
@@ -59,14 +63,7 @@ export function DatabaseWizard() {
   };
 
   const generateSQL = () => {
-    if (!databaseName.trim()) {
-      toast({
-        title: "Database name required",
-        description: "Please enter a name for your database",
-        variant: "destructive",
-      });
-      return '';
-    }
+    if (!databaseName.trim()) return '';
 
     const tableName = `db_${databaseName.toLowerCase().replace(/[^a-z0-9_]/g, '_')}`;
     
@@ -87,14 +84,7 @@ export function DatabaseWizard() {
         return definition;
       });
 
-    if (fieldDefinitions.length === 0) {
-      toast({
-        title: "Fields required",
-        description: "Please add at least one field to your database",
-        variant: "destructive",
-      });
-      return '';
-    }
+    if (fieldDefinitions.length === 0) return '';
 
     const sql = `-- Create ${databaseName} database table
 CREATE TABLE public.${tableName} (
@@ -112,7 +102,6 @@ ALTER TABLE public.${tableName} ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users can view ${tableName} in accessible workspaces" ON public.${tableName}
   FOR SELECT TO authenticated
   USING (
-    -- Add workspace-based access control here based on your app's structure
     created_by = auth.uid()
   );
 
@@ -143,40 +132,86 @@ CREATE TRIGGER update_${tableName}_updated_at
     return sql;
   };
 
-  const handleCreate = () => {
-    const sql = generateSQL();
-    if (!sql) return;
-
-    // Copy SQL to clipboard
-    navigator.clipboard.writeText(sql).then(() => {
+  const handleCreate = async () => {
+    if (!databaseName.trim()) {
       toast({
-        title: "SQL Generated!",
-        description: "Database creation SQL has been copied to your clipboard. Run it in your Supabase SQL editor.",
+        title: "Database name required",
+        description: "Please enter a name for your database",
+        variant: "destructive",
       });
-    }).catch(() => {
-      // Fallback: show SQL in a new window or alert
-      const newWindow = window.open('', '_blank');
-      if (newWindow) {
-        newWindow.document.write(`<pre>${sql}</pre>`);
-        newWindow.document.title = `${databaseName} Database SQL`;
-      } else {
-        toast({
-          title: "SQL Generated!",
-          description: "Please check the console for the SQL to run in Supabase.",
-        });
-        console.log('Database SQL:', sql);
-      }
-    });
+      return;
+    }
 
-    // Reset form
-    setDatabaseName('');
-    setFields([{
-      id: '1',
-      name: 'title',
-      type: 'TEXT',
-      nullable: false,
-    }]);
-    setOpen(false);
+    if (!workspaceId) {
+      toast({
+        title: "Workspace required",
+        description: "You must be in a workspace to create a database",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const validFields = fields.filter(field => field.name.trim());
+    if (validFields.length === 0) {
+      toast({
+        title: "Fields required",
+        description: "Please add at least one field to your database",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsCreating(true);
+
+    try {
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error('You must be logged in to create a database');
+      }
+
+      // Create database record (we'll implement this when we have a databases table)
+      // For now, just create the fields
+      const fieldsToCreate = validFields.map((field, index) => ({
+        database_id: `temp_${Date.now()}`, // We'll need a proper database_id later
+        name: field.name,
+        type: field.type,
+        settings: field.nullable ? { nullable: true } : { nullable: false },
+        pos: index,
+        created_by: user.id,
+      }));
+
+      // For MVP, just show the SQL to copy
+      const sql = generateSQL();
+      
+      // Copy SQL to clipboard
+      await navigator.clipboard.writeText(sql);
+
+      toast({
+        title: "Database SQL Generated!",
+        description: "The database creation SQL has been copied to your clipboard. Please run it in your Supabase SQL editor to create the database table.",
+      });
+
+      // Reset form
+      setDatabaseName('');
+      setFields([{
+        id: '1',
+        name: 'title',
+        type: 'TEXT',
+        nullable: false,
+      }]);
+      setOpen(false);
+
+    } catch (error) {
+      console.error('Error creating database:', error);
+      toast({
+        title: "Error creating database",
+        description: error instanceof Error ? error.message : "An unexpected error occurred",
+        variant: "destructive",
+      });
+    } finally {
+      setIsCreating(false);
+    }
   };
 
   return (
@@ -200,6 +235,7 @@ CREATE TRIGGER update_${tableName}_updated_at
               placeholder="e.g., tasks, projects, contacts"
               value={databaseName}
               onChange={(e) => setDatabaseName(e.target.value)}
+              disabled={isCreating}
             />
             {databaseName && (
               <p className="text-sm text-muted-foreground">
@@ -211,7 +247,13 @@ CREATE TRIGGER update_${tableName}_updated_at
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <Label>Fields</Label>
-              <Button type="button" variant="outline" size="sm" onClick={addField}>
+              <Button 
+                type="button" 
+                variant="outline" 
+                size="sm" 
+                onClick={addField}
+                disabled={isCreating}
+              >
                 <Plus className="h-4 w-4 mr-1" />
                 Add Field
               </Button>
@@ -226,6 +268,7 @@ CREATE TRIGGER update_${tableName}_updated_at
                       placeholder="Field name"
                       value={field.name}
                       onChange={(e) => updateField(field.id, { name: e.target.value })}
+                      disabled={isCreating}
                     />
                   </div>
                   
@@ -234,6 +277,7 @@ CREATE TRIGGER update_${tableName}_updated_at
                     <Select
                       value={field.type}
                       onValueChange={(value) => updateField(field.id, { type: value })}
+                      disabled={isCreating}
                     >
                       <SelectTrigger>
                         <SelectValue />
@@ -253,6 +297,7 @@ CREATE TRIGGER update_${tableName}_updated_at
                     <Select
                       value={field.nullable ? 'optional' : 'required'}
                       onValueChange={(value) => updateField(field.id, { nullable: value === 'optional' })}
+                      disabled={isCreating}
                     >
                       <SelectTrigger>
                         <SelectValue />
@@ -271,6 +316,7 @@ CREATE TRIGGER update_${tableName}_updated_at
                       size="icon"
                       onClick={() => removeField(field.id)}
                       className="text-destructive hover:text-destructive"
+                      disabled={isCreating}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
@@ -281,11 +327,18 @@ CREATE TRIGGER update_${tableName}_updated_at
           </div>
 
           <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setOpen(false)}>
+            <Button 
+              variant="outline" 
+              onClick={() => setOpen(false)}
+              disabled={isCreating}
+            >
               Cancel
             </Button>
-            <Button onClick={handleCreate}>
-              Generate Database
+            <Button 
+              onClick={handleCreate}
+              disabled={isCreating}
+            >
+              {isCreating ? 'Creating...' : 'Generate Database'}
             </Button>
           </div>
         </div>

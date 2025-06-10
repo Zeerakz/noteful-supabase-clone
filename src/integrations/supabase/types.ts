@@ -60,6 +60,42 @@ export type Database = {
           },
         ]
       }
+      fields: {
+        Row: {
+          created_at: string | null
+          created_by: string
+          database_id: string
+          id: string
+          name: string
+          pos: number
+          settings: Json | null
+          type: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by: string
+          database_id: string
+          id?: string
+          name: string
+          pos?: number
+          settings?: Json | null
+          type: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string
+          database_id?: string
+          id?: string
+          name?: string
+          pos?: number
+          settings?: Json | null
+          type?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       pages: {
         Row: {
           created_at: string | null
