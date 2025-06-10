@@ -106,7 +106,7 @@ export function usePages(workspaceId?: string) {
 
   const updatePageHierarchy = async (pageId: string, newParentId: string | null, newIndex: number) => {
     try {
-      // First, get all pages that need to be reordered
+      // First, get all pages that need to be reordered in the target parent
       const { data: siblingPages } = await supabase
         .from('pages')
         .select('*')
@@ -116,30 +116,44 @@ export function usePages(workspaceId?: string) {
 
       if (!siblingPages) throw new Error('Failed to fetch sibling pages');
 
-      // Remove the page being moved from its current position
+      // Get the page being moved
+      const movingPage = pages.find(p => p.id === pageId);
+      if (!movingPage) throw new Error('Page not found');
+
+      // Remove the page being moved from its current position in siblings
       const filteredPages = siblingPages.filter(p => p.id !== pageId);
       
-      // Insert the page at the new position
-      filteredPages.splice(newIndex, 0, { id: pageId } as Page);
+      // Insert the moving page at the new position
+      filteredPages.splice(newIndex, 0, movingPage);
 
-      // Update all affected pages with new order indices
-      const updates = filteredPages.map((page, index) => ({
-        id: page.id,
-        order_index: index,
-        ...(page.id === pageId ? { parent_page_id: newParentId } : {})
-      }));
+      // Update the moving page's parent first
+      if (movingPage.parent_page_id !== newParentId) {
+        const { error: parentUpdateError } = await supabase
+          .from('pages')
+          .update({ 
+            parent_page_id: newParentId,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', pageId);
 
-      // Perform batch update
-      const { error } = await supabase
-        .from('pages')
-        .upsert(updates.map(update => ({
-          id: update.id,
-          order_index: update.order_index,
-          parent_page_id: update.parent_page_id,
-          updated_at: new Date().toISOString()
-        })));
+        if (parentUpdateError) throw parentUpdateError;
+      }
 
-      if (error) throw error;
+      // Update order indices for all affected pages
+      for (let i = 0; i < filteredPages.length; i++) {
+        const page = filteredPages[i];
+        if (page.order_index !== i) {
+          const { error } = await supabase
+            .from('pages')
+            .update({ 
+              order_index: i,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', page.id);
+
+          if (error) throw error;
+        }
+      }
       
       // Refresh pages list
       await fetchPages();
