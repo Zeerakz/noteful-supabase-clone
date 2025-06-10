@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { useParams, Navigate } from 'react-router-dom';
+import { useParams, Navigate, useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { BlockEditor } from '@/components/blocks/BlockEditor';
@@ -9,6 +9,7 @@ import { useWorkspaces } from '@/hooks/useWorkspaces';
 
 export function PageEditor() {
   const { workspaceId, pageId } = useParams<{ workspaceId: string; pageId: string }>();
+  const navigate = useNavigate();
   const { pages, loading: pagesLoading } = usePages(workspaceId);
   const { workspaces, loading: workspacesLoading } = useWorkspaces();
 
@@ -31,6 +32,10 @@ export function PageEditor() {
   // This should be enhanced with proper role checking
   const isEditable = true;
 
+  const handleBack = () => {
+    navigate(`/workspace/${workspaceId}`);
+  };
+
   return (
     <div className="min-h-screen bg-white">
       <div className="border-b border-gray-200 bg-white sticky top-0 z-10">
@@ -39,7 +44,7 @@ export function PageEditor() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => window.history.back()}
+              onClick={handleBack}
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back
