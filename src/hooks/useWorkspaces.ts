@@ -1,7 +1,7 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { InvitationService, InviteUserRequest } from '@/services/invitationService';
 
 export interface Workspace {
   id: string;
@@ -120,6 +120,28 @@ export function useWorkspaces() {
     }
   };
 
+  const inviteUserToWorkspace = async (
+    workspaceId: string,
+    email: string,
+    roleName: 'admin' | 'editor' | 'viewer'
+  ) => {
+    if (!user) return { error: 'User not authenticated' };
+
+    const workspace = workspaces.find(w => w.id === workspaceId);
+    if (!workspace) return { error: 'Workspace not found' };
+
+    const request: InviteUserRequest = {
+      email,
+      workspaceId,
+      roleName,
+      workspaceName: workspace.name,
+      inviterName: user.email || 'Someone'
+    };
+
+    const { error, success } = await InvitationService.inviteUser(request);
+    return { error, success };
+  };
+
   useEffect(() => {
     fetchWorkspaces();
   }, [user]);
@@ -132,5 +154,6 @@ export function useWorkspaces() {
     createWorkspace,
     updateWorkspace,
     deleteWorkspace,
+    inviteUserToWorkspace,
   };
 }
