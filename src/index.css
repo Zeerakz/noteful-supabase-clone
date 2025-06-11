@@ -77,13 +77,14 @@
   a {
     @apply text-blue-600 underline hover:text-blue-800 transition-colors;
     text-decoration: underline;
-    color: #2563eb;
-    cursor: pointer;
+    color: #2563eb !important;
+    cursor: pointer !important;
+    pointer-events: auto !important;
   }
 
   .dark a {
     @apply text-blue-400 hover:text-blue-300;
-    color: #60a5fa;
+    color: #60a5fa !important;
   }
 
   /* Code styles */
@@ -156,12 +157,13 @@
   line-height: 1.5;
 }
 
-/* Specific styles for links in both editable and read-only mode */
+/* Enhanced link styles for better visibility and functionality */
 .rich-text-content a {
   @apply text-blue-600 hover:text-blue-800 transition-colors;
-  text-decoration: underline;
-  cursor: pointer;
+  text-decoration: underline !important;
+  cursor: pointer !important;
   color: #2563eb !important;
+  pointer-events: auto !important;
 }
 
 .dark .rich-text-content a {
@@ -169,14 +171,24 @@
   color: #60a5fa !important;
 }
 
-/* Ensure links work in read-only blocks */
+/* Ensure links work in both editable and read-only blocks */
 .rich-text-content:not([contenteditable="true"]) a {
-  pointer-events: auto;
-  cursor: pointer;
+  pointer-events: auto !important;
+  cursor: pointer !important;
+}
+
+.rich-text-content[contenteditable="false"] a {
+  pointer-events: auto !important;
+  cursor: pointer !important;
 }
 
 /* Style links when hovering */
 .rich-text-content a:hover {
-  text-decoration: underline;
+  text-decoration: underline !important;
   opacity: 0.9;
+}
+
+/* Ensure links are distinguishable from regular text */
+.rich-text-content a:not(:hover) {
+  text-decoration: underline;
 }

@@ -110,6 +110,7 @@ export function CrdtTextEditor({
 
   // Handle clicks on links - only when not in edit mode
   const handleClick = (e: React.MouseEvent) => {
+    // If we're in edit mode, don't handle link clicks
     if (isEditMode) return;
     
     const target = e.target as HTMLElement;
@@ -118,6 +119,8 @@ export function CrdtTextEditor({
     if (linkElement && linkElement.href) {
       e.preventDefault();
       e.stopPropagation();
+      
+      console.log('Link clicked:', linkElement.href);
       
       // Open link in new tab
       window.open(linkElement.href, '_blank', 'noopener,noreferrer');
