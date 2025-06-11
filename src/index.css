@@ -75,10 +75,10 @@
 .rich-text-content {
   /* Link styles */
   a {
-    @apply text-blue-600 underline hover:text-blue-800 cursor-pointer;
+    @apply text-blue-600 underline hover:text-blue-800 transition-colors;
     text-decoration: underline;
     color: #2563eb;
-    transition: color 0.2s ease;
+    cursor: pointer;
   }
 
   .dark a {
@@ -156,19 +156,27 @@
   line-height: 1.5;
 }
 
-/* Ensure links in read-only mode are properly styled */
-.rich-text-content:not([contenteditable="true"]) a {
-  @apply text-blue-600 underline hover:text-blue-800;
+/* Specific styles for links in both editable and read-only mode */
+.rich-text-content a {
+  @apply text-blue-600 hover:text-blue-800 transition-colors;
+  text-decoration: underline;
   cursor: pointer;
-  text-decoration: underline;
+  color: #2563eb !important;
 }
 
-.dark .rich-text-content:not([contenteditable="true"]) a {
+.dark .rich-text-content a {
   @apply text-blue-400 hover:text-blue-300;
+  color: #60a5fa !important;
 }
 
-/* Make sure links are clickable in read-only blocks */
-.rich-text-content:not([contenteditable="true"]) a:hover {
+/* Ensure links work in read-only blocks */
+.rich-text-content:not([contenteditable="true"]) a {
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+/* Style links when hovering */
+.rich-text-content a:hover {
   text-decoration: underline;
-  opacity: 0.8;
+  opacity: 0.9;
 }

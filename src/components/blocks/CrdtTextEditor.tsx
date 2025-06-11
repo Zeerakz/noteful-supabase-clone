@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useState } from 'react';
 import { useYjsDocument } from '@/hooks/useYjsDocument';
 import { EditorToolbar } from './RichTextEditor/EditorToolbar';
@@ -90,19 +91,22 @@ export function CrdtTextEditor({
     }
   };
 
-  // Handle clicks on links when not editing
+  // Handle clicks on links - only when not actively editing
   const handleClick = (e: React.MouseEvent) => {
     const target = e.target as HTMLElement;
     
     // Check if clicked element is a link or inside a link
     let linkElement = target.closest('a');
     
-    if (linkElement && linkElement.href && !isFocused) {
-      e.preventDefault();
-      e.stopPropagation();
-      
-      // Open link in new tab
-      window.open(linkElement.href, '_blank', 'noopener,noreferrer');
+    if (linkElement && linkElement.href) {
+      // If we're not focused (not actively editing), allow link to open
+      if (!isFocused) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        // Open link in new tab
+        window.open(linkElement.href, '_blank', 'noopener,noreferrer');
+      }
     }
   };
 
@@ -217,23 +221,15 @@ export function CrdtTextEditor({
 
     if (currentLink) {
       // Update existing link
-      document.execCommand('createLink', false, url);
+      const linkHTML = `<a href="${url}" target="_blank" rel="noopener noreferrer">${text}</a>`;
+      document.execCommand('insertHTML', false, linkHTML);
     } else {
       // Create new link
       if (selectedText) {
-        document.execCommand('createLink', false, url);
-        
-        // If custom text is provided and different from selected text, update it
-        if (text && text !== selectedText) {
-          const selection = window.getSelection();
-          if (selection && selection.rangeCount > 0) {
-            const range = selection.getRangeAt(0);
-            const linkElement = range.commonAncestorContainer.parentElement;
-            if (linkElement && linkElement.tagName === 'A') {
-              linkElement.textContent = text;
-            }
-          }
-        }
+        // Use the selected text but update with custom text if provided
+        const linkText = text || selectedText;
+        const linkHTML = `<a href="${url}" target="_blank" rel="noopener noreferrer">${linkText}</a>`;
+        document.execCommand('insertHTML', false, linkHTML);
       } else {
         // No text selected, insert new link
         const linkHTML = `<a href="${url}" target="_blank" rel="noopener noreferrer">${text}</a>`;

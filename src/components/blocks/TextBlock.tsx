@@ -30,14 +30,27 @@ export function TextBlock({ block, onUpdate, onDelete, isEditable }: TextBlockPr
 
   const textContent = block.content?.text || '';
 
+  // Handle clicks on links in read-only mode
+  const handleReadOnlyClick = (e: React.MouseEvent) => {
+    const target = e.target as HTMLElement;
+    const linkElement = target.closest('a');
+    
+    if (linkElement && linkElement.href) {
+      e.preventDefault();
+      e.stopPropagation();
+      window.open(linkElement.href, '_blank', 'noopener,noreferrer');
+    }
+  };
+
   if (!isEditable) {
     return (
       <div className="py-1">
         <div 
-          className="text-sm whitespace-pre-wrap rich-text-content"
+          className="text-sm whitespace-pre-wrap rich-text-content cursor-default"
           dangerouslySetInnerHTML={{ 
             __html: textContent || '<span class="text-muted-foreground italic">Empty text block</span>' 
           }}
+          onClick={handleReadOnlyClick}
         />
       </div>
     );
