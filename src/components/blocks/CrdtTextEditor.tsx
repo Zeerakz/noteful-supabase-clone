@@ -23,6 +23,7 @@ export function CrdtTextEditor({
 }: CrdtTextEditorProps) {
   const editorRef = useRef<HTMLDivElement>(null);
   const [isFocused, setIsFocused] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
   const [showToolbar, setShowToolbar] = useState(false);
   const [toolbarPosition, setToolbarPosition] = useState({ top: 0, left: 0 });
   const [isLinkDialogOpen, setIsLinkDialogOpen] = useState(false);
@@ -56,7 +57,7 @@ export function CrdtTextEditor({
 
   // Handle local text changes
   const handleInput = () => {
-    if (!editorRef.current || isUpdatingRef.current) return;
+    if (!editorRef.current || isUpdatingRef.current || !isEditMode) return;
 
     const content = editorRef.current.innerHTML || '';
     const currentContent = getDocumentContent();
@@ -68,15 +69,30 @@ export function CrdtTextEditor({
     }
   };
 
-  const handleFocus = () => setIsFocused(true);
+  const handleDoubleClick = () => {
+    setIsEditMode(true);
+    setIsFocused(true);
+    if (editorRef.current) {
+      editorRef.current.focus();
+    }
+  };
+
+  const handleFocus = () => {
+    if (isEditMode) {
+      setIsFocused(true);
+    }
+  };
   
   const handleBlur = () => {
     setIsFocused(false);
+    setIsEditMode(false);
     // Small delay to allow toolbar clicks
     setTimeout(() => setShowToolbar(false), 150);
   };
 
   const handleMouseUp = () => {
+    if (!isEditMode) return;
+    
     const selection = window.getSelection();
     if (selection && selection.toString().trim()) {
       const range = selection.getRangeAt(0);
@@ -94,20 +110,19 @@ export function CrdtTextEditor({
 
   // Handle clicks on links - only when not actively editing
   const handleClick = (e: React.MouseEvent) => {
+    if (isEditMode) return;
+    
     const target = e.target as HTMLElement;
     
     // Check if clicked element is a link or inside a link
     let linkElement = target.closest('a');
     
     if (linkElement && linkElement.href) {
-      // If we're not focused (not actively editing), allow link to open
-      if (!isFocused) {
-        e.preventDefault();
-        e.stopPropagation();
-        
-        // Open link in new tab
-        window.open(linkElement.href, '_blank', 'noopener,noreferrer');
-      }
+      e.preventDefault();
+      e.stopPropagation();
+      
+      // Open link in new tab
+      window.open(linkElement.href, '_blank', 'noopener,noreferrer');
     }
   };
 
@@ -129,6 +144,8 @@ export function CrdtTextEditor({
   };
 
   const execCommand = (command: string, value?: string) => {
+    if (!isEditMode) return;
+    
     if (command === 'createLink') {
       handleCreateLink();
       return;
@@ -152,6 +169,8 @@ export function CrdtTextEditor({
   };
 
   const handleInlineCode = () => {
+    if (!isEditMode) return;
+    
     const selection = window.getSelection();
     if (!selection || selection.rangeCount === 0) return;
 
@@ -189,6 +208,8 @@ export function CrdtTextEditor({
   };
 
   const handleCreateLink = () => {
+    if (!isEditMode) return;
+    
     const selection = window.getSelection();
     if (!selection || selection.rangeCount === 0) return;
 
@@ -238,6 +259,8 @@ export function CrdtTextEditor({
   };
 
   const handleSaveLink = (url: string, text: string) => {
+    if (!isEditMode) return;
+    
     // Restore the selection first
     restoreSelection();
     
@@ -287,6 +310,8 @@ export function CrdtTextEditor({
   };
 
   const handleRemoveLink = () => {
+    if (!isEditMode) return;
+    
     // Restore selection first
     restoreSelection();
     
@@ -309,6 +334,8 @@ export function CrdtTextEditor({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (!isEditMode) return;
+    
     // Handle keyboard shortcuts for formatting
     if (e.ctrlKey || e.metaKey) {
       switch (e.key) {
@@ -340,13 +367,21 @@ export function CrdtTextEditor({
           break;
       }
     }
+
+    // Handle Escape to exit edit mode
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      setIsEditMode(false);
+      setIsFocused(false);
+      editorRef.current?.blur();
+    }
   };
 
   return (
     <div className={`relative ${className}`}>
       <div
         ref={editorRef}
-        contentEditable
+        contentEditable={isEditMode}
         suppressContentEditableWarning
         onInput={handleInput}
         onFocus={handleFocus}
@@ -354,12 +389,15 @@ export function CrdtTextEditor({
         onMouseUp={handleMouseUp}
         onKeyDown={handleKeyDown}
         onClick={handleClick}
+        onDoubleClick={handleDoubleClick}
         className={`
-          w-full min-h-[2.5rem] p-2 
-          border border-input rounded-md 
-          focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring
-          rich-text-content
-          ${isFocused ? 'ring-2 ring-ring border-ring' : ''}
+          w-full min-h-[2.5rem] p-2 rounded-md
+          rich-text-content cursor-pointer
+          ${isEditMode && isFocused 
+            ? 'border border-input focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring' 
+            : 'border border-transparent hover:border-border'
+          }
+          ${isEditMode ? 'cursor-text' : 'cursor-pointer'}
         `}
         data-placeholder={placeholder}
         style={{
@@ -368,7 +406,7 @@ export function CrdtTextEditor({
       />
       
       {/* Floating toolbar for text selection */}
-      {showToolbar && (
+      {showToolbar && isEditMode && (
         <div
           className="fixed z-50 bg-background border border-border rounded-md shadow-lg"
           style={{
@@ -381,7 +419,7 @@ export function CrdtTextEditor({
       )}
       
       {/* Connection status indicator */}
-      {isFocused && (
+      {isEditMode && isFocused && (
         <div className="absolute top-1 right-1 flex items-center gap-1">
           <div
             className={`w-2 h-2 rounded-full ${

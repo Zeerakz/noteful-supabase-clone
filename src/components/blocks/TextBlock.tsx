@@ -46,7 +46,7 @@ export function TextBlock({ block, onUpdate, onDelete, isEditable }: TextBlockPr
     return (
       <div className="py-1">
         <div 
-          className="text-sm whitespace-pre-wrap rich-text-content cursor-default"
+          className="text-sm whitespace-pre-wrap rich-text-content cursor-default p-2"
           dangerouslySetInnerHTML={{ 
             __html: textContent || '<span class="text-muted-foreground italic">Empty text block</span>' 
           }}
@@ -67,7 +67,7 @@ export function TextBlock({ block, onUpdate, onDelete, isEditable }: TextBlockPr
         blockId={block.id}
         initialContent={textContent}
         onContentChange={handleContentChange}
-        placeholder="Type something..."
+        placeholder="Double-click to edit..."
         className="w-full"
       />
       
