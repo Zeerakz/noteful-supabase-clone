@@ -90,6 +90,22 @@ export function CrdtTextEditor({
     }
   };
 
+  // Handle clicks on links when not editing
+  const handleClick = (e: React.MouseEvent) => {
+    const target = e.target as HTMLElement;
+    
+    // Check if clicked element is a link or inside a link
+    let linkElement = target.closest('a');
+    
+    if (linkElement && linkElement.href && !isFocused) {
+      e.preventDefault();
+      e.stopPropagation();
+      
+      // Open link in new tab
+      window.open(linkElement.href, '_blank', 'noopener,noreferrer');
+    }
+  };
+
   const execCommand = (command: string, value?: string) => {
     if (command === 'createLink') {
       handleCreateLink();
@@ -294,10 +310,12 @@ export function CrdtTextEditor({
         onBlur={handleBlur}
         onMouseUp={handleMouseUp}
         onKeyDown={handleKeyDown}
+        onClick={handleClick}
         className={`
           w-full min-h-[2.5rem] p-2 
           border border-input rounded-md 
           focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring
+          rich-text-content
           ${isFocused ? 'ring-2 ring-ring border-ring' : ''}
         `}
         data-placeholder={placeholder}

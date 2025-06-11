@@ -43,6 +43,22 @@ export function RichTextEditor({ initialContent, onBlur, placeholder = "Start ty
     }
   };
 
+  // Handle clicks on links when not editing
+  const handleClick = (e: React.MouseEvent) => {
+    const target = e.target as HTMLElement;
+    
+    // Check if clicked element is a link or inside a link
+    let linkElement = target.closest('a');
+    
+    if (linkElement && linkElement.href) {
+      e.preventDefault();
+      e.stopPropagation();
+      
+      // Open link in new tab
+      window.open(linkElement.href, '_blank', 'noopener,noreferrer');
+    }
+  };
+
   const execCommand = (command: string, value?: string) => {
     if (command === 'createLink') {
       handleCreateLink();
@@ -231,11 +247,12 @@ export function RichTextEditor({ initialContent, onBlur, placeholder = "Start ty
         ref={editorRef}
         contentEditable
         suppressContentEditableWarning
-        className="w-full min-h-[2.5rem] p-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
+        className="w-full min-h-[2.5rem] p-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring rich-text-content"
         onFocus={handleFocus}
         onBlur={handleBlur}
         onInput={handleInput}
         onKeyDown={handleKeyDown}
+        onClick={handleClick}
         style={{ whiteSpace: 'pre-wrap' }}
         data-placeholder={placeholder}
       />

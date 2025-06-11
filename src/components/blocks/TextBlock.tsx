@@ -33,11 +33,12 @@ export function TextBlock({ block, onUpdate, onDelete, isEditable }: TextBlockPr
   if (!isEditable) {
     return (
       <div className="py-1">
-        <div className="text-sm whitespace-pre-wrap">
-          {textContent || (
-            <span className="text-muted-foreground italic">Empty text block</span>
-          )}
-        </div>
+        <div 
+          className="text-sm whitespace-pre-wrap rich-text-content"
+          dangerouslySetInnerHTML={{ 
+            __html: textContent || '<span class="text-muted-foreground italic">Empty text block</span>' 
+          }}
+        />
       </div>
     );
   }
