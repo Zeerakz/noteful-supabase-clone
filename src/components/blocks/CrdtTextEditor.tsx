@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import { useYjsDocument } from '@/hooks/useYjsDocument';
 import { EditorToolbar } from './RichTextEditor/EditorToolbar';
@@ -318,11 +317,11 @@ export function CrdtTextEditor({
         selection.removeAllRanges();
         selection.addRange(savedSelection);
         
-        // Delete the selected content and insert the link
-        selection.deleteContents();
+        // Get the range and delete the selected content
+        const range = selection.getRangeAt(0);
+        range.deleteContents(); // ✅ Now calling deleteContents on Range, not Selection
         
         // Create a document fragment with the link
-        const range = selection.getRangeAt(0);
         const fragment = range.createContextualFragment(linkHTML);
         range.insertNode(fragment);
         
