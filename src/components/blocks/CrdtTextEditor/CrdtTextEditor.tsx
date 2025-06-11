@@ -17,6 +17,7 @@ export function CrdtTextEditor({
   placeholder = 'Start typing...',
   className = '',
 }: CrdtTextEditorProps) {
+  // Always call all hooks in the same order - no conditional hook calls
   const {
     editorRef,
     isFocused,
@@ -53,9 +54,9 @@ export function CrdtTextEditor({
     setSavedSelection,
   } = useLinkHandling(isEditMode, editorRef, syncContentToYjs);
 
-  // Initialize Y.js document with initial content
+  // Initialize Y.js document with initial content - always run this effect
   useEffect(() => {
-    if (initialContent && ytext.length === 0) {
+    if (initialContent && ytext && ytext.length === 0) {
       console.log('Initializing Y.js with content:', initialContent);
       updateContent(initialContent);
       
@@ -66,14 +67,25 @@ export function CrdtTextEditor({
         setTimeout(ensureLinkStyling, 100);
       }
     }
-  }, [initialContent, updateContent, ytext, ensureLinkStyling]);
+  }, [initialContent, updateContent, ytext, ensureLinkStyling, editorRef]);
 
-  // Ensure link styling is maintained
+  // Ensure link styling is maintained - always run this effect
   useEffect(() => {
     if (editorRef.current) {
       ensureLinkStyling();
     }
-  }, [ensureLinkStyling]);
+  }, [ensureLinkStyling, editorRef]);
+
+  // Additional effect to ensure links are styled after any content change
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (editorRef.current) {
+        ensureLinkStyling();
+      }
+    }, 200);
+    
+    return () => clearTimeout(timer);
+  }, [ensureLinkStyling, editorRef]);
 
   const handleInlineCode = () => {
     if (!isEditMode) return;

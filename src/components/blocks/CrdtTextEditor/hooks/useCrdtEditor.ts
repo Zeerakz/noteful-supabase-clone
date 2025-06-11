@@ -14,6 +14,7 @@ export function useCrdtEditor(
   const isUpdatingRef = useRef(false);
   const lastKnownContentRef = useRef<string>('');
 
+  // Always call useYjsDocument - never conditionally
   const { ytext, isConnected, updateContent, getDocumentContent } = useYjsDocument({
     pageId: `${pageId}-${blockId}`,
     onContentChange: (content) => {
@@ -44,29 +45,39 @@ export function useCrdtEditor(
   const ensureLinkStyling = useCallback(() => {
     if (!editorRef.current) return;
     
-    const links = editorRef.current.querySelectorAll('a');
+    const links = editorRef.current.querySelectorAll('a[href]');
     console.log('Ensuring link styling for', links.length, 'links');
     
     links.forEach((link, index) => {
-      console.log(`Styling link ${index + 1}:`, link.href, link.textContent);
+      const linkElement = link as HTMLAnchorElement;
+      console.log(`Styling link ${index + 1}:`, linkElement.href, linkElement.textContent);
       
       // Force inline styles to override any CSS conflicts
-      link.style.setProperty('color', '#2563eb', 'important');
-      link.style.setProperty('text-decoration', 'underline', 'important');
-      link.style.setProperty('cursor', 'pointer', 'important');
-      link.style.setProperty('pointer-events', 'auto', 'important');
-      link.style.setProperty('display', 'inline', 'important');
-      link.style.setProperty('position', 'relative', 'important');
-      link.style.setProperty('z-index', '1', 'important');
+      linkElement.style.setProperty('color', '#2563eb', 'important');
+      linkElement.style.setProperty('text-decoration', 'underline', 'important');
+      linkElement.style.setProperty('cursor', 'pointer', 'important');
+      linkElement.style.setProperty('pointer-events', 'auto', 'important');
+      linkElement.style.setProperty('display', 'inline', 'important');
+      linkElement.style.setProperty('position', 'relative', 'important');
+      linkElement.style.setProperty('z-index', '1', 'important');
+      linkElement.style.setProperty('background', 'transparent', 'important');
+      linkElement.style.setProperty('border', 'none', 'important');
+      linkElement.style.setProperty('outline', 'none', 'important');
       
       // Ensure proper attributes
-      if (!link.target) link.target = '_blank';
-      if (!link.rel) link.rel = 'noopener noreferrer';
+      if (!linkElement.target) linkElement.target = '_blank';
+      if (!linkElement.rel) linkElement.rel = 'noopener noreferrer';
       
       // Add a class for easier targeting
-      link.classList.add('rich-text-link');
+      linkElement.classList.add('rich-text-link');
       
-      console.log('Link styled with color:', link.style.color);
+      console.log('Link styled with color:', linkElement.style.color);
+      
+      // Force a repaint by temporarily changing a style
+      const originalDisplay = linkElement.style.display;
+      linkElement.style.display = 'none';
+      linkElement.offsetHeight; // Force reflow
+      linkElement.style.display = originalDisplay;
     });
   }, []);
 

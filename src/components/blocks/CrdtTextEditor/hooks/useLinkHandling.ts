@@ -41,6 +41,9 @@ export function useLinkHandling(
     linkElement.style.setProperty('display', 'inline', 'important');
     linkElement.style.setProperty('position', 'relative', 'important');
     linkElement.style.setProperty('z-index', '1', 'important');
+    linkElement.style.setProperty('background', 'transparent', 'important');
+    linkElement.style.setProperty('border', 'none', 'important');
+    linkElement.style.setProperty('outline', 'none', 'important');
     linkElement.classList.add('rich-text-link');
     
     console.log('Applied styling to link:', linkElement.href, 'with color:', linkElement.style.color);
@@ -118,18 +121,18 @@ export function useLinkHandling(
     // Focus the editor first to ensure proper selection handling
     editorRef.current.focus();
     
-    // Restore selection if we have one
-    if (savedSelection) {
-      const selection = window.getSelection();
-      if (selection) {
-        selection.removeAllRanges();
-        selection.addRange(savedSelection);
-        console.log('Selection restored for link creation');
-      }
-    }
-
-    // Create the link element manually for better control
     try {
+      // Restore selection if we have one
+      if (savedSelection) {
+        const selection = window.getSelection();
+        if (selection) {
+          selection.removeAllRanges();
+          selection.addRange(savedSelection);
+          console.log('Selection restored for link creation');
+        }
+      }
+
+      // Create the link element manually for better control
       const selection = window.getSelection();
       if (selection && selection.rangeCount > 0) {
         const range = selection.getRangeAt(0);
@@ -157,10 +160,15 @@ export function useLinkHandling(
         selection.removeAllRanges();
         selection.addRange(afterRange);
         
-        // Ensure styling is applied
-        setTimeout(() => {
-          applyLinkStyling(linkElement);
-        }, 50);
+        // Trigger input event to ensure content is synced
+        const inputEvent = new Event('input', { bubbles: true });
+        editorRef.current.dispatchEvent(inputEvent);
+        
+        // Force multiple styling applications to ensure it sticks
+        setTimeout(() => applyLinkStyling(linkElement), 10);
+        setTimeout(() => applyLinkStyling(linkElement), 50);
+        setTimeout(() => applyLinkStyling(linkElement), 100);
+        setTimeout(() => applyLinkStyling(linkElement), 200);
       }
     } catch (error) {
       console.error('Error creating link manually:', error);
@@ -178,11 +186,12 @@ export function useLinkHandling(
     setTimeout(() => {
       console.log('Second sync after link creation');
       syncContentToYjs();
-      
-      // Trigger a content change event to ensure the parent component is notified
-      const event = new Event('input', { bubbles: true });
-      editorRef.current?.dispatchEvent(event);
     }, 300);
+
+    setTimeout(() => {
+      console.log('Third sync after link creation');
+      syncContentToYjs();
+    }, 500);
   }, [isEditMode, editorRef, savedSelection, syncContentToYjs, applyLinkStyling]);
 
   const handleRemoveLink = useCallback(() => {
