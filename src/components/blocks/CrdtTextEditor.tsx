@@ -31,19 +31,26 @@ export function CrdtTextEditor({
   const [currentLink, setCurrentLink] = useState<{ url: string; text: string } | null>(null);
   const [savedSelection, setSavedSelection] = useState<Range | null>(null);
   const isUpdatingRef = useRef(false);
+  const lastKnownContentRef = useRef<string>('');
 
   const { ytext, isConnected, updateContent, getDocumentContent } = useYjsDocument({
     pageId: `${pageId}-${blockId}`,
     onContentChange: (content) => {
       if (!isUpdatingRef.current) {
-        onContentChange({ text: content });
+        const htmlContent = content.text || '';
+        console.log('CRDT content changed externally:', htmlContent);
         
         // Update the editor display if content changed externally
-        if (editorRef.current && editorRef.current.innerHTML !== content) {
+        if (editorRef.current && editorRef.current.innerHTML !== htmlContent) {
+          console.log('Updating editor display with external content');
           isUpdatingRef.current = true;
-          editorRef.current.innerHTML = content;
+          editorRef.current.innerHTML = htmlContent;
+          lastKnownContentRef.current = htmlContent;
           isUpdatingRef.current = false;
         }
+        
+        // Notify parent component
+        onContentChange({ text: htmlContent });
       }
     },
   });
@@ -51,25 +58,38 @@ export function CrdtTextEditor({
   // Initialize Y.js document with initial content
   useEffect(() => {
     if (initialContent && ytext.length === 0) {
+      console.log('Initializing Y.js with content:', initialContent);
+      lastKnownContentRef.current = initialContent;
       updateContent(initialContent);
+      
+      // Also set the editor content if it's empty
+      if (editorRef.current && !editorRef.current.innerHTML) {
+        editorRef.current.innerHTML = initialContent;
+      }
     }
   }, [initialContent, updateContent, ytext]);
 
-  // Handle local text changes
+  // Handle local text changes with improved HTML preservation
   const handleInput = () => {
     if (!editorRef.current || isUpdatingRef.current || !isEditMode) return;
 
-    const content = editorRef.current.innerHTML || '';
+    const htmlContent = editorRef.current.innerHTML || '';
     const currentContent = getDocumentContent();
     
-    if (content !== currentContent) {
+    console.log('Input changed - HTML:', htmlContent, 'CRDT:', currentContent);
+    
+    // Only update if content actually changed
+    if (htmlContent !== currentContent && htmlContent !== lastKnownContentRef.current) {
+      console.log('Updating CRDT with new HTML content');
       isUpdatingRef.current = true;
-      updateContent(content);
+      lastKnownContentRef.current = htmlContent;
+      updateContent(htmlContent);
       isUpdatingRef.current = false;
     }
   };
 
   const handleDoubleClick = () => {
+    console.log('Double click - entering edit mode');
     setIsEditMode(true);
     setIsFocused(true);
     if (editorRef.current) {
@@ -84,8 +104,24 @@ export function CrdtTextEditor({
   };
   
   const handleBlur = () => {
+    console.log('Blur - exiting edit mode, preserving content');
     setIsFocused(false);
     setIsEditMode(false);
+    
+    // Ensure final content is synced before exiting edit mode
+    if (editorRef.current) {
+      const htmlContent = editorRef.current.innerHTML || '';
+      const currentContent = getDocumentContent();
+      
+      if (htmlContent !== currentContent) {
+        console.log('Final sync on blur:', htmlContent);
+        isUpdatingRef.current = true;
+        lastKnownContentRef.current = htmlContent;
+        updateContent(htmlContent);
+        isUpdatingRef.current = false;
+      }
+    }
+    
     // Small delay to allow toolbar clicks
     setTimeout(() => setShowToolbar(false), 150);
   };
@@ -144,6 +180,17 @@ export function CrdtTextEditor({
     }
   };
 
+  const syncContentToYjs = () => {
+    if (editorRef.current) {
+      const htmlContent = editorRef.current.innerHTML || '';
+      console.log('Syncing content to Y.js:', htmlContent);
+      isUpdatingRef.current = true;
+      lastKnownContentRef.current = htmlContent;
+      updateContent(htmlContent);
+      isUpdatingRef.current = false;
+    }
+  };
+
   const execCommand = (command: string, value?: string) => {
     if (!isEditMode) return;
     
@@ -160,13 +207,8 @@ export function CrdtTextEditor({
     document.execCommand(command, false, value);
     editorRef.current?.focus();
     
-    // Update content after formatting
-    if (editorRef.current) {
-      const content = editorRef.current.innerHTML || '';
-      isUpdatingRef.current = true;
-      updateContent(content);
-      isUpdatingRef.current = false;
-    }
+    // Sync content after formatting
+    setTimeout(syncContentToYjs, 100);
   };
 
   const handleInlineCode = () => {
@@ -199,13 +241,8 @@ export function CrdtTextEditor({
     
     editorRef.current?.focus();
     
-    // Update content after adding inline code
-    if (editorRef.current) {
-      const content = editorRef.current.innerHTML || '';
-      isUpdatingRef.current = true;
-      updateContent(content);
-      isUpdatingRef.current = false;
-    }
+    // Sync content after adding inline code
+    setTimeout(syncContentToYjs, 100);
   };
 
   const handleCreateLink = () => {
@@ -262,6 +299,8 @@ export function CrdtTextEditor({
   const handleSaveLink = (url: string, text: string) => {
     if (!isEditMode) return;
     
+    console.log('Saving link:', { url, text });
+    
     // Restore the selection first
     restoreSelection();
     
@@ -299,14 +338,10 @@ export function CrdtTextEditor({
     // Focus back to editor
     editorRef.current?.focus();
     
-    // Update content after creating/editing link
+    // Sync content immediately after creating/editing link
     setTimeout(() => {
-      if (editorRef.current) {
-        const content = editorRef.current.innerHTML || '';
-        isUpdatingRef.current = true;
-        updateContent(content);
-        isUpdatingRef.current = false;
-      }
+      console.log('Syncing content after link creation');
+      syncContentToYjs();
     }, 100);
   };
 
@@ -323,15 +358,8 @@ export function CrdtTextEditor({
     
     editorRef.current?.focus();
     
-    // Update content after removing link
-    setTimeout(() => {
-      if (editorRef.current) {
-        const content = editorRef.current.innerHTML || '';
-        isUpdatingRef.current = true;
-        updateContent(content);
-        isUpdatingRef.current = false;
-      }
-    }, 100);
+    // Sync content after removing link
+    setTimeout(syncContentToYjs, 100);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
