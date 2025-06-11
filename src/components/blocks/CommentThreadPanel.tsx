@@ -8,19 +8,18 @@ import {
   Sheet, 
   SheetContent, 
   SheetHeader, 
-  SheetTitle,
-  SheetTrigger
+  SheetTitle
 } from '@/components/ui/sheet';
-import { MessageSquare, Plus, X, AtSign } from 'lucide-react';
+import { MessageSquare, Plus, AtSign } from 'lucide-react';
 
 interface CommentThreadPanelProps {
   blockId: string;
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
-  children: React.ReactNode;
+  children?: React.ReactNode;
 }
 
-export function CommentThreadPanel({ blockId, isOpen, onOpenChange, children }: CommentThreadPanelProps) {
+export function CommentThreadPanel({ blockId, isOpen, onOpenChange }: CommentThreadPanelProps) {
   const [newCommentBody, setNewCommentBody] = useState('');
   const { comments, loading, createComment, updateComment, deleteComment } = useComments(blockId);
 
@@ -44,9 +43,6 @@ export function CommentThreadPanel({ blockId, isOpen, onOpenChange, children }: 
 
   return (
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
-      <SheetTrigger asChild>
-        {children}
-      </SheetTrigger>
       <SheetContent side="right" className="w-[400px] sm:w-[540px]">
         <SheetHeader>
           <SheetTitle className="flex items-center gap-2">

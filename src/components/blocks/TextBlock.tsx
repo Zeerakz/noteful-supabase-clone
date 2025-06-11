@@ -91,9 +91,7 @@ export function TextBlock({ block, onUpdate, onDelete, isEditable }: TextBlockPr
         blockId={block.id}
         isOpen={isCommentPanelOpen}
         onOpenChange={setIsCommentPanelOpen}
-      >
-        <div /> {/* Empty div as children since we're using it as a controlled modal */}
-      </CommentThreadPanel>
+      />
     </div>
   );
 }
