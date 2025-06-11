@@ -29,26 +29,25 @@ export function CrdtTextEditor({
   const [selectedText, setSelectedText] = useState('');
   const [currentLink, setCurrentLink] = useState<{ url: string; text: string } | null>(null);
   const [savedSelection, setSavedSelection] = useState<Range | null>(null);
+  const [lastSavedContent, setLastSavedContent] = useState('');
+  const [hasError, setHasError] = useState(false);
   const isUpdatingRef = useRef(false);
-  const lastSavedContentRef = useRef('');
-  const hasUnsavedChangesRef = useRef(false);
 
   const { ytext, isConnected, updateContent, getDocumentContent } = useYjsDocument({
     pageId: `${pageId}-${blockId}`,
     onContentChange: (content) => {
-      console.log('Y.js content changed:', content);
-      if (!isUpdatingRef.current) {
-        // Save immediately without debouncing
+      if (!isUpdatingRef.current && content !== lastSavedContent) {
+        console.log('Y.js content changed, saving:', content);
         try {
           onContentChange({ text: content });
-          lastSavedContentRef.current = content;
-          hasUnsavedChangesRef.current = false;
-          console.log('Content saved via Y.js sync');
+          setLastSavedContent(content);
+          setHasError(false);
         } catch (error) {
           console.error('Error saving content via Y.js:', error);
+          setHasError(true);
         }
         
-        // Update the editor display if content changed externally
+        // Update editor display if needed
         if (editorRef.current && editorRef.current.innerHTML !== content) {
           isUpdatingRef.current = true;
           editorRef.current.innerHTML = content;
@@ -58,96 +57,52 @@ export function CrdtTextEditor({
     },
   });
 
-  // Initialize Y.js document with initial content
+  // Initialize with content
   useEffect(() => {
-    if (initialContent && ytext.length === 0) {
-      console.log('Initializing Y.js with content:', initialContent);
-      updateContent(initialContent);
-      lastSavedContentRef.current = initialContent;
+    if (initialContent && editorRef.current && !editorRef.current.innerHTML) {
+      editorRef.current.innerHTML = initialContent;
+      setLastSavedContent(initialContent);
+      
+      if (ytext.length === 0) {
+        updateContent(initialContent);
+      }
     }
   }, [initialContent, updateContent, ytext]);
 
-  // Force save any unsaved changes before page unload
-  useEffect(() => {
-    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      if (hasUnsavedChangesRef.current && editorRef.current) {
-        const currentContent = editorRef.current.innerHTML || '';
-        if (currentContent !== lastSavedContentRef.current) {
-          console.log('Saving content before page unload');
-          try {
-            onContentChange({ text: currentContent });
-            // Also update Y.js
-            if (currentContent !== getDocumentContent()) {
-              updateContent(currentContent);
-            }
-          } catch (error) {
-            console.error('Error saving content before unload:', error);
-          }
-        }
-      }
-    };
-
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-      
-      // Final save on unmount
-      if (hasUnsavedChangesRef.current && editorRef.current) {
-        const currentContent = editorRef.current.innerHTML || '';
-        if (currentContent !== lastSavedContentRef.current) {
-          console.log('Final save on component unmount');
-          try {
-            onContentChange({ text: currentContent });
-          } catch (error) {
-            console.error('Error in final save:', error);
-          }
-        }
-      }
-    };
-  }, [onContentChange, updateContent, getDocumentContent]);
-
   // Simplified save function
-  const saveCurrentContent = () => {
+  const saveContent = async () => {
     if (!editorRef.current) return;
-
+    
     const content = editorRef.current.innerHTML || '';
-    if (content === lastSavedContentRef.current) {
-      console.log('Content unchanged, skipping save');
-      return;
-    }
+    if (content === lastSavedContent) return;
 
     console.log('Saving content:', content);
     try {
-      // Save to parent component
-      onContentChange({ text: content });
+      // Save via parent component
+      await onContentChange({ text: content });
       
-      // Update Y.js if different
-      const yjsContent = getDocumentContent();
-      if (content !== yjsContent) {
+      // Update Y.js if different and connected
+      if (isConnected && content !== getDocumentContent()) {
         isUpdatingRef.current = true;
         updateContent(content);
         isUpdatingRef.current = false;
       }
       
-      lastSavedContentRef.current = content;
-      hasUnsavedChangesRef.current = false;
-      console.log('Content saved successfully');
+      setLastSavedContent(content);
+      setHasError(false);
     } catch (error) {
       console.error('Error saving content:', error);
+      setHasError(true);
     }
   };
 
-  // Handle local text changes
   const handleInput = () => {
-    if (!editorRef.current || isUpdatingRef.current) return;
-
-    hasUnsavedChangesRef.current = true;
-    console.log('Input detected, marking as unsaved');
-
-    const content = editorRef.current.innerHTML || '';
-    const currentContent = getDocumentContent();
+    if (isUpdatingRef.current) return;
     
-    if (content !== currentContent) {
+    const content = editorRef.current?.innerHTML || '';
+    
+    // Update Y.js immediately for real-time collaboration
+    if (isConnected && content !== getDocumentContent()) {
       isUpdatingRef.current = true;
       updateContent(content);
       isUpdatingRef.current = false;
@@ -155,18 +110,12 @@ export function CrdtTextEditor({
   };
 
   const handleFocus = () => {
-    console.log('Editor focused');
     setIsFocused(true);
   };
   
   const handleBlur = () => {
-    console.log('Editor blur - saving content');
     setIsFocused(false);
-    
-    // Save content immediately when losing focus
-    saveCurrentContent();
-    
-    // Small delay to allow toolbar clicks
+    saveContent();
     setTimeout(() => setShowToolbar(false), 150);
   };
 
@@ -186,41 +135,18 @@ export function CrdtTextEditor({
     }
   };
 
-  // Handle clicks on links - properly handle both editing and non-editing modes
   const handleClick = (e: React.MouseEvent) => {
     const target = e.target as HTMLElement;
-    
-    // Check if clicked element is a link or inside a link
-    let linkElement = target.closest('a');
+    const linkElement = target.closest('a');
     
     if (linkElement && linkElement.href) {
-      // If we're not currently selecting text or in editing mode, open the link
       const selection = window.getSelection();
       const hasSelection = selection && selection.toString().trim().length > 0;
       
       if (!hasSelection) {
         e.preventDefault();
         e.stopPropagation();
-        
-        // Open link in new tab
         window.open(linkElement.href, '_blank', 'noopener,noreferrer');
-      }
-    }
-  };
-
-  const saveSelection = () => {
-    const selection = window.getSelection();
-    if (selection && selection.rangeCount > 0) {
-      setSavedSelection(selection.getRangeAt(0).cloneRange());
-    }
-  };
-
-  const restoreSelection = () => {
-    if (savedSelection) {
-      const selection = window.getSelection();
-      if (selection) {
-        selection.removeAllRanges();
-        selection.addRange(savedSelection);
       }
     }
   };
@@ -238,15 +164,7 @@ export function CrdtTextEditor({
     
     document.execCommand(command, false, value);
     editorRef.current?.focus();
-    
-    // Update content after formatting
-    if (editorRef.current) {
-      hasUnsavedChangesRef.current = true;
-      const content = editorRef.current.innerHTML || '';
-      isUpdatingRef.current = true;
-      updateContent(content);
-      isUpdatingRef.current = false;
-    }
+    handleInput();
   };
 
   const handleInlineCode = () => {
@@ -255,15 +173,12 @@ export function CrdtTextEditor({
 
     const selectedText = selection.toString();
     if (selectedText) {
-      // Wrap selected text in code tags
       const codeHTML = `<code>${selectedText}</code>`;
       document.execCommand('insertHTML', false, codeHTML);
     } else {
-      // Insert empty code tags and place cursor inside
       const codeHTML = '<code></code>';
       document.execCommand('insertHTML', false, codeHTML);
       
-      // Move cursor inside the code tags
       const range = selection.getRangeAt(0);
       const codeElement = range.startContainer.parentElement?.querySelector('code:last-child');
       if (codeElement) {
@@ -276,15 +191,7 @@ export function CrdtTextEditor({
     }
     
     editorRef.current?.focus();
-    
-    // Update content after adding inline code
-    if (editorRef.current) {
-      hasUnsavedChangesRef.current = true;
-      const content = editorRef.current.innerHTML || '';
-      isUpdatingRef.current = true;
-      updateContent(content);
-      isUpdatingRef.current = false;
-    }
+    handleInput();
   };
 
   const handleCreateLink = () => {
@@ -294,14 +201,11 @@ export function CrdtTextEditor({
     const range = selection.getRangeAt(0);
     const selectedText = selection.toString();
     
-    // Save the current selection
-    saveSelection();
+    setSavedSelection(range.cloneRange());
     
-    // Check if we're clicking on an existing link
     let linkElement: HTMLAnchorElement | null = null;
     let currentElement = range.commonAncestorContainer;
     
-    // Traverse up to find if we're inside a link
     while (currentElement && currentElement !== editorRef.current) {
       if (currentElement.nodeType === Node.ELEMENT_NODE) {
         const element = currentElement as HTMLElement;
@@ -314,21 +218,12 @@ export function CrdtTextEditor({
     }
 
     if (linkElement) {
-      // Editing existing link
       setCurrentLink({
         url: linkElement.href,
         text: linkElement.textContent || ''
       });
       setSelectedText(linkElement.textContent || '');
-      
-      // Select the entire link for editing
-      const linkRange = document.createRange();
-      linkRange.selectNode(linkElement);
-      selection.removeAllRanges();
-      selection.addRange(linkRange);
-      setSavedSelection(linkRange.cloneRange());
     } else {
-      // Creating new link
       setCurrentLink(null);
       setSelectedText(selectedText);
     }
@@ -337,80 +232,63 @@ export function CrdtTextEditor({
   };
 
   const handleSaveLink = (url: string, text: string) => {
-    // Restore the selection first
-    restoreSelection();
-    
-    const selection = window.getSelection();
-    if (!selection) return;
+    if (savedSelection) {
+      const selection = window.getSelection();
+      if (selection) {
+        selection.removeAllRanges();
+        selection.addRange(savedSelection);
+      }
+    }
 
-    // Ensure we have a proper URL format
     let formattedUrl = url;
     if (!formattedUrl.startsWith('http://') && !formattedUrl.startsWith('https://')) {
       formattedUrl = 'https://' + formattedUrl;
     }
 
     if (currentLink) {
-      // Update existing link - replace the selected link entirely
       const linkHTML = `<a href="${formattedUrl}" target="_blank" rel="noopener noreferrer">${text}</a>`;
       document.execCommand('insertHTML', false, linkHTML);
     } else {
-      // Create new link
       if (selectedText && selectedText.trim()) {
-        // Use the provided text or fall back to selected text
         const linkText = text.trim() || selectedText;
         const linkHTML = `<a href="${formattedUrl}" target="_blank" rel="noopener noreferrer">${linkText}</a>`;
         document.execCommand('insertHTML', false, linkHTML);
       } else {
-        // No text selected, insert new link with provided text
         const linkText = text.trim() || formattedUrl;
         const linkHTML = `<a href="${formattedUrl}" target="_blank" rel="noopener noreferrer">${linkText}</a>`;
         document.execCommand('insertHTML', false, linkHTML);
       }
     }
 
-    // Clear saved selection
     setSavedSelection(null);
-    
-    // Focus back to editor
     editorRef.current?.focus();
     
-    // Update content after creating/editing link
     setTimeout(() => {
-      if (editorRef.current) {
-        hasUnsavedChangesRef.current = true;
-        const content = editorRef.current.innerHTML || '';
-        isUpdatingRef.current = true;
-        updateContent(content);
-        isUpdatingRef.current = false;
-      }
+      handleInput();
+      saveContent();
     }, 100);
   };
 
   const handleRemoveLink = () => {
-    // Restore selection first
-    restoreSelection();
+    if (savedSelection) {
+      const selection = window.getSelection();
+      if (selection) {
+        selection.removeAllRanges();
+        selection.addRange(savedSelection);
+      }
+    }
     
     document.execCommand('unlink', false);
-    
-    // Clear saved selection
     setSavedSelection(null);
-    
     editorRef.current?.focus();
     
-    // Update content after removing link
     setTimeout(() => {
-      if (editorRef.current) {
-        hasUnsavedChangesRef.current = true;
-        const content = editorRef.current.innerHTML || '';
-        isUpdatingRef.current = true;
-        updateContent(content);
-        isUpdatingRef.current = false;
-      }
+      handleInput();
+      saveContent();
     }, 100);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    // Handle keyboard shortcuts for formatting
     if (e.ctrlKey || e.metaKey) {
       switch (e.key) {
         case 'b':
@@ -441,8 +319,7 @@ export function CrdtTextEditor({
           break;
         case 's':
           e.preventDefault();
-          console.log('Manual save triggered via Ctrl+S');
-          saveCurrentContent();
+          saveContent();
           break;
       }
     }
@@ -466,6 +343,7 @@ export function CrdtTextEditor({
           focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring
           rich-text-content
           ${isFocused ? 'ring-2 ring-ring border-ring' : ''}
+          ${hasError ? 'border-red-500' : ''}
         `}
         data-placeholder={placeholder}
         style={{
@@ -473,7 +351,6 @@ export function CrdtTextEditor({
         }}
       />
       
-      {/* Floating toolbar for text selection */}
       {showToolbar && (
         <div
           className="fixed z-50 bg-background border border-border rounded-md shadow-lg"
@@ -486,23 +363,20 @@ export function CrdtTextEditor({
         </div>
       )}
       
-      {/* Connection status indicator */}
       {isFocused && (
         <div className="absolute top-1 right-1 flex items-center gap-1">
           <div
             className={`w-2 h-2 rounded-full ${
-              isConnected ? 'bg-green-500' : 'bg-red-500'
+              hasError ? 'bg-red-500' : isConnected ? 'bg-green-500' : 'bg-yellow-500'
             }`}
-            title={isConnected ? 'Connected (CRDT enabled)' : 'Disconnected'}
+            title={
+              hasError ? 'Save error' : 
+              isConnected ? 'Connected (CRDT enabled)' : 'Disconnected'
+            }
           />
           <span className="text-xs text-muted-foreground">
-            {isConnected ? 'Live' : 'Offline'}
+            {hasError ? 'Error' : isConnected ? 'Live' : 'Offline'}
           </span>
-          {hasUnsavedChangesRef.current && (
-            <span className="text-xs text-yellow-600" title="Unsaved changes">
-              •
-            </span>
-          )}
         </div>
       )}
       
