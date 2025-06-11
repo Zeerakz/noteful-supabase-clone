@@ -73,18 +73,26 @@
 
 /* Rich text editor styles */
 .rich-text-content {
-  /* Link styles */
+  /* Link styles - ensuring they work in all contexts */
   a {
-    @apply text-blue-600 underline hover:text-blue-800 transition-colors;
-    text-decoration: underline;
     color: #2563eb !important;
+    text-decoration: underline !important;
     cursor: pointer !important;
     pointer-events: auto !important;
+    transition: color 0.2s ease-in-out;
+  }
+
+  a:hover {
+    color: #1d4ed8 !important;
+    text-decoration: underline !important;
   }
 
   .dark a {
-    @apply text-blue-400 hover:text-blue-300;
     color: #60a5fa !important;
+  }
+
+  .dark a:hover {
+    color: #93c5fd !important;
   }
 
   /* Code styles */
@@ -157,38 +165,41 @@
   line-height: 1.5;
 }
 
-/* Enhanced link styles for better visibility and functionality */
-.rich-text-content a {
-  @apply text-blue-600 hover:text-blue-800 transition-colors;
+/* Force link styles to work regardless of contentEditable state */
+.rich-text-content a,
+.rich-text-content[contenteditable="true"] a,
+.rich-text-content[contenteditable="false"] a {
+  color: #2563eb !important;
   text-decoration: underline !important;
   cursor: pointer !important;
-  color: #2563eb !important;
   pointer-events: auto !important;
+  display: inline !important;
+  position: relative !important;
+  z-index: 1 !important;
 }
 
-.dark .rich-text-content a {
-  @apply text-blue-400 hover:text-blue-300;
+.dark .rich-text-content a,
+.dark .rich-text-content[contenteditable="true"] a,
+.dark .rich-text-content[contenteditable="false"] a {
   color: #60a5fa !important;
 }
 
-/* Ensure links work in both editable and read-only blocks */
+/* Ensure links work when not in edit mode */
 .rich-text-content:not([contenteditable="true"]) a {
   pointer-events: auto !important;
   cursor: pointer !important;
 }
 
-.rich-text-content[contenteditable="false"] a {
-  pointer-events: auto !important;
-  cursor: pointer !important;
-}
-
-/* Style links when hovering */
-.rich-text-content a:hover {
+/* Ensure links have proper styling when hovering */
+.rich-text-content a:hover,
+.rich-text-content[contenteditable="true"] a:hover,
+.rich-text-content[contenteditable="false"] a:hover {
+  color: #1d4ed8 !important;
   text-decoration: underline !important;
-  opacity: 0.9;
 }
 
-/* Ensure links are distinguishable from regular text */
-.rich-text-content a:not(:hover) {
-  text-decoration: underline;
+.dark .rich-text-content a:hover,
+.dark .rich-text-content[contenteditable="true"] a:hover,
+.dark .rich-text-content[contenteditable="false"] a:hover {
+  color: #93c5fd !important;
 }

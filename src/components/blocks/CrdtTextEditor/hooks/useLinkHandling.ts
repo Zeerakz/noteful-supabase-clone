@@ -91,27 +91,37 @@ export function useLinkHandling(
       formattedUrl = 'https://' + url;
     }
 
-    // Use a more direct approach to insert the link
     const linkText = text.trim() || formattedUrl;
-    const linkHTML = `<a href="${formattedUrl}" target="_blank" rel="noopener noreferrer">${linkText}</a>`;
     
-    // Restore selection first
+    // Create the link element directly
+    const linkElement = document.createElement('a');
+    linkElement.href = formattedUrl;
+    linkElement.target = '_blank';
+    linkElement.rel = 'noopener noreferrer';
+    linkElement.textContent = linkText;
+    
+    // Apply link styles immediately
+    linkElement.style.color = '#2563eb';
+    linkElement.style.textDecoration = 'underline';
+    linkElement.style.cursor = 'pointer';
+
+    // Restore selection and insert the link
     if (savedSelection) {
       const selection = window.getSelection();
       if (selection) {
         selection.removeAllRanges();
         selection.addRange(savedSelection);
         
-        // Get the range and delete the selected content
+        // Delete the selected content
         const range = selection.getRangeAt(0);
         range.deleteContents();
         
-        // Create a document fragment with the link
-        const fragment = range.createContextualFragment(linkHTML);
-        range.insertNode(fragment);
+        // Insert the link element
+        range.insertNode(linkElement);
         
         // Move cursor after the link
-        range.collapse(false);
+        range.setStartAfter(linkElement);
+        range.setEndAfter(linkElement);
         selection.removeAllRanges();
         selection.addRange(range);
       }
@@ -120,9 +130,11 @@ export function useLinkHandling(
       const selection = window.getSelection();
       if (selection && selection.rangeCount > 0) {
         const range = selection.getRangeAt(0);
-        const fragment = range.createContextualFragment(linkHTML);
-        range.insertNode(fragment);
-        range.collapse(false);
+        range.insertNode(linkElement);
+        
+        // Move cursor after the link
+        range.setStartAfter(linkElement);
+        range.setEndAfter(linkElement);
         selection.removeAllRanges();
         selection.addRange(range);
       }
@@ -134,8 +146,11 @@ export function useLinkHandling(
     // Focus back to editor
     editorRef.current.focus();
     
-    // Force immediate sync to Y.js
-    setTimeout(syncContentToYjs, 100);
+    // Delay sync to ensure DOM is updated first
+    setTimeout(() => {
+      console.log('Syncing content after link creation');
+      syncContentToYjs();
+    }, 200);
   }, [isEditMode, editorRef, savedSelection, syncContentToYjs]);
 
   const handleRemoveLink = useCallback(() => {

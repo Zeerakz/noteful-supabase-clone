@@ -101,20 +101,30 @@ export function useCrdtEditor(
   }, [getDocumentContent, updateContent]);
 
   const handleClick = useCallback((e: React.MouseEvent) => {
-    // If we're in edit mode, don't handle link clicks
-    if (isEditMode) return;
-    
     const target = e.target as HTMLElement;
     const linkElement = target.closest('a');
     
+    // If we click on a link, handle it appropriately based on edit mode
     if (linkElement && linkElement.href) {
-      e.preventDefault();
-      e.stopPropagation();
-      
-      console.log('Link clicked:', linkElement.href);
-      
-      // Open link in new tab
-      window.open(linkElement.href, '_blank', 'noopener,noreferrer');
+      if (isEditMode) {
+        // In edit mode, allow link editing but prevent navigation
+        console.log('Link clicked in edit mode - allowing editing');
+        return;
+      } else {
+        // In view mode, open the link
+        e.preventDefault();
+        e.stopPropagation();
+        console.log('Link clicked in view mode:', linkElement.href);
+        window.open(linkElement.href, '_blank', 'noopener,noreferrer');
+        return;
+      }
+    }
+    
+    // If not a link click and not in edit mode, this could start edit mode
+    if (!isEditMode) {
+      // Don't automatically enter edit mode on single click
+      // User should double-click to edit
+      return;
     }
   }, [isEditMode]);
 
