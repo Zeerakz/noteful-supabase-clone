@@ -24,18 +24,27 @@ export function useTableData(initialContent: any, onUpdate: (content: any) => Pr
   // Update parent when table data changes
   const updateTable = useCallback(async (newData: TableData) => {
     setTableData(newData);
-    await onUpdate(newData);
+    try {
+      console.log('Updating table data:', newData);
+      await onUpdate(newData);
+    } catch (error) {
+      console.error('Failed to update table data:', error);
+    }
   }, [onUpdate]);
 
   const updateCell = useCallback(async (rowIndex: number, columnIndex: number, content: any) => {
     const newData = { ...tableData };
-    newData.rows[rowIndex][columnIndex] = content.text || content || '';
+    // Handle both string content and object content with text property
+    const cellValue = typeof content === 'string' ? content : (content?.text || content || '');
+    newData.rows[rowIndex][columnIndex] = cellValue;
     await updateTable(newData);
   }, [tableData, updateTable]);
 
   const updateColumnHeader = useCallback(async (columnIndex: number, content: any) => {
     const newData = { ...tableData };
-    newData.headers[columnIndex] = content.text || content || '';
+    // Handle both string content and object content with text property
+    const headerValue = typeof content === 'string' ? content : (content?.text || content || '');
+    newData.headers[columnIndex] = headerValue;
     await updateTable(newData);
   }, [tableData, updateTable]);
 
