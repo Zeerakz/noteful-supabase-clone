@@ -53,6 +53,12 @@ function renderInlineNodes(nodes: any[]): string {
             case 'strike':
               text = `<s>${text}</s>`;
               break;
+            case 'link':
+              const href = mark.attrs?.href || '#';
+              const target = mark.attrs?.target || '_blank';
+              const rel = mark.attrs?.rel || 'noopener noreferrer';
+              text = `<a href="${href}" target="${target}" rel="${rel}">${text}</a>`;
+              break;
           }
         });
       }
@@ -153,6 +159,15 @@ function parseInlineContent(element: HTMLElement): DocumentNode[] {
         if (el.tagName === 'EM' || el.tagName === 'I') marks.push({ type: 'italic' });
         if (el.tagName === 'U') marks.push({ type: 'underline' });
         if (el.tagName === 'S' || el.tagName === 'STRIKE') marks.push({ type: 'strike' });
+        if (el.tagName === 'A') {
+          const href = (el as HTMLAnchorElement).href;
+          const target = (el as HTMLAnchorElement).target;
+          const rel = (el as HTMLAnchorElement).rel;
+          marks.push({ 
+            type: 'link', 
+            attrs: { href, target, rel }
+          });
+        }
         
         content.push({
           type: 'text',

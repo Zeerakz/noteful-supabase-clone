@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Bold, Italic, Underline, Strikethrough } from 'lucide-react';
+import { Bold, Italic, Underline, Strikethrough, Link, Unlink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface EditorToolbarProps {
@@ -57,6 +57,27 @@ export function EditorToolbar({ onCommand }: EditorToolbarProps) {
         title="Strikethrough (Ctrl+Shift+S)"
       >
         <Strikethrough className="h-3 w-3" />
+      </Button>
+      <div className="w-px h-6 bg-border mx-1" />
+      <Button
+        variant="ghost"
+        size="sm"
+        className="h-8 w-8 p-0"
+        data-testid="link-button"
+        onMouseDown={(e) => handleMouseDown(e, 'createLink')}
+        title="Add Link (Ctrl+K)"
+      >
+        <Link className="h-3 w-3" />
+      </Button>
+      <Button
+        variant="ghost"
+        size="sm"
+        className="h-8 w-8 p-0"
+        data-testid="unlink-button"
+        onMouseDown={(e) => handleMouseDown(e, 'unlink')}
+        title="Remove Link"
+      >
+        <Unlink className="h-3 w-3" />
       </Button>
     </div>
   );
