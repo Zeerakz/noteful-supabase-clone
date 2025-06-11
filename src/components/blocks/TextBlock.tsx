@@ -58,24 +58,26 @@ export function TextBlock({ block, onUpdate, onDelete, isEditable }: TextBlockPr
 
   return (
     <div
-      className="group relative"
+      className="group relative flex items-start gap-2"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <CrdtTextEditor
-        pageId={block.page_id}
-        blockId={block.id}
-        initialContent={textContent}
-        onContentChange={handleContentChange}
-        placeholder="Type something..."
-        className="w-full"
-        showCommentButton={isHovered}
-        comments={comments}
-        onOpenComments={() => setIsCommentPanelOpen(true)}
-      />
+      <div className="flex-1">
+        <CrdtTextEditor
+          pageId={block.page_id}
+          blockId={block.id}
+          initialContent={textContent}
+          onContentChange={handleContentChange}
+          placeholder="Type something..."
+          className="w-full"
+          showCommentButton={isHovered}
+          comments={comments}
+          onOpenComments={() => setIsCommentPanelOpen(true)}
+        />
+      </div>
       
       {isHovered && (
-        <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity z-20">
+        <div className="opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
           <Button
             onClick={handleDelete}
             variant="ghost"
