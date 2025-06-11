@@ -28,6 +28,7 @@ export function CrdtTextEditor({
   const [isLinkDialogOpen, setIsLinkDialogOpen] = useState(false);
   const [selectedText, setSelectedText] = useState('');
   const [currentLink, setCurrentLink] = useState<{ url: string; text: string } | null>(null);
+  const [savedSelection, setSavedSelection] = useState<Range | null>(null);
   const isUpdatingRef = useRef(false);
 
   const { ytext, isConnected, updateContent, getDocumentContent } = useYjsDocument({
@@ -110,6 +111,23 @@ export function CrdtTextEditor({
     }
   };
 
+  const saveSelection = () => {
+    const selection = window.getSelection();
+    if (selection && selection.rangeCount > 0) {
+      setSavedSelection(selection.getRangeAt(0).cloneRange());
+    }
+  };
+
+  const restoreSelection = () => {
+    if (savedSelection) {
+      const selection = window.getSelection();
+      if (selection) {
+        selection.removeAllRanges();
+        selection.addRange(savedSelection);
+      }
+    }
+  };
+
   const execCommand = (command: string, value?: string) => {
     if (command === 'createLink') {
       handleCreateLink();
@@ -177,6 +195,9 @@ export function CrdtTextEditor({
     const range = selection.getRangeAt(0);
     const selectedText = selection.toString();
     
+    // Save the current selection
+    saveSelection();
+    
     // Check if we're clicking on an existing link
     let linkElement: HTMLAnchorElement | null = null;
     let currentElement = range.commonAncestorContainer;
@@ -206,6 +227,7 @@ export function CrdtTextEditor({
       linkRange.selectNode(linkElement);
       selection.removeAllRanges();
       selection.addRange(linkRange);
+      setSavedSelection(linkRange.cloneRange());
     } else {
       // Creating new link
       setCurrentLink(null);
@@ -216,49 +238,74 @@ export function CrdtTextEditor({
   };
 
   const handleSaveLink = (url: string, text: string) => {
+    // Restore the selection first
+    restoreSelection();
+    
     const selection = window.getSelection();
     if (!selection) return;
 
+    // Ensure we have a proper URL format
+    let formattedUrl = url;
+    if (!formattedUrl.startsWith('http://') && !formattedUrl.startsWith('https://')) {
+      formattedUrl = 'https://' + formattedUrl;
+    }
+
     if (currentLink) {
-      // Update existing link
-      const linkHTML = `<a href="${url}" target="_blank" rel="noopener noreferrer">${text}</a>`;
+      // Update existing link - replace the selected link entirely
+      const linkHTML = `<a href="${formattedUrl}" target="_blank" rel="noopener noreferrer">${text}</a>`;
       document.execCommand('insertHTML', false, linkHTML);
     } else {
       // Create new link
-      if (selectedText) {
-        // Use the selected text but update with custom text if provided
-        const linkText = text || selectedText;
-        const linkHTML = `<a href="${url}" target="_blank" rel="noopener noreferrer">${linkText}</a>`;
+      if (selectedText && selectedText.trim()) {
+        // Use the provided text or fall back to selected text
+        const linkText = text.trim() || selectedText;
+        const linkHTML = `<a href="${formattedUrl}" target="_blank" rel="noopener noreferrer">${linkText}</a>`;
         document.execCommand('insertHTML', false, linkHTML);
       } else {
-        // No text selected, insert new link
-        const linkHTML = `<a href="${url}" target="_blank" rel="noopener noreferrer">${text}</a>`;
+        // No text selected, insert new link with provided text
+        const linkText = text.trim() || formattedUrl;
+        const linkHTML = `<a href="${formattedUrl}" target="_blank" rel="noopener noreferrer">${linkText}</a>`;
         document.execCommand('insertHTML', false, linkHTML);
       }
     }
 
+    // Clear saved selection
+    setSavedSelection(null);
+    
+    // Focus back to editor
     editorRef.current?.focus();
     
     // Update content after creating/editing link
-    if (editorRef.current) {
-      const content = editorRef.current.innerHTML || '';
-      isUpdatingRef.current = true;
-      updateContent(content);
-      isUpdatingRef.current = false;
-    }
+    setTimeout(() => {
+      if (editorRef.current) {
+        const content = editorRef.current.innerHTML || '';
+        isUpdatingRef.current = true;
+        updateContent(content);
+        isUpdatingRef.current = false;
+      }
+    }, 100);
   };
 
   const handleRemoveLink = () => {
+    // Restore selection first
+    restoreSelection();
+    
     document.execCommand('unlink', false);
+    
+    // Clear saved selection
+    setSavedSelection(null);
+    
     editorRef.current?.focus();
     
     // Update content after removing link
-    if (editorRef.current) {
-      const content = editorRef.current.innerHTML || '';
-      isUpdatingRef.current = true;
-      updateContent(content);
-      isUpdatingRef.current = false;
-    }
+    setTimeout(() => {
+      if (editorRef.current) {
+        const content = editorRef.current.innerHTML || '';
+        isUpdatingRef.current = true;
+        updateContent(content);
+        isUpdatingRef.current = false;
+      }
+    }, 100);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -350,7 +397,10 @@ export function CrdtTextEditor({
       
       <LinkDialog
         isOpen={isLinkDialogOpen}
-        onClose={() => setIsLinkDialogOpen(false)}
+        onClose={() => {
+          setIsLinkDialogOpen(false);
+          setSavedSelection(null);
+        }}
         onSave={handleSaveLink}
         onRemove={currentLink ? handleRemoveLink : undefined}
         initialUrl={currentLink?.url || ''}
