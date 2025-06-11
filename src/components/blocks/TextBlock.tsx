@@ -58,7 +58,7 @@ export function TextBlock({ block, onUpdate, onDelete, isEditable }: TextBlockPr
 
   return (
     <div
-      className="group relative flex items-start gap-2"
+      className="group relative flex items-center gap-2"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
