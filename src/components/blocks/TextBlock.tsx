@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Block } from '@/hooks/useBlocks';
 import { Button } from '@/components/ui/button';
 import { Trash2 } from 'lucide-react';
-import { CrdtTextEditor } from './CrdtTextEditor';
+import { CrdtTextEditor } from './CrdtTextEditor/CrdtTextEditor';
 import { CommentIcon } from './CommentIcon';
 import { CommentThreadPanel } from './CommentThreadPanel';
 import { useComments } from '@/hooks/useComments';
