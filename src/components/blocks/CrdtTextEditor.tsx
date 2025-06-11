@@ -112,6 +112,16 @@ export function CrdtTextEditor({
           e.preventDefault();
           execCommand('italic');
           break;
+        case 'u':
+          e.preventDefault();
+          execCommand('underline');
+          break;
+        case 'S':
+          if (e.shiftKey) {
+            e.preventDefault();
+            execCommand('strikeThrough');
+          }
+          break;
       }
     }
   };

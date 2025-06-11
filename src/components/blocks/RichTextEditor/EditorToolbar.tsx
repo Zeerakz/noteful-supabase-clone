@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Bold, Italic } from 'lucide-react';
+import { Bold, Italic, Underline, Strikethrough } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface EditorToolbarProps {
@@ -37,6 +37,26 @@ export function EditorToolbar({ onCommand }: EditorToolbarProps) {
         title="Italic (Ctrl+I)"
       >
         <Italic className="h-3 w-3" />
+      </Button>
+      <Button
+        variant="ghost"
+        size="sm"
+        className="h-8 w-8 p-0"
+        data-testid="underline-button"
+        onMouseDown={(e) => handleMouseDown(e, 'underline')}
+        title="Underline (Ctrl+U)"
+      >
+        <Underline className="h-3 w-3" />
+      </Button>
+      <Button
+        variant="ghost"
+        size="sm"
+        className="h-8 w-8 p-0"
+        data-testid="strikethrough-button"
+        onMouseDown={(e) => handleMouseDown(e, 'strikeThrough')}
+        title="Strikethrough (Ctrl+Shift+S)"
+      >
+        <Strikethrough className="h-3 w-3" />
       </Button>
     </div>
   );

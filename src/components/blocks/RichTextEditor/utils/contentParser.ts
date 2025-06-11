@@ -152,7 +152,7 @@ function parseInlineContent(element: HTMLElement): DocumentNode[] {
         if (el.tagName === 'STRONG' || el.tagName === 'B') marks.push({ type: 'bold' });
         if (el.tagName === 'EM' || el.tagName === 'I') marks.push({ type: 'italic' });
         if (el.tagName === 'U') marks.push({ type: 'underline' });
-        if (el.tagName === 'S') marks.push({ type: 'strike' });
+        if (el.tagName === 'S' || el.tagName === 'STRIKE') marks.push({ type: 'strike' });
         
         content.push({
           type: 'text',

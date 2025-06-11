@@ -61,6 +61,12 @@ export function RichTextEditor({ initialContent, onBlur, placeholder = "Start ty
           e.preventDefault();
           execCommand('underline');
           break;
+        case 'S':
+          if (e.shiftKey) {
+            e.preventDefault();
+            execCommand('strikeThrough');
+          }
+          break;
       }
     }
     
