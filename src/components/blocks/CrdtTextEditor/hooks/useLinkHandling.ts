@@ -32,6 +32,20 @@ export function useLinkHandling(
     }
   }, [savedSelection]);
 
+  const applyLinkStyling = useCallback((linkElement: HTMLAnchorElement) => {
+    // Apply comprehensive styling to ensure visibility
+    linkElement.style.setProperty('color', '#2563eb', 'important');
+    linkElement.style.setProperty('text-decoration', 'underline', 'important');
+    linkElement.style.setProperty('cursor', 'pointer', 'important');
+    linkElement.style.setProperty('pointer-events', 'auto', 'important');
+    linkElement.style.setProperty('display', 'inline', 'important');
+    linkElement.style.setProperty('position', 'relative', 'important');
+    linkElement.style.setProperty('z-index', '1', 'important');
+    linkElement.classList.add('rich-text-link');
+    
+    console.log('Applied styling to link:', linkElement.href, 'with color:', linkElement.style.color);
+  }, []);
+
   const handleCreateLink = useCallback(() => {
     if (!isEditMode) return;
     
@@ -114,90 +128,62 @@ export function useLinkHandling(
       }
     }
 
-    // Create the link using document.execCommand for better browser compatibility
+    // Create the link element manually for better control
     try {
-      // If we have selected text, use execCommand to create the link
       const selection = window.getSelection();
       if (selection && selection.rangeCount > 0) {
         const range = selection.getRangeAt(0);
         
-        // If no text is selected but we have link text, insert it first
-        if (range.collapsed && linkText) {
-          range.insertNode(document.createTextNode(linkText));
-          range.selectNode(range.startContainer.lastChild || range.startContainer);
-          selection.removeAllRanges();
-          selection.addRange(range);
-        }
+        // Create the link element
+        const linkElement = document.createElement('a');
+        linkElement.href = formattedUrl;
+        linkElement.target = '_blank';
+        linkElement.rel = 'noopener noreferrer';
+        linkElement.textContent = linkText;
         
-        // Create the link using execCommand
-        document.execCommand('createLink', false, formattedUrl);
+        // Apply comprehensive styling immediately
+        applyLinkStyling(linkElement);
         
-        // Find the newly created link and apply additional attributes
-        const links = editorRef.current.querySelectorAll('a[href="' + formattedUrl + '"]');
-        const newLink = links[links.length - 1] as HTMLAnchorElement;
-        
-        if (newLink) {
-          newLink.target = '_blank';
-          newLink.rel = 'noopener noreferrer';
-          newLink.style.color = '#2563eb';
-          newLink.style.textDecoration = 'underline';
-          newLink.style.cursor = 'pointer';
-          
-          // Update text content if different
-          if (linkText && newLink.textContent !== linkText) {
-            newLink.textContent = linkText;
-          }
-          
-          console.log('Link created successfully:', newLink);
-          
-          // Move cursor after the link
-          const afterRange = document.createRange();
-          afterRange.setStartAfter(newLink);
-          afterRange.collapse(true);
-          selection.removeAllRanges();
-          selection.addRange(afterRange);
-        }
-      }
-    } catch (error) {
-      console.error('Error creating link with execCommand:', error);
-      
-      // Fallback: manual link creation
-      const linkElement = document.createElement('a');
-      linkElement.href = formattedUrl;
-      linkElement.target = '_blank';
-      linkElement.rel = 'noopener noreferrer';
-      linkElement.textContent = linkText;
-      linkElement.style.color = '#2563eb';
-      linkElement.style.textDecoration = 'underline';
-      linkElement.style.cursor = 'pointer';
-
-      const selection = window.getSelection();
-      if (selection && selection.rangeCount > 0) {
-        const range = selection.getRangeAt(0);
+        // Clear the range and insert the link
         range.deleteContents();
         range.insertNode(linkElement);
         
+        console.log('Link element created and inserted:', linkElement.outerHTML);
+        
         // Move cursor after the link
-        range.setStartAfter(linkElement);
-        range.collapse(true);
+        const afterRange = document.createRange();
+        afterRange.setStartAfter(linkElement);
+        afterRange.collapse(true);
         selection.removeAllRanges();
-        selection.addRange(range);
+        selection.addRange(afterRange);
+        
+        // Ensure styling is applied
+        setTimeout(() => {
+          applyLinkStyling(linkElement);
+        }, 50);
       }
+    } catch (error) {
+      console.error('Error creating link manually:', error);
     }
 
     // Clear saved selection
     setSavedSelection(null);
     
-    // Force content sync with a longer delay to ensure DOM is updated
+    // Force content sync with multiple delays to ensure persistence
     setTimeout(() => {
-      console.log('Syncing content after link creation');
+      console.log('First sync after link creation');
+      syncContentToYjs();
+    }, 100);
+    
+    setTimeout(() => {
+      console.log('Second sync after link creation');
       syncContentToYjs();
       
       // Trigger a content change event to ensure the parent component is notified
       const event = new Event('input', { bubbles: true });
       editorRef.current?.dispatchEvent(event);
     }, 300);
-  }, [isEditMode, editorRef, savedSelection, syncContentToYjs]);
+  }, [isEditMode, editorRef, savedSelection, syncContentToYjs, applyLinkStyling]);
 
   const handleRemoveLink = useCallback(() => {
     if (!isEditMode || !editorRef.current) return;

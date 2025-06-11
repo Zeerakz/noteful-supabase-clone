@@ -71,30 +71,8 @@
   }
 }
 
-/* Rich text editor styles */
+/* Rich text editor styles with maximum specificity for links */
 .rich-text-content {
-  /* Link styles - ensuring they work in all contexts */
-  a {
-    color: #2563eb !important;
-    text-decoration: underline !important;
-    cursor: pointer !important;
-    pointer-events: auto !important;
-    transition: color 0.2s ease-in-out;
-  }
-
-  a:hover {
-    color: #1d4ed8 !important;
-    text-decoration: underline !important;
-  }
-
-  .dark a {
-    color: #60a5fa !important;
-  }
-
-  .dark a:hover {
-    color: #93c5fd !important;
-  }
-
   /* Code styles */
   code {
     @apply bg-gray-100 text-gray-800 px-1 py-0.5 rounded text-sm font-mono;
@@ -165,10 +143,13 @@
   line-height: 1.5;
 }
 
-/* Force link styles to work regardless of contentEditable state */
+/* Ultra-specific link styles - these will override everything */
+div[contenteditable] a,
+div[contenteditable="true"] a,
+div[contenteditable="false"] a,
 .rich-text-content a,
-.rich-text-content[contenteditable="true"] a,
-.rich-text-content[contenteditable="false"] a {
+[class*="rich-text"] a,
+*[class*="editor"] a {
   color: #2563eb !important;
   text-decoration: underline !important;
   cursor: pointer !important;
@@ -176,30 +157,70 @@
   display: inline !important;
   position: relative !important;
   z-index: 1 !important;
+  border: none !important;
+  outline: none !important;
+  background: transparent !important;
 }
 
+/* Dark mode link styles */
+.dark div[contenteditable] a,
+.dark div[contenteditable="true"] a,
+.dark div[contenteditable="false"] a,
 .dark .rich-text-content a,
-.dark .rich-text-content[contenteditable="true"] a,
-.dark .rich-text-content[contenteditable="false"] a {
+.dark [class*="rich-text"] a,
+.dark *[class*="editor"] a {
   color: #60a5fa !important;
 }
 
-/* Ensure links work when not in edit mode */
-.rich-text-content:not([contenteditable="true"]) a {
-  pointer-events: auto !important;
-  cursor: pointer !important;
-}
-
-/* Ensure links have proper styling when hovering */
+/* Hover states for links */
+div[contenteditable] a:hover,
+div[contenteditable="true"] a:hover,
+div[contenteditable="false"] a:hover,
 .rich-text-content a:hover,
-.rich-text-content[contenteditable="true"] a:hover,
-.rich-text-content[contenteditable="false"] a:hover {
+[class*="rich-text"] a:hover,
+*[class*="editor"] a:hover {
   color: #1d4ed8 !important;
   text-decoration: underline !important;
 }
 
+.dark div[contenteditable] a:hover,
+.dark div[contenteditable="true"] a:hover,
+.dark div[contenteditable="false"] a:hover,
 .dark .rich-text-content a:hover,
-.dark .rich-text-content[contenteditable="true"] a:hover,
-.dark .rich-text-content[contenteditable="false"] a:hover {
+.dark [class*="rich-text"] a:hover,
+.dark *[class*="editor"] a:hover {
   color: #93c5fd !important;
+}
+
+/* Ensure links work when not in edit mode */
+div[contenteditable="false"] a,
+*:not([contenteditable="true"]) a {
+  pointer-events: auto !important;
+  cursor: pointer !important;
+}
+
+/* Force link styles on any anchor tag in editor content */
+a[href] {
+  color: #2563eb !important;
+  text-decoration: underline !important;
+  cursor: pointer !important;
+}
+
+.dark a[href] {
+  color: #60a5fa !important;
+}
+
+/* Additional fallback for any missed cases */
+*[href^="http"],
+*[href^="https://"],
+*[href^="mailto:"] {
+  color: #2563eb !important;
+  text-decoration: underline !important;
+  cursor: pointer !important;
+}
+
+.dark *[href^="http"],
+.dark *[href^="https://"],
+.dark *[href^="mailto:"] {
+  color: #60a5fa !important;
 }

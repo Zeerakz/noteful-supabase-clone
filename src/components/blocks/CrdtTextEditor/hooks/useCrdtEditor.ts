@@ -45,12 +45,28 @@ export function useCrdtEditor(
     if (!editorRef.current) return;
     
     const links = editorRef.current.querySelectorAll('a');
-    links.forEach(link => {
-      link.style.color = '#2563eb';
-      link.style.textDecoration = 'underline';
-      link.style.cursor = 'pointer';
+    console.log('Ensuring link styling for', links.length, 'links');
+    
+    links.forEach((link, index) => {
+      console.log(`Styling link ${index + 1}:`, link.href, link.textContent);
+      
+      // Force inline styles to override any CSS conflicts
+      link.style.setProperty('color', '#2563eb', 'important');
+      link.style.setProperty('text-decoration', 'underline', 'important');
+      link.style.setProperty('cursor', 'pointer', 'important');
+      link.style.setProperty('pointer-events', 'auto', 'important');
+      link.style.setProperty('display', 'inline', 'important');
+      link.style.setProperty('position', 'relative', 'important');
+      link.style.setProperty('z-index', '1', 'important');
+      
+      // Ensure proper attributes
       if (!link.target) link.target = '_blank';
       if (!link.rel) link.rel = 'noopener noreferrer';
+      
+      // Add a class for easier targeting
+      link.classList.add('rich-text-link');
+      
+      console.log('Link styled with color:', link.style.color);
     });
   }, []);
 
@@ -65,7 +81,12 @@ export function useCrdtEditor(
       isUpdatingRef.current = true;
       lastKnownContentRef.current = htmlContent;
       updateContent(htmlContent);
-      isUpdatingRef.current = false;
+      
+      // Re-apply styling after a brief delay to ensure it sticks
+      setTimeout(() => {
+        ensureLinkStyling();
+        isUpdatingRef.current = false;
+      }, 150);
     }
   }, [updateContent, ensureLinkStyling]);
 
@@ -78,7 +99,7 @@ export function useCrdtEditor(
     console.log('Input changed - HTML:', htmlContent, 'CRDT:', currentContent);
     
     // Ensure links are styled after input
-    ensureLinkStyling();
+    setTimeout(ensureLinkStyling, 50);
     
     // Only update if content actually changed
     if (htmlContent !== currentContent && htmlContent !== lastKnownContentRef.current) {
@@ -86,7 +107,12 @@ export function useCrdtEditor(
       isUpdatingRef.current = true;
       lastKnownContentRef.current = htmlContent;
       updateContent(htmlContent);
-      isUpdatingRef.current = false;
+      
+      // Re-apply styling after sync
+      setTimeout(() => {
+        ensureLinkStyling();
+        isUpdatingRef.current = false;
+      }, 100);
     }
   }, [isEditMode, getDocumentContent, updateContent, ensureLinkStyling]);
 
@@ -123,7 +149,12 @@ export function useCrdtEditor(
         isUpdatingRef.current = true;
         lastKnownContentRef.current = htmlContent;
         updateContent(htmlContent);
-        isUpdatingRef.current = false;
+        
+        // Final styling application
+        setTimeout(() => {
+          ensureLinkStyling();
+          isUpdatingRef.current = false;
+        }, 100);
       }
     }
   }, [getDocumentContent, updateContent, ensureLinkStyling]);
