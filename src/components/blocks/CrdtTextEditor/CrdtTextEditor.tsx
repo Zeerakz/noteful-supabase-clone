@@ -27,6 +27,7 @@ export function CrdtTextEditor({
     ytext,
     updateContent,
     syncContentToYjs,
+    ensureLinkStyling,
     handleInput,
     handleDoubleClick,
     handleFocus,
@@ -61,9 +62,18 @@ export function CrdtTextEditor({
       // Also set the editor content if it's empty
       if (editorRef.current && !editorRef.current.innerHTML) {
         editorRef.current.innerHTML = initialContent;
+        // Ensure proper link styling on initialization
+        setTimeout(ensureLinkStyling, 100);
       }
     }
-  }, [initialContent, updateContent, ytext]);
+  }, [initialContent, updateContent, ytext, ensureLinkStyling]);
+
+  // Ensure link styling is maintained
+  useEffect(() => {
+    if (editorRef.current) {
+      ensureLinkStyling();
+    }
+  }, [ensureLinkStyling]);
 
   const handleInlineCode = () => {
     if (!isEditMode) return;
@@ -115,8 +125,11 @@ export function CrdtTextEditor({
     document.execCommand(command, false, value);
     editorRef.current?.focus();
     
-    // Sync content after formatting
-    setTimeout(syncContentToYjs, 100);
+    // Ensure links are styled after any formatting command
+    setTimeout(() => {
+      ensureLinkStyling();
+      syncContentToYjs();
+    }, 100);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
