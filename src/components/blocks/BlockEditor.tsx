@@ -1,5 +1,6 @@
+
 import React, { useState, useRef, useEffect } from 'react';
-import { Plus, Type, Heading1, Heading2, Heading3, List, ListOrdered, Image } from 'lucide-react';
+import { Plus, Type, Heading1, Heading2, Heading3, List, ListOrdered, Image, Table } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { BlockRenderer } from './BlockRenderer';
@@ -239,6 +240,10 @@ export function BlockEditor({ pageId, isEditable, workspaceId }: BlockEditorProp
                 <Image className="h-4 w-4 mr-2" />
                 Image
               </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleCreateBlock('table')}>
+                <Table className="h-4 w-4 mr-2" />
+                Table
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
@@ -259,3 +264,45 @@ export function BlockEditor({ pageId, isEditable, workspaceId }: BlockEditorProp
     </div>
   );
 }
+
+const handleUpdateBlock = async (id: string, updates: any) => {
+  const { error } = await updateBlock(id, updates);
+  
+  if (error) {
+    toast({
+      title: "Error",
+      description: error,
+      variant: "destructive",
+    });
+  }
+};
+
+const handleDeleteBlock = async (id: string) => {
+  const { error } = await deleteBlock(id);
+  
+  if (error) {
+    toast({
+      title: "Error",
+      description: error,
+      variant: "destructive",
+    });
+  }
+};
+
+useEffect(() => {
+  if (!isEditable) return;
+
+  const handleKeyDown = (event: KeyboardEvent) => {
+    if (event.key === '/' && !isOpen) {
+      const target = event.target as HTMLElement;
+      if (target && (target.contentEditable === 'true' || target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) {
+        setTimeout(() => {
+          openSlashMenu(target);
+        }, 50);
+      }
+    }
+  };
+
+  document.addEventListener('keydown', handleKeyDown);
+  return () => document.removeEventListener('keydown', handleKeyDown);
+}, [isEditable, isOpen, openSlashMenu]);
