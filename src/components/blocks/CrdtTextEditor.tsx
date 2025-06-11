@@ -1,7 +1,10 @@
+
 import React, { useEffect, useRef, useState } from 'react';
 import { useYjsDocument } from '@/hooks/useYjsDocument';
 import { EditorToolbar } from './RichTextEditor/EditorToolbar';
 import { LinkDialog } from './RichTextEditor/LinkDialog';
+import { CommentIcon } from './CommentIcon';
+import { Comment } from '@/hooks/useComments';
 
 interface CrdtTextEditorProps {
   pageId: string;
@@ -10,6 +13,9 @@ interface CrdtTextEditorProps {
   onContentChange: (content: any) => void;
   placeholder?: string;
   className?: string;
+  showCommentButton?: boolean;
+  comments?: Comment[];
+  onOpenComments?: () => void;
 }
 
 export function CrdtTextEditor({
@@ -19,6 +25,9 @@ export function CrdtTextEditor({
   onContentChange,
   placeholder = 'Start typing...',
   className = '',
+  showCommentButton = false,
+  comments = [],
+  onOpenComments,
 }: CrdtTextEditorProps) {
   const editorRef = useRef<HTMLDivElement>(null);
   const [isFocused, setIsFocused] = useState(false);
@@ -366,6 +375,14 @@ export function CrdtTextEditor({
       
       {isFocused && (
         <div className="absolute bottom-1 right-1 flex items-center gap-1 z-10">
+          {showCommentButton && onOpenComments && (
+            <CommentIcon
+              hasComments={comments.length > 0}
+              commentCount={comments.length}
+              onClick={onOpenComments}
+              className="mr-1"
+            />
+          )}
           <div
             className={`w-2 h-2 rounded-full ${
               hasError ? 'bg-red-500' : isConnected ? 'bg-green-500' : 'bg-yellow-500'
@@ -375,9 +392,6 @@ export function CrdtTextEditor({
               isConnected ? 'Connected (CRDT enabled)' : 'Disconnected'
             }
           />
-          <span className="text-xs text-muted-foreground">
-            {hasError ? 'Error' : isConnected ? 'Live' : 'Offline'}
-          </span>
         </div>
       )}
       

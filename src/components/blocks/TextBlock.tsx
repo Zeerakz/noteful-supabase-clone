@@ -70,22 +70,13 @@ export function TextBlock({ block, onUpdate, onDelete, isEditable }: TextBlockPr
         onContentChange={handleContentChange}
         placeholder="Type something..."
         className="w-full"
+        showCommentButton={isHovered}
+        comments={comments}
+        onOpenComments={() => setIsCommentPanelOpen(true)}
       />
       
       {isHovered && (
-        <div className="absolute top-1 left-1 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 z-20">
-          <CommentThreadPanel
-            blockId={block.id}
-            isOpen={isCommentPanelOpen}
-            onOpenChange={setIsCommentPanelOpen}
-          >
-            <CommentIcon
-              hasComments={comments.length > 0}
-              commentCount={comments.length}
-              onClick={() => setIsCommentPanelOpen(true)}
-            />
-          </CommentThreadPanel>
-          
+        <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity z-20">
           <Button
             onClick={handleDelete}
             variant="ghost"
@@ -96,6 +87,12 @@ export function TextBlock({ block, onUpdate, onDelete, isEditable }: TextBlockPr
           </Button>
         </div>
       )}
+
+      <CommentThreadPanel
+        blockId={block.id}
+        isOpen={isCommentPanelOpen}
+        onOpenChange={setIsCommentPanelOpen}
+      />
     </div>
   );
 }
