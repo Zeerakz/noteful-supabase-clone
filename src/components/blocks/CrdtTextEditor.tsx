@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import { useYjsDocument } from '@/hooks/useYjsDocument';
 import { EditorToolbar } from './RichTextEditor/EditorToolbar';
@@ -366,7 +365,7 @@ export function CrdtTextEditor({
       )}
       
       {isFocused && (
-        <div className="absolute top-1 right-1 flex items-center gap-1">
+        <div className="absolute bottom-1 right-1 flex items-center gap-1 z-10">
           <div
             className={`w-2 h-2 rounded-full ${
               hasError ? 'bg-red-500' : isConnected ? 'bg-green-500' : 'bg-yellow-500'

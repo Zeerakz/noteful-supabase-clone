@@ -73,7 +73,7 @@ export function TextBlock({ block, onUpdate, onDelete, isEditable }: TextBlockPr
       />
       
       {isHovered && (
-        <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
+        <div className="absolute top-1 left-1 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 z-20">
           <CommentThreadPanel
             blockId={block.id}
             isOpen={isCommentPanelOpen}
