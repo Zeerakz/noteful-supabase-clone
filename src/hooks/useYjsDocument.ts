@@ -143,6 +143,9 @@ export function useYjsDocument({ pageId, onContentChange }: YjsDocumentOptions) 
         } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
           isSubscribedRef.current = false;
           setIsConnected(false);
+          if (channelRef.current === channel) {
+            channelRef.current = null;
+          }
         }
       });
 

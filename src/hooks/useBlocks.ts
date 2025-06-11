@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -20,8 +21,7 @@ export function useBlocks(pageId?: string) {
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
   const channelRef = useRef<any>(null);
-  const subscriptionAttemptRef = useRef<number>(0);
-  const cleanupTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const isSubscribedRef = useRef<boolean>(false);
 
   const fetchBlocks = async () => {
     if (!user || !pageId) return;
@@ -154,15 +154,11 @@ export function useBlocks(pageId?: string) {
   };
 
   const cleanup = () => {
-    if (cleanupTimeoutRef.current) {
-      clearTimeout(cleanupTimeoutRef.current);
-      cleanupTimeoutRef.current = null;
-    }
-
-    if (channelRef.current) {
+    if (channelRef.current && isSubscribedRef.current) {
       try {
-        channelRef.current.unsubscribe();
+        console.log('Cleaning up blocks channel subscription');
         supabase.removeChannel(channelRef.current);
+        isSubscribedRef.current = false;
       } catch (error) {
         console.warn('Error removing blocks channel:', error);
       }
@@ -183,58 +179,59 @@ export function useBlocks(pageId?: string) {
     // Cleanup existing subscription
     cleanup();
 
-    // Add small delay to ensure cleanup is complete
-    cleanupTimeoutRef.current = setTimeout(() => {
-      // Increment attempt counter to ensure unique channel names
-      subscriptionAttemptRef.current += 1;
-      const attemptId = subscriptionAttemptRef.current;
-      const timestamp = Date.now();
+    // Create unique channel name
+    const timestamp = Date.now();
+    const channelName = `blocks_${pageId}_${user.id}_${timestamp}`;
+    console.log('Creating blocks channel:', channelName);
 
-      // Create unique channel name to avoid conflicts
-      const channelName = `blocks_${pageId}_${user.id}_${attemptId}_${timestamp}`;
-      console.log('Creating blocks channel:', channelName);
+    // Create a new channel instance
+    const channel = supabase.channel(channelName);
 
-      // Create a new channel instance
-      const channel = supabase.channel(channelName);
-
-      channel.on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'blocks',
-          filter: `page_id=eq.${pageId}`
-        },
-        (payload) => {
-          console.log('Realtime block update:', payload);
-          
-          if (payload.eventType === 'INSERT') {
-            const newBlock = payload.new as Block;
-            setBlocks(prev => {
-              if (prev.some(block => block.id === newBlock.id)) {
-                return prev;
-              }
-              return [...prev, newBlock].sort((a, b) => a.pos - b.pos);
-            });
-          } else if (payload.eventType === 'UPDATE') {
-            const updatedBlock = payload.new as Block;
-            setBlocks(prev => prev.map(block => 
-              block.id === updatedBlock.id ? updatedBlock : block
-            ).sort((a, b) => a.pos - b.pos));
-          } else if (payload.eventType === 'DELETE') {
-            const deletedBlock = payload.old as Block;
-            setBlocks(prev => prev.filter(block => block.id !== deletedBlock.id));
-          }
+    channel.on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'blocks',
+        filter: `page_id=eq.${pageId}`
+      },
+      (payload) => {
+        console.log('Realtime block update:', payload);
+        
+        if (payload.eventType === 'INSERT') {
+          const newBlock = payload.new as Block;
+          setBlocks(prev => {
+            if (prev.some(block => block.id === newBlock.id)) {
+              return prev;
+            }
+            return [...prev, newBlock].sort((a, b) => a.pos - b.pos);
+          });
+        } else if (payload.eventType === 'UPDATE') {
+          const updatedBlock = payload.new as Block;
+          setBlocks(prev => prev.map(block => 
+            block.id === updatedBlock.id ? updatedBlock : block
+          ).sort((a, b) => a.pos - b.pos));
+        } else if (payload.eventType === 'DELETE') {
+          const deletedBlock = payload.old as Block;
+          setBlocks(prev => prev.filter(block => block.id !== deletedBlock.id));
         }
-      );
+      }
+    );
 
-      // Subscribe only once
-      channel.subscribe((status) => {
-        console.log('Blocks subscription status:', status);
-      });
+    // Subscribe only once and track status
+    channel.subscribe((status) => {
+      console.log('Blocks subscription status:', status);
+      if (status === 'SUBSCRIBED') {
+        isSubscribedRef.current = true;
+      } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
+        isSubscribedRef.current = false;
+        if (channelRef.current === channel) {
+          channelRef.current = null;
+        }
+      }
+    });
 
-      channelRef.current = channel;
-    }, 150); // Slightly longer delay than presence
+    channelRef.current = channel;
 
     return cleanup;
   }, [user?.id, pageId]);
