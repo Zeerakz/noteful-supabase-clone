@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import { useYjsDocument } from '@/hooks/useYjsDocument';
 import { EditorToolbar } from './RichTextEditor/EditorToolbar';
@@ -30,12 +29,20 @@ export function CrdtTextEditor({
   const [currentLink, setCurrentLink] = useState<{ url: string; text: string } | null>(null);
   const [savedSelection, setSavedSelection] = useState<Range | null>(null);
   const isUpdatingRef = useRef(false);
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const { ytext, isConnected, updateContent, getDocumentContent } = useYjsDocument({
     pageId: `${pageId}-${blockId}`,
     onContentChange: (content) => {
       if (!isUpdatingRef.current) {
-        onContentChange({ text: content });
+        // Debounce the content save to avoid too many rapid updates
+        if (saveTimeoutRef.current) {
+          clearTimeout(saveTimeoutRef.current);
+        }
+        
+        saveTimeoutRef.current = setTimeout(() => {
+          onContentChange({ text: content });
+        }, 500); // Save after 500ms of no changes
         
         // Update the editor display if content changed externally
         if (editorRef.current && editorRef.current.innerHTML !== content) {
@@ -53,6 +60,15 @@ export function CrdtTextEditor({
       updateContent(initialContent);
     }
   }, [initialContent, updateContent, ytext]);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Handle local text changes
   const handleInput = () => {
@@ -72,6 +88,14 @@ export function CrdtTextEditor({
   
   const handleBlur = () => {
     setIsFocused(false);
+    // Save content immediately when losing focus
+    if (editorRef.current) {
+      const content = editorRef.current.innerHTML || '';
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+      onContentChange({ text: content });
+    }
     // Small delay to allow toolbar clicks
     setTimeout(() => setShowToolbar(false), 150);
   };
