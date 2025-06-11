@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Bold, Italic, Underline, Strikethrough, List, ListOrdered } from 'lucide-react';
+import { Bold, Italic } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface EditorToolbarProps {
@@ -15,7 +15,7 @@ export function EditorToolbar({ onCommand }: EditorToolbarProps) {
 
   return (
     <div 
-      className="flex items-center gap-1 p-1 mb-2 border border-border rounded-md bg-background"
+      className="flex items-center gap-1 p-1 border border-border rounded-md bg-background"
       data-testid="editor-toolbar"
     >
       <Button
@@ -24,6 +24,7 @@ export function EditorToolbar({ onCommand }: EditorToolbarProps) {
         className="h-8 w-8 p-0"
         data-testid="bold-button"
         onMouseDown={(e) => handleMouseDown(e, 'bold')}
+        title="Bold (Ctrl+B)"
       >
         <Bold className="h-3 w-3" />
       </Button>
@@ -33,45 +34,9 @@ export function EditorToolbar({ onCommand }: EditorToolbarProps) {
         className="h-8 w-8 p-0"
         data-testid="italic-button"
         onMouseDown={(e) => handleMouseDown(e, 'italic')}
+        title="Italic (Ctrl+I)"
       >
         <Italic className="h-3 w-3" />
-      </Button>
-      <Button
-        variant="ghost"
-        size="sm"
-        className="h-8 w-8 p-0"
-        data-testid="underline-button"
-        onMouseDown={(e) => handleMouseDown(e, 'underline')}
-      >
-        <Underline className="h-3 w-3" />
-      </Button>
-      <Button
-        variant="ghost"
-        size="sm"
-        className="h-8 w-8 p-0"
-        data-testid="strikethrough-button"
-        onMouseDown={(e) => handleMouseDown(e, 'strikeThrough')}
-      >
-        <Strikethrough className="h-3 w-3" />
-      </Button>
-      <div className="w-px h-4 bg-border mx-1" />
-      <Button
-        variant="ghost"
-        size="sm"
-        className="h-8 w-8 p-0"
-        data-testid="bullet-list-button"
-        onMouseDown={(e) => handleMouseDown(e, 'insertUnorderedList')}
-      >
-        <List className="h-3 w-3" />
-      </Button>
-      <Button
-        variant="ghost"
-        size="sm"
-        className="h-8 w-8 p-0"
-        data-testid="ordered-list-button"
-        onMouseDown={(e) => handleMouseDown(e, 'insertOrderedList')}
-      >
-        <ListOrdered className="h-3 w-3" />
       </Button>
     </div>
   );
