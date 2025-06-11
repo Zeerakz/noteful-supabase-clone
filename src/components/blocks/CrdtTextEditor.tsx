@@ -326,7 +326,7 @@ export function CrdtTextEditor({
   };
 
   return (
-    <div className={`relative ${className}`}>
+    <div className={`relative group ${className}`}>
       <div
         ref={editorRef}
         contentEditable
@@ -338,11 +338,13 @@ export function CrdtTextEditor({
         onKeyDown={handleKeyDown}
         onClick={handleClick}
         className={`
-          w-full min-h-[2.5rem] p-2 
-          border border-input rounded-md 
-          focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring
+          w-full min-h-[2.5rem] p-2 rounded-md
+          border border-transparent
+          hover:border-input hover:bg-background/50
+          focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring focus:bg-background
           rich-text-content
-          ${isFocused ? 'ring-2 ring-ring border-ring' : ''}
+          transition-all duration-200
+          ${isFocused ? 'ring-2 ring-ring border-ring bg-background' : ''}
           ${hasError ? 'border-red-500' : ''}
         `}
         data-placeholder={placeholder}
