@@ -122,6 +122,8 @@ export function useCrdtEditor(
     editorRef,
     isFocused,
     isEditMode,
+    setIsFocused,
+    setIsEditMode,
     isConnected,
     ytext,
     updateContent,

@@ -21,6 +21,8 @@ export function CrdtTextEditor({
     editorRef,
     isFocused,
     isEditMode,
+    setIsFocused,
+    setIsEditMode,
     isConnected,
     ytext,
     updateContent,
