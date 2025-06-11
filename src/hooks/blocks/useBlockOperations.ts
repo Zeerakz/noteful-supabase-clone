@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Block, BlockCreateParams, BlockUpdateParams, BlockOperationResult } from './types';
@@ -11,10 +11,15 @@ export function useBlockOperations(pageId?: string) {
   const { user } = useAuth();
 
   const fetchBlocks = async () => {
-    if (!user || !pageId) return;
+    if (!user || !pageId) {
+      setBlocks([]);
+      setLoading(false);
+      return;
+    }
 
     try {
       setLoading(true);
+      console.log('Fetching blocks for page:', pageId);
       const { data, error } = await supabase
         .from('blocks')
         .select('*')
@@ -22,13 +27,21 @@ export function useBlockOperations(pageId?: string) {
         .order('pos', { ascending: true });
 
       if (error) throw error;
+      console.log('Fetched blocks:', data);
       setBlocks(data || []);
+      setError(null);
     } catch (err) {
+      console.error('Error fetching blocks:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch blocks');
     } finally {
       setLoading(false);
     }
   };
+
+  // Automatically fetch blocks when pageId or user changes
+  useEffect(() => {
+    fetchBlocks();
+  }, [pageId, user?.id]);
 
   const createBlock = async (type: string, content: any = {}, parentBlockId?: string): Promise<BlockOperationResult<Block>> => {
     if (!user || !pageId) return { error: 'User not authenticated or page not selected', data: null };
