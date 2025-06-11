@@ -6,7 +6,6 @@ import { EditorContent } from './components/EditorContent';
 import { ConnectionStatus } from './components/ConnectionStatus';
 import { useCrdtEditor } from './hooks/useCrdtEditor';
 import { useSelectionHandling } from './hooks/useSelectionHandling';
-import { useLinkHandling } from './hooks/useLinkHandling';
 import { CrdtTextEditorProps } from './types';
 
 export function CrdtTextEditor({
@@ -28,7 +27,6 @@ export function CrdtTextEditor({
     ytext,
     updateContent,
     syncContentToYjs,
-    ensureLinkStyling,
     handleInput,
     handleDoubleClick,
     handleFocus,
@@ -43,16 +41,10 @@ export function CrdtTextEditor({
     hideToolbar,
   } = useSelectionHandling(isEditMode);
 
-  const {
-    isLinkDialogOpen,
-    setIsLinkDialogOpen,
-    selectedText,
-    currentLink,
-    handleCreateLink,
-    handleSaveLink,
-    handleRemoveLink,
-    setSavedSelection,
-  } = useLinkHandling(isEditMode, editorRef, syncContentToYjs);
+  // Link dialog state - using RichTextEditor pattern
+  const [isLinkDialogOpen, setIsLinkDialogOpen] = React.useState(false);
+  const [selectedText, setSelectedText] = React.useState('');
+  const [currentLink, setCurrentLink] = React.useState<{ url: string; text: string } | null>(null);
 
   // Initialize Y.js document with initial content - always run this effect
   useEffect(() => {
@@ -63,29 +55,109 @@ export function CrdtTextEditor({
       // Also set the editor content if it's empty
       if (editorRef.current && !editorRef.current.innerHTML) {
         editorRef.current.innerHTML = initialContent;
-        // Ensure proper link styling on initialization
-        setTimeout(ensureLinkStyling, 100);
       }
     }
-  }, [initialContent, updateContent, ytext, ensureLinkStyling, editorRef]);
+  }, [initialContent, updateContent, ytext, editorRef]);
 
-  // Ensure link styling is maintained - always run this effect
-  useEffect(() => {
-    if (editorRef.current) {
-      ensureLinkStyling();
-    }
-  }, [ensureLinkStyling, editorRef]);
-
-  // Additional effect to ensure links are styled after any content change
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (editorRef.current) {
-        ensureLinkStyling();
-      }
-    }, 200);
+  // RichTextEditor-style link handling functions
+  const handleCreateLink = () => {
+    if (!isEditMode) return;
     
-    return () => clearTimeout(timer);
-  }, [ensureLinkStyling, editorRef]);
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) return;
+
+    const range = selection.getRangeAt(0);
+    const selectedText = selection.toString();
+    
+    // Check if we're clicking on an existing link
+    let linkElement: HTMLAnchorElement | null = null;
+    let currentElement = range.commonAncestorContainer;
+    
+    // Traverse up to find if we're inside a link
+    while (currentElement && currentElement !== editorRef.current) {
+      if (currentElement.nodeType === Node.ELEMENT_NODE) {
+        const element = currentElement as HTMLElement;
+        if (element.tagName === 'A') {
+          linkElement = element as HTMLAnchorElement;
+          break;
+        }
+      }
+      currentElement = currentElement.parentNode;
+    }
+
+    if (linkElement) {
+      // Editing existing link
+      setCurrentLink({
+        url: linkElement.href,
+        text: linkElement.textContent || ''
+      });
+      setSelectedText(linkElement.textContent || '');
+      
+      // Select the entire link for editing
+      const linkRange = document.createRange();
+      linkRange.selectNode(linkElement);
+      selection.removeAllRanges();
+      selection.addRange(linkRange);
+    } else {
+      // Creating new link
+      setCurrentLink(null);
+      setSelectedText(selectedText);
+    }
+    
+    setIsLinkDialogOpen(true);
+  };
+
+  const handleSaveLink = (url: string, text: string) => {
+    if (!isEditMode || !editorRef.current) return;
+    
+    const selection = window.getSelection();
+    if (!selection) return;
+
+    if (currentLink) {
+      // Update existing link - use RichTextEditor approach
+      document.execCommand('createLink', false, url);
+    } else {
+      // Create new link - use RichTextEditor approach
+      if (selectedText) {
+        document.execCommand('createLink', false, url);
+        
+        // If custom text is provided and different from selected text, update it
+        if (text && text !== selectedText) {
+          const selection = window.getSelection();
+          if (selection && selection.rangeCount > 0) {
+            const range = selection.getRangeAt(0);
+            const linkElement = range.commonAncestorContainer.parentElement;
+            if (linkElement && linkElement.tagName === 'A') {
+              linkElement.textContent = text;
+            }
+          }
+        }
+      } else {
+        // No text selected, insert new link
+        const linkHTML = `<a href="${url}" target="_blank" rel="noopener noreferrer">${text}</a>`;
+        document.execCommand('insertHTML', false, linkHTML);
+      }
+    }
+
+    editorRef.current.focus();
+    
+    // Sync content with Y.js after link creation
+    setTimeout(() => {
+      syncContentToYjs();
+    }, 100);
+  };
+
+  const handleRemoveLink = () => {
+    if (!isEditMode) return;
+    
+    document.execCommand('unlink', false);
+    editorRef.current?.focus();
+    
+    // Sync content after removing link
+    setTimeout(() => {
+      syncContentToYjs();
+    }, 100);
+  };
 
   const handleInlineCode = () => {
     if (!isEditMode) return;
@@ -137,9 +209,8 @@ export function CrdtTextEditor({
     document.execCommand(command, false, value);
     editorRef.current?.focus();
     
-    // Ensure links are styled after any formatting command
+    // Sync content after any formatting command
     setTimeout(() => {
-      ensureLinkStyling();
       syncContentToYjs();
     }, 100);
   };
@@ -231,10 +302,7 @@ export function CrdtTextEditor({
       
       <LinkDialog
         isOpen={isLinkDialogOpen}
-        onClose={() => {
-          setIsLinkDialogOpen(false);
-          setSavedSelection(null);
-        }}
+        onClose={() => setIsLinkDialogOpen(false)}
         onSave={handleSaveLink}
         onRemove={currentLink ? handleRemoveLink : undefined}
         initialUrl={currentLink?.url || ''}

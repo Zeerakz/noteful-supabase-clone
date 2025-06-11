@@ -28,12 +28,7 @@ export function useCrdtEditor(
           isUpdatingRef.current = true;
           editorRef.current.innerHTML = htmlContent;
           lastKnownContentRef.current = htmlContent;
-          
-          // Ensure links are properly styled after content update
-          setTimeout(() => {
-            ensureLinkStyling();
-            isUpdatingRef.current = false;
-          }, 100);
+          isUpdatingRef.current = false;
         }
         
         // Notify parent component
@@ -42,64 +37,20 @@ export function useCrdtEditor(
     },
   });
 
-  const ensureLinkStyling = useCallback(() => {
-    if (!editorRef.current) return;
-    
-    const links = editorRef.current.querySelectorAll('a[href]');
-    console.log('Ensuring link styling for', links.length, 'links');
-    
-    links.forEach((link, index) => {
-      const linkElement = link as HTMLAnchorElement;
-      console.log(`Styling link ${index + 1}:`, linkElement.href, linkElement.textContent);
-      
-      // Force inline styles to override any CSS conflicts
-      linkElement.style.setProperty('color', '#2563eb', 'important');
-      linkElement.style.setProperty('text-decoration', 'underline', 'important');
-      linkElement.style.setProperty('cursor', 'pointer', 'important');
-      linkElement.style.setProperty('pointer-events', 'auto', 'important');
-      linkElement.style.setProperty('display', 'inline', 'important');
-      linkElement.style.setProperty('position', 'relative', 'important');
-      linkElement.style.setProperty('z-index', '1', 'important');
-      linkElement.style.setProperty('background', 'transparent', 'important');
-      linkElement.style.setProperty('border', 'none', 'important');
-      linkElement.style.setProperty('outline', 'none', 'important');
-      
-      // Ensure proper attributes
-      if (!linkElement.target) linkElement.target = '_blank';
-      if (!linkElement.rel) linkElement.rel = 'noopener noreferrer';
-      
-      // Add a class for easier targeting
-      linkElement.classList.add('rich-text-link');
-      
-      console.log('Link styled with color:', linkElement.style.color);
-      
-      // Force a repaint by temporarily changing a style
-      const originalDisplay = linkElement.style.display;
-      linkElement.style.display = 'none';
-      linkElement.offsetHeight; // Force reflow
-      linkElement.style.display = originalDisplay;
-    });
-  }, []);
-
   const syncContentToYjs = useCallback(() => {
     if (editorRef.current) {
       const htmlContent = editorRef.current.innerHTML || '';
       console.log('Syncing content to Y.js:', htmlContent);
       
-      // Ensure links are properly styled before syncing
-      ensureLinkStyling();
-      
       isUpdatingRef.current = true;
       lastKnownContentRef.current = htmlContent;
       updateContent(htmlContent);
       
-      // Re-apply styling after a brief delay to ensure it sticks
       setTimeout(() => {
-        ensureLinkStyling();
         isUpdatingRef.current = false;
-      }, 150);
+      }, 100);
     }
-  }, [updateContent, ensureLinkStyling]);
+  }, [updateContent]);
 
   const handleInput = useCallback(() => {
     if (!editorRef.current || isUpdatingRef.current || !isEditMode) return;
@@ -109,9 +60,6 @@ export function useCrdtEditor(
     
     console.log('Input changed - HTML:', htmlContent, 'CRDT:', currentContent);
     
-    // Ensure links are styled after input
-    setTimeout(ensureLinkStyling, 50);
-    
     // Only update if content actually changed
     if (htmlContent !== currentContent && htmlContent !== lastKnownContentRef.current) {
       console.log('Updating CRDT with new HTML content');
@@ -119,13 +67,11 @@ export function useCrdtEditor(
       lastKnownContentRef.current = htmlContent;
       updateContent(htmlContent);
       
-      // Re-apply styling after sync
       setTimeout(() => {
-        ensureLinkStyling();
         isUpdatingRef.current = false;
       }, 100);
     }
-  }, [isEditMode, getDocumentContent, updateContent, ensureLinkStyling]);
+  }, [isEditMode, getDocumentContent, updateContent]);
 
   const handleDoubleClick = useCallback(() => {
     console.log('Double click - entering edit mode');
@@ -152,23 +98,18 @@ export function useCrdtEditor(
       const htmlContent = editorRef.current.innerHTML || '';
       const currentContent = getDocumentContent();
       
-      // Ensure links are properly styled before final sync
-      ensureLinkStyling();
-      
       if (htmlContent !== currentContent) {
         console.log('Final sync on blur:', htmlContent);
         isUpdatingRef.current = true;
         lastKnownContentRef.current = htmlContent;
         updateContent(htmlContent);
         
-        // Final styling application
         setTimeout(() => {
-          ensureLinkStyling();
           isUpdatingRef.current = false;
         }, 100);
       }
     }
-  }, [getDocumentContent, updateContent, ensureLinkStyling]);
+  }, [getDocumentContent, updateContent]);
 
   const handleClick = useCallback((e: React.MouseEvent) => {
     const target = e.target as HTMLElement;
@@ -208,7 +149,6 @@ export function useCrdtEditor(
     ytext,
     updateContent,
     syncContentToYjs,
-    ensureLinkStyling,
     handleInput,
     handleDoubleClick,
     handleFocus,
