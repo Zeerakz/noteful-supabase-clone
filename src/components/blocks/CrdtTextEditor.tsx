@@ -108,14 +108,12 @@ export function CrdtTextEditor({
     }
   };
 
-  // Handle clicks on links - only when not actively editing
+  // Handle clicks on links - only when not in edit mode
   const handleClick = (e: React.MouseEvent) => {
     if (isEditMode) return;
     
     const target = e.target as HTMLElement;
-    
-    // Check if clicked element is a link or inside a link
-    let linkElement = target.closest('a');
+    const linkElement = target.closest('a');
     
     if (linkElement && linkElement.href) {
       e.preventDefault();
@@ -269,8 +267,8 @@ export function CrdtTextEditor({
 
     // Ensure we have a proper URL format
     let formattedUrl = url;
-    if (!formattedUrl.startsWith('http://') && !formattedUrl.startsWith('https://')) {
-      formattedUrl = 'https://' + formattedUrl;
+    if (url && !url.startsWith('http://') && !url.startsWith('https://') && !url.startsWith('mailto:')) {
+      formattedUrl = 'https://' + url;
     }
 
     if (currentLink) {
@@ -392,12 +390,11 @@ export function CrdtTextEditor({
         onDoubleClick={handleDoubleClick}
         className={`
           w-full min-h-[2.5rem] p-2 rounded-md
-          rich-text-content cursor-pointer
+          rich-text-content
           ${isEditMode && isFocused 
-            ? 'border border-input focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring' 
-            : 'border border-transparent hover:border-border'
+            ? 'border border-input focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring cursor-text' 
+            : 'border border-transparent hover:border-border cursor-pointer'
           }
-          ${isEditMode ? 'cursor-text' : 'cursor-pointer'}
         `}
         data-placeholder={placeholder}
         style={{
