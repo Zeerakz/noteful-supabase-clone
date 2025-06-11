@@ -297,38 +297,50 @@ export function CrdtTextEditor({
   };
 
   const handleSaveLink = (url: string, text: string) => {
-    if (!isEditMode) return;
+    if (!isEditMode || !editorRef.current) return;
     
     console.log('Saving link:', { url, text });
     
-    // Restore the selection first
-    restoreSelection();
-    
-    const selection = window.getSelection();
-    if (!selection) return;
-
     // Ensure we have a proper URL format
     let formattedUrl = url;
     if (url && !url.startsWith('http://') && !url.startsWith('https://') && !url.startsWith('mailto:')) {
       formattedUrl = 'https://' + url;
     }
 
-    if (currentLink) {
-      // Update existing link - replace the selected link entirely
-      const linkHTML = `<a href="${formattedUrl}" target="_blank" rel="noopener noreferrer">${text}</a>`;
-      document.execCommand('insertHTML', false, linkHTML);
+    // Use a more direct approach to insert the link
+    const linkText = text.trim() || formattedUrl;
+    const linkHTML = `<a href="${formattedUrl}" target="_blank" rel="noopener noreferrer">${linkText}</a>`;
+    
+    // Restore selection first
+    if (savedSelection) {
+      const selection = window.getSelection();
+      if (selection) {
+        selection.removeAllRanges();
+        selection.addRange(savedSelection);
+        
+        // Delete the selected content and insert the link
+        selection.deleteContents();
+        
+        // Create a document fragment with the link
+        const range = selection.getRangeAt(0);
+        const fragment = range.createContextualFragment(linkHTML);
+        range.insertNode(fragment);
+        
+        // Move cursor after the link
+        range.collapse(false);
+        selection.removeAllRanges();
+        selection.addRange(range);
+      }
     } else {
-      // Create new link
-      if (selectedText && selectedText.trim()) {
-        // Use the provided text or fall back to selected text
-        const linkText = text.trim() || selectedText;
-        const linkHTML = `<a href="${formattedUrl}" target="_blank" rel="noopener noreferrer">${linkText}</a>`;
-        document.execCommand('insertHTML', false, linkHTML);
-      } else {
-        // No text selected, insert new link with provided text
-        const linkText = text.trim() || formattedUrl;
-        const linkHTML = `<a href="${formattedUrl}" target="_blank" rel="noopener noreferrer">${linkText}</a>`;
-        document.execCommand('insertHTML', false, linkHTML);
+      // If no saved selection, insert at current cursor position
+      const selection = window.getSelection();
+      if (selection && selection.rangeCount > 0) {
+        const range = selection.getRangeAt(0);
+        const fragment = range.createContextualFragment(linkHTML);
+        range.insertNode(fragment);
+        range.collapse(false);
+        selection.removeAllRanges();
+        selection.addRange(range);
       }
     }
 
@@ -336,13 +348,18 @@ export function CrdtTextEditor({
     setSavedSelection(null);
     
     // Focus back to editor
-    editorRef.current?.focus();
+    editorRef.current.focus();
     
-    // Sync content immediately after creating/editing link
-    setTimeout(() => {
-      console.log('Syncing content after link creation');
-      syncContentToYjs();
-    }, 100);
+    // Force immediate sync to Y.js
+    console.log('Forcing immediate sync after link creation');
+    const finalContent = editorRef.current.innerHTML;
+    console.log('Final content after link:', finalContent);
+    
+    // Update Y.js document immediately
+    isUpdatingRef.current = true;
+    lastKnownContentRef.current = finalContent;
+    updateContent(finalContent);
+    isUpdatingRef.current = false;
   };
 
   const handleRemoveLink = () => {
