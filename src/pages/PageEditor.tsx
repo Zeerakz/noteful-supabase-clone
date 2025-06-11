@@ -17,6 +17,8 @@ import { useToast } from '@/hooks/use-toast';
 export function PageEditor() {
   const { workspaceId, pageId } = useParams<{ workspaceId: string; pageId: string }>();
   const navigate = useNavigate();
+  
+  // Call ALL hooks before any conditional logic
   const { pages, loading: pagesLoading, updatePage } = usePages(workspaceId);
   const { workspaces, loading: workspacesLoading } = useWorkspaces();
   const { activeUsers, loading: presenceLoading } = usePresence(pageId);
@@ -27,6 +29,7 @@ export function PageEditor() {
   const [titleValue, setTitleValue] = useState('');
   const titleInputRef = useRef<HTMLInputElement>(null);
 
+  // Now handle loading states and conditional rendering
   if (pagesLoading || workspacesLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
