@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useState } from 'react';
 import { useYjsDocument } from '@/hooks/useYjsDocument';
 import { EditorToolbar } from './RichTextEditor/EditorToolbar';
@@ -29,20 +30,23 @@ export function CrdtTextEditor({
   const [currentLink, setCurrentLink] = useState<{ url: string; text: string } | null>(null);
   const [savedSelection, setSavedSelection] = useState<Range | null>(null);
   const isUpdatingRef = useRef(false);
-  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastSavedContentRef = useRef('');
+  const hasUnsavedChangesRef = useRef(false);
 
   const { ytext, isConnected, updateContent, getDocumentContent } = useYjsDocument({
     pageId: `${pageId}-${blockId}`,
     onContentChange: (content) => {
+      console.log('Y.js content changed:', content);
       if (!isUpdatingRef.current) {
-        // Debounce the content save to avoid too many rapid updates
-        if (saveTimeoutRef.current) {
-          clearTimeout(saveTimeoutRef.current);
-        }
-        
-        saveTimeoutRef.current = setTimeout(() => {
+        // Save immediately without debouncing
+        try {
           onContentChange({ text: content });
-        }, 500); // Save after 500ms of no changes
+          lastSavedContentRef.current = content;
+          hasUnsavedChangesRef.current = false;
+          console.log('Content saved via Y.js sync');
+        } catch (error) {
+          console.error('Error saving content via Y.js:', error);
+        }
         
         // Update the editor display if content changed externally
         if (editorRef.current && editorRef.current.innerHTML !== content) {
@@ -57,22 +61,88 @@ export function CrdtTextEditor({
   // Initialize Y.js document with initial content
   useEffect(() => {
     if (initialContent && ytext.length === 0) {
+      console.log('Initializing Y.js with content:', initialContent);
       updateContent(initialContent);
+      lastSavedContentRef.current = initialContent;
     }
   }, [initialContent, updateContent, ytext]);
 
-  // Cleanup timeout on unmount
+  // Force save any unsaved changes before page unload
   useEffect(() => {
-    return () => {
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChangesRef.current && editorRef.current) {
+        const currentContent = editorRef.current.innerHTML || '';
+        if (currentContent !== lastSavedContentRef.current) {
+          console.log('Saving content before page unload');
+          try {
+            onContentChange({ text: currentContent });
+            // Also update Y.js
+            if (currentContent !== getDocumentContent()) {
+              updateContent(currentContent);
+            }
+          } catch (error) {
+            console.error('Error saving content before unload:', error);
+          }
+        }
       }
     };
-  }, []);
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      
+      // Final save on unmount
+      if (hasUnsavedChangesRef.current && editorRef.current) {
+        const currentContent = editorRef.current.innerHTML || '';
+        if (currentContent !== lastSavedContentRef.current) {
+          console.log('Final save on component unmount');
+          try {
+            onContentChange({ text: currentContent });
+          } catch (error) {
+            console.error('Error in final save:', error);
+          }
+        }
+      }
+    };
+  }, [onContentChange, updateContent, getDocumentContent]);
+
+  // Simplified save function
+  const saveCurrentContent = () => {
+    if (!editorRef.current) return;
+
+    const content = editorRef.current.innerHTML || '';
+    if (content === lastSavedContentRef.current) {
+      console.log('Content unchanged, skipping save');
+      return;
+    }
+
+    console.log('Saving content:', content);
+    try {
+      // Save to parent component
+      onContentChange({ text: content });
+      
+      // Update Y.js if different
+      const yjsContent = getDocumentContent();
+      if (content !== yjsContent) {
+        isUpdatingRef.current = true;
+        updateContent(content);
+        isUpdatingRef.current = false;
+      }
+      
+      lastSavedContentRef.current = content;
+      hasUnsavedChangesRef.current = false;
+      console.log('Content saved successfully');
+    } catch (error) {
+      console.error('Error saving content:', error);
+    }
+  };
 
   // Handle local text changes
   const handleInput = () => {
     if (!editorRef.current || isUpdatingRef.current) return;
+
+    hasUnsavedChangesRef.current = true;
+    console.log('Input detected, marking as unsaved');
 
     const content = editorRef.current.innerHTML || '';
     const currentContent = getDocumentContent();
@@ -84,18 +154,18 @@ export function CrdtTextEditor({
     }
   };
 
-  const handleFocus = () => setIsFocused(true);
+  const handleFocus = () => {
+    console.log('Editor focused');
+    setIsFocused(true);
+  };
   
   const handleBlur = () => {
+    console.log('Editor blur - saving content');
     setIsFocused(false);
+    
     // Save content immediately when losing focus
-    if (editorRef.current) {
-      const content = editorRef.current.innerHTML || '';
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
-      }
-      onContentChange({ text: content });
-    }
+    saveCurrentContent();
+    
     // Small delay to allow toolbar clicks
     setTimeout(() => setShowToolbar(false), 150);
   };
@@ -171,6 +241,7 @@ export function CrdtTextEditor({
     
     // Update content after formatting
     if (editorRef.current) {
+      hasUnsavedChangesRef.current = true;
       const content = editorRef.current.innerHTML || '';
       isUpdatingRef.current = true;
       updateContent(content);
@@ -208,6 +279,7 @@ export function CrdtTextEditor({
     
     // Update content after adding inline code
     if (editorRef.current) {
+      hasUnsavedChangesRef.current = true;
       const content = editorRef.current.innerHTML || '';
       isUpdatingRef.current = true;
       updateContent(content);
@@ -305,6 +377,7 @@ export function CrdtTextEditor({
     // Update content after creating/editing link
     setTimeout(() => {
       if (editorRef.current) {
+        hasUnsavedChangesRef.current = true;
         const content = editorRef.current.innerHTML || '';
         isUpdatingRef.current = true;
         updateContent(content);
@@ -327,6 +400,7 @@ export function CrdtTextEditor({
     // Update content after removing link
     setTimeout(() => {
       if (editorRef.current) {
+        hasUnsavedChangesRef.current = true;
         const content = editorRef.current.innerHTML || '';
         isUpdatingRef.current = true;
         updateContent(content);
@@ -364,6 +438,11 @@ export function CrdtTextEditor({
             e.preventDefault();
             execCommand('strikeThrough');
           }
+          break;
+        case 's':
+          e.preventDefault();
+          console.log('Manual save triggered via Ctrl+S');
+          saveCurrentContent();
           break;
       }
     }
@@ -419,6 +498,11 @@ export function CrdtTextEditor({
           <span className="text-xs text-muted-foreground">
             {isConnected ? 'Live' : 'Offline'}
           </span>
+          {hasUnsavedChangesRef.current && (
+            <span className="text-xs text-yellow-600" title="Unsaved changes">
+              •
+            </span>
+          )}
         </div>
       )}
       
