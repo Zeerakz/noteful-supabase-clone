@@ -1,5 +1,6 @@
+
 import React, { useState, useRef, useEffect } from 'react';
-import { Plus, Type, Heading1, Heading2, Heading3, List, ListOrdered, Image } from 'lucide-react';
+import { Plus, Type, Heading1, Heading2, Heading3, List, ListOrdered, Image, Table } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { BlockRenderer } from './BlockRenderer';
@@ -234,6 +235,10 @@ export function BlockEditor({ pageId, isEditable, workspaceId }: BlockEditorProp
               <DropdownMenuItem onClick={() => handleCreateBlock('numbered_list')}>
                 <ListOrdered className="h-4 w-4 mr-2" />
                 Numbered List
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleCreateBlock('table')}>
+                <Table className="h-4 w-4 mr-2" />
+                Table
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => handleCreateBlock('image')}>
                 <Image className="h-4 w-4 mr-2" />
