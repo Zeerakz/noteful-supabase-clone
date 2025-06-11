@@ -51,6 +51,7 @@ export function TextBlock({ block, onUpdate, onDelete, isEditable }: TextBlockPr
             __html: textContent || '<span class="text-muted-foreground italic">Empty text block</span>' 
           }}
           onClick={handleReadOnlyClick}
+          style={{ pointerEvents: 'auto' }}
         />
       </div>
     );

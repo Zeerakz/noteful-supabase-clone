@@ -92,7 +92,7 @@ export function CrdtTextEditor({
     }
   };
 
-  // Handle clicks on links - only when not actively editing
+  // Handle clicks on links - properly handle both editing and non-editing modes
   const handleClick = (e: React.MouseEvent) => {
     const target = e.target as HTMLElement;
     
@@ -100,8 +100,11 @@ export function CrdtTextEditor({
     let linkElement = target.closest('a');
     
     if (linkElement && linkElement.href) {
-      // If we're not focused (not actively editing), allow link to open
-      if (!isFocused) {
+      // If we're not currently selecting text or in editing mode, open the link
+      const selection = window.getSelection();
+      const hasSelection = selection && selection.toString().trim().length > 0;
+      
+      if (!hasSelection) {
         e.preventDefault();
         e.stopPropagation();
         
