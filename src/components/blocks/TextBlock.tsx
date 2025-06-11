@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Block } from '@/hooks/useBlocks';
 import { Button } from '@/components/ui/button';
 import { Trash2 } from 'lucide-react';
-import { CrdtTextEditor } from './CrdtTextEditor/CrdtTextEditor';
+import { CrdtTextEditor } from './CrdtTextEditor';
 import { CommentIcon } from './CommentIcon';
 import { CommentThreadPanel } from './CommentThreadPanel';
 import { useComments } from '@/hooks/useComments';
@@ -46,7 +46,7 @@ export function TextBlock({ block, onUpdate, onDelete, isEditable }: TextBlockPr
     return (
       <div className="py-1">
         <div 
-          className="text-sm whitespace-pre-wrap rich-text-content cursor-default p-2"
+          className="text-sm whitespace-pre-wrap rich-text-content cursor-default"
           dangerouslySetInnerHTML={{ 
             __html: textContent || '<span class="text-muted-foreground italic">Empty text block</span>' 
           }}
@@ -67,7 +67,7 @@ export function TextBlock({ block, onUpdate, onDelete, isEditable }: TextBlockPr
         blockId={block.id}
         initialContent={textContent}
         onContentChange={handleContentChange}
-        placeholder="Double-click to edit..."
+        placeholder="Type something..."
         className="w-full"
       />
       

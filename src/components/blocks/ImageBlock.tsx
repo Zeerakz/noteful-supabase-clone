@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Trash2, Upload, X } from 'lucide-react';
+import { Trash2, Upload } from 'lucide-react';
 import { Block } from '@/hooks/useBlocks';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
@@ -17,7 +17,6 @@ interface ImageBlockProps {
 export function ImageBlock({ block, onUpdate, onDelete, isEditable }: ImageBlockProps) {
   const [isUploading, setIsUploading] = useState(false);
   const [signedUrl, setSignedUrl] = useState<string | null>(null);
-  const [isHovered, setIsHovered] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -143,46 +142,6 @@ export function ImageBlock({ block, onUpdate, onDelete, isEditable }: ImageBlock
     event.preventDefault();
   };
 
-  const handleDeleteImage = async () => {
-    try {
-      // Delete the file from storage if it exists
-      if (block.content?.path) {
-        const { error: deleteError } = await supabase.storage
-          .from('planna_uploads')
-          .remove([block.content.path]);
-        
-        if (deleteError) {
-          console.warn('Failed to delete file from storage:', deleteError);
-          // Continue with clearing the block content even if file deletion fails
-        }
-      }
-
-      // Clear the block content
-      await onUpdate({
-        path: null,
-        alt: '',
-        caption: '',
-        originalName: '',
-        size: 0,
-        type: '',
-      });
-
-      setSignedUrl(null);
-
-      toast({
-        title: "Image deleted",
-        description: "The image has been removed from this block.",
-      });
-    } catch (error) {
-      console.error('Delete error:', error);
-      toast({
-        title: "Delete failed",
-        description: "Failed to delete the image",
-        variant: "destructive",
-      });
-    }
-  };
-
   const alt = block.content?.alt || '';
   const caption = block.content?.caption || '';
   const imagePath = block.content?.path;
@@ -192,9 +151,7 @@ export function ImageBlock({ block, onUpdate, onDelete, isEditable }: ImageBlock
   }
 
   return (
-    <div className="group relative"
-         onMouseEnter={() => setIsHovered(true)}
-         onMouseLeave={() => setIsHovered(false)}>
+    <div className="group relative">
       {imagePath && signedUrl ? (
         <div className="space-y-2">
           <div className="relative">
@@ -221,19 +178,6 @@ export function ImageBlock({ block, onUpdate, onDelete, isEditable }: ImageBlock
                 }
               }}
             />
-            
-            {/* Delete image button */}
-            {isEditable && isHovered && (
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={handleDeleteImage}
-                className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8 p-0"
-                title="Delete image"
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            )}
           </div>
           {caption && (
             <p className="text-sm text-muted-foreground italic text-center">
@@ -272,7 +216,6 @@ export function ImageBlock({ block, onUpdate, onDelete, isEditable }: ImageBlock
         </div>
       ) : null}
       
-      {/* Delete block button */}
       {isEditable && (
         <Button
           variant="ghost"

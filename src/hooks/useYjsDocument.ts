@@ -17,8 +17,8 @@ export function useYjsDocument({ pageId, onContentChange }: YjsDocumentOptions) 
   const isLocalUpdateRef = useRef(false);
   const isSubscribedRef = useRef<boolean>(false);
 
-  // Create a shared text object for the document content - now storing HTML
-  const ytext = ydoc.getText('htmlContent');
+  // Create a shared text object for the document content
+  const ytext = ydoc.getText('content');
 
   const broadcastUpdate = useCallback(async (update: Uint8Array) => {
     if (!user || !pageId || isLocalUpdateRef.current) return;
@@ -69,15 +69,12 @@ export function useYjsDocument({ pageId, onContentChange }: YjsDocumentOptions) 
     return ytext.toString();
   }, [ytext]);
 
-  const updateContent = useCallback((htmlContent: string) => {
-    const currentContent = ytext.toString();
-    if (currentContent === htmlContent) return;
+  const updateContent = useCallback((content: string) => {
+    if (ytext.toString() === content) return;
 
-    console.log('Updating Y.js content from:', currentContent, 'to:', htmlContent);
-    
     isLocalUpdateRef.current = true;
     ytext.delete(0, ytext.length);
-    ytext.insert(0, htmlContent);
+    ytext.insert(0, content);
     isLocalUpdateRef.current = false;
   }, [ytext]);
 
@@ -105,9 +102,7 @@ export function useYjsDocument({ pageId, onContentChange }: YjsDocumentOptions) 
       
       // Notify parent component of content changes
       if (onContentChange && !isLocalUpdateRef.current) {
-        const htmlContent = ytext.toString();
-        console.log('Y.js content changed:', htmlContent);
-        onContentChange({ text: htmlContent });
+        onContentChange(ytext.toString());
       }
     };
 
