@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Bold, Italic, Underline, Strikethrough, Link, Unlink } from 'lucide-react';
+import { Bold, Italic, Underline, Strikethrough, Link, Unlink, Code, Highlighter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface EditorToolbarProps {
@@ -8,9 +8,9 @@ interface EditorToolbarProps {
 }
 
 export function EditorToolbar({ onCommand }: EditorToolbarProps) {
-  const handleMouseDown = (e: React.MouseEvent, command: string) => {
+  const handleMouseDown = (e: React.MouseEvent, command: string, value?: string) => {
     e.preventDefault();
-    onCommand(command);
+    onCommand(command, value);
   };
 
   return (
@@ -57,6 +57,27 @@ export function EditorToolbar({ onCommand }: EditorToolbarProps) {
         title="Strikethrough (Ctrl+Shift+S)"
       >
         <Strikethrough className="h-3 w-3" />
+      </Button>
+      <div className="w-px h-6 bg-border mx-1" />
+      <Button
+        variant="ghost"
+        size="sm"
+        className="h-8 w-8 p-0"
+        data-testid="code-button"
+        onMouseDown={(e) => handleMouseDown(e, 'insertHTML', '<code></code>')}
+        title="Inline Code (Ctrl+`)"
+      >
+        <Code className="h-3 w-3" />
+      </Button>
+      <Button
+        variant="ghost"
+        size="sm"
+        className="h-8 w-8 p-0"
+        data-testid="highlight-button"
+        onMouseDown={(e) => handleMouseDown(e, 'hiliteColor', '#fef08a')}
+        title="Highlight Text"
+      >
+        <Highlighter className="h-3 w-3" />
       </Button>
       <div className="w-px h-6 bg-border mx-1" />
       <Button

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { EditorToolbar } from './EditorToolbar';
 import { LinkDialog } from './LinkDialog';
@@ -50,7 +49,41 @@ export function RichTextEditor({ initialContent, onBlur, placeholder = "Start ty
       return;
     }
     
+    if (command === 'insertHTML' && value === '<code></code>') {
+      handleInlineCode();
+      return;
+    }
+    
     document.execCommand(command, false, value);
+    editorRef.current?.focus();
+  };
+
+  const handleInlineCode = () => {
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) return;
+
+    const selectedText = selection.toString();
+    if (selectedText) {
+      // Wrap selected text in code tags
+      const codeHTML = `<code>${selectedText}</code>`;
+      document.execCommand('insertHTML', false, codeHTML);
+    } else {
+      // Insert empty code tags and place cursor inside
+      const codeHTML = '<code></code>';
+      document.execCommand('insertHTML', false, codeHTML);
+      
+      // Move cursor inside the code tags
+      const range = selection.getRangeAt(0);
+      const codeElement = range.startContainer.parentElement?.querySelector('code:last-child');
+      if (codeElement) {
+        const newRange = document.createRange();
+        newRange.setStart(codeElement, 0);
+        newRange.setEnd(codeElement, 0);
+        selection.removeAllRanges();
+        selection.addRange(newRange);
+      }
+    }
+    
     editorRef.current?.focus();
   };
 
@@ -168,6 +201,10 @@ export function RichTextEditor({ initialContent, onBlur, placeholder = "Start ty
         case 'k':
           e.preventDefault();
           handleCreateLink();
+          break;
+        case '`':
+          e.preventDefault();
+          handleInlineCode();
           break;
         case 'S':
           if (e.shiftKey) {
