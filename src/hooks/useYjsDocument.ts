@@ -16,6 +16,7 @@ export function useYjsDocument({ pageId, onContentChange }: YjsDocumentOptions) 
   const channelRef = useRef<any>(null);
   const isLocalUpdateRef = useRef(false);
   const isSubscribedRef = useRef<boolean>(false);
+  const pageIdRef = useRef<string>(pageId);
 
   // Create a shared text object for the document content
   const ytext = ydoc.getText('content');
@@ -82,6 +83,7 @@ export function useYjsDocument({ pageId, onContentChange }: YjsDocumentOptions) 
     if (channelRef.current && isSubscribedRef.current) {
       try {
         console.log('Cleaning up Y.js channel subscription');
+        channelRef.current.unsubscribe();
         supabase.removeChannel(channelRef.current);
         isSubscribedRef.current = false;
       } catch (error) {
@@ -120,11 +122,17 @@ export function useYjsDocument({ pageId, onContentChange }: YjsDocumentOptions) 
       return;
     }
 
+    // Only create new subscription if page changed
+    if (pageIdRef.current === pageId && channelRef.current && isSubscribedRef.current) {
+      return;
+    }
+
     // Cleanup existing subscription
     cleanup();
+    pageIdRef.current = pageId;
 
-    const timestamp = Date.now();
-    const channelName = `blocks-${pageId}-${timestamp}`;
+    const randomId = Math.random().toString(36).substring(7);
+    const channelName = `yjs:${pageId}:${user.id}:${randomId}`;
     
     const channel = supabase
       .channel(channelName)
@@ -136,7 +144,7 @@ export function useYjsDocument({ pageId, onContentChange }: YjsDocumentOptions) 
         }
       })
       .subscribe((status) => {
-        console.log('Y.js channel status:', status);
+        console.log('Y.js channel status:', status, 'for channel:', channelName);
         if (status === 'SUBSCRIBED') {
           isSubscribedRef.current = true;
           setIsConnected(true);

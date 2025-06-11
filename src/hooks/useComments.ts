@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMentionNotifications } from './useMentionNotifications';
@@ -21,6 +21,7 @@ export function useComments(blockId?: string) {
   const { extractMentions, notifyMention } = useMentionNotifications();
   const channelRef = useRef<any>(null);
   const isSubscribedRef = useRef<boolean>(false);
+  const blockIdRef = useRef<string | undefined>(blockId);
 
   const fetchComments = async () => {
     if (!blockId || !user) return;
@@ -140,10 +141,11 @@ export function useComments(blockId?: string) {
     }
   };
 
-  const cleanup = () => {
+  const cleanup = useCallback(() => {
     if (channelRef.current && isSubscribedRef.current) {
       try {
         console.log('Cleaning up comments channel subscription');
+        channelRef.current.unsubscribe();
         supabase.removeChannel(channelRef.current);
         isSubscribedRef.current = false;
       } catch (error) {
@@ -151,7 +153,7 @@ export function useComments(blockId?: string) {
       }
       channelRef.current = null;
     }
-  };
+  }, []);
 
   useEffect(() => {
     if (!blockId || !user) {
@@ -160,14 +162,20 @@ export function useComments(blockId?: string) {
       return;
     }
 
+    // Only create new subscription if block changed
+    if (blockIdRef.current === blockId && channelRef.current && isSubscribedRef.current) {
+      return;
+    }
+
     fetchComments();
 
     // Cleanup existing subscription
     cleanup();
+    blockIdRef.current = blockId;
 
-    // Create unique channel name
-    const timestamp = Date.now();
-    const channelName = `comments_${blockId}_${user.id}_${timestamp}`;
+    // Create unique channel name with random component
+    const randomId = Math.random().toString(36).substring(7);
+    const channelName = `comments:${blockId}:${user.id}:${randomId}`;
     console.log('Creating comments channel:', channelName);
 
     // Set up realtime subscription for comments
@@ -208,7 +216,7 @@ export function useComments(blockId?: string) {
 
     // Subscribe only once and track status
     channel.subscribe((status) => {
-      console.log('Comments subscription status:', status);
+      console.log('Comments subscription status:', status, 'for channel:', channelName);
       if (status === 'SUBSCRIBED') {
         isSubscribedRef.current = true;
       } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
@@ -222,7 +230,7 @@ export function useComments(blockId?: string) {
     channelRef.current = channel;
 
     return cleanup;
-  }, [user?.id, blockId]);
+  }, [user?.id, blockId, cleanup]);
 
   return {
     comments,

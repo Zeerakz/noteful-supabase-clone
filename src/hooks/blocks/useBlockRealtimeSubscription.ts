@@ -1,5 +1,5 @@
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Block } from './types';
@@ -20,11 +20,13 @@ export function useBlockRealtimeSubscription({
   const { user } = useAuth();
   const channelRef = useRef<any>(null);
   const isSubscribedRef = useRef<boolean>(false);
+  const pageIdRef = useRef<string | undefined>(pageId);
 
-  const cleanup = () => {
+  const cleanup = useCallback(() => {
     if (channelRef.current && isSubscribedRef.current) {
       try {
         console.log('Cleaning up blocks channel subscription');
+        channelRef.current.unsubscribe();
         supabase.removeChannel(channelRef.current);
         isSubscribedRef.current = false;
       } catch (error) {
@@ -32,7 +34,7 @@ export function useBlockRealtimeSubscription({
       }
       channelRef.current = null;
     }
-  };
+  }, []);
 
   useEffect(() => {
     if (!pageId || !user) {
@@ -40,12 +42,18 @@ export function useBlockRealtimeSubscription({
       return;
     }
 
+    // Only create new subscription if page changed
+    if (pageIdRef.current === pageId && channelRef.current && isSubscribedRef.current) {
+      return;
+    }
+
     // Cleanup existing subscription
     cleanup();
+    pageIdRef.current = pageId;
 
-    // Create unique channel name
-    const timestamp = Date.now();
-    const channelName = `blocks_${pageId}_${user.id}_${timestamp}`;
+    // Create unique channel name with random component
+    const randomId = Math.random().toString(36).substring(7);
+    const channelName = `blocks:${pageId}:${user.id}:${randomId}`;
     console.log('Creating blocks channel:', channelName);
 
     // Create a new channel instance
@@ -74,7 +82,7 @@ export function useBlockRealtimeSubscription({
 
     // Subscribe only once and track status
     channel.subscribe((status) => {
-      console.log('Blocks subscription status:', status);
+      console.log('Blocks subscription status:', status, 'for channel:', channelName);
       if (status === 'SUBSCRIBED') {
         isSubscribedRef.current = true;
       } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
@@ -88,7 +96,7 @@ export function useBlockRealtimeSubscription({
     channelRef.current = channel;
 
     return cleanup;
-  }, [user?.id, pageId, onBlockInsert, onBlockUpdate, onBlockDelete]);
+  }, [user?.id, pageId, onBlockInsert, onBlockUpdate, onBlockDelete, cleanup]);
 
   return { cleanup };
 }

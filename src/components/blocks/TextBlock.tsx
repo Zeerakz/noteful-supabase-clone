@@ -4,7 +4,6 @@ import { Block } from '@/hooks/useBlocks';
 import { Button } from '@/components/ui/button';
 import { Trash2 } from 'lucide-react';
 import { CrdtTextEditor } from './CrdtTextEditor';
-import { CommentIcon } from './CommentIcon';
 import { CommentThreadPanel } from './CommentThreadPanel';
 import { useComments } from '@/hooks/useComments';
 
@@ -92,7 +91,9 @@ export function TextBlock({ block, onUpdate, onDelete, isEditable }: TextBlockPr
         blockId={block.id}
         isOpen={isCommentPanelOpen}
         onOpenChange={setIsCommentPanelOpen}
-      />
+      >
+        <div /> {/* Empty div as children since we're using it as a controlled modal */}
+      </CommentThreadPanel>
     </div>
   );
 }

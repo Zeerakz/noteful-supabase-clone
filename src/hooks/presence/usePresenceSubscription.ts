@@ -1,5 +1,5 @@
 
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
 export function usePresenceSubscription(
@@ -9,11 +9,13 @@ export function usePresenceSubscription(
 ) {
   const channelRef = useRef<any>(null);
   const isSubscribedRef = useRef<boolean>(false);
+  const pageIdRef = useRef<string | undefined>(pageId);
 
-  const cleanup = () => {
+  const cleanup = useCallback(() => {
     if (channelRef.current && isSubscribedRef.current) {
       console.log('Cleaning up presence channel subscription');
       try {
+        channelRef.current.unsubscribe();
         supabase.removeChannel(channelRef.current);
         isSubscribedRef.current = false;
       } catch (error) {
@@ -21,7 +23,7 @@ export function usePresenceSubscription(
       }
       channelRef.current = null;
     }
-  };
+  }, []);
 
   useEffect(() => {
     if (!user || !pageId) {
@@ -29,12 +31,18 @@ export function usePresenceSubscription(
       return;
     }
 
+    // Only create new subscription if page changed
+    if (pageIdRef.current === pageId && channelRef.current && isSubscribedRef.current) {
+      return;
+    }
+
     // Cleanup any existing subscription first
     cleanup();
+    pageIdRef.current = pageId;
 
-    // Create a unique channel name
-    const timestamp = Date.now();
-    const channelName = `presence_${pageId}_${user.id}_${timestamp}`;
+    // Create a unique channel name with random component to avoid conflicts
+    const randomId = Math.random().toString(36).substring(7);
+    const channelName = `presence:${pageId}:${user.id}:${randomId}`;
     
     console.log('Creating presence channel:', channelName);
     
@@ -64,7 +72,7 @@ export function usePresenceSubscription(
 
     // Subscribe only once and track status
     channel.subscribe((status) => {
-      console.log('Presence subscription status:', status);
+      console.log('Presence subscription status:', status, 'for channel:', channelName);
       if (status === 'SUBSCRIBED') {
         isSubscribedRef.current = true;
       } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
@@ -79,7 +87,7 @@ export function usePresenceSubscription(
 
     // Cleanup on unmount or dependencies change
     return cleanup;
-  }, [user?.id, pageId, onPresenceUpdate]);
+  }, [user?.id, pageId, onPresenceUpdate, cleanup]);
 
   return { cleanup };
 }
