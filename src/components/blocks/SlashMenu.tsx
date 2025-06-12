@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -58,28 +57,13 @@ export function SlashMenu({ isOpen, onClose, onSelectItem, position }: SlashMenu
       }
     };
 
-    const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        onClose();
-      }
-    };
-
     document.addEventListener('mousedown', handleClickOutside);
-    document.addEventListener('keydown', handleEscape);
-    
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
-      document.removeEventListener('keydown', handleEscape);
     };
   }, [isOpen, onClose]);
 
   if (!isOpen) return null;
-
-  const handleItemClick = (type: string) => {
-    console.log('Menu item clicked:', type);
-    onSelectItem(type);
-    onClose();
-  };
 
   return (
     <div
@@ -87,35 +71,34 @@ export function SlashMenu({ isOpen, onClose, onSelectItem, position }: SlashMenu
         position: 'fixed',
         top: position.top,
         left: position.left,
-        zIndex: 1000,
+        zIndex: 50,
       }}
       ref={menuRef}
     >
-      <Card className="w-[320px] max-h-[400px] overflow-y-auto bg-background border shadow-lg">
+      <Card className="w-[300px]">
         <div className="p-2">
-          <div className="text-sm text-muted-foreground mb-2 px-2 py-1">
+          <div className="text-sm text-muted-foreground mb-2">
             Type '/' to insert a block
           </div>
-          <div className="space-y-1">
-            {menuItems.map((item) => (
-              <button
-                key={item.type}
-                onClick={() => handleItemClick(item.type)}
-                className="w-full text-left p-2 rounded-md hover:bg-secondary/80 transition-colors flex items-center gap-3 cursor-pointer group"
-                type="button"
-              >
-                <item.icon className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium text-foreground group-hover:text-foreground">
-                    {item.label}
-                  </div>
-                  <div className="text-xs text-muted-foreground truncate">
-                    {item.description}
-                  </div>
-                </div>
-              </button>
-            ))}
-          </div>
+          {menuItems.map((item) => (
+            <Button
+              key={item.type}
+              variant="ghost"
+              className="justify-start w-full hover:bg-secondary/50"
+              onClick={() => {
+                onSelectItem(item.type);
+                onClose();
+              }}
+            >
+              <item.icon className="h-4 w-4 mr-2" />
+              <div className="flex flex-col items-start">
+                <span className="text-sm font-medium">{item.label}</span>
+                <span className="text-xs text-muted-foreground">
+                  {item.description}
+                </span>
+              </div>
+            </Button>
+          ))}
         </div>
       </Card>
     </div>

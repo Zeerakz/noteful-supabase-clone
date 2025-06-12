@@ -7,7 +7,6 @@ import { Trash2, ExternalLink, Globe } from 'lucide-react';
 import { CommentIcon } from './CommentIcon';
 import { CommentThreadPanel } from './CommentThreadPanel';
 import { useComments } from '@/hooks/useComments';
-import { TwitterEmbed } from './TwitterEmbed';
 
 interface EmbedBlockProps {
   block: Block;
@@ -41,19 +40,8 @@ export function EmbedBlock({ block, onUpdate, onDelete, isEditable }: EmbedBlock
 
   const getEmbedInfo = (inputUrl: string) => {
     try {
-      console.log('EmbedBlock: Processing URL:', inputUrl);
       const urlObj = new URL(inputUrl);
       const hostname = urlObj.hostname.toLowerCase();
-
-      // Twitter/X - Enhanced detection
-      if (hostname.includes('twitter.com') || hostname.includes('x.com') || hostname.includes('mobile.twitter.com')) {
-        console.log('EmbedBlock: Detected Twitter/X URL');
-        return {
-          type: 'twitter',
-          embedUrl: inputUrl,
-          title: 'Twitter/X Post'
-        };
-      }
 
       // YouTube
       if (hostname.includes('youtube.com') || hostname.includes('youtu.be')) {
@@ -63,7 +51,6 @@ export function EmbedBlock({ block, onUpdate, onDelete, isEditable }: EmbedBlock
         } else {
           videoId = urlObj.pathname.slice(1);
         }
-        console.log('EmbedBlock: Detected YouTube URL, video ID:', videoId);
         return {
           type: 'youtube',
           embedUrl: `https://www.youtube.com/embed/${videoId}`,
@@ -74,7 +61,6 @@ export function EmbedBlock({ block, onUpdate, onDelete, isEditable }: EmbedBlock
       // Vimeo
       if (hostname.includes('vimeo.com')) {
         const videoId = urlObj.pathname.split('/')[1];
-        console.log('EmbedBlock: Detected Vimeo URL, video ID:', videoId);
         return {
           type: 'vimeo',
           embedUrl: `https://player.vimeo.com/video/${videoId}`,
@@ -86,7 +72,6 @@ export function EmbedBlock({ block, onUpdate, onDelete, isEditable }: EmbedBlock
       if (hostname.includes('codepen.io')) {
         const parts = urlObj.pathname.split('/');
         if (parts[1] && parts[2] && parts[3]) {
-          console.log('EmbedBlock: Detected CodePen URL');
           return {
             type: 'codepen',
             embedUrl: `https://codepen.io/${parts[1]}/embed/${parts[3]}`,
@@ -95,15 +80,13 @@ export function EmbedBlock({ block, onUpdate, onDelete, isEditable }: EmbedBlock
         }
       }
 
-      // Generic embed
-      console.log('EmbedBlock: Using generic embed for URL');
+      // Generic embed - just show the URL in an iframe
       return {
         type: 'generic',
         embedUrl: inputUrl,
         title: 'Embedded Content'
       };
     } catch (error) {
-      console.error('EmbedBlock: Error processing URL:', error);
       return null;
     }
   };
@@ -111,7 +94,6 @@ export function EmbedBlock({ block, onUpdate, onDelete, isEditable }: EmbedBlock
   const handleUrlSubmit = async () => {
     if (!urlInput.trim()) return;
 
-    console.log('EmbedBlock: Submitting URL:', urlInput.trim());
     const embedInfo = getEmbedInfo(urlInput.trim());
     if (embedInfo) {
       await onUpdate({
@@ -166,7 +148,7 @@ export function EmbedBlock({ block, onUpdate, onDelete, isEditable }: EmbedBlock
             <Input
               value={urlInput}
               onChange={(e) => setUrlInput(e.target.value)}
-              placeholder="Paste a YouTube, Vimeo, CodePen, Twitter/X, or any URL..."
+              placeholder="Paste a YouTube, Vimeo, CodePen, or any URL..."
               onKeyDown={handleKeyDown}
               autoFocus
               className="flex-1"
@@ -179,20 +161,12 @@ export function EmbedBlock({ block, onUpdate, onDelete, isEditable }: EmbedBlock
             </Button>
           </div>
           <p className="text-xs text-muted-foreground mt-2">
-            Supports YouTube, Vimeo, CodePen, Twitter/X, and other embeddable URLs
+            Supports YouTube, Vimeo, CodePen, and other embeddable URLs
           </p>
         </div>
       ) : (
         <div className="border border-border rounded-lg overflow-hidden bg-background">
-          {type === 'twitter' ? (
-            <div className="p-4">
-              <TwitterEmbed 
-                url={url!} 
-                onEdit={isEditable ? handleEdit : undefined}
-                isEditable={isEditable}
-              />
-            </div>
-          ) : embedUrl ? (
+          {embedUrl ? (
             <div className="relative">
               <iframe
                 src={embedUrl}
@@ -240,7 +214,7 @@ export function EmbedBlock({ block, onUpdate, onDelete, isEditable }: EmbedBlock
             </div>
           )}
           
-          {url && type !== 'twitter' && (
+          {url && (
             <div className="p-3 border-t border-border bg-muted/50">
               <div className="flex items-center justify-between">
                 <a
