@@ -1,9 +1,8 @@
-
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { SavedDatabaseViewService } from '@/services/savedDatabaseViewService';
 import { SavedDatabaseView } from '@/types/database';
-import { FilterRule } from '@/components/database/FilterModal';
+import { FilterGroup } from '@/types/filters';
 import { SortRule } from '@/components/database/SortingModal';
 import { useToast } from '@/hooks/use-toast';
 
@@ -47,7 +46,7 @@ export function useSavedDatabaseViews(databaseId: string, workspaceId: string) {
   const createView = async (
     name: string,
     viewType: string,
-    filters: FilterRule[] = [],
+    filters: FilterGroup,
     sorts: SortRule[] = [],
     groupingFieldId?: string,
     description?: string

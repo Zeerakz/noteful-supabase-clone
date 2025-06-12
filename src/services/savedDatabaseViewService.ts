@@ -1,7 +1,6 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { SavedDatabaseView, SavedViewPermission } from '@/types/database';
-import { FilterRule } from '@/components/database/FilterModal';
+import { FilterGroup } from '@/types/filters';
 import { SortRule } from '@/components/database/SortingModal';
 
 export class SavedDatabaseViewService {
@@ -34,7 +33,7 @@ export class SavedDatabaseViewService {
     userId: string,
     name: string,
     viewType: string,
-    filters: FilterRule[] = [],
+    filters: FilterGroup,
     sorts: SortRule[] = [],
     groupingFieldId?: string,
     description?: string

@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -32,6 +33,11 @@ interface DatabaseViewManagerProps {
   currentViewType: DatabaseViewType;
   groupingFieldId?: string;
 }
+
+// Helper function to count filters in a FilterGroup
+const countFilters = (group: FilterGroup): number => {
+  return group.rules.length + group.groups.reduce((count, subGroup) => count + countFilters(subGroup), 0);
+};
 
 export function DatabaseViewManager({
   views,
