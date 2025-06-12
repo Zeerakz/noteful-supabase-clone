@@ -170,6 +170,42 @@ export type Database = {
           },
         ]
       }
+      field_dependencies: {
+        Row: {
+          created_at: string | null
+          dependent_field_id: string
+          id: string
+          source_field_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          dependent_field_id: string
+          id?: string
+          source_field_id: string
+        }
+        Update: {
+          created_at?: string | null
+          dependent_field_id?: string
+          id?: string
+          source_field_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "field_dependencies_dependent_field_id_fkey"
+            columns: ["dependent_field_id"]
+            isOneToOne: false
+            referencedRelation: "fields"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "field_dependencies_source_field_id_fkey"
+            columns: ["source_field_id"]
+            isOneToOne: false
+            referencedRelation: "fields"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fields: {
         Row: {
           created_at: string | null
@@ -265,6 +301,7 @@ export type Database = {
       }
       page_properties: {
         Row: {
+          computed_value: string | null
           created_at: string | null
           created_by: string
           field_id: string
@@ -274,6 +311,7 @@ export type Database = {
           value: string | null
         }
         Insert: {
+          computed_value?: string | null
           created_at?: string | null
           created_by: string
           field_id: string
@@ -283,6 +321,7 @@ export type Database = {
           value?: string | null
         }
         Update: {
+          computed_value?: string | null
           created_at?: string | null
           created_by?: string
           field_id?: string
@@ -586,12 +625,28 @@ export type Database = {
         Args: { workspace_uuid: string; user_uuid: string }
         Returns: boolean
       }
+      recalculate_formula_field: {
+        Args: { field_id: string; page_id: string }
+        Returns: string
+      }
+      recalculate_rollup_field: {
+        Args: { field_id: string; page_id: string }
+        Returns: string
+      }
       refresh_search_index_for_workspace: {
         Args: { workspace_uuid: string }
         Returns: undefined
       }
       user_has_workspace_access: {
         Args: { target_workspace_id: string; user_id: string }
+        Returns: boolean
+      }
+      validate_formula_field_settings: {
+        Args: { settings: Json }
+        Returns: boolean
+      }
+      validate_rollup_field_settings: {
+        Args: { settings: Json }
         Returns: boolean
       }
     }

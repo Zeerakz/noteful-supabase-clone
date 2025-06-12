@@ -25,19 +25,27 @@ export class PagePropertyService {
     pageId: string,
     fieldId: string,
     value: string,
-    userId: string
+    userId: string,
+    computedValue?: string
   ): Promise<{ data: PageProperty | null; error: string | null }> {
     try {
+      const updateData: any = {
+        page_id: pageId,
+        field_id: fieldId,
+        value,
+        created_by: userId,
+        updated_at: new Date().toISOString(),
+      };
+
+      // Include computed_value if provided
+      if (computedValue !== undefined) {
+        updateData.computed_value = computedValue;
+      }
+
       const { data, error } = await supabase
         .from('page_properties')
         .upsert(
-          {
-            page_id: pageId,
-            field_id: fieldId,
-            value,
-            created_by: userId,
-            updated_at: new Date().toISOString(),
-          },
+          updateData,
           { 
             onConflict: 'page_id,field_id',
             ignoreDuplicates: false 
@@ -52,6 +60,30 @@ export class PagePropertyService {
       return { 
         data: null, 
         error: err instanceof Error ? err.message : 'Failed to update page property' 
+      };
+    }
+  }
+
+  static async updateComputedValue(
+    pageId: string,
+    fieldId: string,
+    computedValue: string
+  ): Promise<{ data: PageProperty | null; error: string | null }> {
+    try {
+      const { data, error } = await supabase
+        .from('page_properties')
+        .update({ computed_value: computedValue })
+        .eq('page_id', pageId)
+        .eq('field_id', fieldId)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return { data: data as PageProperty, error: null };
+    } catch (err) {
+      return { 
+        data: null, 
+        error: err instanceof Error ? err.message : 'Failed to update computed value' 
       };
     }
   }
