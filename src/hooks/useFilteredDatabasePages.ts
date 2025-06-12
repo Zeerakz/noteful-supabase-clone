@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { DatabaseQueryService } from '@/services/database/databaseQueryService';
 import { DatabaseField } from '@/types/database';
 import { FilterGroup } from '@/types/filters';
@@ -18,51 +18,57 @@ export function useFilteredDatabasePages({ databaseId, filterGroup, fields, sort
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Stabilize the filter and sort dependencies using useMemo
+  const stableFilterGroup = useMemo(() => filterGroup, [JSON.stringify(filterGroup)]);
+  const stableSortRules = useMemo(() => sortRules, [JSON.stringify(sortRules)]);
+
   // Create a stable query function that doesn't change on every render
   const queryFunction = useCallback(() => {
     console.log('Query function called for database:', databaseId);
-    return DatabaseQueryService.fetchDatabasePages(databaseId, filterGroup, fields, sortRules);
-  }, [databaseId, JSON.stringify(filterGroup), JSON.stringify(sortRules)]);
+    return DatabaseQueryService.fetchDatabasePages(databaseId, stableFilterGroup, fields, stableSortRules);
+  }, [databaseId, stableFilterGroup, fields, stableSortRules]);
 
   const { executeWithRetry, retryCount, isRetrying } = useRetryableQuery(
     queryFunction,
     { maxRetries: 3, baseDelay: 1000 }
   );
 
+  // Memoize the fetch function to prevent unnecessary re-executions
+  const fetchPages = useCallback(async () => {
+    if (!databaseId) {
+      setPages([]);
+      setLoading(false);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+      
+      console.log('Fetching pages with filter group:', stableFilterGroup, 'sorts:', stableSortRules.length);
+      const { data, error: fetchError } = await executeWithRetry();
+
+      if (fetchError) {
+        console.error('Pages fetch error:', fetchError);
+        setError(fetchError);
+        setPages([]);
+      } else {
+        console.log('Pages fetched successfully:', data?.length || 0);
+        setPages(data || []);
+      }
+    } catch (err) {
+      console.error('Pages fetch exception:', err);
+      setError(err instanceof Error ? err.message : 'Failed to fetch pages');
+      setPages([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [databaseId, executeWithRetry, stableFilterGroup, stableSortRules]);
+
+  // Use effect with stable dependencies
   useEffect(() => {
-    const fetchPages = async () => {
-      if (!databaseId) {
-        setPages([]);
-        setLoading(false);
-        return;
-      }
-
-      try {
-        setLoading(true);
-        setError(null);
-        
-        console.log('Fetching pages with filter group:', filterGroup, 'sorts:', sortRules.length);
-        const { data, error: fetchError } = await executeWithRetry();
-
-        if (fetchError) {
-          console.error('Pages fetch error:', fetchError);
-          setError(fetchError);
-          setPages([]);
-        } else {
-          console.log('Pages fetched successfully:', data?.length || 0);
-          setPages(data || []);
-        }
-      } catch (err) {
-        console.error('Pages fetch exception:', err);
-        setError(err instanceof Error ? err.message : 'Failed to fetch pages');
-        setPages([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchPages();
-  }, [databaseId, executeWithRetry]);
+  }, [fetchPages]);
 
   const refetch = useCallback(async () => {
     try {
