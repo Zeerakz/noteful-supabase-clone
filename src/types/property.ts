@@ -433,7 +433,38 @@ export function getDefaultConfigForType(type: PropertyType): PropertyConfig {
     case 'rich_text':
       return { required: false, allowedFormats: ['bold', 'italic', 'link'] };
     case 'status':
-      return { required: false, options: [], displayAs: 'dropdown' };
+      return { 
+        required: false, 
+        groups: [
+          {
+            id: 'todo',
+            name: 'To-do',
+            color: '#64748b',
+            options: [
+              { id: 'not-started', name: 'Not Started', color: '#64748b', groupId: 'todo' }
+            ]
+          },
+          {
+            id: 'in-progress', 
+            name: 'In Progress',
+            color: '#3b82f6',
+            options: [
+              { id: 'in-progress', name: 'In Progress', color: '#3b82f6', groupId: 'in-progress' },
+              { id: 'blocked', name: 'Blocked', color: '#ef4444', groupId: 'in-progress' }
+            ]
+          },
+          {
+            id: 'complete',
+            name: 'Complete', 
+            color: '#22c55e',
+            options: [
+              { id: 'done', name: 'Done', color: '#22c55e', groupId: 'complete' }
+            ]
+          }
+        ],
+        defaultStatus: 'not-started',
+        displayAs: 'dropdown' 
+      };
     case 'people':
       return { required: false, allowMultiple: false, restrictToWorkspace: true };
     case 'rating':
