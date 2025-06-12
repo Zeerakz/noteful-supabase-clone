@@ -11,25 +11,27 @@ interface PageWithProperties {
 }
 
 interface DatabaseTableBodyProps {
-  pages: PageWithProperties[];
+  pagesWithProperties: PageWithProperties[];
   fields: DatabaseField[];
   onTitleUpdate: (pageId: string, newTitle: string) => void;
   onPropertyUpdate: (pageId: string, fieldId: string, value: string) => void;
   onDeleteRow: (pageId: string) => void;
   workspaceId: string;
+  columnWidths?: Record<string, number>;
 }
 
 export function DatabaseTableBody({
-  pages,
+  pagesWithProperties,
   fields,
   onTitleUpdate,
   onPropertyUpdate,
   onDeleteRow,
-  workspaceId
+  workspaceId,
+  columnWidths
 }: DatabaseTableBodyProps) {
   return (
     <TableBody>
-      {pages.length === 0 ? (
+      {pagesWithProperties.length === 0 ? (
         <TableRow>
           <TableCell 
             colSpan={fields.length + 2} 
@@ -39,7 +41,7 @@ export function DatabaseTableBody({
           </TableCell>
         </TableRow>
       ) : (
-        pages.map((page) => (
+        pagesWithProperties.map((page) => (
           <TableRow key={page.id}>
             <DatabaseTableRow
               page={page}

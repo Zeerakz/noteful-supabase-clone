@@ -18,10 +18,9 @@ interface PaginationControlsProps {
   totalPages: number;
   totalItems: number;
   itemsPerPage: number;
-  onPageChange: (page: number) => void;
-  onItemsPerPageChange: (itemsPerPage: number) => void;
-  startIndex: number;
-  endIndex: number;
+  onNextPage: () => void;
+  onPrevPage: () => void;
+  onItemsPerPageChange?: (itemsPerPage: number) => void;
 }
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100, 250];
@@ -31,11 +30,21 @@ export function PaginationControls({
   totalPages,
   totalItems,
   itemsPerPage,
-  onPageChange,
-  onItemsPerPageChange,
-  startIndex,
-  endIndex
+  onNextPage,
+  onPrevPage,
+  onItemsPerPageChange
 }: PaginationControlsProps) {
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
+
+  const onPageChange = (page: number) => {
+    if (page > currentPage) {
+      onNextPage();
+    } else if (page < currentPage) {
+      onPrevPage();
+    }
+  };
+
   const getVisiblePages = () => {
     const delta = 2;
     const range = [];
@@ -72,22 +81,26 @@ export function PaginationControls({
         <span>
           Showing {startIndex + 1}-{endIndex} of {totalItems} results
         </span>
-        <Select 
-          value={itemsPerPage.toString()} 
-          onValueChange={(value) => onItemsPerPageChange(Number(value))}
-        >
-          <SelectTrigger className="w-20 h-8">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {PAGE_SIZE_OPTIONS.map((size) => (
-              <SelectItem key={size} value={size.toString()}>
-                {size}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <span>per page</span>
+        {onItemsPerPageChange && (
+          <>
+            <Select 
+              value={itemsPerPage.toString()} 
+              onValueChange={(value) => onItemsPerPageChange(Number(value))}
+            >
+              <SelectTrigger className="w-20 h-8">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {PAGE_SIZE_OPTIONS.map((size) => (
+                  <SelectItem key={size} value={size.toString()}>
+                    {size}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <span>per page</span>
+          </>
+        )}
       </div>
 
       <Pagination>
@@ -106,7 +119,7 @@ export function PaginationControls({
           
           <PaginationItem>
             <PaginationPrevious 
-              onClick={() => onPageChange(currentPage - 1)}
+              onClick={onPrevPage}
               className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
             />
           </PaginationItem>
@@ -129,7 +142,7 @@ export function PaginationControls({
 
           <PaginationItem>
             <PaginationNext 
-              onClick={() => onPageChange(currentPage + 1)}
+              onClick={onNextPage}
               className={currentPage === totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
             />
           </PaginationItem>
