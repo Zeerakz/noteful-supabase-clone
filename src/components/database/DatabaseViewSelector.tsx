@@ -1,9 +1,9 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Table, List, Calendar, Kanban, FileText } from 'lucide-react';
+import { Table, List, Calendar, Kanban, FileText, Images } from 'lucide-react';
 
-export type DatabaseViewType = 'table' | 'list' | 'calendar' | 'kanban' | 'form';
+export type DatabaseViewType = 'table' | 'list' | 'calendar' | 'kanban' | 'form' | 'gallery';
 
 interface DatabaseViewSelectorProps {
   currentView: DatabaseViewType;
@@ -16,6 +16,7 @@ export function DatabaseViewSelector({ currentView, onViewChange }: DatabaseView
     { type: 'list' as const, label: 'List', icon: List },
     { type: 'calendar' as const, label: 'Calendar', icon: Calendar },
     { type: 'kanban' as const, label: 'Kanban', icon: Kanban },
+    { type: 'gallery' as const, label: 'Gallery', icon: Images },
     { type: 'form' as const, label: 'Form', icon: FileText },
   ];
 

@@ -1,3 +1,4 @@
+
 export interface Database {
   id: string;
   workspace_id: string;
@@ -46,7 +47,7 @@ export interface DatabaseView {
   id: string;
   database_id: string;
   user_id: string;
-  default_view_type: 'table' | 'list' | 'calendar' | 'kanban' | 'form';
+  default_view_type: 'table' | 'list' | 'calendar' | 'kanban' | 'form' | 'gallery';
   created_at: string;
   updated_at: string;
 }
@@ -71,7 +72,9 @@ export type FieldType =
   | 'phone'
   | 'relation'
   | 'formula'
-  | 'rollup';
+  | 'rollup'
+  | 'file_attachment'
+  | 'image';
 
 // Settings types for complex fields
 export interface FormulaFieldSettings {

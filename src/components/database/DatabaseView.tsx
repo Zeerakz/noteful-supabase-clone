@@ -5,6 +5,7 @@ import { DatabaseTableView } from './DatabaseTableView';
 import { DatabaseListView } from './DatabaseListView';
 import { DatabaseCalendarView } from './DatabaseCalendarView';
 import { DatabaseKanbanView } from './DatabaseKanbanView';
+import { DatabaseGalleryView } from './DatabaseGalleryView';
 import { DatabaseFormView } from './DatabaseFormView';
 import { FilterModal } from './FilterModal';
 import { SortingModal } from './SortingModal';
@@ -80,6 +81,8 @@ export function DatabaseView({ databaseId, workspaceId }: DatabaseViewProps) {
         return <DatabaseCalendarView {...commonProps} />;
       case 'kanban':
         return <DatabaseKanbanView {...commonProps} />;
+      case 'gallery':
+        return <DatabaseGalleryView {...commonProps} />;
       case 'form':
         return (
           <DatabaseFormView

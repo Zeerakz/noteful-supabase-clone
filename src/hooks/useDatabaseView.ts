@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
-export type DatabaseViewType = 'table' | 'list' | 'calendar' | 'kanban' | 'form';
+export type DatabaseViewType = 'table' | 'list' | 'calendar' | 'kanban' | 'form' | 'gallery';
 
 export function useDatabaseView(databaseId: string) {
   const [defaultView, setDefaultView] = useState<DatabaseViewType>('table');
