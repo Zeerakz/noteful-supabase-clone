@@ -58,9 +58,13 @@ export function DatabaseView({ databaseId, workspaceId }: DatabaseViewProps) {
       setCollapsedGroups(currentView.grouping_collapsed_groups || []);
       
       try {
-        const parsedFilters = typeof currentView.filters === 'string' 
-          ? JSON.parse(currentView.filters) 
-          : currentView.filters;
+        let parsedFilters;
+        if (typeof currentView.filters === 'string') {
+          parsedFilters = JSON.parse(currentView.filters);
+        } else {
+          parsedFilters = currentView.filters;
+        }
+        
         // Convert old format to new format if needed
         if (Array.isArray(parsedFilters)) {
           const newFilterGroup = createEmptyFilterGroup();
@@ -75,9 +79,12 @@ export function DatabaseView({ databaseId, workspaceId }: DatabaseViewProps) {
       }
       
       try {
-        const parsedSorts = typeof currentView.sorts === 'string' 
-          ? JSON.parse(currentView.sorts) 
-          : currentView.sorts;
+        let parsedSorts;
+        if (typeof currentView.sorts === 'string') {
+          parsedSorts = JSON.parse(currentView.sorts);
+        } else {
+          parsedSorts = currentView.sorts;
+        }
         setSortRules(parsedSorts || []);
       } catch {
         setSortRules([]);

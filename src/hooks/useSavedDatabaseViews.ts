@@ -24,8 +24,8 @@ export function useSavedDatabaseViews(databaseId: string, workspaceId: string) {
       name: 'All Campaigns',
       description: null,
       view_type: 'table',
-      filters: JSON.stringify(createEmptyFilterGroup()),
-      sorts: JSON.stringify([]),
+      filters: createEmptyFilterGroup(),
+      sorts: [],
       grouping_field_id: null,
       grouping_collapsed_groups: [],
       is_shared: false,
@@ -88,35 +88,31 @@ export function useSavedDatabaseViews(databaseId: string, workspaceId: string) {
     sorts: SortRule[] = [],
     groupingFieldId?: string,
     description?: string
-  ) => {
-    if (!user) return { error: 'User not authenticated' };
+  ): Promise<SavedDatabaseView> => {
+    if (!user) throw new Error('User not authenticated');
 
-    try {
-      const { data, error } = await SavedDatabaseViewService.createView(
-        databaseId,
-        workspaceId,
-        user.id,
-        name,
-        viewType,
-        filters,
-        sorts,
-        groupingFieldId,
-        description
-      );
+    const { data, error } = await SavedDatabaseViewService.createView(
+      databaseId,
+      workspaceId,
+      user.id,
+      name,
+      viewType,
+      filters,
+      sorts,
+      groupingFieldId,
+      description
+    );
 
-      if (error) {
-        return { error };
-      }
-
-      if (data) {
-        setViews(prev => [...prev, data]);
-        return { data };
-      }
-    } catch (err) {
-      return { error: err instanceof Error ? err.message : 'Failed to create view' };
+    if (error) {
+      throw new Error(error);
     }
 
-    return { error: 'Unknown error occurred' };
+    if (data) {
+      setViews(prev => [...prev, data]);
+      return data;
+    }
+
+    throw new Error('Unknown error occurred');
   };
 
   const updateView = async (viewId: string, updates: Partial<SavedDatabaseView>) => {
@@ -163,23 +159,19 @@ export function useSavedDatabaseViews(databaseId: string, workspaceId: string) {
     }
   };
 
-  const duplicateView = async (viewId: string, newName: string) => {
-    try {
-      const { data, error } = await SavedDatabaseViewService.duplicateView(viewId, newName);
+  const duplicateView = async (viewId: string, newName: string): Promise<SavedDatabaseView> => {
+    const { data, error } = await SavedDatabaseViewService.duplicateView(viewId, newName);
 
-      if (error) {
-        return { error };
-      }
-
-      if (data) {
-        setViews(prev => [...prev, data]);
-        return { data };
-      }
-    } catch (err) {
-      return { error: err instanceof Error ? err.message : 'Failed to duplicate view' };
+    if (error) {
+      throw new Error(error);
     }
 
-    return { error: 'Unknown error occurred' };
+    if (data) {
+      setViews(prev => [...prev, data]);
+      return data;
+    }
+
+    throw new Error('Unknown error occurred');
   };
 
   const setDefaultView = async (viewId: string) => {
