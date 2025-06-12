@@ -1,7 +1,7 @@
 
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { useFilteredDatabasePages } from '@/hooks/useFilteredDatabasePages';
+import { useOptimisticDatabasePages } from '@/hooks/useOptimisticDatabasePages';
 import { useOptimisticPropertyUpdate } from '@/hooks/useOptimisticPropertyUpdate';
 import { PageService } from '@/services/pageService';
 import { DatabaseField } from '@/types/database';
@@ -56,13 +56,17 @@ export function useDatabaseTableView({
     enableVirtualScrolling
   });
 
-  // Direct data fetching with React Query
+  // Use optimistic pages hook
   const { 
     pages, 
     loading: pagesLoading, 
     error: pagesError,
-    refetch: refetchPages
-  } = useFilteredDatabasePages({
+    refetch: refetchPages,
+    optimisticCreatePage,
+    optimisticUpdatePage,
+    optimisticDeletePage,
+    optimisticUpdateProperty
+  } = useOptimisticDatabasePages({
     databaseId,
     filterGroup,
     fields,
@@ -118,12 +122,16 @@ export function useDatabaseTableView({
     return pagesWithProperties.slice(startIndex, endIndex);
   }, [pagesWithProperties, enablePagination, itemsPerPage]);
 
-  // Action handlers
+  // Action handlers with optimistic updates
   const handleCreateRow = useCallback(async () => {
     if (!user) return;
 
     try {
       console.log('useDatabaseTableView: Creating new row');
+      
+      // Optimistic update
+      optimisticCreatePage({ title: 'Untitled' });
+      
       const { data, error } = await PageService.createPage(
         workspaceId,
         user.id,
@@ -141,7 +149,7 @@ export function useDatabaseTableView({
           title: "Success",
           description: "New row created",
         });
-        refetchPages();
+        // Let server sync handle the real data
       }
     } catch (err) {
       toast({
@@ -150,11 +158,15 @@ export function useDatabaseTableView({
         variant: "destructive",
       });
     }
-  }, [user, workspaceId, databaseId, toast, refetchPages]);
+  }, [user, workspaceId, databaseId, toast, optimisticCreatePage]);
 
   const handleDeleteRow = useCallback(async (pageId: string) => {
     try {
       console.log('useDatabaseTableView: Deleting row', { pageId });
+      
+      // Optimistic update
+      optimisticDeletePage(pageId);
+      
       const { error } = await PageService.deletePage(pageId);
       if (error) {
         toast({
@@ -167,7 +179,6 @@ export function useDatabaseTableView({
           title: "Success",
           description: "Row deleted",
         });
-        refetchPages();
       }
     } catch (err) {
       toast({
@@ -176,13 +187,17 @@ export function useDatabaseTableView({
         variant: "destructive",
       });
     }
-  }, [toast, refetchPages]);
+  }, [toast, optimisticDeletePage]);
 
   const handleTitleUpdate = useCallback(async (pageId: string, newTitle: string) => {
     if (!newTitle.trim()) return;
 
     try {
       console.log('useDatabaseTableView: Updating title', { pageId, newTitle });
+      
+      // Optimistic update
+      optimisticUpdatePage(pageId, { title: newTitle.trim() });
+      
       const { error } = await PageService.updatePage(pageId, { title: newTitle.trim() });
       if (error) {
         toast({
@@ -190,8 +205,6 @@ export function useDatabaseTableView({
           description: error,
           variant: "destructive",
         });
-      } else {
-        refetchPages();
       }
     } catch (err) {
       toast({
@@ -200,18 +213,21 @@ export function useDatabaseTableView({
         variant: "destructive",
       });
     }
-  }, [toast, refetchPages]);
+  }, [toast, optimisticUpdatePage]);
 
   const handlePropertyUpdate = useCallback((pageId: string, fieldId: string, value: string) => {
     console.log('useDatabaseTableView: Updating property', { pageId, fieldId, value });
     
-    // Trigger optimistic update - this should update the UI immediately
+    // Immediate optimistic update for local state
+    optimisticUpdateProperty(pageId, fieldId, value);
+    
+    // Trigger server update with global optimistic handling
     propertyUpdateMutation.mutate({
       pageId,
       fieldId,
       value
     });
-  }, [propertyUpdateMutation]);
+  }, [propertyUpdateMutation, optimisticUpdateProperty]);
 
   console.log('useDatabaseTableView: Returning data', { 
     pagesWithPropertiesCount: pagesWithProperties.length,

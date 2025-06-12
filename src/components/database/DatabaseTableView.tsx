@@ -3,7 +3,8 @@ import React, { useState, useEffect } from 'react';
 import { useDatabaseTableView } from '@/hooks/useDatabaseTableView';
 import { DatabaseTableViewContent } from './table/DatabaseTableViewContent';
 import { ManagePropertiesModal } from './fields/ManagePropertiesModal';
-import { useDatabaseFieldOperations } from '@/hooks/useDatabaseFieldOperations';
+import { useOptimisticDatabaseFields } from '@/hooks/useOptimisticDatabaseFields';
+import { useEnhancedDatabaseFieldOperations } from '@/hooks/useEnhancedDatabaseFieldOperations';
 import { DatabaseField } from '@/types/database';
 import { FilterGroup } from '@/types/filters';
 import { SortRule } from '@/components/database/SortingModal';
@@ -21,7 +22,7 @@ interface DatabaseTableViewProps {
 export function DatabaseTableView({ 
   databaseId, 
   workspaceId, 
-  fields, 
+  fields: propFields, 
   filterGroup, 
   sortRules,
   setSortRules,
@@ -30,27 +31,36 @@ export function DatabaseTableView({
   const [enablePagination, setEnablePagination] = useState(false);
   const [itemsPerPage, setItemsPerPage] = useState(50);
   const [showManageProperties, setShowManageProperties] = useState(false);
-  const [optimisticFields, setOptimisticFields] = useState<DatabaseField[]>(fields);
-  const [refreshKey, setRefreshKey] = useState(0);
 
-  // Update optimistic fields when props change
-  useEffect(() => {
-    setOptimisticFields(fields);
-  }, [fields]);
+  // Use optimistic fields hook
+  const {
+    fields: optimisticFields,
+    optimisticCreateField,
+    optimisticUpdateField,
+    optimisticDeleteField,
+    optimisticReorderFields,
+    revertOptimisticChanges,
+  } = useOptimisticDatabaseFields(databaseId);
+
+  // Enhanced field operations with optimistic updates
+  const fieldOperations = useEnhancedDatabaseFieldOperations({
+    databaseId,
+    onOptimisticCreate: optimisticCreateField,
+    onOptimisticUpdate: optimisticUpdateField,
+    onOptimisticDelete: optimisticDeleteField,
+    onOptimisticReorder: optimisticReorderFields,
+    onRevert: revertOptimisticChanges,
+    onFieldsChange,
+  });
+
+  // Use optimistic fields or fallback to props
+  const fieldsToUse = optimisticFields.length > 0 ? optimisticFields : propFields;
 
   // Ensure all fields have the database_id property
-  const fieldsWithDatabaseId = optimisticFields.map(field => ({
+  const fieldsWithDatabaseId = fieldsToUse.map(field => ({
     ...field,
     database_id: field.database_id || databaseId
   }));
-
-  // Enhanced onFieldsChange that triggers a refresh
-  const handleFieldsChange = () => {
-    setRefreshKey(prev => prev + 1);
-    onFieldsChange?.();
-  };
-
-  const fieldOperations = useDatabaseFieldOperations(databaseId, handleFieldsChange);
 
   const {
     pagesWithProperties,
@@ -98,60 +108,13 @@ export function DatabaseTableView({
       pos: index
     }));
 
-    // Optimistically update the UI immediately
-    setOptimisticFields(reorderedFields);
-
-    try {
-      // Update the database
-      await fieldOperations.reorderFields(reorderedFields);
-      // Trigger refetch to ensure consistency
-      handleFieldsChange();
-    } catch (error) {
-      console.error('Failed to reorder fields:', error);
-      // Revert optimistic update on error
-      setOptimisticFields(fields);
-    }
-  };
-
-  // Enhanced field operations with proper refresh handling
-  const enhancedFieldOperations = {
-    ...fieldOperations,
-    createField: async (field: { name: string; type: any; settings?: any }) => {
-      try {
-        await fieldOperations.createField(field);
-        // Force a refresh of the page data to show new property columns
-        await refetchPages();
-      } catch (error) {
-        console.error('Failed to create field:', error);
-        throw error;
-      }
-    },
-    deleteField: async (fieldId: string) => {
-      try {
-        await fieldOperations.deleteField(fieldId);
-        // Force a refresh of the page data to remove deleted property columns
-        await refetchPages();
-      } catch (error) {
-        console.error('Failed to delete field:', error);
-        throw error;
-      }
-    },
-    updateField: async (fieldId: string, updates: Partial<DatabaseField>) => {
-      try {
-        await fieldOperations.updateField(fieldId, updates);
-        // Force a refresh of the page data to show updated property columns
-        await refetchPages();
-      } catch (error) {
-        console.error('Failed to update field:', error);
-        throw error;
-      }
-    }
+    // Use optimistic field operations
+    await fieldOperations.reorderFields(reorderedFields);
   };
 
   return (
     <>
       <DatabaseTableViewContent
-        key={refreshKey} // Force re-render when fields change
         pagesWithProperties={pagesWithProperties}
         fields={fieldsWithDatabaseId}
         pagesLoading={pagesLoading}
@@ -161,7 +124,7 @@ export function DatabaseTableView({
         onPropertyUpdate={handlePropertyUpdate}
         onDeleteRow={handleDeleteRow}
         onRefetch={refetchPages}
-        onFieldsChange={handleFieldsChange}
+        onFieldsChange={onFieldsChange}
         onFieldReorder={handleFieldReorder}
         pagination={pagination ? {
           ...pagination,
@@ -183,10 +146,10 @@ export function DatabaseTableView({
         onOpenChange={setShowManageProperties}
         fields={fieldsWithDatabaseId}
         onFieldsReorder={fieldOperations.reorderFields}
-        onFieldUpdate={enhancedFieldOperations.updateField}
+        onFieldUpdate={fieldOperations.updateField}
         onFieldDuplicate={fieldOperations.duplicateField}
-        onFieldDelete={enhancedFieldOperations.deleteField}
-        onFieldCreate={enhancedFieldOperations.createField}
+        onFieldDelete={fieldOperations.deleteField}
+        onFieldCreate={fieldOperations.createField}
       />
     </>
   );

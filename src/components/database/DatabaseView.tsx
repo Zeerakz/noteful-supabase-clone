@@ -6,7 +6,7 @@ import { DatabaseViewControls } from './DatabaseViewControls';
 import { DatabaseViewRenderer } from './DatabaseViewRenderer';
 import { ComplexFilterModal } from './filters/ComplexFilterModal';
 import { SortingModal } from './SortingModal';
-import { useDatabaseFields } from '@/hooks/useDatabaseFields';
+import { useOptimisticDatabaseFields } from '@/hooks/useOptimisticDatabaseFields';
 import { useSavedDatabaseViews } from '@/hooks/useSavedDatabaseViews';
 import { useComplexFilters } from '@/hooks/useComplexFilters';
 import { useSorting } from '@/hooks/useSorting';
@@ -20,7 +20,13 @@ interface DatabaseViewProps {
 export function DatabaseView({ databaseId, workspaceId }: DatabaseViewProps) {
   const [fieldsRefreshKey, setFieldsRefreshKey] = useState(0);
   
-  const { fields, loading: fieldsLoading, error: fieldsError } = useDatabaseFields(databaseId);
+  // Use optimistic fields instead of the regular hook
+  const { 
+    fields, 
+    loading: fieldsLoading, 
+    error: fieldsError 
+  } = useOptimisticDatabaseFields(databaseId);
+  
   const { 
     views,
     currentView,

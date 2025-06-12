@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { DatabaseListContent } from './list/DatabaseListContent';
-import { useFilteredDatabasePages } from '@/hooks/useFilteredDatabasePages';
+import { useOptimisticDatabasePages } from '@/hooks/useOptimisticDatabasePages';
 import { useListActions } from '@/hooks/database/useListActions';
 import { DatabaseField } from '@/types/database';
 import { FilterGroup } from '@/types/filters';
@@ -28,7 +28,15 @@ export function DatabaseListView({
   filterGroup, 
   sortRules 
 }: DatabaseListViewProps) {
-  const { pages, loading, error, refetch } = useFilteredDatabasePages({
+  const { 
+    pages, 
+    loading, 
+    error, 
+    refetch,
+    optimisticUpdateProperty,
+    optimisticUpdatePage,
+    optimisticCreatePage
+  } = useOptimisticDatabasePages({
     databaseId,
     filterGroup,
     fields,
@@ -40,6 +48,22 @@ export function DatabaseListView({
     workspaceId,
     refetch
   );
+
+  // Enhanced handlers with optimistic updates
+  const handleOptimisticFieldEdit = (pageId: string, fieldId: string, value: string) => {
+    optimisticUpdateProperty(pageId, fieldId, value);
+    handleFieldEdit(pageId, fieldId, value);
+  };
+
+  const handleOptimisticTitleEdit = (pageId: string, title: string) => {
+    optimisticUpdatePage(pageId, { title });
+    handleTitleEdit(pageId, title);
+  };
+
+  const handleOptimisticCreateEntry = async () => {
+    optimisticCreatePage({ title: 'Untitled' });
+    await handleCreateEntry();
+  };
 
   // Transform pages data to expected format
   const pagesWithProperties: PageWithProperties[] = pages.map(page => {
@@ -67,9 +91,9 @@ export function DatabaseListView({
         fields={fields}
         loading={loading}
         error={error}
-        onCreateEntry={handleCreateEntry}
-        onFieldEdit={handleFieldEdit}
-        onTitleEdit={handleTitleEdit}
+        onCreateEntry={handleOptimisticCreateEntry}
+        onFieldEdit={handleOptimisticFieldEdit}
+        onTitleEdit={handleOptimisticTitleEdit}
         onRefetch={refetch}
       />
     </div>
