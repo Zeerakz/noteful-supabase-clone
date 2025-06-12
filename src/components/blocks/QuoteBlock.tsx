@@ -20,7 +20,7 @@ export function QuoteBlock({ block, onUpdate, onDelete, isEditable }: QuoteBlock
   const [isCommentPanelOpen, setIsCommentPanelOpen] = useState(false);
   const { comments } = useComments(block.id);
 
-  const handleContentChange = async (content: string) => {
+  const handleContentChange = async (content: any) => {
     await onUpdate({ text: content });
   };
 
@@ -46,10 +46,9 @@ export function QuoteBlock({ block, onUpdate, onDelete, isEditable }: QuoteBlock
       onMouseLeave={() => setIsHovered(false)}
     >
       <RichTextEditor
-        content={block.content?.text || ''}
-        onContentChange={handleContentChange}
+        initialContent={block.content?.text || ''}
+        onBlur={handleContentChange}
         placeholder="Enter a quote..."
-        className="text-muted-foreground italic"
       />
       
       {isHovered && (
