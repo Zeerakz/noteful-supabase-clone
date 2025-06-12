@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 
 interface CacheEntry<T> {
   data: T;
@@ -17,23 +17,23 @@ export function useViewCache<T>({ cacheKey, ttl = 5 * 60 * 1000 }: UseViewCacheP
   const [cacheHits, setCacheHits] = useState<Record<string, number>>({});
   const [cacheMisses, setCacheMisses] = useState<Record<string, number>>({});
 
-  // Stabilize cache key and TTL to prevent re-creation
-  const stableCacheKey = useRef(cacheKey);
-  const stableTtl = useRef(ttl);
+  // Use refs to store stable values and prevent re-creation
+  const stableCacheKeyRef = useRef(cacheKey);
+  const stableTtlRef = useRef(ttl);
   
-  // Only update refs if values actually change
-  if (stableCacheKey.current !== cacheKey) {
-    console.log('useViewCache: Cache key changed', { old: stableCacheKey.current, new: cacheKey });
-    stableCacheKey.current = cacheKey;
+  // Only update refs when values actually change
+  if (stableCacheKeyRef.current !== cacheKey) {
+    console.log('useViewCache: Cache key changed', { old: stableCacheKeyRef.current, new: cacheKey });
+    stableCacheKeyRef.current = cacheKey;
   }
-  if (stableTtl.current !== ttl) {
-    console.log('useViewCache: TTL changed', { old: stableTtl.current, new: ttl });
-    stableTtl.current = ttl;
+  if (stableTtlRef.current !== ttl) {
+    console.log('useViewCache: TTL changed', { old: stableTtlRef.current, new: ttl });
+    stableTtlRef.current = ttl;
   }
 
   const getCacheStats = useCallback(() => {
-    const hits = cacheHits[stableCacheKey.current] || 0;
-    const misses = cacheMisses[stableCacheKey.current] || 0;
+    const hits = cacheHits[stableCacheKeyRef.current] || 0;
+    const misses = cacheMisses[stableCacheKeyRef.current] || 0;
     const total = hits + misses;
     const hitRate = total > 0 ? (hits / total) * 100 : 0;
     
@@ -47,11 +47,11 @@ export function useViewCache<T>({ cacheKey, ttl = 5 * 60 * 1000 }: UseViewCacheP
   }, [cacheHits, cacheMisses, cache.size]);
 
   const isValidEntry = useCallback((entry: CacheEntry<T>) => {
-    return Date.now() - entry.timestamp < stableTtl.current;
+    return Date.now() - entry.timestamp < stableTtlRef.current;
   }, []);
 
   const get = useCallback((key: string): T | null => {
-    const fullKey = `${stableCacheKey.current}:${key}`;
+    const fullKey = `${stableCacheKeyRef.current}:${key}`;
     const entry = cache.get(fullKey);
     
     console.log('useViewCache: get called', { key, fullKey, hasEntry: !!entry });
@@ -60,7 +60,7 @@ export function useViewCache<T>({ cacheKey, ttl = 5 * 60 * 1000 }: UseViewCacheP
       console.log('useViewCache: Cache hit', { key });
       setCacheHits(prev => ({
         ...prev,
-        [stableCacheKey.current]: (prev[stableCacheKey.current] || 0) + 1
+        [stableCacheKeyRef.current]: (prev[stableCacheKeyRef.current] || 0) + 1
       }));
       return entry.data;
     }
@@ -78,14 +78,14 @@ export function useViewCache<T>({ cacheKey, ttl = 5 * 60 * 1000 }: UseViewCacheP
     console.log('useViewCache: Cache miss', { key });
     setCacheMisses(prev => ({
       ...prev,
-      [stableCacheKey.current]: (prev[stableCacheKey.current] || 0) + 1
+      [stableCacheKeyRef.current]: (prev[stableCacheKeyRef.current] || 0) + 1
     }));
     
     return null;
   }, [cache, isValidEntry]);
 
   const set = useCallback((key: string, data: T, version = 1) => {
-    const fullKey = `${stableCacheKey.current}:${key}`;
+    const fullKey = `${stableCacheKeyRef.current}:${key}`;
     const entry: CacheEntry<T> = {
       data,
       timestamp: Date.now(),
@@ -103,7 +103,7 @@ export function useViewCache<T>({ cacheKey, ttl = 5 * 60 * 1000 }: UseViewCacheP
       setCache(prev => {
         const newCache = new Map(prev);
         for (const key of newCache.keys()) {
-          if (key.startsWith(`${stableCacheKey.current}:${keyPattern}`)) {
+          if (key.startsWith(`${stableCacheKeyRef.current}:${keyPattern}`)) {
             newCache.delete(key);
           }
         }
@@ -113,7 +113,7 @@ export function useViewCache<T>({ cacheKey, ttl = 5 * 60 * 1000 }: UseViewCacheP
       setCache(prev => {
         const newCache = new Map(prev);
         for (const key of newCache.keys()) {
-          if (key.startsWith(`${stableCacheKey.current}:`)) {
+          if (key.startsWith(`${stableCacheKeyRef.current}:`)) {
             newCache.delete(key);
           }
         }
@@ -129,9 +129,9 @@ export function useViewCache<T>({ cacheKey, ttl = 5 * 60 * 1000 }: UseViewCacheP
     setCacheMisses({});
   }, []);
 
-  // Cleanup expired entries periodically - use stable TTL ref
+  // Cleanup expired entries periodically - stable interval
   useEffect(() => {
-    console.log('useViewCache: Setting up cleanup interval', { ttl: stableTtl.current });
+    console.log('useViewCache: Setting up cleanup interval', { ttl: stableTtlRef.current });
     
     const interval = setInterval(() => {
       setCache(prev => {
@@ -139,7 +139,7 @@ export function useViewCache<T>({ cacheKey, ttl = 5 * 60 * 1000 }: UseViewCacheP
         let removedCount = 0;
         
         for (const [key, entry] of prev.entries()) {
-          if (isValidEntry(entry)) {
+          if (Date.now() - entry.timestamp < stableTtlRef.current) {
             newCache.set(key, entry);
           } else {
             removedCount++;
@@ -152,13 +152,13 @@ export function useViewCache<T>({ cacheKey, ttl = 5 * 60 * 1000 }: UseViewCacheP
         
         return newCache;
       });
-    }, stableTtl.current / 2);
+    }, stableTtlRef.current / 2);
 
     return () => {
       console.log('useViewCache: Clearing cleanup interval');
       clearInterval(interval);
     };
-  }, [isValidEntry]); // Only depend on isValidEntry, not ttl directly
+  }, []); // Empty dependency array - setup once
 
   return {
     get,

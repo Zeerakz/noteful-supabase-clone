@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { PageService } from '@/services/pageService';
 
 interface UseLazyPropertiesProps {
@@ -13,44 +13,33 @@ export function useLazyProperties({ pageIds, fields, enabled = true }: UseLazyPr
   const [loadingProperties, setLoadingProperties] = useState<Set<string>>(new Set());
   const [propertyLoadTimes, setPropertyLoadTimes] = useState<Record<string, number>>({});
 
-  // Stabilize pageIds and fields to prevent infinite loops
-  const prevPageIdsRef = useRef<string[]>();
-  const prevPageIdsStrRef = useRef<string>('');
-  const prevFieldsRef = useRef<Array<{ id: string; type: string }>>();
-  const prevFieldsStrRef = useRef<string>('');
+  // Use refs to track page IDs and fields by their content, not reference
+  const pageIdsLengthRef = useRef(pageIds.length);
+  const pageIdsHashRef = useRef(pageIds.join(','));
+  const fieldsHashRef = useRef(JSON.stringify(fields));
 
-  const currentPageIdsStr = JSON.stringify(pageIds);
-  const currentFieldsStr = JSON.stringify(fields);
-
-  const stablePageIds = useMemo(() => {
-    console.log('useLazyProperties: Checking pageIds stability', { 
-      currentStr: currentPageIdsStr, 
-      prevStr: prevPageIdsStrRef.current,
-      changed: prevPageIdsStrRef.current !== currentPageIdsStr 
+  // Check if pageIds or fields have actually changed
+  const currentPageIdsHash = pageIds.join(',');
+  const currentFieldsHash = JSON.stringify(fields);
+  
+  const pageIdsChanged = pageIdsHashRef.current !== currentPageIdsHash;
+  const fieldsChanged = fieldsHashRef.current !== currentFieldsHash;
+  
+  if (pageIdsChanged) {
+    console.log('useLazyProperties: Page IDs changed', { 
+      oldLength: pageIdsLengthRef.current,
+      newLength: pageIds.length,
+      oldHash: pageIdsHashRef.current.substring(0, 50),
+      newHash: currentPageIdsHash.substring(0, 50)
     });
-    
-    if (prevPageIdsStrRef.current !== currentPageIdsStr) {
-      prevPageIdsStrRef.current = currentPageIdsStr;
-      prevPageIdsRef.current = pageIds;
-      return pageIds;
-    }
-    return prevPageIdsRef.current || pageIds;
-  }, [currentPageIdsStr, pageIds]);
-
-  const stableFields = useMemo(() => {
-    console.log('useLazyProperties: Checking fields stability', { 
-      currentStr: currentFieldsStr, 
-      prevStr: prevFieldsStrRef.current,
-      changed: prevFieldsStrRef.current !== currentFieldsStr 
-    });
-    
-    if (prevFieldsStrRef.current !== currentFieldsStr) {
-      prevFieldsStrRef.current = currentFieldsStr;
-      prevFieldsRef.current = fields;
-      return fields;
-    }
-    return prevFieldsRef.current || fields;
-  }, [currentFieldsStr, fields]);
+    pageIdsLengthRef.current = pageIds.length;
+    pageIdsHashRef.current = currentPageIdsHash;
+  }
+  
+  if (fieldsChanged) {
+    console.log('useLazyProperties: Fields changed');
+    fieldsHashRef.current = currentFieldsHash;
+  }
 
   const loadPropertiesForPage = useCallback(async (pageId: string) => {
     console.log('useLazyProperties: loadPropertiesForPage called', { pageId, enabled });
