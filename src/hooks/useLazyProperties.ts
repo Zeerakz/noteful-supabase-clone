@@ -56,7 +56,7 @@ export function useLazyProperties({ pageIds, fields, enabled = true }: UseLazyPr
         // Mark as loaded
         loadedPagesRef.current.add(pageId);
 
-        // Update loaded properties
+        // Update loaded properties - use functional update to avoid stale closure
         setLoadedProperties(prev => ({
           ...prev,
           [pageId]: properties
@@ -96,10 +96,12 @@ export function useLazyProperties({ pageIds, fields, enabled = true }: UseLazyPr
     }
   }, [loadPropertiesForPage]);
 
+  // STABILIZED: Create a stable getPropertiesForPage function that doesn't depend on loadedProperties state
   const getPropertiesForPage = useCallback((pageId: string) => {
-    const properties = loadedProperties[pageId] || {};
-    return properties;
-  }, [loadedProperties]);
+    // Access the current state without creating a dependency
+    const currentProperties = loadedProperties[pageId] || {};
+    return currentProperties;
+  }, []); // Empty dependency array makes this function stable
 
   const isPageLoading = useCallback((pageId: string) => {
     return loadingProperties.has(pageId);

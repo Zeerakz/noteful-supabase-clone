@@ -18,21 +18,49 @@ export function useFilteredDatabasePages({ databaseId, filterGroup, fields, sort
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Create stable references using JSON comparison
-  const stableFilterGroup = useMemo(() => filterGroup, [JSON.stringify(filterGroup)]);
-  const stableFields = useMemo(() => fields, [JSON.stringify(fields)]);
-  const stableSortRules = useMemo(() => sortRules, [JSON.stringify(sortRules)]);
+  // STABILIZED: Create stable references using refs instead of JSON.stringify
+  const stableFilterGroupRef = useRef(filterGroup);
+  const stableFieldsRef = useRef(fields);
+  const stableSortRulesRef = useRef(sortRules);
+  
+  // Only update refs when actual content changes
+  const filterGroupKey = JSON.stringify(filterGroup);
+  const fieldsKey = JSON.stringify(fields);
+  const sortRulesKey = JSON.stringify(sortRules);
+  
+  const lastFilterGroupKeyRef = useRef('');
+  const lastFieldsKeyRef = useRef('');
+  const lastSortRulesKeyRef = useRef('');
+
+  // Update refs only when keys actually change
+  if (lastFilterGroupKeyRef.current !== filterGroupKey) {
+    stableFilterGroupRef.current = filterGroup;
+    lastFilterGroupKeyRef.current = filterGroupKey;
+  }
+  if (lastFieldsKeyRef.current !== fieldsKey) {
+    stableFieldsRef.current = fields;
+    lastFieldsKeyRef.current = fieldsKey;
+  }
+  if (lastSortRulesKeyRef.current !== sortRulesKey) {
+    stableSortRulesRef.current = sortRules;
+    lastSortRulesKeyRef.current = sortRulesKey;
+  }
 
   // Create a stable query function
   const queryFunction = useCallback(() => {
     console.log('useFilteredDatabasePages: Query function called', { 
       databaseId,
-      filterRules: stableFilterGroup.rules.length,
-      fieldsCount: stableFields.length,
-      sortRulesCount: stableSortRules.length
+      filterRules: stableFilterGroupRef.current.rules.length,
+      fieldsCount: stableFieldsRef.current.length,
+      sortRulesCount: stableSortRulesRef.current.length
     });
-    return DatabaseQueryService.fetchDatabasePages(databaseId, stableFilterGroup, stableFields, stableSortRules);
-  }, [databaseId, stableFilterGroup, stableFields, stableSortRules]);
+    return DatabaseQueryService.fetchDatabasePages(
+      databaseId, 
+      stableFilterGroupRef.current, 
+      stableFieldsRef.current, 
+      stableSortRulesRef.current
+    );
+  }, [databaseId]); // Only depend on databaseId, use refs for other values
 
   const { executeWithRetry, retryCount, isRetrying } = useRetryableQuery(
     queryFunction,
@@ -55,8 +83,8 @@ export function useFilteredDatabasePages({ databaseId, filterGroup, fields, sort
       setError(null);
       
       console.log('useFilteredDatabasePages: Executing query', { 
-        filterGroup: stableFilterGroup, 
-        sortCount: stableSortRules.length 
+        filterGroup: stableFilterGroupRef.current, 
+        sortCount: stableSortRulesRef.current.length 
       });
       const { data, error: fetchError } = await executeWithRetry();
 
@@ -75,13 +103,13 @@ export function useFilteredDatabasePages({ databaseId, filterGroup, fields, sort
     } finally {
       setLoading(false);
     }
-  }, [databaseId, executeWithRetry, stableFilterGroup, stableSortRules]);
+  }, [databaseId, executeWithRetry]);
 
-  // Effect with stable dependencies
+  // Effect with stable dependencies - only trigger when keys change
   useEffect(() => {
     console.log('useFilteredDatabasePages: Effect triggered, calling fetchPages');
     fetchPages();
-  }, [fetchPages]);
+  }, [databaseId, filterGroupKey, fieldsKey, sortRulesKey, fetchPages]);
 
   const refetch = useCallback(async () => {
     console.log('useFilteredDatabasePages: Manual refetch requested');

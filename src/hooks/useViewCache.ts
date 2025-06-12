@@ -44,9 +44,16 @@ export function useViewCache<T>({ cacheKey, ttl = 5 * 60 * 1000 }: UseViewCacheP
     return Date.now() - entry.timestamp < ttlRef.current;
   }, []);
 
+  // STABILIZED: Use functional updates to prevent stale closures
   const get = useCallback((key: string): T | null => {
     const fullKey = `${cacheKeyRef.current}:${key}`;
-    const entry = cache.get(fullKey);
+    
+    // Access cache state at the moment of call
+    let entry: CacheEntry<T> | undefined;
+    setCache(currentCache => {
+      entry = currentCache.get(fullKey);
+      return currentCache; // No actual change, just accessing current state
+    });
     
     if (entry && isValidEntry(entry)) {
       setCacheHits(prev => ({
@@ -57,7 +64,7 @@ export function useViewCache<T>({ cacheKey, ttl = 5 * 60 * 1000 }: UseViewCacheP
     }
     
     if (entry) {
-      // Remove expired entry
+      // Remove expired entry using functional update
       setCache(prev => {
         const newCache = new Map(prev);
         newCache.delete(fullKey);
@@ -71,7 +78,7 @@ export function useViewCache<T>({ cacheKey, ttl = 5 * 60 * 1000 }: UseViewCacheP
     }));
     
     return null;
-  }, [cache, isValidEntry]);
+  }, [isValidEntry]);
 
   const set = useCallback((key: string, data: T, version = 1) => {
     const fullKey = `${cacheKeyRef.current}:${key}`;
@@ -81,7 +88,12 @@ export function useViewCache<T>({ cacheKey, ttl = 5 * 60 * 1000 }: UseViewCacheP
       version
     };
     
-    setCache(prev => new Map(prev).set(fullKey, entry));
+    // Use functional update to prevent stale closures
+    setCache(prev => {
+      const newCache = new Map(prev);
+      newCache.set(fullKey, entry);
+      return newCache;
+    });
   }, []);
 
   const invalidate = useCallback((keyPattern?: string) => {

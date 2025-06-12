@@ -115,6 +115,7 @@ export function useDatabaseTableView({
   }, [currentPageItems]);
   
   const {
+    loadedProperties,
     getPropertiesForPage,
     isPageLoading
   } = useLazyProperties({
@@ -123,7 +124,7 @@ export function useDatabaseTableView({
     enabled: pageIds.length > 0 && !pagesLoading
   });
 
-  // Transform pages data with properties - stable computation
+  // STABILIZED: Transform pages data with properties - break dependency on getPropertiesForPage
   const pagesWithProperties: PageWithProperties[] = useMemo(() => {
     console.log('useDatabaseTableView: Computing pages with properties', { pageCount: currentPageItems.length });
     
@@ -132,7 +133,9 @@ export function useDatabaseTableView({
       let properties = cache.get(cacheKey);
       
       if (!properties) {
-        const pageProperties = getPropertiesForPage(page.id);
+        // Access properties directly from loadedProperties instead of using getPropertiesForPage
+        // This breaks the dependency chain that was causing re-renders
+        const pageProperties = loadedProperties[page.id] || {};
         properties = pageProperties && typeof pageProperties === 'object' 
           ? pageProperties as Record<string, string>
           : {};
@@ -155,7 +158,7 @@ export function useDatabaseTableView({
         properties: properties as Record<string, string>,
       };
     });
-  }, [currentPageItems, cache, getPropertiesForPage]);
+  }, [currentPageItems, cache, loadedProperties]); // Use loadedProperties directly instead of getPropertiesForPage
 
   // Stable action handlers
   const handleCreateRow = useCallback(async () => {
