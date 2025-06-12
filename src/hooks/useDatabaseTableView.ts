@@ -1,7 +1,7 @@
 
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { useFilteredDatabasePages } from '@/hooks/useFilteredDatabasePages';
+import { useFilteredDatabasePagesQuery } from '@/hooks/useFilteredDatabasePagesQuery';
 import { useOptimisticPropertyUpdate } from '@/hooks/useOptimisticPropertyUpdate';
 import { useLazyProperties } from '@/hooks/useLazyProperties';
 import { useViewCache } from '@/hooks/useViewCache';
@@ -59,7 +59,7 @@ export function useDatabaseTableView({
     enableVirtualScrolling
   });
 
-  // Stable cache configuration - ensure this doesn't change unnecessarily
+  // Stable cache configuration
   const cacheConfig = useMemo(() => ({
     cacheKey: `table-${databaseId}`,
     ttl: 5 * 60 * 1000
@@ -67,16 +67,18 @@ export function useDatabaseTableView({
 
   const cache = useViewCache(cacheConfig);
   
+  // Use React Query for data fetching
   const { 
     pages, 
     loading: pagesLoading, 
     error: pagesError,
     refetch: refetchPages
-  } = useFilteredDatabasePages({
+  } = useFilteredDatabasePagesQuery({
     databaseId,
     filterGroup,
     fields,
-    sortRules
+    sortRules,
+    enabled: !!databaseId
   });
 
   console.log('useDatabaseTableView: Pages data', { 
@@ -126,12 +128,12 @@ export function useDatabaseTableView({
     enabled: pageIds.length > 0 && !pagesLoading
   });
 
-  // FIXED: Use ref to track last computed value and prevent unnecessary recalculations
+  // Use ref to track last computed value and prevent unnecessary recalculations
   const lastComputedPagesRef = useRef<PageWithProperties[]>([]);
   const lastPageIdsKeyRef = useRef<string>('');
   const lastLoadedPropertiesKeyRef = useRef<string>('');
 
-  // STABILIZED: Transform pages data with properties - minimize recalculation triggers
+  // Transform pages data with properties - minimize recalculation triggers
   const pagesWithProperties: PageWithProperties[] = useMemo(() => {
     const pageIdsKey = pageIds.join(',');
     const loadedPropertiesKey = JSON.stringify(loadedProperties);

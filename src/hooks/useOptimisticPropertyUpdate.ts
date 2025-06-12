@@ -29,60 +29,81 @@ export function useOptimisticPropertyUpdate(databaseId: string) {
       return data;
     },
     onMutate: async ({ pageId, fieldId, value }) => {
-      // Cancel any outgoing refetches
+      console.log('useOptimisticPropertyUpdate: Starting optimistic update', { pageId, fieldId, value });
+      
+      // Cancel any outgoing refetches for this database
       await queryClient.cancelQueries({ 
         queryKey: ['database-pages', databaseId] 
       });
 
-      // Snapshot the previous value
-      const previousPages = queryClient.getQueryData(['database-pages', databaseId]);
+      // Get all queries that match this database
+      const queryKeys = queryClient.getQueryCache()
+        .findAll({ queryKey: ['database-pages', databaseId] })
+        .map(query => query.queryKey);
 
-      // Optimistically update the cache
-      queryClient.setQueryData(['database-pages', databaseId], (old: any) => {
-        if (!old) return old;
-        
-        return old.map((page: any) => {
-          if (page.id === pageId) {
-            const updatedProperties = page.page_properties ? [...page.page_properties] : [];
-            
-            // Find existing property or create new one
-            const existingIndex = updatedProperties.findIndex(
-              (prop: any) => prop.field_id === fieldId
-            );
-            
-            const propertyUpdate = {
-              page_id: pageId,
-              field_id: fieldId,
-              value,
-              id: existingIndex >= 0 ? updatedProperties[existingIndex].id : `temp-${Date.now()}`,
-              created_by: user?.id,
-              created_at: existingIndex >= 0 ? updatedProperties[existingIndex].created_at : new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-            };
-            
-            if (existingIndex >= 0) {
-              updatedProperties[existingIndex] = propertyUpdate;
-            } else {
-              updatedProperties.push(propertyUpdate);
-            }
-            
-            return {
-              ...page,
-              page_properties: updatedProperties,
-              updated_at: new Date().toISOString(),
-            };
-          }
-          return page;
+      const previousData: Record<string, any> = {};
+
+      // Update all matching queries
+      queryKeys.forEach(queryKey => {
+        const oldData = queryClient.getQueryData(queryKey);
+        previousData[JSON.stringify(queryKey)] = oldData;
+
+        queryClient.setQueryData(queryKey, (old: any) => {
+          if (!old?.data) return old;
+          
+          return {
+            ...old,
+            data: old.data.map((page: any) => {
+              if (page.id === pageId) {
+                const updatedProperties = page.page_properties ? [...page.page_properties] : [];
+                
+                // Find existing property or create new one
+                const existingIndex = updatedProperties.findIndex(
+                  (prop: any) => prop.field_id === fieldId
+                );
+                
+                const propertyUpdate = {
+                  page_id: pageId,
+                  field_id: fieldId,
+                  value,
+                  id: existingIndex >= 0 ? updatedProperties[existingIndex].id : `temp-${Date.now()}`,
+                  created_by: user?.id,
+                  created_at: existingIndex >= 0 ? updatedProperties[existingIndex].created_at : new Date().toISOString(),
+                  updated_at: new Date().toISOString(),
+                };
+                
+                if (existingIndex >= 0) {
+                  updatedProperties[existingIndex] = propertyUpdate;
+                } else {
+                  updatedProperties.push(propertyUpdate);
+                }
+                
+                return {
+                  ...page,
+                  page_properties: updatedProperties,
+                  updated_at: new Date().toISOString(),
+                };
+              }
+              return page;
+            })
+          };
         });
       });
 
       // Return context with previous data for rollback
-      return { previousPages };
+      return { previousData, queryKeys };
     },
     onError: (err, variables, context) => {
-      // Rollback on error
-      if (context?.previousPages) {
-        queryClient.setQueryData(['database-pages', databaseId], context.previousPages);
+      console.error('useOptimisticPropertyUpdate: Error occurred', err);
+      
+      // Rollback all affected queries
+      if (context?.previousData && context?.queryKeys) {
+        context.queryKeys.forEach(queryKey => {
+          const keyString = JSON.stringify(queryKey);
+          if (context.previousData[keyString]) {
+            queryClient.setQueryData(queryKey, context.previousData[keyString]);
+          }
+        });
       }
       
       toast({
@@ -91,35 +112,44 @@ export function useOptimisticPropertyUpdate(databaseId: string) {
         variant: "destructive",
       });
     },
-    onSuccess: (data, variables) => {
-      // Update the cache with the actual server response
-      queryClient.setQueryData(['database-pages', databaseId], (old: any) => {
-        if (!old) return old;
-        
-        return old.map((page: any) => {
-          if (page.id === variables.pageId) {
-            const updatedProperties = page.page_properties ? [...page.page_properties] : [];
-            
-            // Find and update the property with server data
-            const existingIndex = updatedProperties.findIndex(
-              (prop: any) => prop.field_id === variables.fieldId
-            );
-            
-            if (existingIndex >= 0) {
-              updatedProperties[existingIndex] = data;
-            } else {
-              updatedProperties.push(data);
-            }
+    onSuccess: (data, variables, context) => {
+      console.log('useOptimisticPropertyUpdate: Update successful', { data, variables });
+      
+      // Update all affected queries with the actual server response
+      if (context?.queryKeys) {
+        context.queryKeys.forEach(queryKey => {
+          queryClient.setQueryData(queryKey, (old: any) => {
+            if (!old?.data) return old;
             
             return {
-              ...page,
-              page_properties: updatedProperties,
-              updated_at: new Date().toISOString(),
+              ...old,
+              data: old.data.map((page: any) => {
+                if (page.id === variables.pageId) {
+                  const updatedProperties = page.page_properties ? [...page.page_properties] : [];
+                  
+                  // Find and update the property with server data
+                  const existingIndex = updatedProperties.findIndex(
+                    (prop: any) => prop.field_id === variables.fieldId
+                  );
+                  
+                  if (existingIndex >= 0) {
+                    updatedProperties[existingIndex] = data;
+                  } else {
+                    updatedProperties.push(data);
+                  }
+                  
+                  return {
+                    ...page,
+                    page_properties: updatedProperties,
+                    updated_at: new Date().toISOString(),
+                  };
+                }
+                return page;
+              })
             };
-          }
-          return page;
+          });
         });
-      });
+      }
 
       toast({
         title: "Success", 

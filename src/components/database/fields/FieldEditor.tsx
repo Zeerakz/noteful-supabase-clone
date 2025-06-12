@@ -17,23 +17,35 @@ interface FieldEditorProps {
 
 export function FieldEditor({ field, value, onChange, workspaceId, pageId }: FieldEditorProps) {
   const [localValue, setLocalValue] = useState(value || '');
+  const [isUpdating, setIsUpdating] = useState(false);
 
   useEffect(() => {
     setLocalValue(value || '');
   }, [value]);
 
-  const handleBlur = () => {
-    if (localValue !== (value || '')) {
-      console.log('FieldEditor: Saving value on blur', { fieldId: field.id, value: localValue });
-      onChange(localValue);
+  const handleSave = async (newValue: string) => {
+    if (newValue !== (value || '')) {
+      console.log('FieldEditor: Saving value', { fieldId: field.id, value: newValue });
+      setIsUpdating(true);
+      try {
+        onChange(newValue);
+        // Give a brief feedback that the update is happening
+        setTimeout(() => setIsUpdating(false), 500);
+      } catch (error) {
+        setIsUpdating(false);
+        console.error('FieldEditor: Error saving value', error);
+      }
     }
+  };
+
+  const handleBlur = () => {
+    handleSave(localValue);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      console.log('FieldEditor: Saving value on Enter', { fieldId: field.id, value: localValue });
-      onChange(localValue);
+      handleSave(localValue);
     } else if (e.key === 'Escape') {
       e.preventDefault();
       setLocalValue(value || '');
@@ -49,13 +61,19 @@ export function FieldEditor({ field, value, onChange, workspaceId, pageId }: Fie
   const handleCheckboxChange = (checked: boolean) => {
     const newValue = checked ? 'true' : 'false';
     console.log('FieldEditor: Checkbox changed', { fieldId: field.id, value: newValue });
-    onChange(newValue);
+    setLocalValue(newValue);
+    handleSave(newValue);
   };
 
   const handleSelectChange = (newValue: string) => {
     console.log('FieldEditor: Select changed', { fieldId: field.id, value: newValue });
-    onChange(newValue);
+    setLocalValue(newValue);
+    handleSave(newValue);
   };
+
+  const inputClassName = `border-none bg-transparent p-1 focus-visible:ring-1 ${
+    isUpdating ? 'opacity-60' : ''
+  }`;
 
   switch (field.type) {
     case 'text':
@@ -69,7 +87,8 @@ export function FieldEditor({ field, value, onChange, workspaceId, pageId }: Fie
           onBlur={handleBlur}
           onKeyDown={handleKeyDown}
           placeholder={`Enter ${field.name.toLowerCase()}`}
-          className="border-none bg-transparent p-1 focus-visible:ring-1"
+          className={inputClassName}
+          disabled={isUpdating}
           autoFocus
         />
       );
@@ -83,7 +102,8 @@ export function FieldEditor({ field, value, onChange, workspaceId, pageId }: Fie
           onBlur={handleBlur}
           onKeyDown={handleKeyDown}
           placeholder={`Enter ${field.name.toLowerCase()}`}
-          className="border-none bg-transparent p-1 focus-visible:ring-1"
+          className={inputClassName}
+          disabled={isUpdating}
           autoFocus
         />
       );
@@ -97,7 +117,8 @@ export function FieldEditor({ field, value, onChange, workspaceId, pageId }: Fie
           onBlur={handleBlur}
           onKeyDown={handleKeyDown}
           placeholder="https://example.com"
-          className="border-none bg-transparent p-1 focus-visible:ring-1"
+          className={inputClassName}
+          disabled={isUpdating}
           autoFocus
         />
       );
@@ -107,6 +128,7 @@ export function FieldEditor({ field, value, onChange, workspaceId, pageId }: Fie
         <Checkbox
           checked={value === 'true'}
           onCheckedChange={handleCheckboxChange}
+          disabled={isUpdating}
         />
       );
 
@@ -166,7 +188,8 @@ export function FieldEditor({ field, value, onChange, workspaceId, pageId }: Fie
           onBlur={handleBlur}
           onKeyDown={handleKeyDown}
           placeholder={`Enter ${field.name.toLowerCase()}`}
-          className="border-none bg-transparent p-1 focus-visible:ring-1"
+          className={inputClassName}
+          disabled={isUpdating}
           autoFocus
         />
       );
