@@ -1,4 +1,3 @@
-
 export interface BaseProperty {
   id: string;
   name: string;
@@ -42,6 +41,7 @@ export interface TextPropertyConfig extends BasePropertyConfig {
   maxLength?: number;
   minLength?: number;
   multiline?: boolean;
+  wrapText?: boolean;
   defaultValue?: string;
 }
 
@@ -387,7 +387,7 @@ export type PropertyValue<T extends PropertyType> = T extends 'text' | 'url' | '
 export function getDefaultConfigForType(type: PropertyType): PropertyConfig {
   switch (type) {
     case 'text':
-      return { required: false, multiline: false };
+      return { required: false, multiline: false, wrapText: false };
     case 'number':
       return { required: false, format: 'decimal', precision: 2 };
     case 'select':

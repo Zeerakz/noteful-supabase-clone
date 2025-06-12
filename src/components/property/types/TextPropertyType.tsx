@@ -4,18 +4,50 @@ import { PropertyTypeDefinition } from '@/types/propertyRegistry';
 import { TextPropertyConfig } from '@/types/property';
 import { TextPropertyConfigEditor } from '../config-editors/TextPropertyConfigEditor';
 import { Input } from '@/components/ui/input';
-import { Type } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { Type, WrapText } from 'lucide-react';
 
 // Display component for text fields
 const TextFieldDisplay: React.FC<{
   value: any;
   config: TextPropertyConfig;
-}> = ({ value, config }) => {
+  inTable?: boolean;
+}> = ({ value, config, inTable = false }) => {
   if (!value || value.trim() === '') {
     return <span className="text-muted-foreground">—</span>;
   }
   
-  return <span className="text-foreground">{value}</span>;
+  const shouldWrap = config.wrapText || false;
+  const isMultiline = config.multiline && value.includes('\n');
+  
+  if (inTable && !shouldWrap && isMultiline) {
+    // Show truncated version with ellipsis for multiline content in tables
+    const firstLine = value.split('\n')[0];
+    const hasMoreLines = value.split('\n').length > 1;
+    
+    return (
+      <div className="flex items-center gap-1">
+        <span className="truncate text-foreground">{firstLine}</span>
+        {hasMoreLines && (
+          <span className="text-muted-foreground text-xs">...</span>
+        )}
+      </div>
+    );
+  }
+  
+  if (inTable && shouldWrap) {
+    return (
+      <div className={`text-foreground ${shouldWrap ? 'whitespace-pre-wrap break-words' : 'truncate'}`}>
+        {value}
+      </div>
+    );
+  }
+  
+  return (
+    <span className={`text-foreground ${isMultiline ? 'whitespace-pre-wrap' : ''}`}>
+      {value}
+    </span>
+  );
 };
 
 // Editor component for text fields
@@ -31,13 +63,29 @@ const TextFieldEditor: React.FC<{
   };
   
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
+    if (e.key === 'Enter' && !config.multiline) {
       e.preventDefault();
       onChange(localValue);
     } else if (e.key === 'Escape') {
       setLocalValue(value || '');
     }
   };
+  
+  if (config.multiline) {
+    return (
+      <Textarea
+        value={localValue}
+        onChange={(e) => setLocalValue(e.target.value)}
+        onBlur={handleBlur}
+        onKeyDown={handleKeyDown}
+        placeholder={config.placeholder || 'Enter text'}
+        maxLength={config.maxLength}
+        className="border-none bg-transparent p-1 focus-visible:ring-1 resize-none min-h-[60px]"
+        autoFocus
+        rows={3}
+      />
+    );
+  }
   
   return (
     <Input
@@ -57,13 +105,14 @@ const TextFieldEditor: React.FC<{
 export const textPropertyType: PropertyTypeDefinition<TextPropertyConfig> = {
   type: 'text',
   label: 'Text',
-  description: 'Single line of text',
+  description: 'Single or multi-line text',
   icon: <Type className="h-4 w-4" />,
   category: 'basic',
   
   getDefaultConfig: () => ({
     required: false,
     multiline: false,
+    wrapText: false,
   }),
   
   validateConfig: (config) => {

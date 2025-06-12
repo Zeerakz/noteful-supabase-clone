@@ -139,36 +139,50 @@ export function DatabaseTableRow({
       </TableCell>
 
       {/* Property Cells */}
-      {fields.map((field) => (
-        <TableCell 
-          key={field.id} 
-          className="min-w-[150px] p-1"
-          style={{ width: columnWidths[field.id] ? `${columnWidths[field.id]}px` : undefined }}
-        >
-          {editingField === field.id ? (
-            <div className="w-full">
-              <FieldEditor
-                field={field}
-                value={page.properties[field.id] || ''}
-                onChange={(value) => handlePropertyChange(field.id, value)}
-                workspaceId={workspaceId}
-                pageId={page.id}
-              />
-            </div>
-          ) : (
-            <div
-              className="min-h-[32px] px-2 py-1 cursor-text hover:bg-muted/30 rounded flex items-center transition-colors duration-150"
-              onClick={() => setEditingField(field.id)}
-            >
-              <FieldDisplay
-                field={field}
-                value={page.properties[field.id] || null}
-                pageId={page.id}
-              />
-            </div>
-          )}
-        </TableCell>
-      ))}
+      {fields.map((field) => {
+        const cellValue = page.properties[field.id] || '';
+        const isMultilineField = field.type === 'text' && field.settings?.multiline;
+        const shouldWrap = field.type === 'text' && field.settings?.wrapText;
+        
+        return (
+          <TableCell 
+            key={field.id} 
+            className={`min-w-[150px] p-1 ${shouldWrap || isMultilineField ? 'align-top' : ''}`}
+            style={{ 
+              width: columnWidths[field.id] ? `${columnWidths[field.id]}px` : undefined,
+              maxHeight: shouldWrap ? 'none' : '60px',
+              overflow: shouldWrap ? 'visible' : 'hidden'
+            }}
+          >
+            {editingField === field.id ? (
+              <div className="w-full">
+                <FieldEditor
+                  field={field}
+                  value={cellValue}
+                  onChange={(value) => handlePropertyChange(field.id, value)}
+                  workspaceId={workspaceId}
+                  pageId={page.id}
+                />
+              </div>
+            ) : (
+              <div
+                className={`min-h-[32px] px-2 py-1 cursor-text hover:bg-muted/30 rounded flex items-center transition-colors duration-150 ${
+                  shouldWrap ? 'items-start' : ''
+                }`}
+                onClick={() => setEditingField(field.id)}
+              >
+                <EditableCell
+                  value={cellValue}
+                  onSave={(value) => handlePropertyChange(field.id, value)}
+                  fieldType={field.type}
+                  fieldConfig={field.settings}
+                  placeholder={`Enter ${field.name.toLowerCase()}`}
+                />
+              </div>
+            )}
+          </TableCell>
+        );
+      })}
 
       {/* Actions Cell */}
       <TableCell className="w-[60px] p-2">

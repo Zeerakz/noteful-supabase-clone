@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { DatabaseField } from '@/types/database';
 import { SelectFieldEditor } from './SelectFieldEditor';
@@ -54,7 +55,9 @@ export function FieldEditor({ field, value, onChange, workspaceId, pageId }: Fie
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
+    const isMultiline = field.type === 'text' && field.settings?.multiline;
+    
+    if (e.key === 'Enter' && !isMultiline) {
       e.preventDefault();
       handleSave(localValue);
     } else if (e.key === 'Escape') {
@@ -63,7 +66,7 @@ export function FieldEditor({ field, value, onChange, workspaceId, pageId }: Fie
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const newValue = e.target.value;
     setLocalValue(newValue);
     console.log('FieldEditor: Local value changed', { fieldId: field.id, value: newValue });
@@ -90,6 +93,38 @@ export function FieldEditor({ field, value, onChange, workspaceId, pageId }: Fie
 
   switch (field.type) {
     case 'text':
+      const isMultiline = field.settings?.multiline;
+      
+      if (isMultiline) {
+        return (
+          <Textarea
+            value={localValue}
+            onChange={handleChange}
+            onBlur={handleBlur}
+            onKeyDown={handleKeyDown}
+            placeholder={`Enter ${field.name.toLowerCase()}`}
+            className={`${inputClassName} resize-none min-h-[60px]`}
+            disabled={isUpdating}
+            autoFocus
+            rows={3}
+          />
+        );
+      }
+      
+      return (
+        <Input
+          type="text"
+          value={localValue}
+          onChange={handleChange}
+          onBlur={handleBlur}
+          onKeyDown={handleKeyDown}
+          placeholder={`Enter ${field.name.toLowerCase()}`}
+          className={inputClassName}
+          disabled={isUpdating}
+          autoFocus
+        />
+      );
+
     case 'email':
     case 'phone':
       return (

@@ -77,6 +77,15 @@ export function TextPropertyConfigEditor({ config, onConfigChange }: TextPropert
 
       <div className="flex items-center space-x-2">
         <Checkbox
+          id="wrapText"
+          checked={textConfig.wrapText || false}
+          onCheckedChange={(checked) => updateConfig({ wrapText: checked as boolean })}
+        />
+        <Label htmlFor="wrapText">Wrap text in table cells</Label>
+      </div>
+
+      <div className="flex items-center space-x-2">
+        <Checkbox
           id="required"
           checked={textConfig.required || false}
           onCheckedChange={(checked) => updateConfig({ required: checked as boolean })}
