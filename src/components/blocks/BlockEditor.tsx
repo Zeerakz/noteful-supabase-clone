@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Plus, Type, Heading1, Heading2, Heading3, List, ListOrdered, Image, Table, Minus, Quote, MessageSquare, ChevronRight, Globe } from 'lucide-react';
+import { Plus, Type, Heading1, Heading2, Heading3, List, ListOrdered, Image, Table, Minus, Quote, MessageSquare, ChevronRight, Globe, Paperclip } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { BlockRenderer } from './BlockRenderer';
@@ -153,6 +153,16 @@ export function BlockEditor({ pageId, isEditable, workspaceId }: BlockEditorProp
           variant: "destructive",
         });
       }
+    } else if (type === 'file_attachment') {
+      const { error } = await createBlock(type, {}, parentBlockId);
+      
+      if (error) {
+        toast({
+          title: "Error",
+          description: error,
+          variant: "destructive",
+        });
+      }
     } else {
       const { error } = await createBlock(type, content || {}, parentBlockId);
       
@@ -298,6 +308,10 @@ export function BlockEditor({ pageId, isEditable, workspaceId }: BlockEditorProp
               <DropdownMenuItem onClick={() => handleCreateBlock('divider')}>
                 <Minus className="h-4 w-4 mr-2" />
                 Divider
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleCreateBlock('file_attachment')}>
+                <Paperclip className="h-4 w-4 mr-2" />
+                File Attachment
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => handleCreateBlock('embed')}>
                 <Globe className="h-4 w-4 mr-2" />

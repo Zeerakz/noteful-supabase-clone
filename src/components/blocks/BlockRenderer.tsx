@@ -12,6 +12,7 @@ import { QuoteBlock } from './QuoteBlock';
 import { CalloutBlock } from './CalloutBlock';
 import { ToggleBlock } from './ToggleBlock';
 import { EmbedBlock } from './EmbedBlock';
+import { FileAttachmentBlock } from './FileAttachmentBlock';
 
 interface BlockRendererProps {
   block: Block;
@@ -133,6 +134,15 @@ export function BlockRenderer({ block, onUpdateBlock, onDeleteBlock, onCreateBlo
     case 'embed':
       return (
         <EmbedBlock
+          block={block}
+          onUpdate={handleContentUpdate}
+          onDelete={handleDelete}
+          isEditable={isEditable}
+        />
+      );
+    case 'file_attachment':
+      return (
+        <FileAttachmentBlock
           block={block}
           onUpdate={handleContentUpdate}
           onDelete={handleDelete}

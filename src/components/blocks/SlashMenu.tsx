@@ -17,7 +17,8 @@ import {
   ChevronRight,
   Copy,
   FileText,
-  Globe
+  Globe,
+  Paperclip
 } from 'lucide-react';
 
 interface SlashMenuProps {
@@ -38,6 +39,7 @@ const menuItems = [
   { type: 'callout', label: 'Callout', icon: MessageSquare, description: 'Make writing stand out' },
   { type: 'toggle', label: 'Toggle list', icon: ChevronRight, description: 'Toggles can hide and show content' },
   { type: 'image', label: 'Image', icon: Image, description: 'Upload or embed with a link' },
+  { type: 'file_attachment', label: 'File', icon: Paperclip, description: 'Upload and attach a file' },
   { type: 'embed', label: 'Embed', icon: Globe, description: 'Embed YouTube, Vimeo, CodePen, Figma, or any URL' },
   { type: 'table', label: 'Table', icon: Table, description: 'Create a simple table' },
   { type: 'divider', label: 'Divider', icon: Minus, description: 'Visually divide blocks' },
