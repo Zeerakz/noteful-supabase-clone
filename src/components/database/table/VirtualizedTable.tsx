@@ -38,15 +38,12 @@ export function VirtualizedTable({
 
   return (
     <div className="border rounded-lg overflow-hidden">
-      <div 
-        ref={parentRef}
-        className="overflow-auto relative"
-        style={{ maxHeight }}
-      >
+      {/* Fixed header */}
+      <div className="border-b bg-muted/50">
         <Table>
-          <TableHeader className="sticky top-0 bg-background z-10">
+          <TableHeader>
             <TableRow>
-              <TableHead className="w-[200px]">Title</TableHead>
+              <TableHead className="w-[200px] sticky left-0 bg-muted/50">Title</TableHead>
               {fields.map((field) => (
                 <TableHead key={field.id} className="min-w-[150px]">
                   {field.name}
@@ -58,16 +55,24 @@ export function VirtualizedTable({
               <TableHead className="w-[50px]"></TableHead>
             </TableRow>
           </TableHeader>
-          <VirtualizedTableBody
-            pages={pages}
-            fields={fields}
-            onTitleUpdate={onTitleUpdate}
-            onPropertyUpdate={onPropertyUpdate}
-            onDeleteRow={onDeleteRow}
-            isLoading={isLoading}
-            parentRef={parentRef}
-          />
         </Table>
+      </div>
+      
+      {/* Scrollable body with virtualization */}
+      <div 
+        ref={parentRef}
+        className="overflow-auto relative"
+        style={{ maxHeight }}
+      >
+        <VirtualizedTableBody
+          pages={pages}
+          fields={fields}
+          onTitleUpdate={onTitleUpdate}
+          onPropertyUpdate={onPropertyUpdate}
+          onDeleteRow={onDeleteRow}
+          isLoading={isLoading}
+          parentRef={parentRef}
+        />
       </div>
     </div>
   );
