@@ -1,14 +1,11 @@
-
-import React, { useState } from 'react';
-import { Table } from '@/components/ui/table';
-import { EnhancedTableHeader } from './EnhancedTableHeader';
-import { DatabaseTableBody } from './DatabaseTableBody';
-import { DatabaseTableEmptyStates } from './DatabaseTableEmptyStates';
-import { PaginationControls } from '../PaginationControls';
-import { DatabaseField } from '@/types/database';
+import React, { useState, useCallback } from 'react';
+import { DatabaseField, PageProperty } from '@/types/database';
+import { DatabaseTableHeader } from './DatabaseTableHeader';
+import { DatabaseTableRow } from './DatabaseTableRow';
+import { Table, TableBody, TableCaption, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Pagination } from '@/components/ui/pagination';
 import { SortRule } from '@/components/database/SortingModal';
-import { useColumnResizing } from './hooks/useColumnResizing';
-import { useTableSorting } from './hooks/useTableSorting';
 
 interface PageWithProperties {
   id: string;
@@ -24,12 +21,13 @@ interface PageWithProperties {
 }
 
 interface PaginationInfo {
-  currentPage: number;
-  totalPages: number;
   totalItems: number;
+  currentPage: number;
   itemsPerPage: number;
+  totalPages: number;
   nextPage: () => void;
   prevPage: () => void;
+  goToPage: (page: number) => void;
 }
 
 interface DatabaseTableViewContentProps {
@@ -37,12 +35,13 @@ interface DatabaseTableViewContentProps {
   fields: DatabaseField[];
   pagesLoading: boolean;
   pagesError: string | null;
-  onCreateRow: () => void;
-  onTitleUpdate: (pageId: string, title: string) => void;
+  onCreateRow: () => Promise<void>;
+  onTitleUpdate: (pageId: string, newTitle: string) => Promise<void>;
   onPropertyUpdate: (pageId: string, fieldId: string, value: string) => void;
-  onDeleteRow: (pageId: string) => void;
+  onDeleteRow: (pageId: string) => Promise<void>;
   onRefetch: () => void;
-  pagination?: PaginationInfo | null;
+  onFieldsChange?: () => void;
+  pagination: PaginationInfo | null;
   totalPages: number;
   databaseId: string;
   sortRules: SortRule[];
@@ -61,6 +60,7 @@ export function DatabaseTableViewContent({
   onPropertyUpdate,
   onDeleteRow,
   onRefetch,
+  onFieldsChange,
   pagination,
   totalPages,
   databaseId,
@@ -69,103 +69,85 @@ export function DatabaseTableViewContent({
   workspaceId,
   onItemsPerPageChange
 }: DatabaseTableViewContentProps) {
-  // Row selection state
-  const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
+  const [sortBy, setSortBy] = useState<string | null>(null);
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
-  const { columnWidths, updateColumnWidth } = useColumnResizing({
-    defaultWidths: {
-      title: 250,
-      ...fields.reduce((acc, field) => ({
-        ...acc,
-        [field.id]: 160
-      }), {})
-    },
-    minWidth: 120,
-    maxWidth: 400
-  });
+  const handleSort = (fieldId: string, direction: 'asc' | 'desc') => {
+    setSortBy(fieldId);
+    setSortDirection(direction);
 
-  const { handleSort } = useTableSorting({ sortRules, setSortRules });
-
-  // Row selection handlers
-  const handleRowSelect = (pageId: string, selected: boolean) => {
-    const newSelection = new Set(selectedRows);
-    if (selected) {
-      newSelection.add(pageId);
-    } else {
-      newSelection.delete(pageId);
-    }
-    setSelectedRows(newSelection);
-  };
-
-  const handleSelectAll = (selected: boolean) => {
-    if (selected) {
-      const allIds = new Set(pagesWithProperties.map(page => page.id));
-      setSelectedRows(allIds);
-    } else {
-      setSelectedRows(new Set());
-    }
+    // Update sort rules
+    const newSortRules: SortRule[] = [{ fieldId, direction }];
+    setSortRules(newSortRules);
   };
 
   if (pagesLoading) {
-    return <DatabaseTableEmptyStates.Loading />;
+    return (
+      <div className="flex flex-col h-full">
+        <Table className="border-none">
+          <TableHeader>
+            <TableRow>
+              {Array.from({ length: fields.length + 1 }).map((_, i) => (
+                <TableHead key={i} className="w-[200px]">
+                  <Skeleton className="h-4 w-32" />
+                </TableHead>
+              ))}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {Array.from({ length: 5 }).map((_, i) => (
+              <TableRow key={i}>
+                {Array.from({ length: fields.length + 1 }).map((_, j) => (
+                  <TableCell key={j} className="font-medium">
+                    <Skeleton className="h-4 w-full" />
+                  </TableCell>
+                ))}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+    );
   }
 
   if (pagesError) {
-    return <DatabaseTableEmptyStates.Error error={pagesError} onRetry={onRefetch} />;
+    return (
+      <div className="flex items-center justify-center h-full">
+        <p className="text-muted-foreground">Error: {pagesError}</p>
+      </div>
+    );
   }
 
-  if (pagesWithProperties.length === 0) {
-    return <DatabaseTableEmptyStates.Empty onCreateRow={onCreateRow} />;
-  }
-
+  // Update the DatabaseTableHeader props to include onFieldsChange
   return (
     <div className="flex flex-col h-full">
-      {/* Scrollable table container with sticky header */}
-      <div className="flex-1 overflow-auto relative">
-        <div className="min-w-full">
-          <Table className="relative">
-            <EnhancedTableHeader
-              fields={fields}
-              sortRules={sortRules}
-              onSort={handleSort}
-              onColumnResize={updateColumnWidth}
-              columnWidths={columnWidths}
-              stickyHeader={true}
-              selectedCount={selectedRows.size}
-              totalCount={pagesWithProperties.length}
-              onSelectAll={handleSelectAll}
-            />
-            <DatabaseTableBody
-              pagesWithProperties={pagesWithProperties}
-              fields={fields}
-              onTitleUpdate={onTitleUpdate}
-              onPropertyUpdate={onPropertyUpdate}
-              onDeleteRow={onDeleteRow}
-              onCreateRow={onCreateRow}
-              workspaceId={workspaceId}
-              columnWidths={columnWidths}
-              selectedRows={selectedRows}
-              onRowSelect={handleRowSelect}
-              showNewRow={true}
-            />
+      <div className="flex-1 min-h-0">
+        <DatabaseTableHeader
+          fields={fields}
+          sortRules={sortRules}
+          onSort={handleSort}
+          onFieldsChange={onFieldsChange}
+        />
+        <div className="overflow-auto">
+          <Table className="border-none">
+            <TableBody>
+              {pagesWithProperties.map((page) => (
+                <DatabaseTableRow
+                  key={page.id}
+                  page={page}
+                  fields={fields}
+                  onTitleUpdate={(newTitle) => onTitleUpdate(page.id, newTitle)}
+                  onPropertyUpdate={(fieldId, value) => onPropertyUpdate(page.id, fieldId, value)}
+                  onDeleteRow={() => onDeleteRow(page.id)}
+                  onRefetch={onRefetch}
+                  databaseId={databaseId}
+                  workspaceId={workspaceId}
+                />
+              ))}
+            </TableBody>
           </Table>
         </div>
       </div>
-
-      {/* Fixed pagination footer with visual separation */}
-      {pagination && pagination.totalPages > 1 && (
-        <div className="border-t-2 border-border bg-background/98 backdrop-blur-md p-4 shadow-[0_-2px_8px_rgba(0,0,0,0.05)]">
-          <PaginationControls
-            currentPage={pagination.currentPage}
-            totalPages={pagination.totalPages}
-            totalItems={pagination.totalItems}
-            itemsPerPage={pagination.itemsPerPage}
-            onNextPage={pagination.nextPage}
-            onPrevPage={pagination.prevPage}
-            onItemsPerPageChange={onItemsPerPageChange}
-          />
-        </div>
-      )}
     </div>
   );
 }

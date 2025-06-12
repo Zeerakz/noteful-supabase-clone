@@ -13,6 +13,7 @@ interface DatabaseTableViewProps {
   filterGroup: FilterGroup;
   sortRules: SortRule[];
   setSortRules: (rules: SortRule[]) => void;
+  onFieldsChange?: () => void;
 }
 
 export function DatabaseTableView({ 
@@ -21,10 +22,17 @@ export function DatabaseTableView({
   fields, 
   filterGroup, 
   sortRules,
-  setSortRules
+  setSortRules,
+  onFieldsChange
 }: DatabaseTableViewProps) {
   const [enablePagination, setEnablePagination] = useState(false);
   const [itemsPerPage, setItemsPerPage] = useState(50);
+
+  // Ensure all fields have the database_id property
+  const fieldsWithDatabaseId = fields.map(field => ({
+    ...field,
+    database_id: field.database_id || databaseId
+  }));
 
   const {
     pagesWithProperties,
@@ -41,7 +49,7 @@ export function DatabaseTableView({
     databaseId,
     workspaceId,
     filterGroup,
-    fields,
+    fields: fieldsWithDatabaseId,
     sortRules,
     enablePagination,
     itemsPerPage,
@@ -55,7 +63,7 @@ export function DatabaseTableView({
   return (
     <DatabaseTableViewContent
       pagesWithProperties={pagesWithProperties}
-      fields={fields}
+      fields={fieldsWithDatabaseId}
       pagesLoading={pagesLoading}
       pagesError={pagesError}
       onCreateRow={handleCreateRow}
@@ -63,6 +71,7 @@ export function DatabaseTableView({
       onPropertyUpdate={handlePropertyUpdate}
       onDeleteRow={handleDeleteRow}
       onRefetch={refetchPages}
+      onFieldsChange={onFieldsChange}
       pagination={pagination ? {
         ...pagination,
         totalItems: totalPages,

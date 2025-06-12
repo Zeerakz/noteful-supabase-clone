@@ -31,16 +31,20 @@ import {
   Calculator,
   Database,
   GripVertical,
-  Users
+  Users,
+  Settings
 } from 'lucide-react';
 import { DatabaseField } from '@/types/database';
 import { SortRule } from '@/components/database/SortingModal';
+import { InlinePropertyEditor } from '@/components/database/fields/InlinePropertyEditor';
+import { useDatabaseFieldOperations } from '@/hooks/useDatabaseFieldOperations';
 
 interface DatabaseColumnHeaderProps {
   field: DatabaseField;
   sortRules: SortRule[];
   onSort: (fieldId: string, direction: 'asc' | 'desc') => void;
   onResize?: (fieldId: string, width: number) => void;
+  onFieldsChange?: () => void;
   className?: string;
   width?: number;
   isResizable?: boolean;
@@ -81,6 +85,7 @@ export function DatabaseColumnHeader({
   sortRules,
   onSort,
   onResize,
+  onFieldsChange,
   className = '',
   width,
   isResizable = true
@@ -95,6 +100,11 @@ export function DatabaseColumnHeader({
   const sortDirection = currentSort?.direction;
   
   const hasDescription = field.name in fieldDescriptions;
+
+  // Get the database ID from the field (we'll need to ensure this is available)
+  const databaseId = field.database_id;
+  
+  const fieldOperations = useDatabaseFieldOperations(databaseId, onFieldsChange);
 
   const handleSortClick = () => {
     if (sortDirection === 'asc') {
@@ -212,6 +222,22 @@ export function DatabaseColumnHeader({
               </HoverCardContent>
             </HoverCard>
           )}
+
+          {/* Inline Property Editor */}
+          <InlinePropertyEditor
+            field={field}
+            onUpdate={fieldOperations.updateField}
+            onDuplicate={fieldOperations.duplicateField}
+            onDelete={fieldOperations.deleteField}
+          >
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex-shrink-0 hover:bg-primary/10"
+            >
+              <Settings className="h-3.5 w-3.5 text-muted-foreground hover:text-primary transition-colors" />
+            </Button>
+          </InlinePropertyEditor>
         </div>
 
         {/* Resize Handle */}

@@ -1,25 +1,51 @@
-
 import React from 'react';
-import { Button } from '@/components/ui/button';
-import { Plus } from 'lucide-react';
+import { DatabaseColumnHeader } from './DatabaseColumnHeader';
+import { DatabaseField } from '@/types/database';
 
 interface DatabaseTableHeaderProps {
-  onCreateRow: () => void;
+  fields: DatabaseField[];
+  sortRules: SortRule[];
+  onSort: (fieldId: string, direction: 'asc' | 'desc') => void;
+  onFieldsChange?: () => void;
 }
 
-export function DatabaseTableHeader({ onCreateRow }: DatabaseTableHeaderProps) {
+export function DatabaseTableHeader({ fields, sortRules, onSort, onFieldsChange }: DatabaseTableHeaderProps) {
   return (
-    <div className="flex items-center justify-between">
-      <div>
-        <h3 className="text-lg font-semibold">Table View</h3>
-        <p className="text-sm text-muted-foreground">
-          View and edit your database entries in a table format
-        </p>
+    <div className="sticky top-0 z-10 bg-background border-b border-border">
+      <div className="flex">
+        {/* Title Column */}
+        <div className="min-w-[200px] w-[200px] flex-shrink-0 border-r border-border">
+          <DatabaseColumnHeader
+            field={{
+              id: 'title',
+              name: 'Title',
+              type: 'text',
+              database_id: fields[0]?.database_id || '',
+              pos: -1,
+              settings: {},
+              created_by: '',
+              created_at: '',
+              updated_at: ''
+            }}
+            sortRules={sortRules}
+            onSort={onSort}
+            onFieldsChange={onFieldsChange}
+            isResizable={false}
+          />
+        </div>
+
+        {/* Field Columns */}
+        {fields.map((field) => (
+          <div key={field.id} className="min-w-[150px] flex-shrink-0 border-r border-border last:border-r-0">
+            <DatabaseColumnHeader
+              field={field}
+              sortRules={sortRules}
+              onSort={onSort}
+              onFieldsChange={onFieldsChange}
+            />
+          </div>
+        ))}
       </div>
-      <Button onClick={onCreateRow} className="gap-2">
-        <Plus className="h-4 w-4" />
-        Add Row
-      </Button>
     </div>
   );
 }
