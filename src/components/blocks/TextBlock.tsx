@@ -27,6 +27,11 @@ export function TextBlock({ block, onUpdate, onDelete, isEditable }: TextBlockPr
     await onDelete();
   };
 
+  const handleOpenComments = () => {
+    console.log('Opening comments panel for block:', block.id);
+    setIsCommentPanelOpen(true);
+  };
+
   const textContent = block.content?.text || '';
 
   // Handle clicks on links in read-only mode
@@ -72,7 +77,7 @@ export function TextBlock({ block, onUpdate, onDelete, isEditable }: TextBlockPr
           className="w-full"
           showCommentButton={isHovered}
           comments={comments}
-          onOpenComments={() => setIsCommentPanelOpen(true)}
+          onOpenComments={handleOpenComments}
         />
       </div>
       

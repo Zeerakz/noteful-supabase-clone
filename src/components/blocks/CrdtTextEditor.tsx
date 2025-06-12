@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import { useYjsDocument } from '@/hooks/useYjsDocument';
 import { EditorToolbar } from './RichTextEditor/EditorToolbar';
@@ -333,6 +332,15 @@ export function CrdtTextEditor({
     }
   };
 
+  const handleCommentClick = () => {
+    console.log('Comment button clicked for block:', blockId);
+    if (onOpenComments) {
+      onOpenComments();
+    } else {
+      console.warn('onOpenComments callback not provided');
+    }
+  };
+
   return (
     <div className={`relative group ${className}`}>
       <div
@@ -375,11 +383,11 @@ export function CrdtTextEditor({
       
       {isFocused && (
         <div className="absolute bottom-1 right-1 flex items-center gap-1 z-10">
-          {showCommentButton && onOpenComments && (
+          {showCommentButton && (
             <CommentIcon
               hasComments={comments.length > 0}
               commentCount={comments.length}
-              onClick={onOpenComments}
+              onClick={handleCommentClick}
               className="mr-1"
             />
           )}
