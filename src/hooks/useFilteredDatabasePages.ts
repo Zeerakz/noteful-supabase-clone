@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { DatabaseQueryService } from '@/services/database/databaseQueryService';
 import { DatabaseField } from '@/types/database';
 import { FilterGroup } from '@/types/filters';
@@ -18,10 +18,39 @@ export function useFilteredDatabasePages({ databaseId, filterGroup, fields, sort
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Stabilize all dependencies using useMemo to prevent infinite re-renders
-  const stableFilterGroup = useMemo(() => filterGroup, [JSON.stringify(filterGroup)]);
-  const stableFields = useMemo(() => fields, [JSON.stringify(fields)]);
-  const stableSortRules = useMemo(() => sortRules, [JSON.stringify(sortRules)]);
+  // Use refs to track previous values and only update when content actually changes
+  const prevFilterGroupRef = useRef<string>('');
+  const prevFieldsRef = useRef<string>('');
+  const prevSortRulesRef = useRef<string>('');
+  
+  const currentFilterGroupStr = JSON.stringify(filterGroup);
+  const currentFieldsStr = JSON.stringify(fields);
+  const currentSortRulesStr = JSON.stringify(sortRules);
+  
+  // Only update when the serialized values actually change
+  const stableFilterGroup = useMemo(() => {
+    if (prevFilterGroupRef.current !== currentFilterGroupStr) {
+      prevFilterGroupRef.current = currentFilterGroupStr;
+      return filterGroup;
+    }
+    return JSON.parse(prevFilterGroupRef.current);
+  }, [currentFilterGroupStr]);
+  
+  const stableFields = useMemo(() => {
+    if (prevFieldsRef.current !== currentFieldsStr) {
+      prevFieldsRef.current = currentFieldsStr;
+      return fields;
+    }
+    return JSON.parse(prevFieldsRef.current);
+  }, [currentFieldsStr]);
+  
+  const stableSortRules = useMemo(() => {
+    if (prevSortRulesRef.current !== currentSortRulesStr) {
+      prevSortRulesRef.current = currentSortRulesStr;
+      return sortRules;
+    }
+    return JSON.parse(prevSortRulesRef.current);
+  }, [currentSortRulesStr]);
 
   // Create a stable query function that doesn't change on every render
   const queryFunction = useCallback(() => {
