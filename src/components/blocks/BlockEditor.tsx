@@ -1,6 +1,5 @@
-
 import React, { useState, useRef, useEffect } from 'react';
-import { Plus, Type, Heading1, Heading2, Heading3, List, ListOrdered, Image, Table } from 'lucide-react';
+import { Plus, Type, Heading1, Heading2, Heading3, List, ListOrdered, Image, Table, Minus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { BlockRenderer } from './BlockRenderer';
@@ -243,6 +242,10 @@ export function BlockEditor({ pageId, isEditable, workspaceId }: BlockEditorProp
               <DropdownMenuItem onClick={() => handleCreateBlock('table')}>
                 <Table className="h-4 w-4 mr-2" />
                 Table
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleCreateBlock('divider')}>
+                <Minus className="h-4 w-4 mr-2" />
+                Divider
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

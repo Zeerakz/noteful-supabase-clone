@@ -7,6 +7,7 @@ import { ListBlock } from './ListBlock';
 import { ImageBlock } from './ImageBlock';
 import { TwoColumnBlock } from './TwoColumnBlock';
 import { TableBlock } from './TableBlock';
+import { DividerBlock } from './DividerBlock';
 
 interface BlockRendererProps {
   block: Block;
@@ -78,6 +79,15 @@ export function BlockRenderer({ block, onUpdateBlock, onDeleteBlock, isEditable,
     case 'table':
       return (
         <TableBlock
+          block={block}
+          onUpdate={handleContentUpdate}
+          onDelete={handleDelete}
+          isEditable={isEditable}
+        />
+      );
+    case 'divider':
+      return (
+        <DividerBlock
           block={block}
           onUpdate={handleContentUpdate}
           onDelete={handleDelete}
