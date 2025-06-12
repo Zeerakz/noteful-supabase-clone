@@ -1,28 +1,19 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { Database, DatabaseCreateRequest } from '@/types/database';
+import { DatabaseCoreService } from './database/databaseCoreService';
+import { DatabasePageService } from './database/databasePageService';
+import { DatabasePropertyService } from './database/databasePropertyService';
+import { DatabaseFieldService } from './database/databaseFieldService';
 
 export class DatabaseService {
+  // Database CRUD operations
   static async fetchDatabases(workspaceId: string) {
-    const { data, error } = await supabase
-      .from('databases')
-      .select('*')
-      .eq('workspace_id', workspaceId)
-      .order('created_at', { ascending: false });
-
-    return { data, error: error?.message };
+    return DatabaseCoreService.fetchDatabases(workspaceId);
   }
 
   static async createDatabase(workspaceId: string, userId: string, request: DatabaseCreateRequest) {
-    const { data, error } = await supabase.rpc('create_database_with_fields', {
-      p_workspace_id: workspaceId,
-      p_user_id: userId,
-      p_name: request.name,
-      p_description: request.description,
-      p_fields: request.fields
-    });
-
-    return { data, error: error?.message };
+    return DatabaseCoreService.createDatabase(workspaceId, userId, request);
   }
 
   static async updateDatabase(databaseId: string, updates: Partial<Pick<Database, 'name' | 'description' | 'icon'>>) {
@@ -37,11 +28,33 @@ export class DatabaseService {
   }
 
   static async deleteDatabase(databaseId: string) {
-    const { error } = await supabase
-      .from('databases')
-      .delete()
-      .eq('id', databaseId);
+    return DatabaseCoreService.deleteDatabase(databaseId);
+  }
 
-    return { error: error?.message };
+  // Database field operations
+  static async fetchDatabaseFields(databaseId: string) {
+    return DatabaseFieldService.fetchDatabaseFields(databaseId);
+  }
+
+  static async createDatabaseField(databaseId: string, userId: string, field: any) {
+    return DatabaseFieldService.createDatabaseField(databaseId, userId, field);
+  }
+
+  static async updateDatabaseField(fieldId: string, updates: any) {
+    return DatabaseFieldService.updateDatabaseField(fieldId, updates);
+  }
+
+  static async deleteDatabaseField(fieldId: string) {
+    return DatabaseFieldService.deleteDatabaseField(fieldId);
+  }
+
+  // Database page operations
+  static async createDatabasePage(databaseId: string, workspaceId: string, userId: string, title: string) {
+    return DatabasePageService.createDatabasePage(databaseId, workspaceId, userId, title);
+  }
+
+  // Page property operations
+  static async createPageProperty(pageId: string, fieldId: string, value: string, userId: string) {
+    return DatabasePropertyService.createPageProperty(pageId, fieldId, value, userId);
   }
 }
