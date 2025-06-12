@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import {
   Dialog,
@@ -25,7 +26,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { useForm } from 'react-hook-form';
-import { X, Plus } from 'lucide-react';
+import { Trash2, Plus } from 'lucide-react';
 import { DatabaseField } from '@/types/database';
 
 export interface FilterRule {
@@ -125,22 +126,27 @@ export function FilterModal({
               </div>
               <div className="space-y-2">
                 {filters.map((filter) => (
-                  <div key={filter.id} className="flex items-center gap-2">
-                    <Badge variant="secondary" className="flex items-center gap-2 px-3 py-1">
-                      <span className="font-medium">{getFieldName(filter.fieldId)}</span>
-                      <span className="text-muted-foreground">{getOperatorLabel(filter.operator)}</span>
-                      {needsValue(filter.operator) && (
-                        <span className="font-medium">"{filter.value}"</span>
-                      )}
+                  <div key={filter.id} className="group relative flex items-center gap-2">
+                    <div className="flex-1">
+                      <Badge variant="secondary" className="flex items-center gap-2 px-3 py-1 w-full">
+                        <span className="font-medium">{getFieldName(filter.fieldId)}</span>
+                        <span className="text-muted-foreground">{getOperatorLabel(filter.operator)}</span>
+                        {needsValue(filter.operator) && (
+                          <span className="font-medium">"{filter.value}"</span>
+                        )}
+                      </Badge>
+                    </div>
+                    
+                    <div className="flex items-center gap-1 flex-shrink-0">
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => removeFilter(filter.id)}
-                        className="h-4 w-4 p-0 hover:bg-destructive hover:text-destructive-foreground"
+                        className="h-6 w-6 p-0 text-destructive hover:text-destructive/80"
                       >
-                        <X className="h-3 w-3" />
+                        <Trash2 className="h-3 w-3" />
                       </Button>
-                    </Badge>
+                    </div>
                   </div>
                 ))}
               </div>
