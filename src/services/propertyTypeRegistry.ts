@@ -37,3 +37,10 @@ export function initializePropertyRegistry() {
 export function registerCustomPropertyType(definition: any) {
   propertyRegistry.register(definition);
 }
+
+// Ensure the registry is initialized when this module is imported
+// This guarantees property types are available during inheritance operations
+if (typeof window !== 'undefined') {
+  // Only initialize on client side
+  initializePropertyRegistry();
+}

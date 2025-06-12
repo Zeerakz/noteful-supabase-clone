@@ -1,6 +1,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { Page, PageCreateRequest, PageUpdateRequest } from '@/types/page';
+import { PropertyInheritanceService } from '@/services/propertyInheritanceService';
 
 export class PageService {
   static async fetchPages(workspaceId: string): Promise<{ data: Page[] | null; error: string | null }> {
@@ -109,6 +110,21 @@ export class PageService {
         .single();
 
       if (error) throw error;
+
+      // If page is created in a database, apply property inheritance
+      if (data && databaseId) {
+        const inheritanceResult = await PropertyInheritanceService.applyDatabaseInheritance(
+          data.id,
+          databaseId,
+          userId
+        );
+
+        if (!inheritanceResult.success) {
+          console.warn('Property inheritance failed:', inheritanceResult.error);
+          // Don't fail the page creation, just log the warning
+        }
+      }
+
       return { data, error: null };
     } catch (err) {
       return { 
@@ -123,6 +139,15 @@ export class PageService {
     updates: PageUpdateRequest
   ): Promise<{ data: Page | null; error: string | null }> {
     try {
+      // Get the current page data to check for database changes
+      const { data: currentPage, error: fetchError } = await supabase
+        .from('pages')
+        .select('*')
+        .eq('id', pageId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
       const { data, error } = await supabase
         .from('pages')
         .update({ ...updates, updated_at: new Date().toISOString() })
@@ -131,6 +156,53 @@ export class PageService {
         .single();
 
       if (error) throw error;
+
+      // Handle database inheritance when database_id changes
+      if (updates.database_id !== undefined && currentPage) {
+        const oldDatabaseId = currentPage.database_id;
+        const newDatabaseId = updates.database_id;
+
+        // If moving from standalone to database
+        if (!oldDatabaseId && newDatabaseId) {
+          const inheritanceResult = await PropertyInheritanceService.applyDatabaseInheritance(
+            pageId,
+            newDatabaseId,
+            currentPage.created_by
+          );
+
+          if (!inheritanceResult.success) {
+            console.warn('Property inheritance failed:', inheritanceResult.error);
+          }
+        }
+        // If moving from database to standalone
+        else if (oldDatabaseId && !newDatabaseId) {
+          const removalResult = await PropertyInheritanceService.removeDatabaseInheritance(
+            pageId,
+            oldDatabaseId
+          );
+
+          if (!removalResult.success) {
+            console.warn('Property inheritance removal failed:', removalResult.error);
+          }
+        }
+        // If moving between databases
+        else if (oldDatabaseId && newDatabaseId && oldDatabaseId !== newDatabaseId) {
+          // Remove old database properties
+          await PropertyInheritanceService.removeDatabaseInheritance(pageId, oldDatabaseId);
+          
+          // Apply new database properties
+          const inheritanceResult = await PropertyInheritanceService.applyDatabaseInheritance(
+            pageId,
+            newDatabaseId,
+            currentPage.created_by
+          );
+
+          if (!inheritanceResult.success) {
+            console.warn('Property inheritance failed:', inheritanceResult.error);
+          }
+        }
+      }
+
       return { data, error: null };
     } catch (err) {
       return { 
