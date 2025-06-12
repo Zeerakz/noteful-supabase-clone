@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useWorkspaces } from '@/hooks/useWorkspaces';
@@ -6,16 +7,37 @@ import { useDatabases } from '@/hooks/useDatabases';
 import { useGlobalSearch } from '@/hooks/useGlobalSearch';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, FileText, Database, Bookmark, Search } from 'lucide-react';
+import { Plus, FileText, Database, Bookmark, Search, MoreHorizontal, Trash2 } from 'lucide-react';
 import { DatabaseWizard } from '@/components/database/DatabaseWizard';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { useState } from 'react';
+import { useToast } from '@/hooks/use-toast';
 
 export function WorkspaceView() {
   const { workspaceId } = useParams<{ workspaceId: string }>();
   const navigate = useNavigate();
   const { workspaces } = useWorkspaces();
   const { pages, createPage } = usePages(workspaceId!);
-  const { databases } = useDatabases(workspaceId!);
+  const { databases, deleteDatabase } = useDatabases(workspaceId!);
   const { openSearch } = useGlobalSearch();
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [databaseToDelete, setDatabaseToDelete] = useState<{ id: string; name: string } | null>(null);
+  const { toast } = useToast();
 
   const workspace = workspaces?.find(w => w.id === workspaceId);
 
@@ -47,6 +69,41 @@ export function WorkspaceView() {
 
   const handleTemplateGalleryClick = () => {
     navigate(`/workspace/${workspaceId}/templates`);
+  };
+
+  const handleDeleteDatabase = (database: { id: string; name: string }) => {
+    setDatabaseToDelete(database);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDeleteDatabase = async () => {
+    if (!databaseToDelete) return;
+
+    try {
+      const { error } = await deleteDatabase(databaseToDelete.id);
+      
+      if (error) {
+        toast({
+          title: "Error",
+          description: error,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Success",
+          description: `Database "${databaseToDelete.name}" deleted successfully`,
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete database",
+        variant: "destructive",
+      });
+    } finally {
+      setDeleteDialogOpen(false);
+      setDatabaseToDelete(null);
+    }
   };
 
   return (
@@ -86,16 +143,44 @@ export function WorkspaceView() {
             {databases.map((database) => (
               <Card 
                 key={database.id} 
-                className="hover:shadow-md transition-shadow cursor-pointer"
-                onClick={() => handleDatabaseClick(database.id)}
+                className="hover:shadow-md transition-shadow cursor-pointer group relative"
               >
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <Database className="h-4 w-4" />
-                    {database.name}
-                  </CardTitle>
+                  <div className="flex items-start justify-between">
+                    <CardTitle 
+                      className="text-base flex items-center gap-2 flex-1"
+                      onClick={() => handleDatabaseClick(database.id)}
+                    >
+                      <Database className="h-4 w-4" />
+                      {database.name}
+                    </CardTitle>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteDatabase(database);
+                          }}
+                          className="text-destructive focus:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Delete Database
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
                 </CardHeader>
-                <CardContent className="pt-0">
+                <CardContent className="pt-0" onClick={() => handleDatabaseClick(database.id)}>
                   {database.description && (
                     <p className="text-sm text-muted-foreground mb-2">
                       {database.description}
@@ -161,6 +246,26 @@ export function WorkspaceView() {
           )}
         </div>
       </div>
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Database</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{databaseToDelete?.name}"? This action cannot be undone and will permanently delete all data in this database.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmDeleteDatabase}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete Database
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
