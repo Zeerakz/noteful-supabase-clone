@@ -2,13 +2,14 @@
 import React, { useRef, useMemo } from 'react';
 import {
   Table,
-  TableHead,
-  TableHeader,
-  TableRow,
 } from '@/components/ui/table';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { VirtualizedTableBody } from './VirtualizedTableBody';
+import { EnhancedTableHeader } from './EnhancedTableHeader';
+import { useColumnResizing } from './hooks/useColumnResizing';
+import { useTableSorting } from './hooks/useTableSorting';
 import { DatabaseField } from '@/types/database';
+import { SortRule } from '@/components/database/SortingModal';
 import { useVirtualScrolling } from '@/hooks/useVirtualScrolling';
 
 interface PageWithProperties {
@@ -27,6 +28,8 @@ interface VirtualizedTableProps {
   maxHeight?: string;
   enableVirtualScrolling?: boolean;
   rowHeight?: number;
+  sortRules: SortRule[];
+  setSortRules: (rules: SortRule[]) => void;
 }
 
 export function VirtualizedTable({
@@ -38,7 +41,9 @@ export function VirtualizedTable({
   isLoading = false,
   maxHeight = "600px",
   enableVirtualScrolling = false,
-  rowHeight = 60
+  rowHeight = 60,
+  sortRules,
+  setSortRules
 }: VirtualizedTableProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const containerHeight = parseInt(maxHeight) || 600;
@@ -49,6 +54,15 @@ export function VirtualizedTable({
     containerHeight: containerHeight,
     overscan: 5
   });
+
+  const { columnWidths, updateColumnWidth } = useColumnResizing({
+    defaultWidths: {
+      title: 200,
+      ...fields.reduce((acc, field) => ({ ...acc, [field.id]: 150 }), {})
+    }
+  });
+
+  const { handleSort } = useTableSorting({ sortRules, setSortRules });
 
   const displayPages = useMemo(() => {
     return enableVirtualScrolling && pages.length > 50 
@@ -62,22 +76,14 @@ export function VirtualizedTable({
         {/* Fixed header */}
         <div className="border-b bg-muted/50">
           <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[200px] sticky left-0 bg-muted/50">
-                  Title
-                </TableHead>
-                {fields.map((field) => (
-                  <TableHead key={field.id} className="min-w-[150px]">
-                    {field.name}
-                    <span className="ml-2 text-xs text-muted-foreground">
-                      ({field.type})
-                    </span>
-                  </TableHead>
-                ))}
-                <TableHead className="w-[50px]"></TableHead>
-              </TableRow>
-            </TableHeader>
+            <EnhancedTableHeader
+              fields={fields}
+              sortRules={sortRules}
+              onSort={handleSort}
+              onColumnResize={updateColumnWidth}
+              columnWidths={columnWidths}
+              stickyHeader={true}
+            />
           </Table>
         </div>
         
@@ -105,6 +111,7 @@ export function VirtualizedTable({
                 onPropertyUpdate={onPropertyUpdate}
                 onDeleteRow={onDeleteRow}
                 isLoading={isLoading}
+                columnWidths={columnWidths}
               />
             </div>
           </div>
@@ -123,22 +130,14 @@ export function VirtualizedTable({
       {/* Fixed header */}
       <div className="border-b bg-muted/50">
         <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-[200px] sticky left-0 bg-muted/50">
-                Title
-              </TableHead>
-              {fields.map((field) => (
-                <TableHead key={field.id} className="min-w-[150px]">
-                  {field.name}
-                  <span className="ml-2 text-xs text-muted-foreground">
-                    ({field.type})
-                  </span>
-                </TableHead>
-              ))}
-              <TableHead className="w-[50px]"></TableHead>
-            </TableRow>
-          </TableHeader>
+          <EnhancedTableHeader
+            fields={fields}
+            sortRules={sortRules}
+            onSort={handleSort}
+            onColumnResize={updateColumnWidth}
+            columnWidths={columnWidths}
+            stickyHeader={true}
+          />
         </Table>
       </div>
       
@@ -151,6 +150,7 @@ export function VirtualizedTable({
           onPropertyUpdate={onPropertyUpdate}
           onDeleteRow={onDeleteRow}
           isLoading={isLoading}
+          columnWidths={columnWidths}
         />
       </ScrollArea>
     </div>

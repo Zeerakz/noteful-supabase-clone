@@ -13,6 +13,7 @@ import { PaginationControls } from '../PaginationControls';
 import { PerformanceMetrics } from '../PerformanceMetrics';
 import { TableLoadingSkeleton } from '../LoadingStates';
 import { DatabaseField } from '@/types/database';
+import { SortRule } from '@/components/database/SortingModal';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 interface PageWithProperties {
@@ -52,6 +53,8 @@ interface DatabaseTableViewContentProps {
   pagination?: PaginationData | null;
   totalPages: number;
   databaseId?: string;
+  sortRules: SortRule[];
+  setSortRules: (rules: SortRule[]) => void;
 }
 
 export function DatabaseTableViewContent({
@@ -66,7 +69,9 @@ export function DatabaseTableViewContent({
   onRefetch,
   pagination,
   totalPages,
-  databaseId
+  databaseId,
+  sortRules,
+  setSortRules
 }: DatabaseTableViewContentProps) {
   const [enableVirtualScrolling, setEnableVirtualScrolling] = useState(totalPages > 100);
   const [showPerformanceMetrics, setShowPerformanceMetrics] = useState(false);
@@ -153,6 +158,8 @@ export function DatabaseTableViewContent({
         maxHeight="600px"
         enableVirtualScrolling={enableVirtualScrolling}
         rowHeight={60}
+        sortRules={sortRules}
+        setSortRules={setSortRules}
       />
 
       {/* Pagination Controls */}

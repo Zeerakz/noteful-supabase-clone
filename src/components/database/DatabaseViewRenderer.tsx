@@ -1,13 +1,13 @@
 
 import React from 'react';
-import { DatabaseViewType } from './DatabaseViewSelector';
 import { DatabaseTableView } from './DatabaseTableView';
 import { DatabaseListView } from './DatabaseListView';
-import { DatabaseTimelineView } from './DatabaseTimelineView';
-import { DatabaseCalendarView } from './DatabaseCalendarView';
 import { DatabaseKanbanView } from './DatabaseKanbanView';
+import { DatabaseCalendarView } from './DatabaseCalendarView';
+import { DatabaseTimelineView } from './DatabaseTimelineView';
 import { DatabaseGalleryView } from './DatabaseGalleryView';
 import { DatabaseFormView } from './DatabaseFormView';
+import { DatabaseViewType } from './DatabaseViewSelector';
 import { DatabaseField } from '@/types/database';
 import { FilterGroup } from '@/types/filters';
 import { SortRule } from './SortingModal';
@@ -19,6 +19,7 @@ interface DatabaseViewRendererProps {
   fields: DatabaseField[];
   filterGroup: FilterGroup;
   sortRules: SortRule[];
+  setSortRules: (rules: SortRule[]) => void;
   groupingFieldId?: string;
   collapsedGroups: string[];
   onToggleGroupCollapse: (groupValue: string) => void;
@@ -31,43 +32,80 @@ export function DatabaseViewRenderer({
   fields,
   filterGroup,
   sortRules,
+  setSortRules,
   groupingFieldId,
   collapsedGroups,
   onToggleGroupCollapse,
 }: DatabaseViewRendererProps) {
-  const commonProps = {
+  const baseProps = {
     databaseId,
     workspaceId,
     fields,
     filterGroup,
     sortRules,
-    groupingFieldId,
-    collapsedGroups,
-    onToggleGroupCollapse,
   };
 
   switch (currentViewType) {
     case 'table':
-      return <DatabaseTableView {...commonProps} />;
+      return (
+        <DatabaseTableView
+          {...baseProps}
+          setSortRules={setSortRules}
+        />
+      );
+
     case 'list':
-      return <DatabaseListView {...commonProps} />;
-    case 'timeline':
-      return <DatabaseTimelineView {...commonProps} />;
-    case 'calendar':
-      return <DatabaseCalendarView {...commonProps} />;
+      return (
+        <DatabaseListView
+          {...baseProps}
+          groupingFieldId={groupingFieldId}
+          collapsedGroups={collapsedGroups}
+          onToggleGroupCollapse={onToggleGroupCollapse}
+        />
+      );
+
     case 'kanban':
-      return <DatabaseKanbanView {...commonProps} />;
+      return (
+        <DatabaseKanbanView
+          {...baseProps}
+        />
+      );
+
+    case 'calendar':
+      return (
+        <DatabaseCalendarView
+          {...baseProps}
+        />
+      );
+
+    case 'timeline':
+      return (
+        <DatabaseTimelineView
+          {...baseProps}
+        />
+      );
+
     case 'gallery':
-      return <DatabaseGalleryView {...commonProps} />;
+      return (
+        <DatabaseGalleryView
+          {...baseProps}
+        />
+      );
+
     case 'form':
       return (
         <DatabaseFormView
-          databaseId={databaseId}
-          fields={fields}
-          workspaceId={workspaceId}
+          {...baseProps}
         />
       );
+
     default:
-      return null;
+      return (
+        <div className="flex items-center justify-center p-8">
+          <div className="text-muted-foreground">
+            View type "{currentViewType}" is not implemented yet.
+          </div>
+        </div>
+      );
   }
 }

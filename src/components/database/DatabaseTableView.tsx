@@ -12,6 +12,7 @@ interface DatabaseTableViewProps {
   fields: DatabaseField[];
   filterGroup: FilterGroup;
   sortRules: SortRule[];
+  setSortRules: (rules: SortRule[]) => void;
 }
 
 export function DatabaseTableView({ 
@@ -19,7 +20,8 @@ export function DatabaseTableView({
   workspaceId, 
   fields, 
   filterGroup, 
-  sortRules 
+  sortRules,
+  setSortRules
 }: DatabaseTableViewProps) {
   const [enablePagination, setEnablePagination] = useState(false);
   const [itemsPerPage, setItemsPerPage] = useState(50);
@@ -64,6 +66,8 @@ export function DatabaseTableView({
       } : null}
       totalPages={totalPages}
       databaseId={databaseId}
+      sortRules={sortRules}
+      setSortRules={setSortRules}
     />
   );
 }

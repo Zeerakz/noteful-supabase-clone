@@ -1,7 +1,9 @@
 
 import React from 'react';
-import { Table, TableBody, TableRow, TableCell } from '@/components/ui/table';
-import { Skeleton } from '@/components/ui/skeleton';
+import {
+  Table,
+  TableBody,
+} from '@/components/ui/table';
 import { DatabaseTableRow } from './DatabaseTableRow';
 import { DatabaseField } from '@/types/database';
 
@@ -9,7 +11,6 @@ interface PageWithProperties {
   id: string;
   title: string;
   properties: Record<string, string>;
-  index?: number;
 }
 
 interface VirtualizedTableBodyProps {
@@ -19,6 +20,7 @@ interface VirtualizedTableBodyProps {
   onPropertyUpdate: (pageId: string, fieldId: string, value: string) => void;
   onDeleteRow: (pageId: string) => void;
   isLoading?: boolean;
+  columnWidths?: Record<string, number>;
 }
 
 export function VirtualizedTableBody({
@@ -27,37 +29,30 @@ export function VirtualizedTableBody({
   onTitleUpdate,
   onPropertyUpdate,
   onDeleteRow,
-  isLoading = false
+  isLoading = false,
+  columnWidths = {}
 }: VirtualizedTableBodyProps) {
   if (isLoading) {
     return (
       <Table>
         <TableBody>
-          {Array.from({ length: 10 }).map((_, i) => (
-            <TableRow key={i} style={{ height: '60px' }}>
-              <TableCell className="w-[200px]">
-                <Skeleton className="h-4 w-32" />
-              </TableCell>
+          {Array.from({ length: 5 }).map((_, index) => (
+            <tr key={index} className="border-b">
+              <td className="p-4 w-[200px]">
+                <div className="h-4 bg-muted rounded animate-pulse" />
+              </td>
               {fields.map((field) => (
-                <TableCell key={field.id} className="min-w-[150px]">
-                  <Skeleton className="h-4 w-24" />
-                </TableCell>
+                <td key={field.id} className="p-4 min-w-[150px]">
+                  <div className="h-4 bg-muted rounded animate-pulse" />
+                </td>
               ))}
-              <TableCell className="w-[50px]">
-                <Skeleton className="h-8 w-8 rounded" />
-              </TableCell>
-            </TableRow>
+              <td className="p-4 w-[50px]">
+                <div className="h-4 bg-muted rounded animate-pulse" />
+              </td>
+            </tr>
           ))}
         </TableBody>
       </Table>
-    );
-  }
-
-  if (pages.length === 0) {
-    return (
-      <div className="flex items-center justify-center py-8 text-muted-foreground">
-        No rows in this database yet. Click "Add Row" to create your first entry.
-      </div>
     );
   }
 
@@ -65,15 +60,15 @@ export function VirtualizedTableBody({
     <Table>
       <TableBody>
         {pages.map((page) => (
-          <TableRow key={page.id} className="hover:bg-muted/50" style={{ height: '60px' }}>
-            <DatabaseTableRow
-              page={page}
-              fields={fields}
-              onTitleUpdate={onTitleUpdate}
-              onPropertyUpdate={onPropertyUpdate}
-              onDeleteRow={onDeleteRow}
-            />
-          </TableRow>
+          <DatabaseTableRow
+            key={page.id}
+            page={page}
+            fields={fields}
+            onTitleUpdate={onTitleUpdate}
+            onPropertyUpdate={onPropertyUpdate}
+            onDeleteRow={onDeleteRow}
+            columnWidths={columnWidths}
+          />
         ))}
       </TableBody>
     </Table>
