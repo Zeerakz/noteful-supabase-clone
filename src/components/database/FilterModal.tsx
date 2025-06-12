@@ -25,7 +25,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { useForm } from 'react-hook-form';
-import { Trash2, Plus } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { DatabaseField } from '@/types/database';
 
 export interface FilterRule {
@@ -135,15 +135,6 @@ export function FilterModal({
                         )}
                       </Badge>
                     </div>
-                    
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => removeFilter(filter.id)}
-                      className="h-8 w-8 p-0 text-destructive hover:text-destructive/80 hover:bg-destructive/10"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
                   </div>
                 ))}
               </div>
