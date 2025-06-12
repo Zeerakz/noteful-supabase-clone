@@ -59,11 +59,13 @@ export function useDatabaseTableView({
     enableVirtualScrolling
   });
 
-  // Stable cache configuration
-  const cache = useViewCache({
+  // Stable cache configuration - ensure this doesn't change unnecessarily
+  const cacheConfig = useMemo(() => ({
     cacheKey: `table-${databaseId}`,
     ttl: 5 * 60 * 1000
-  });
+  }), [databaseId]);
+
+  const cache = useViewCache(cacheConfig);
   
   const { 
     pages, 
@@ -124,17 +126,34 @@ export function useDatabaseTableView({
     enabled: pageIds.length > 0 && !pagesLoading
   });
 
-  // STABILIZED: Transform pages data with properties - break dependency on getPropertiesForPage
+  // FIXED: Use ref to track last computed value and prevent unnecessary recalculations
+  const lastComputedPagesRef = useRef<PageWithProperties[]>([]);
+  const lastPageIdsKeyRef = useRef<string>('');
+  const lastLoadedPropertiesKeyRef = useRef<string>('');
+
+  // STABILIZED: Transform pages data with properties - minimize recalculation triggers
   const pagesWithProperties: PageWithProperties[] = useMemo(() => {
+    const pageIdsKey = pageIds.join(',');
+    const loadedPropertiesKey = JSON.stringify(loadedProperties);
+    
+    // Only recalculate if inputs actually changed
+    if (
+      lastPageIdsKeyRef.current === pageIdsKey && 
+      lastLoadedPropertiesKeyRef.current === loadedPropertiesKey &&
+      lastComputedPagesRef.current.length === currentPageItems.length
+    ) {
+      console.log('useDatabaseTableView: Using cached pages with properties');
+      return lastComputedPagesRef.current;
+    }
+
     console.log('useDatabaseTableView: Computing pages with properties', { pageCount: currentPageItems.length });
     
-    return currentPageItems.map(page => {
+    const result = currentPageItems.map(page => {
       const cacheKey = `page-${page.id}`;
       let properties = cache.get(cacheKey);
       
       if (!properties) {
-        // Access properties directly from loadedProperties instead of using getPropertiesForPage
-        // This breaks the dependency chain that was causing re-renders
+        // Access properties directly from loadedProperties
         const pageProperties = loadedProperties[page.id] || {};
         properties = pageProperties && typeof pageProperties === 'object' 
           ? pageProperties as Record<string, string>
@@ -158,7 +177,14 @@ export function useDatabaseTableView({
         properties: properties as Record<string, string>,
       };
     });
-  }, [currentPageItems, cache, loadedProperties]); // Use loadedProperties directly instead of getPropertiesForPage
+
+    // Cache the result and keys
+    lastComputedPagesRef.current = result;
+    lastPageIdsKeyRef.current = pageIdsKey;
+    lastLoadedPropertiesKeyRef.current = loadedPropertiesKey;
+
+    return result;
+  }, [currentPageItems, loadedProperties, cache]);
 
   // Stable action handlers
   const handleCreateRow = useCallback(async () => {

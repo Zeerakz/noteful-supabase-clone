@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback, useRef } from 'react';
 
 interface CacheEntry<T> {
@@ -17,6 +16,24 @@ export function useViewCache<T>({ cacheKey, ttl = 5 * 60 * 1000 }: UseViewCacheP
   const [cacheHits, setCacheHits] = useState<Record<string, number>>({});
   const [cacheMisses, setCacheMisses] = useState<Record<string, number>>({});
 
+  // Use refs to access current state without triggering re-renders
+  const cacheRef = useRef(cache);
+  const cacheHitsRef = useRef(cacheHits);
+  const cacheMissesRef = useRef(cacheMisses);
+
+  // Keep refs in sync with state
+  useEffect(() => {
+    cacheRef.current = cache;
+  }, [cache]);
+
+  useEffect(() => {
+    cacheHitsRef.current = cacheHits;
+  }, [cacheHits]);
+
+  useEffect(() => {
+    cacheMissesRef.current = cacheMisses;
+  }, [cacheMisses]);
+
   // Stable refs to prevent recreating functions
   const cacheKeyRef = useRef(cacheKey);
   const ttlRef = useRef(ttl);
@@ -26,8 +43,8 @@ export function useViewCache<T>({ cacheKey, ttl = 5 * 60 * 1000 }: UseViewCacheP
   ttlRef.current = ttl;
 
   const getCacheStats = useCallback(() => {
-    const hits = cacheHits[cacheKeyRef.current] || 0;
-    const misses = cacheMisses[cacheKeyRef.current] || 0;
+    const hits = cacheHitsRef.current[cacheKeyRef.current] || 0;
+    const misses = cacheMissesRef.current[cacheKeyRef.current] || 0;
     const total = hits + misses;
     const hitRate = total > 0 ? (hits / total) * 100 : 0;
     
@@ -36,46 +53,50 @@ export function useViewCache<T>({ cacheKey, ttl = 5 * 60 * 1000 }: UseViewCacheP
       misses,
       total,
       hitRate: Math.round(hitRate * 100) / 100,
-      cacheSize: cache.size
+      cacheSize: cacheRef.current.size
     };
-  }, [cacheHits, cacheMisses, cache.size]);
+  }, []);
 
   const isValidEntry = useCallback((entry: CacheEntry<T>) => {
     return Date.now() - entry.timestamp < ttlRef.current;
   }, []);
 
-  // STABILIZED: Use functional updates to prevent stale closures
+  // FIXED: Use refs to read cache without triggering state updates
   const get = useCallback((key: string): T | null => {
     const fullKey = `${cacheKeyRef.current}:${key}`;
     
-    // Access cache state at the moment of call
-    let entry: CacheEntry<T> | undefined;
-    setCache(currentCache => {
-      entry = currentCache.get(fullKey);
-      return currentCache; // No actual change, just accessing current state
-    });
+    // Read directly from ref to avoid state updates during read
+    const entry = cacheRef.current.get(fullKey);
     
     if (entry && isValidEntry(entry)) {
-      setCacheHits(prev => ({
-        ...prev,
-        [cacheKeyRef.current]: (prev[cacheKeyRef.current] || 0) + 1
-      }));
+      // Update cache hits asynchronously to avoid triggering re-renders during read
+      setTimeout(() => {
+        setCacheHits(prev => ({
+          ...prev,
+          [cacheKeyRef.current]: (prev[cacheKeyRef.current] || 0) + 1
+        }));
+      }, 0);
       return entry.data;
     }
     
     if (entry) {
-      // Remove expired entry using functional update
-      setCache(prev => {
-        const newCache = new Map(prev);
-        newCache.delete(fullKey);
-        return newCache;
-      });
+      // Remove expired entry asynchronously
+      setTimeout(() => {
+        setCache(prev => {
+          const newCache = new Map(prev);
+          newCache.delete(fullKey);
+          return newCache;
+        });
+      }, 0);
     }
     
-    setCacheMisses(prev => ({
-      ...prev,
-      [cacheKeyRef.current]: (prev[cacheKeyRef.current] || 0) + 1
-    }));
+    // Update cache misses asynchronously
+    setTimeout(() => {
+      setCacheMisses(prev => ({
+        ...prev,
+        [cacheKeyRef.current]: (prev[cacheKeyRef.current] || 0) + 1
+      }));
+    }, 0);
     
     return null;
   }, [isValidEntry]);
