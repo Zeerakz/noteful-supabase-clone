@@ -22,6 +22,7 @@ export function DatabaseView({ databaseId, workspaceId }: DatabaseViewProps) {
     currentView,
     setCurrentView,
     loading: viewsLoading,
+    error: viewsError,
     createView,
     updateView,
     deleteView,
@@ -63,7 +64,6 @@ export function DatabaseView({ databaseId, workspaceId }: DatabaseViewProps) {
         // Convert old format to new format if needed
         if (Array.isArray(parsedFilters)) {
           const newFilterGroup = createEmptyFilterGroup();
-          // Could convert old filter rules to new format here if needed
           setFilterGroup(newFilterGroup);
         } else if (parsedFilters && parsedFilters.id) {
           setFilterGroup(parsedFilters);
@@ -103,6 +103,7 @@ export function DatabaseView({ databaseId, workspaceId }: DatabaseViewProps) {
     });
   };
 
+  // Show loading state
   if (fieldsLoading || viewsLoading) {
     return (
       <div className="flex items-center justify-center p-8">
@@ -111,6 +112,7 @@ export function DatabaseView({ databaseId, workspaceId }: DatabaseViewProps) {
     );
   }
 
+  // Show error state for critical errors
   if (fieldsError) {
     return (
       <div className="flex items-center justify-center p-8">
@@ -119,8 +121,20 @@ export function DatabaseView({ databaseId, workspaceId }: DatabaseViewProps) {
     );
   }
 
+  // Show warning for views error but continue with default view
+  const showViewsWarning = viewsError && !viewsError.includes('default view');
+
   return (
     <div className="space-y-6">
+      {/* Show warning if views couldn't be loaded */}
+      {showViewsWarning && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3">
+          <div className="text-sm text-yellow-800">
+            Warning: {viewsError}
+          </div>
+        </div>
+      )}
+
       {/* View Manager */}
       <DatabaseViewManager
         views={views}

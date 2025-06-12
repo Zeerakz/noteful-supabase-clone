@@ -1,47 +1,85 @@
-import { useState, useEffect } from 'react';
+
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { SavedDatabaseViewService } from '@/services/savedDatabaseViewService';
 import { SavedDatabaseView } from '@/types/database';
+import { SavedDatabaseViewService } from '@/services/savedDatabaseViewService';
 import { FilterGroup } from '@/types/filters';
 import { SortRule } from '@/components/database/SortingModal';
-import { useToast } from '@/hooks/use-toast';
+import { createEmptyFilterGroup } from '@/utils/filterUtils';
 
 export function useSavedDatabaseViews(databaseId: string, workspaceId: string) {
+  const { user } = useAuth();
   const [views, setViews] = useState<SavedDatabaseView[]>([]);
   const [currentView, setCurrentView] = useState<SavedDatabaseView | null>(null);
   const [loading, setLoading] = useState(true);
-  const { user } = useAuth();
-  const { toast } = useToast();
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchViews = async () => {
-      if (!user || !databaseId) {
-        setLoading(false);
-        return;
-      }
-
-      try {
-        const { data, error } = await SavedDatabaseViewService.getUserViews(databaseId, user.id);
-
-        if (error) {
-          console.warn('Error fetching views:', error);
-          setViews([]);
-        } else if (data) {
-          setViews(data);
-          // Set current view to default or first view
-          const defaultView = data.find(v => v.is_default && v.user_id === user.id);
-          setCurrentView(defaultView || data[0] || null);
-        }
-      } catch (err) {
-        console.warn('Error fetching views:', err);
-        setViews([]);
-      } finally {
-        setLoading(false);
-      }
+  // Create a default view when saved views can't be loaded
+  const createDefaultView = useCallback((): SavedDatabaseView => {
+    return {
+      id: 'default-view',
+      database_id: databaseId,
+      workspace_id: workspaceId,
+      user_id: user?.id || '',
+      name: 'All Campaigns',
+      description: null,
+      view_type: 'table',
+      filters: JSON.stringify(createEmptyFilterGroup()),
+      sorts: JSON.stringify([]),
+      grouping_field_id: null,
+      grouping_collapsed_groups: [],
+      is_shared: false,
+      is_default: true,
+      created_by: user?.id || '',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     };
+  }, [databaseId, workspaceId, user?.id]);
 
-    fetchViews();
-  }, [databaseId, user?.id]);
+  const fetchViews = useCallback(async () => {
+    if (!user || !databaseId) {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const { data, error: fetchError } = await SavedDatabaseViewService.getUserViews(databaseId, user.id);
+      
+      if (fetchError) {
+        console.warn('Failed to fetch saved views, using default view:', fetchError);
+        // Use default view when saved views can't be loaded
+        const defaultView = createDefaultView();
+        setViews([defaultView]);
+        setCurrentView(defaultView);
+      } else {
+        const viewsData = data || [];
+        
+        if (viewsData.length === 0) {
+          // No saved views exist, create a default view
+          const defaultView = createDefaultView();
+          setViews([defaultView]);
+          setCurrentView(defaultView);
+        } else {
+          setViews(viewsData);
+          // Set the default view or the first view as current
+          const defaultView = viewsData.find(v => v.is_default) || viewsData[0];
+          setCurrentView(defaultView);
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching views:', err);
+      // Fallback to default view
+      const defaultView = createDefaultView();
+      setViews([defaultView]);
+      setCurrentView(defaultView);
+      setError('Using default view due to system error');
+    } finally {
+      setLoading(false);
+    }
+  }, [user, databaseId, createDefaultView]);
 
   const createView = async (
     name: string,
@@ -51,7 +89,7 @@ export function useSavedDatabaseViews(databaseId: string, workspaceId: string) {
     groupingFieldId?: string,
     description?: string
   ) => {
-    if (!user) return null;
+    if (!user) return { error: 'User not authenticated' };
 
     try {
       const { data, error } = await SavedDatabaseViewService.createView(
@@ -67,30 +105,18 @@ export function useSavedDatabaseViews(databaseId: string, workspaceId: string) {
       );
 
       if (error) {
-        toast({
-          title: "Error",
-          description: error,
-          variant: "destructive",
-        });
-        return null;
+        return { error };
       }
 
       if (data) {
         setViews(prev => [...prev, data]);
-        toast({
-          title: "Success",
-          description: `View "${name}" created successfully`,
-        });
-        return data;
+        return { data };
       }
     } catch (err) {
-      toast({
-        title: "Error",
-        description: "Failed to create view",
-        variant: "destructive",
-      });
+      return { error: err instanceof Error ? err.message : 'Failed to create view' };
     }
-    return null;
+
+    return { error: 'Unknown error occurred' };
   };
 
   const updateView = async (viewId: string, updates: Partial<SavedDatabaseView>) => {
@@ -98,12 +124,7 @@ export function useSavedDatabaseViews(databaseId: string, workspaceId: string) {
       const { data, error } = await SavedDatabaseViewService.updateView(viewId, updates);
 
       if (error) {
-        toast({
-          title: "Error",
-          description: error,
-          variant: "destructive",
-        });
-        return;
+        return { error };
       }
 
       if (data) {
@@ -111,18 +132,13 @@ export function useSavedDatabaseViews(databaseId: string, workspaceId: string) {
         if (currentView?.id === viewId) {
           setCurrentView(data);
         }
-        toast({
-          title: "Success",
-          description: "View updated successfully",
-        });
+        return { data };
       }
     } catch (err) {
-      toast({
-        title: "Error",
-        description: "Failed to update view",
-        variant: "destructive",
-      });
+      return { error: err instanceof Error ? err.message : 'Failed to update view' };
     }
+
+    return { error: 'Unknown error occurred' };
   };
 
   const deleteView = async (viewId: string) => {
@@ -130,29 +146,20 @@ export function useSavedDatabaseViews(databaseId: string, workspaceId: string) {
       const { error } = await SavedDatabaseViewService.deleteView(viewId);
 
       if (error) {
-        toast({
-          title: "Error",
-          description: error,
-          variant: "destructive",
-        });
-        return;
+        return { error };
       }
 
       setViews(prev => prev.filter(v => v.id !== viewId));
+      
+      // If we deleted the current view, switch to the first remaining view
       if (currentView?.id === viewId) {
         const remainingViews = views.filter(v => v.id !== viewId);
-        setCurrentView(remainingViews[0] || null);
+        setCurrentView(remainingViews.length > 0 ? remainingViews[0] : null);
       }
-      toast({
-        title: "Success",
-        description: "View deleted successfully",
-      });
+
+      return { error: null };
     } catch (err) {
-      toast({
-        title: "Error",
-        description: "Failed to delete view",
-        variant: "destructive",
-      });
+      return { error: err instanceof Error ? err.message : 'Failed to delete view' };
     }
   };
 
@@ -161,73 +168,57 @@ export function useSavedDatabaseViews(databaseId: string, workspaceId: string) {
       const { data, error } = await SavedDatabaseViewService.duplicateView(viewId, newName);
 
       if (error) {
-        toast({
-          title: "Error",
-          description: error,
-          variant: "destructive",
-        });
-        return null;
+        return { error };
       }
 
       if (data) {
         setViews(prev => [...prev, data]);
-        toast({
-          title: "Success",
-          description: `View "${newName}" created successfully`,
-        });
-        return data;
+        return { data };
       }
     } catch (err) {
-      toast({
-        title: "Error",
-        description: "Failed to duplicate view",
-        variant: "destructive",
-      });
+      return { error: err instanceof Error ? err.message : 'Failed to duplicate view' };
     }
-    return null;
+
+    return { error: 'Unknown error occurred' };
   };
 
   const setDefaultView = async (viewId: string) => {
-    if (!user) return;
+    if (!user) return { error: 'User not authenticated' };
 
     try {
       const { error } = await SavedDatabaseViewService.setDefaultView(databaseId, viewId, user.id);
 
       if (error) {
-        toast({
-          title: "Error",
-          description: error,
-          variant: "destructive",
-        });
-        return;
+        return { error };
       }
 
-      setViews(prev => prev.map(v => ({ 
-        ...v, 
-        is_default: v.id === viewId && v.user_id === user.id 
+      // Update the views to reflect the new default
+      setViews(prev => prev.map(v => ({
+        ...v,
+        is_default: v.id === viewId
       })));
-      toast({
-        title: "Success",
-        description: "Default view updated",
-      });
+
+      return { error: null };
     } catch (err) {
-      toast({
-        title: "Error",
-        description: "Failed to set default view",
-        variant: "destructive",
-      });
+      return { error: err instanceof Error ? err.message : 'Failed to set default view' };
     }
   };
+
+  useEffect(() => {
+    fetchViews();
+  }, [fetchViews]);
 
   return {
     views,
     currentView,
     setCurrentView,
     loading,
+    error,
     createView,
     updateView,
     deleteView,
     duplicateView,
     setDefaultView,
+    refetch: fetchViews,
   };
 }
