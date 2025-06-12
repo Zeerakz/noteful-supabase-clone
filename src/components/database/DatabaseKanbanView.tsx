@@ -1,20 +1,37 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Plus, Kanban } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Plus, Kanban, Settings } from 'lucide-react';
 import { DragDropContext } from 'react-beautiful-dnd';
 import { KanbanColumn } from './kanban/KanbanColumn';
 import { useKanbanData } from './kanban/hooks/useKanbanData';
 import { useKanbanDragDrop } from './kanban/hooks/useKanbanDragDrop';
+import { DatabaseField } from '@/types/database';
 
 interface DatabaseKanbanViewProps {
   databaseId: string;
   workspaceId: string;
+  fields?: DatabaseField[];
 }
 
-export function DatabaseKanbanView({ databaseId, workspaceId }: DatabaseKanbanViewProps) {
+export function DatabaseKanbanView({ databaseId, workspaceId, fields = [] }: DatabaseKanbanViewProps) {
+  const [selectedFieldId, setSelectedFieldId] = useState<string>('');
+  
+  // Find all select-type fields for grouping options
+  const selectFields = fields.filter(field => 
+    field.type === 'select' || field.type === 'multi_select'
+  );
+
+  // Set default select field
+  useEffect(() => {
+    if (selectFields.length > 0 && !selectedFieldId) {
+      setSelectedFieldId(selectFields[0].id);
+    }
+  }, [selectFields, selectedFieldId]);
+
   const {
-    fields,
+    fields: allFields,
     pages,
     columns,
     loading,
@@ -22,16 +39,22 @@ export function DatabaseKanbanView({ databaseId, workspaceId }: DatabaseKanbanVi
     selectField,
     setColumns,
     setPages
-  } = useKanbanData({ databaseId });
+  } = useKanbanData({ 
+    databaseId, 
+    selectedFieldId: selectedFieldId || selectFields[0]?.id 
+  });
 
   const { handleDragEnd } = useKanbanDragDrop({
-    fields,
+    fields: allFields,
     pages,
     columns,
     selectField,
     setColumns,
     setPages
   });
+
+  // Get the currently selected field for display
+  const currentSelectField = selectFields.find(field => field.id === selectedFieldId) || selectFields[0];
 
   if (loading) {
     return (
@@ -52,7 +75,7 @@ export function DatabaseKanbanView({ databaseId, workspaceId }: DatabaseKanbanVi
     );
   }
 
-  if (!selectField) {
+  if (selectFields.length === 0) {
     return (
       <div className="text-center py-12">
         <Kanban className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
@@ -70,17 +93,44 @@ export function DatabaseKanbanView({ databaseId, workspaceId }: DatabaseKanbanVi
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-lg font-medium">Kanban View</h3>
-          <p className="text-sm text-muted-foreground">
-            Grouped by {selectField.name}
-          </p>
+        <div className="flex items-center gap-4">
+          <div>
+            <h3 className="text-lg font-medium">Kanban View</h3>
+            <p className="text-sm text-muted-foreground">
+              Grouped by select field
+            </p>
+          </div>
+          
+          {selectFields.length > 1 && (
+            <div className="flex items-center gap-2">
+              <Settings className="h-4 w-4 text-muted-foreground" />
+              <Select value={selectedFieldId} onValueChange={setSelectedFieldId}>
+                <SelectTrigger className="w-48">
+                  <SelectValue placeholder="Group by field" />
+                </SelectTrigger>
+                <SelectContent>
+                  {selectFields.map((field) => (
+                    <SelectItem key={field.id} value={field.id}>
+                      {field.name} ({field.type === 'multi_select' ? 'Multi-select' : 'Select'})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
         </div>
+        
         <Button size="sm" className="gap-2">
           <Plus className="h-4 w-4" />
           Add Card
         </Button>
       </div>
+
+      {currentSelectField && (
+        <div className="text-sm text-muted-foreground">
+          Currently grouping by: <span className="font-medium">{currentSelectField.name}</span>
+        </div>
+      )}
 
       <DragDropContext onDragEnd={handleDragEnd}>
         <div className="flex gap-6 overflow-x-auto pb-4">
@@ -88,7 +138,7 @@ export function DatabaseKanbanView({ databaseId, workspaceId }: DatabaseKanbanVi
             <KanbanColumn
               key={column.id}
               column={column}
-              fields={fields}
+              fields={allFields}
             />
           ))}
         </div>
