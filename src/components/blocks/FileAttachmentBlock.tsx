@@ -2,7 +2,6 @@
 import React, { useState } from 'react';
 import { Block } from '@/hooks/useBlocks';
 import { Button } from '@/components/ui/button';
-import { Trash } from 'lucide-react';
 import { CommentIcon } from './CommentIcon';
 import { CommentThreadPanel } from './CommentThreadPanel';
 import { useComments } from '@/hooks/useComments';
@@ -87,15 +86,6 @@ export function FileAttachmentBlock({ block, onUpdate, onDelete, isEditable }: F
                     onClick={() => setIsCommentPanelOpen(true)}
                   />
                 </CommentThreadPanel>
-                
-                <Button
-                  onClick={removeFile}
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 w-8 p-0 text-destructive hover:text-destructive/80"
-                >
-                  <Trash className="h-4 w-4" />
-                </Button>
                 
                 <Button
                   onClick={onDelete}
