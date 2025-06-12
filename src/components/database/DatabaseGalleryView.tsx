@@ -4,7 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Plus, RefreshCw, AlertTriangle, FileText, File, Images } from 'lucide-react';
+import { Plus, RefreshCw, AlertTriangle, Images, File } from 'lucide-react';
 import { useFilteredDatabasePages } from '@/hooks/useFilteredDatabasePages';
 import { DatabaseField } from '@/types/database';
 import { FilterRule } from '@/components/database/FilterModal';
@@ -77,13 +77,13 @@ export function DatabaseGalleryView({
       for (const field of mediaFields) {
         const value = properties[field.id];
         if (value) {
-          // For file attachment fields, the value might be a file ID or path
           if (field.type === 'file_attachment') {
             mediaType = 'file';
-            fileName = value; // This might need to be resolved to actual file info
+            fileName = value;
+            mediaUrl = value;
           } else if (field.type === 'image') {
             mediaType = 'image';
-            mediaUrl = value; // This might be a storage path that needs signed URL
+            mediaUrl = value;
           }
           break;
         }
@@ -107,13 +107,11 @@ export function DatabaseGalleryView({
         .filter(page => page.mediaType === 'image' && page.mediaUrl && !mediaUrls[page.id])
         .map(async (page) => {
           try {
-            // Try to generate a signed URL using the edge function
-            const { data, error } = await supabase.functions.invoke('image-upload', {
-              method: 'GET',
-              body: JSON.stringify({ path: page.mediaUrl })
-            });
+            const { data, error } = await supabase.storage
+              .from('planna_uploads')
+              .createSignedUrl(page.mediaUrl!, 3600); // 1 hour expiry
 
-            if (data?.signedUrl) {
+            if (data?.signedUrl && !error) {
               return { pageId: page.id, url: data.signedUrl };
             }
           } catch (error) {
@@ -266,6 +264,7 @@ export function DatabaseGalleryView({
             key={page.id}
             page={page}
             signedUrl={mediaUrls[page.id]}
+            fields={fields}
           />
         ))}
       </div>
@@ -276,11 +275,17 @@ export function DatabaseGalleryView({
 interface MediaCardProps {
   page: PageWithProperties;
   signedUrl?: string;
+  fields: DatabaseField[];
 }
 
-function MediaCard({ page, signedUrl }: MediaCardProps) {
+function MediaCard({ page, signedUrl, fields }: MediaCardProps) {
+  const getFieldName = (fieldId: string) => {
+    const field = fields.find(f => f.id === fieldId);
+    return field?.name || '';
+  };
+
   return (
-    <Card className="overflow-hidden hover:shadow-md transition-shadow group">
+    <Card className="overflow-hidden hover:shadow-md transition-shadow group cursor-pointer">
       <div className="aspect-square relative bg-muted">
         {page.mediaType === 'image' ? (
           signedUrl ? (
@@ -289,7 +294,6 @@ function MediaCard({ page, signedUrl }: MediaCardProps) {
               alt={page.title}
               className="w-full h-full object-cover"
               onError={(e) => {
-                // Hide broken images
                 (e.target as HTMLImageElement).style.display = 'none';
               }}
             />
@@ -309,20 +313,23 @@ function MediaCard({ page, signedUrl }: MediaCardProps) {
       </div>
       
       <CardContent className="p-3">
-        <h4 className="font-medium text-sm truncate" title={page.title}>
+        <h4 className="font-medium text-sm truncate mb-2" title={page.title}>
           {page.title || 'Untitled'}
         </h4>
         
-        {/* Show additional properties */}
-        <div className="mt-2 space-y-1">
-          {Object.entries(page.properties).slice(0, 2).map(([fieldId, value]) => {
-            if (!value || fieldId === page.mediaUrl) return null;
-            return (
-              <div key={fieldId} className="text-xs text-muted-foreground truncate">
-                {value}
+        {/* Show additional properties (non-media fields) */}
+        <div className="space-y-1">
+          {Object.entries(page.properties)
+            .filter(([fieldId, value]) => {
+              const field = fields.find(f => f.id === fieldId);
+              return value && field && !['image', 'file_attachment'].includes(field.type);
+            })
+            .slice(0, 2)
+            .map(([fieldId, value]) => (
+              <div key={fieldId} className="text-xs text-muted-foreground">
+                <span className="font-medium">{getFieldName(fieldId)}:</span> {value}
               </div>
-            );
-          })}
+            ))}
         </div>
       </CardContent>
     </Card>
