@@ -33,8 +33,8 @@ export function EnhancedTableHeader({
   const isAllSelected = totalCount > 0 && selectedCount === totalCount;
   const isPartiallySelected = selectedCount > 0 && selectedCount < totalCount;
 
-  const handleSelectAll = (checked: boolean) => {
-    if (onSelectAll) {
+  const handleSelectAll = (checked: boolean | 'indeterminate') => {
+    if (onSelectAll && typeof checked === 'boolean') {
       onSelectAll(checked);
     }
   };
@@ -52,10 +52,7 @@ export function EnhancedTableHeader({
         <TableHead className="w-[48px] p-2 sticky left-0 z-40 bg-background/98 backdrop-blur-md border-r border-border/80 shadow-[2px_0_4px_rgba(0,0,0,0.05)]">
           <div className="flex items-center justify-center">
             <Checkbox
-              checked={isAllSelected}
-              ref={(el) => {
-                if (el) el.indeterminate = isPartiallySelected;
-              }}
+              checked={isPartiallySelected ? 'indeterminate' : isAllSelected}
               onCheckedChange={handleSelectAll}
               className="transition-opacity duration-200"
             />
