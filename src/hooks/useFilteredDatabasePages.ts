@@ -32,6 +32,12 @@ export function useFilteredDatabasePages({ databaseId, filterGroup, fields, sort
   
   // Only update when the serialized values actually change, but return the original objects
   const stableFilterGroup = useMemo(() => {
+    console.log('useFilteredDatabasePages: Checking filterGroup stability', { 
+      currentStr: currentFilterGroupStr, 
+      prevStr: prevFilterGroupStrRef.current,
+      changed: prevFilterGroupStrRef.current !== currentFilterGroupStr 
+    });
+    
     if (prevFilterGroupStrRef.current !== currentFilterGroupStr) {
       prevFilterGroupStrRef.current = currentFilterGroupStr;
       prevFilterGroupRef.current = filterGroup;
@@ -41,6 +47,12 @@ export function useFilteredDatabasePages({ databaseId, filterGroup, fields, sort
   }, [currentFilterGroupStr, filterGroup]);
   
   const stableFields = useMemo(() => {
+    console.log('useFilteredDatabasePages: Checking fields stability', { 
+      currentStr: currentFieldsStr, 
+      prevStr: prevFieldsStrRef.current,
+      changed: prevFieldsStrRef.current !== currentFieldsStr 
+    });
+    
     if (prevFieldsStrRef.current !== currentFieldsStr) {
       prevFieldsStrRef.current = currentFieldsStr;
       prevFieldsRef.current = fields;
@@ -50,6 +62,12 @@ export function useFilteredDatabasePages({ databaseId, filterGroup, fields, sort
   }, [currentFieldsStr, fields]);
   
   const stableSortRules = useMemo(() => {
+    console.log('useFilteredDatabasePages: Checking sortRules stability', { 
+      currentStr: currentSortRulesStr, 
+      prevStr: prevSortRulesStrRef.current,
+      changed: prevSortRulesStrRef.current !== currentSortRulesStr 
+    });
+    
     if (prevSortRulesStrRef.current !== currentSortRulesStr) {
       prevSortRulesStrRef.current = currentSortRulesStr;
       prevSortRulesRef.current = sortRules;
@@ -60,7 +78,12 @@ export function useFilteredDatabasePages({ databaseId, filterGroup, fields, sort
 
   // Create a stable query function that doesn't change on every render
   const queryFunction = useCallback(() => {
-    console.log('Query function called for database:', databaseId);
+    console.log('useFilteredDatabasePages: Query function called', { 
+      databaseId,
+      filterRules: stableFilterGroup.rules.length,
+      fieldsCount: stableFields.length,
+      sortRulesCount: stableSortRules.length
+    });
     return DatabaseQueryService.fetchDatabasePages(databaseId, stableFilterGroup, stableFields, stableSortRules);
   }, [databaseId, stableFilterGroup, stableFields, stableSortRules]);
 
@@ -71,7 +94,10 @@ export function useFilteredDatabasePages({ databaseId, filterGroup, fields, sort
 
   // Memoize the fetch function to prevent unnecessary re-executions
   const fetchPages = useCallback(async () => {
+    console.log('useFilteredDatabasePages: fetchPages called', { databaseId });
+    
     if (!databaseId) {
+      console.log('useFilteredDatabasePages: No databaseId, clearing pages');
       setPages([]);
       setLoading(false);
       return;
@@ -81,19 +107,22 @@ export function useFilteredDatabasePages({ databaseId, filterGroup, fields, sort
       setLoading(true);
       setError(null);
       
-      console.log('Fetching pages with filter group:', stableFilterGroup, 'sorts:', stableSortRules.length);
+      console.log('useFilteredDatabasePages: Executing query', { 
+        filterGroup: stableFilterGroup, 
+        sortCount: stableSortRules.length 
+      });
       const { data, error: fetchError } = await executeWithRetry();
 
       if (fetchError) {
-        console.error('Pages fetch error:', fetchError);
+        console.error('useFilteredDatabasePages: Pages fetch error:', fetchError);
         setError(fetchError);
         setPages([]);
       } else {
-        console.log('Pages fetched successfully:', data?.length || 0);
+        console.log('useFilteredDatabasePages: Pages fetched successfully', { count: data?.length || 0 });
         setPages(data || []);
       }
     } catch (err) {
-      console.error('Pages fetch exception:', err);
+      console.error('useFilteredDatabasePages: Pages fetch exception:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch pages');
       setPages([]);
     } finally {
@@ -103,10 +132,12 @@ export function useFilteredDatabasePages({ databaseId, filterGroup, fields, sort
 
   // Use effect with stable dependencies
   useEffect(() => {
+    console.log('useFilteredDatabasePages: Effect triggered, calling fetchPages');
     fetchPages();
   }, [fetchPages]);
 
   const refetch = useCallback(async () => {
+    console.log('useFilteredDatabasePages: Manual refetch requested');
     try {
       setLoading(true);
       const { data, error: fetchError } = await executeWithRetry();

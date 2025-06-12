@@ -51,6 +51,16 @@ export function useDatabaseTableView({
   const { toast } = useToast();
   const { startTimer, endTimer } = usePerformanceMetrics();
 
+  console.log('useDatabaseTableView: Hook called', { 
+    databaseId, 
+    workspaceId, 
+    fieldsCount: fields.length,
+    filterRules: filterGroup.rules.length,
+    sortRules: sortRules.length,
+    enablePagination,
+    enableVirtualScrolling
+  });
+
   // Use refs to stabilize fields to prevent infinite re-renders
   const prevFieldsRef = useRef<DatabaseField[]>();
   const prevFieldsStrRef = useRef<string>('');
@@ -58,6 +68,12 @@ export function useDatabaseTableView({
   const currentFieldsStr = JSON.stringify(fields);
   
   const stableFields = useMemo(() => {
+    console.log('useDatabaseTableView: Checking fields stability', { 
+      currentStr: currentFieldsStr, 
+      prevStr: prevFieldsStrRef.current,
+      changed: prevFieldsStrRef.current !== currentFieldsStr 
+    });
+    
     if (prevFieldsStrRef.current !== currentFieldsStr) {
       prevFieldsStrRef.current = currentFieldsStr;
       prevFieldsRef.current = fields;
@@ -67,27 +83,36 @@ export function useDatabaseTableView({
   }, [currentFieldsStr, fields]);
   
   // Stabilize cache configuration to prevent re-creation
-  const cacheConfig = useMemo(() => ({
-    cacheKey: `table-${databaseId}`,
-    ttl: 5 * 60 * 1000 // 5 minutes
-  }), [databaseId]);
+  const cacheConfig = useMemo(() => {
+    const config = {
+      cacheKey: `table-${databaseId}`,
+      ttl: 5 * 60 * 1000 // 5 minutes
+    };
+    console.log('useDatabaseTableView: Cache config created', config);
+    return config;
+  }, [databaseId]);
   
   const cache = useViewCache(cacheConfig);
 
   // Start performance tracking - memoize to prevent infinite re-renders
-  const performanceMetadata = useMemo(() => ({
-    databaseId, 
-    enablePagination, 
-    enableVirtualScrolling,
-    filterCount: filterGroup.rules.length,
-    sortCount: sortRules.length
-  }), [databaseId, enablePagination, enableVirtualScrolling, filterGroup.rules.length, sortRules.length]);
+  const performanceMetadata = useMemo(() => {
+    const metadata = {
+      databaseId, 
+      enablePagination, 
+      enableVirtualScrolling,
+      filterCount: filterGroup.rules.length,
+      sortCount: sortRules.length
+    };
+    console.log('useDatabaseTableView: Performance metadata created', metadata);
+    return metadata;
+  }, [databaseId, enablePagination, enableVirtualScrolling, filterGroup.rules.length, sortRules.length]);
 
-  // Track if performance timer has started
+  // Track if performance timer has started to prevent multiple starts
   const performanceStartedRef = useRef(false);
 
   useEffect(() => {
     if (!performanceStartedRef.current) {
+      console.log('useDatabaseTableView: Starting performance timer');
       startTimer('page_load', performanceMetadata);
       performanceStartedRef.current = true;
     }
@@ -105,9 +130,16 @@ export function useDatabaseTableView({
     sortRules
   });
 
+  console.log('useDatabaseTableView: Pages data', { 
+    pagesCount: pages.length, 
+    pagesLoading, 
+    pagesError 
+  });
+
   // End performance tracking when pages load
   useEffect(() => {
     if (!pagesLoading && pages.length > 0 && performanceStartedRef.current) {
+      console.log('useDatabaseTableView: Ending performance timer');
       endTimer('page_load');
       performanceStartedRef.current = false;
     }
@@ -116,22 +148,37 @@ export function useDatabaseTableView({
   const propertyUpdateMutation = useOptimisticPropertyUpdate(databaseId);
 
   // Pagination - memoize configuration
-  const paginationConfig = useMemo(() => ({
-    totalItems: pages.length,
-    itemsPerPage,
-    initialPage: 1
-  }), [pages.length, itemsPerPage]);
+  const paginationConfig = useMemo(() => {
+    const config = {
+      totalItems: pages.length,
+      itemsPerPage,
+      initialPage: 1
+    };
+    console.log('useDatabaseTableView: Pagination config', config);
+    return config;
+  }, [pages.length, itemsPerPage]);
 
   const pagination = usePagination(paginationConfig);
 
   // Get current page items - memoize to prevent unnecessary recalculations
   const currentPageItems = useMemo(() => {
-    if (!enablePagination) return pages;
-    return pages.slice(pagination.startIndex, pagination.endIndex);
+    const items = !enablePagination ? pages : pages.slice(pagination.startIndex, pagination.endIndex);
+    console.log('useDatabaseTableView: Current page items', { 
+      totalPages: pages.length, 
+      currentItems: items.length,
+      enablePagination,
+      startIndex: pagination.startIndex,
+      endIndex: pagination.endIndex
+    });
+    return items;
   }, [pages, enablePagination, pagination.startIndex, pagination.endIndex]);
 
   // Lazy load properties for visible pages
-  const pageIds = useMemo(() => currentPageItems.map(page => page.id), [currentPageItems]);
+  const pageIds = useMemo(() => {
+    const ids = currentPageItems.map(page => page.id);
+    console.log('useDatabaseTableView: Page IDs for property loading', { count: ids.length });
+    return ids;
+  }, [currentPageItems]);
   
   const {
     getPropertiesForPage,
@@ -146,6 +193,7 @@ export function useDatabaseTableView({
   // Load properties for current page items - memoize callback
   const loadPageProperties = useCallback(async () => {
     if (pageIds.length > 0) {
+      console.log('useDatabaseTableView: Loading properties for pages', { count: pageIds.length });
       startTimer('property_load');
       await loadPropertiesForPages(pageIds);
       endTimer('property_load');
@@ -153,11 +201,14 @@ export function useDatabaseTableView({
   }, [pageIds, loadPropertiesForPages, startTimer, endTimer]);
 
   useEffect(() => {
+    console.log('useDatabaseTableView: Effect triggered to load page properties');
     loadPageProperties();
   }, [loadPageProperties]);
 
   // Transform pages data with properties - memoize to prevent re-computation
   const pagesWithProperties: PageWithProperties[] = useMemo(() => {
+    console.log('useDatabaseTableView: Computing pages with properties', { pageCount: currentPageItems.length });
+    
     return currentPageItems.map(page => {
       const cacheKey = `page-${page.id}`;
       let properties = cache.get(cacheKey);
@@ -194,6 +245,7 @@ export function useDatabaseTableView({
     if (!user) return;
 
     try {
+      console.log('useDatabaseTableView: Creating new row');
       startTimer('create_row');
       const { data, error } = await PageService.createPage(
         workspaceId,
@@ -228,6 +280,7 @@ export function useDatabaseTableView({
 
   const handleDeleteRow = useCallback(async (pageId: string) => {
     try {
+      console.log('useDatabaseTableView: Deleting row', { pageId });
       startTimer('delete_row');
       const { error } = await PageService.deletePage(pageId);
       if (error) {
@@ -259,6 +312,7 @@ export function useDatabaseTableView({
     if (!newTitle.trim()) return;
 
     try {
+      console.log('useDatabaseTableView: Updating title', { pageId, newTitle });
       startTimer('update_title');
       const { error } = await PageService.updatePage(pageId, { title: newTitle.trim() });
       if (error) {
@@ -283,6 +337,7 @@ export function useDatabaseTableView({
   }, [startTimer, endTimer, toast, cache, refetchPages]);
 
   const handlePropertyUpdate = useCallback((pageId: string, fieldId: string, value: string) => {
+    console.log('useDatabaseTableView: Updating property', { pageId, fieldId, value });
     cache.invalidate(`page-${pageId}`);
     propertyUpdateMutation.mutate({
       pageId,
@@ -290,6 +345,13 @@ export function useDatabaseTableView({
       value
     });
   }, [cache, propertyUpdateMutation]);
+
+  console.log('useDatabaseTableView: Returning data', { 
+    pagesWithPropertiesCount: pagesWithProperties.length,
+    pagesLoading,
+    pagesError,
+    totalPages: pages.length
+  });
 
   return {
     pagesWithProperties,

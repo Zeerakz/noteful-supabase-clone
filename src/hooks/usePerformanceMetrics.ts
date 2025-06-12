@@ -14,6 +14,8 @@ export function usePerformanceMetrics() {
   const metadataStore = useRef<Map<string, Record<string, any>>>(new Map());
 
   const startTimer = useCallback((name: string, metadata?: Record<string, any>) => {
+    console.log('usePerformanceMetrics: startTimer called', { name, metadata });
+    
     timers.current.set(name, performance.now());
     if (metadata) {
       metadataStore.current.set(name, metadata);
@@ -21,10 +23,14 @@ export function usePerformanceMetrics() {
   }, []);
 
   const endTimer = useCallback((name: string) => {
+    console.log('usePerformanceMetrics: endTimer called', { name });
+    
     const startTime = timers.current.get(name);
     if (startTime) {
       const duration = performance.now() - startTime;
       const metadata = metadataStore.current.get(name);
+      
+      console.log('usePerformanceMetrics: Timer completed', { name, duration, metadata });
       
       const metric: PerformanceMetric = {
         name,
@@ -38,6 +44,8 @@ export function usePerformanceMetrics() {
       metadataStore.current.delete(name);
       
       return duration;
+    } else {
+      console.warn('usePerformanceMetrics: Timer not found', { name });
     }
     return 0;
   }, []);
@@ -82,6 +90,7 @@ export function usePerformanceMetrics() {
   }, [getAverageTime, getSlowQueries, metrics]);
 
   const clearMetrics = useCallback(() => {
+    console.log('usePerformanceMetrics: clearMetrics called');
     setMetrics([]);
     timers.current.clear();
     metadataStore.current.clear();
