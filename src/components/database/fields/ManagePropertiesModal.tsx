@@ -60,6 +60,10 @@ export function ManagePropertiesModal({
     }
   };
 
+  const handleDeleteConfirmation = async (fieldId: string) => {
+    setDeleteFieldId(fieldId);
+  };
+
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
@@ -76,7 +80,7 @@ export function ManagePropertiesModal({
               onFieldsReorder={onFieldsReorder}
               onFieldUpdate={onFieldUpdate}
               onFieldDuplicate={handleDuplicateField}
-              onFieldDelete={setDeleteFieldId}
+              onFieldDelete={handleDeleteConfirmation}
               onAddProperty={() => setShowPropertyWizard(true)}
             />
             
