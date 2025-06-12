@@ -43,7 +43,9 @@ export function VirtualizedTable({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-[200px] sticky left-0 bg-muted/50">Title</TableHead>
+              <TableHead className="w-[200px] sticky left-0 bg-muted/50">
+                Title
+              </TableHead>
               {fields.map((field) => (
                 <TableHead key={field.id} className="min-w-[150px]">
                   {field.name}
@@ -61,7 +63,7 @@ export function VirtualizedTable({
       {/* Scrollable body with virtualization */}
       <div 
         ref={parentRef}
-        className="overflow-auto relative"
+        className="overflow-auto"
         style={{ maxHeight }}
       >
         <VirtualizedTableBody
