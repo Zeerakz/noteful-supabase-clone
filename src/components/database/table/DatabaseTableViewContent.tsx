@@ -4,8 +4,10 @@ import { DatabaseField, PageProperty } from '@/types/database';
 import { DatabaseTableHeader } from './DatabaseTableHeader';
 import { DatabaseTableRow } from './DatabaseTableRow';
 import { Table, TableBody, TableCaption, TableHead, TableHeader, TableRow, TableCell } from '@/components/ui/table';
+import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Pagination } from '@/components/ui/pagination';
+import { Settings } from 'lucide-react';
 import { SortRule } from '@/components/database/SortingModal';
 
 interface PageWithProperties {
@@ -42,6 +44,8 @@ interface DatabaseTableViewContentProps {
   onDeleteRow: (pageId: string) => Promise<void>;
   onRefetch: () => void;
   onFieldsChange?: () => void;
+  onFieldReorder?: (draggedFieldId: string, targetFieldId: string, position: 'before' | 'after') => void;
+  onShowManageProperties?: () => void;
   pagination: PaginationInfo | null;
   totalPages: number;
   databaseId: string;
@@ -62,6 +66,8 @@ export function DatabaseTableViewContent({
   onDeleteRow,
   onRefetch,
   onFieldsChange,
+  onFieldReorder,
+  onShowManageProperties,
   pagination,
   totalPages,
   databaseId,
@@ -121,12 +127,34 @@ export function DatabaseTableViewContent({
 
   return (
     <div className="flex flex-col h-full">
+      {/* Header with Manage Properties Button */}
+      <div className="flex items-center justify-between p-4 border-b border-border">
+        <div className="flex items-center gap-2">
+          <h3 className="text-lg font-semibold">Table View</h3>
+          <span className="text-sm text-muted-foreground">
+            {pagesWithProperties.length} {pagesWithProperties.length === 1 ? 'row' : 'rows'}
+          </span>
+        </div>
+        {onShowManageProperties && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onShowManageProperties}
+            className="gap-2"
+          >
+            <Settings className="h-4 w-4" />
+            Manage Properties
+          </Button>
+        )}
+      </div>
+
       <div className="flex-1 min-h-0">
         <DatabaseTableHeader
           fields={fields}
           sortRules={sortRules}
           onSort={handleSort}
           onFieldsChange={onFieldsChange}
+          onFieldReorder={onFieldReorder}
         />
         <div className="overflow-auto">
           <Table className="border-none">

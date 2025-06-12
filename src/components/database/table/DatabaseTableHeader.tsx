@@ -9,9 +9,16 @@ interface DatabaseTableHeaderProps {
   sortRules: SortRule[];
   onSort: (fieldId: string, direction: 'asc' | 'desc') => void;
   onFieldsChange?: () => void;
+  onFieldReorder?: (draggedFieldId: string, targetFieldId: string, position: 'before' | 'after') => void;
 }
 
-export function DatabaseTableHeader({ fields, sortRules, onSort, onFieldsChange }: DatabaseTableHeaderProps) {
+export function DatabaseTableHeader({ 
+  fields, 
+  sortRules, 
+  onSort, 
+  onFieldsChange,
+  onFieldReorder 
+}: DatabaseTableHeaderProps) {
   return (
     <div className="sticky top-0 z-10 bg-background border-b border-border">
       <div className="flex">
@@ -32,7 +39,9 @@ export function DatabaseTableHeader({ fields, sortRules, onSort, onFieldsChange 
             sortRules={sortRules}
             onSort={onSort}
             onFieldsChange={onFieldsChange}
+            onFieldReorder={onFieldReorder}
             isResizable={false}
+            isDraggable={false}
           />
         </div>
 
@@ -44,6 +53,8 @@ export function DatabaseTableHeader({ fields, sortRules, onSort, onFieldsChange 
               sortRules={sortRules}
               onSort={onSort}
               onFieldsChange={onFieldsChange}
+              onFieldReorder={onFieldReorder}
+              isDraggable={true}
             />
           </div>
         ))}

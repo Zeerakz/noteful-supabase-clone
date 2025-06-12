@@ -45,9 +45,11 @@ interface DatabaseColumnHeaderProps {
   onSort: (fieldId: string, direction: 'asc' | 'desc') => void;
   onResize?: (fieldId: string, width: number) => void;
   onFieldsChange?: () => void;
+  onFieldReorder?: (draggedFieldId: string, targetFieldId: string, position: 'before' | 'after') => void;
   className?: string;
   width?: number;
   isResizable?: boolean;
+  isDraggable?: boolean;
 }
 
 const fieldTypeIcons = {
@@ -86,13 +88,17 @@ export function DatabaseColumnHeader({
   onSort,
   onResize,
   onFieldsChange,
+  onFieldReorder,
   className = '',
   width,
-  isResizable = true
+  isResizable = true,
+  isDraggable = true
 }: DatabaseColumnHeaderProps) {
   const [isResizing, setIsResizing] = useState(false);
   const [resizeStartX, setResizeStartX] = useState(0);
   const [resizeStartWidth, setResizeStartWidth] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragOver, setDragOver] = useState<'before' | 'after' | null>(null);
 
   const FieldIcon = fieldTypeIcons[field.type as keyof typeof fieldTypeIcons] || Type;
   
@@ -100,17 +106,13 @@ export function DatabaseColumnHeader({
   const sortDirection = currentSort?.direction;
   
   const hasDescription = field.name in fieldDescriptions;
-
-  // Get the database ID from the field (we'll need to ensure this is available)
   const databaseId = field.database_id;
-  
   const fieldOperations = useDatabaseFieldOperations(databaseId, onFieldsChange);
 
   const handleSortClick = () => {
     if (sortDirection === 'asc') {
       onSort(field.id, 'desc');
     } else if (sortDirection === 'desc') {
-      // Remove sort by calling onSort with same direction (parent should handle removal)
       onSort(field.id, 'asc');
     } else {
       onSort(field.id, 'asc');
@@ -128,7 +130,7 @@ export function DatabaseColumnHeader({
 
     const handleMouseMove = (moveEvent: MouseEvent) => {
       const deltaX = moveEvent.clientX - resizeStartX;
-      const newWidth = Math.max(120, resizeStartWidth + deltaX); // Minimum width of 120px
+      const newWidth = Math.max(120, resizeStartWidth + deltaX);
       onResize(field.id, newWidth);
     };
 
@@ -142,6 +144,60 @@ export function DatabaseColumnHeader({
     document.addEventListener('mouseup', handleMouseUp);
   };
 
+  // Drag and drop handlers
+  const handleDragStart = (e: React.DragEvent) => {
+    if (!isDraggable || !onFieldReorder) return;
+    
+    setIsDragging(true);
+    e.dataTransfer.setData('text/plain', field.id);
+    e.dataTransfer.effectAllowed = 'move';
+    
+    // Create a custom drag image
+    const dragImage = document.createElement('div');
+    dragImage.textContent = field.name;
+    dragImage.className = 'bg-background border border-border rounded-md px-3 py-2 shadow-lg text-sm font-medium';
+    dragImage.style.position = 'absolute';
+    dragImage.style.top = '-1000px';
+    document.body.appendChild(dragImage);
+    e.dataTransfer.setDragImage(dragImage, 0, 0);
+    
+    setTimeout(() => document.body.removeChild(dragImage), 0);
+  };
+
+  const handleDragEnd = () => {
+    setIsDragging(false);
+    setDragOver(null);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    if (!isDraggable || !onFieldReorder) return;
+    
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    
+    const rect = e.currentTarget.getBoundingClientRect();
+    const midpoint = rect.left + rect.width / 2;
+    const position = e.clientX < midpoint ? 'before' : 'after';
+    setDragOver(position);
+  };
+
+  const handleDragLeave = () => {
+    setDragOver(null);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    if (!isDraggable || !onFieldReorder) return;
+    
+    e.preventDefault();
+    const draggedFieldId = e.dataTransfer.getData('text/plain');
+    
+    if (draggedFieldId !== field.id && dragOver) {
+      onFieldReorder(draggedFieldId, field.id, dragOver);
+    }
+    
+    setDragOver(null);
+  };
+
   return (
     <TooltipProvider>
       <div 
@@ -149,12 +205,35 @@ export function DatabaseColumnHeader({
           relative flex items-center justify-between group 
           border-b-2 border-border bg-background/98 backdrop-blur-md 
           hover:bg-muted/50 transition-colors 
+          ${isDragging ? 'opacity-50' : ''}
+          ${dragOver === 'before' ? 'border-l-4 border-l-primary' : ''}
+          ${dragOver === 'after' ? 'border-r-4 border-r-primary' : ''}
           ${className}
         `}
         style={{ width: width ? `${width}px` : undefined }}
+        draggable={isDraggable && onFieldReorder}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
       >
         {/* Header Content */}
         <div className="flex items-center gap-2.5 px-4 py-3 flex-1 min-w-0">
+          {/* Drag Handle */}
+          {isDraggable && onFieldReorder && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="flex-shrink-0 p-1 rounded-md hover:bg-muted/60 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing">
+                  <GripVertical className="h-3.5 w-3.5 text-muted-foreground" />
+                </div>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">
+                <p className="text-xs">Drag to reorder</p>
+              </TooltipContent>
+            </Tooltip>
+          )}
+
           {/* Field Type Icon */}
           <Tooltip>
             <TooltipTrigger asChild>
