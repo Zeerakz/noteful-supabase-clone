@@ -211,7 +211,7 @@ export function DatabaseColumnHeader({
           ${className}
         `}
         style={{ width: width ? `${width}px` : undefined }}
-        draggable={isDraggable && onFieldReorder}
+        draggable={isDraggable && !!onFieldReorder}
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
         onDragOver={handleDragOver}
