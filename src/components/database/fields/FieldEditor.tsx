@@ -6,16 +6,16 @@ import { DatabaseField } from '@/types/database';
 import { SelectFieldEditor } from './SelectFieldEditor';
 import { DateFieldEditor } from './DateFieldEditor';
 import { RelationFieldEditor } from './RelationFieldEditor';
-import { ComputedFieldDisplay } from './ComputedFieldDisplay';
 
 interface FieldEditorProps {
   field: DatabaseField;
   value: string | null;
   onChange: (value: string) => void;
   workspaceId: string;
+  pageId?: string;
 }
 
-export function FieldEditor({ field, value, onChange, workspaceId }: FieldEditorProps) {
+export function FieldEditor({ field, value, onChange, workspaceId, pageId }: FieldEditorProps) {
   switch (field.type) {
     case 'text':
     case 'email':
@@ -96,11 +96,13 @@ export function FieldEditor({ field, value, onChange, workspaceId }: FieldEditor
 
     case 'formula':
     case 'rollup':
+      // Computed fields are read-only, show current value
       return (
-        <ComputedFieldDisplay
-          field={field}
-          value={value}
-        />
+        <div className="flex items-center space-x-2 p-2 bg-muted/50 rounded border">
+          <span className="text-sm text-muted-foreground italic">
+            {value || 'Not calculated'} (Read-only)
+          </span>
+        </div>
       );
 
     default:

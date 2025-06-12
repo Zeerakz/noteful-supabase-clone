@@ -4,16 +4,16 @@ import { DatabaseField } from '@/types/database';
 import { SelectFieldDisplay } from './SelectFieldDisplay';
 import { DateFieldDisplay } from './DateFieldDisplay';
 import { RelationFieldDisplay } from './RelationFieldDisplay';
-import { ComputedFieldDisplay } from './ComputedFieldDisplay';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 
 interface FieldDisplayProps {
   field: DatabaseField;
   value: string | null;
+  pageId?: string;
 }
 
-export function FieldDisplay({ field, value }: FieldDisplayProps) {
+export function FieldDisplay({ field, value, pageId }: FieldDisplayProps) {
   if (!value) {
     return <span className="text-muted-foreground">—</span>;
   }
@@ -75,12 +75,13 @@ export function FieldDisplay({ field, value }: FieldDisplayProps) {
 
     case 'formula':
     case 'rollup':
-      return (
-        <ComputedFieldDisplay
-          field={field}
-          value={value}
-        />
-      );
+      // For computed fields, show the computed value or fallback to static display
+      if (pageId) {
+        // This would be used in database views where pageId is available
+        // For now, fallback to showing the value as text
+        return <span className="text-muted-foreground italic">{value || 'Not calculated'}</span>;
+      }
+      return <span className="text-muted-foreground italic">{value || 'Not calculated'}</span>;
 
     default:
       return <span>{value}</span>;
