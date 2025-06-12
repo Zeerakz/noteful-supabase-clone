@@ -66,7 +66,6 @@ export function DatabaseTableRow({
   };
 
   const handlePropertyChange = (fieldId: string, value: string) => {
-    console.log('DatabaseTableRow: Property change requested', { pageId: page.id, fieldId, value });
     onPropertyUpdate(page.id, fieldId, value);
     setEditingField(null);
   };
@@ -144,7 +143,6 @@ export function DatabaseTableRow({
         const cellValue = page.properties[field.id] || '';
         const isMultilineField = field.type === 'text' && field.settings?.multiline;
         const shouldWrap = field.type === 'text' && field.settings?.wrapText;
-        const isEditing = editingField === field.id;
         
         return (
           <TableCell 
@@ -156,7 +154,7 @@ export function DatabaseTableRow({
               overflow: shouldWrap ? 'visible' : 'hidden'
             }}
           >
-            {isEditing ? (
+            {editingField === field.id ? (
               <div className="w-full">
                 <FieldEditor
                   field={field}
@@ -173,10 +171,12 @@ export function DatabaseTableRow({
                 }`}
                 onClick={() => setEditingField(field.id)}
               >
-                <FieldDisplay
-                  field={field}
-                  value={cellValue || null}
-                  pageId={page.id}
+                <EditableCell
+                  value={cellValue}
+                  onSave={(value) => handlePropertyChange(field.id, value)}
+                  fieldType={field.type}
+                  fieldConfig={field.settings}
+                  placeholder={`Enter ${field.name.toLowerCase()}`}
                 />
               </div>
             )}

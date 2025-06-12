@@ -18,20 +18,40 @@ interface FieldEditorProps {
 
 export function FieldEditor({ field, value, onChange, workspaceId, pageId }: FieldEditorProps) {
   const [localValue, setLocalValue] = useState(value || '');
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [lastSavedValue, setLastSavedValue] = useState(value || '');
 
   useEffect(() => {
     setLocalValue(value || '');
+    setLastSavedValue(value || '');
   }, [value]);
 
-  const handleSave = (newValue: string) => {
-    console.log('FieldEditor: Saving value', { fieldId: field.id, value: newValue });
-    onChange(newValue);
+  const handleSave = async (newValue: string) => {
+    if (newValue !== lastSavedValue) {
+      console.log('FieldEditor: Saving value', { fieldId: field.id, value: newValue });
+      setIsUpdating(true);
+      
+      try {
+        // Update the last saved value immediately for optimistic UI
+        setLastSavedValue(newValue);
+        
+        // Trigger the actual update
+        onChange(newValue);
+        
+        // Show updating state briefly
+        setTimeout(() => setIsUpdating(false), 300);
+      } catch (error) {
+        console.error('FieldEditor: Error saving value', error);
+        // Revert on error
+        setLastSavedValue(value || '');
+        setLocalValue(value || '');
+        setIsUpdating(false);
+      }
+    }
   };
 
   const handleBlur = () => {
-    if (localValue !== (value || '')) {
-      handleSave(localValue);
-    }
+    handleSave(localValue);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -42,28 +62,33 @@ export function FieldEditor({ field, value, onChange, workspaceId, pageId }: Fie
       handleSave(localValue);
     } else if (e.key === 'Escape') {
       e.preventDefault();
-      setLocalValue(value || '');
+      setLocalValue(lastSavedValue);
     }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const newValue = e.target.value;
     setLocalValue(newValue);
+    console.log('FieldEditor: Local value changed', { fieldId: field.id, value: newValue });
   };
 
   const handleCheckboxChange = (checked: boolean) => {
     const newValue = checked ? 'true' : 'false';
+    console.log('FieldEditor: Checkbox changed', { fieldId: field.id, value: newValue });
     setLocalValue(newValue);
     handleSave(newValue);
   };
 
   const handleSelectChange = (newValue: string) => {
+    console.log('FieldEditor: Select changed', { fieldId: field.id, value: newValue });
     setLocalValue(newValue);
     handleSave(newValue);
   };
 
   const inputClassName = `
     border-none bg-transparent p-1 focus-visible:ring-1 focus-visible:ring-ring
+    ${isUpdating ? 'opacity-60' : ''} 
+    ${localValue !== lastSavedValue ? 'bg-accent/30 border-accent-foreground/20' : ''}
   `;
 
   switch (field.type) {
@@ -79,6 +104,7 @@ export function FieldEditor({ field, value, onChange, workspaceId, pageId }: Fie
             onKeyDown={handleKeyDown}
             placeholder={`Enter ${field.name.toLowerCase()}`}
             className={`${inputClassName} resize-none min-h-[60px]`}
+            disabled={isUpdating}
             autoFocus
             rows={3}
           />
@@ -94,6 +120,7 @@ export function FieldEditor({ field, value, onChange, workspaceId, pageId }: Fie
           onKeyDown={handleKeyDown}
           placeholder={`Enter ${field.name.toLowerCase()}`}
           className={inputClassName}
+          disabled={isUpdating}
           autoFocus
         />
       );
@@ -109,6 +136,7 @@ export function FieldEditor({ field, value, onChange, workspaceId, pageId }: Fie
           onKeyDown={handleKeyDown}
           placeholder={`Enter ${field.name.toLowerCase()}`}
           className={inputClassName}
+          disabled={isUpdating}
           autoFocus
         />
       );
@@ -123,6 +151,7 @@ export function FieldEditor({ field, value, onChange, workspaceId, pageId }: Fie
           onKeyDown={handleKeyDown}
           placeholder={`Enter ${field.name.toLowerCase()}`}
           className={inputClassName}
+          disabled={isUpdating}
           autoFocus
         />
       );
@@ -137,6 +166,7 @@ export function FieldEditor({ field, value, onChange, workspaceId, pageId }: Fie
           onKeyDown={handleKeyDown}
           placeholder="https://example.com"
           className={inputClassName}
+          disabled={isUpdating}
           autoFocus
         />
       );
@@ -147,6 +177,7 @@ export function FieldEditor({ field, value, onChange, workspaceId, pageId }: Fie
           <Checkbox
             checked={localValue === 'true'}
             onCheckedChange={handleCheckboxChange}
+            disabled={isUpdating}
           />
         </div>
       );
@@ -207,6 +238,7 @@ export function FieldEditor({ field, value, onChange, workspaceId, pageId }: Fie
           onKeyDown={handleKeyDown}
           placeholder={`Enter ${field.name.toLowerCase()}`}
           className={inputClassName}
+          disabled={isUpdating}
           autoFocus
         />
       );
