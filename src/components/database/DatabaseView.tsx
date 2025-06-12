@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { DatabaseViewSelector, DatabaseViewType } from './DatabaseViewSelector';
 import { DatabaseTableView } from './DatabaseTableView';
 import { DatabaseListView } from './DatabaseListView';
+import { DatabaseTimelineView } from './DatabaseTimelineView';
 import { DatabaseCalendarView } from './DatabaseCalendarView';
 import { DatabaseKanbanView } from './DatabaseKanbanView';
 import { DatabaseGalleryView } from './DatabaseGalleryView';
@@ -77,6 +78,8 @@ export function DatabaseView({ databaseId, workspaceId }: DatabaseViewProps) {
         return <DatabaseTableView {...commonProps} />;
       case 'list':
         return <DatabaseListView {...commonProps} />;
+      case 'timeline':
+        return <DatabaseTimelineView {...commonProps} />;
       case 'calendar':
         return <DatabaseCalendarView {...commonProps} />;
       case 'kanban':

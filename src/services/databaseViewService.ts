@@ -28,7 +28,7 @@ export class DatabaseViewService {
   static async setDefaultView(
     databaseId: string,
     userId: string,
-    viewType: 'table' | 'list' | 'calendar' | 'kanban' | 'form'
+    viewType: 'table' | 'list' | 'timeline' | 'calendar' | 'kanban' | 'form' | 'gallery'
   ): Promise<{ data: DatabaseView | null; error: string | null }> {
     try {
       const { data, error } = await supabase
