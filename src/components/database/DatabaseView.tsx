@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { DatabaseViewSelector, DatabaseViewType } from './DatabaseViewSelector';
 import { DatabaseTableView } from './DatabaseTableView';
@@ -20,7 +21,7 @@ interface DatabaseViewProps {
 }
 
 export function DatabaseView({ databaseId, workspaceId }: DatabaseViewProps) {
-  const { fields, loading: fieldsLoading } = useDatabaseFields(databaseId);
+  const { fields, loading: fieldsLoading, error: fieldsError } = useDatabaseFields(databaseId);
   const { defaultView, saveDefaultView } = useDatabaseView(databaseId);
   const [currentView, setCurrentView] = useState<DatabaseViewType>(defaultView);
   const [showFilterModal, setShowFilterModal] = useState(false);
@@ -53,36 +54,32 @@ export function DatabaseView({ databaseId, workspaceId }: DatabaseViewProps) {
     );
   }
 
+  if (fieldsError) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="text-destructive">Error loading database: {fieldsError}</div>
+      </div>
+    );
+  }
+
   const renderView = () => {
+    const commonProps = {
+      databaseId,
+      workspaceId,
+      fields,
+      filters,
+      sortRules
+    };
+
     switch (currentView) {
       case 'table':
-        return (
-          <DatabaseTableView
-            databaseId={databaseId}
-            workspaceId={workspaceId}
-          />
-        );
+        return <DatabaseTableView {...commonProps} />;
       case 'list':
-        return (
-          <DatabaseListView
-            databaseId={databaseId}
-            workspaceId={workspaceId}
-          />
-        );
+        return <DatabaseListView {...commonProps} />;
       case 'calendar':
-        return (
-          <DatabaseCalendarView
-            databaseId={databaseId}
-            workspaceId={workspaceId}
-          />
-        );
+        return <DatabaseCalendarView {...commonProps} />;
       case 'kanban':
-        return (
-          <DatabaseKanbanView
-            databaseId={databaseId}
-            workspaceId={workspaceId}
-          />
-        );
+        return <DatabaseKanbanView {...commonProps} />;
       case 'form':
         return (
           <DatabaseFormView

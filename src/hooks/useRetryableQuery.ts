@@ -1,5 +1,5 @@
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 
 export interface RetryableQueryOptions {
   maxRetries?: number;
@@ -21,6 +21,10 @@ export function useRetryableQuery<T>(
 
   const [isRetrying, setIsRetrying] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
+  
+  // Use a ref to store the latest query function to avoid stale closures
+  const queryFnRef = useRef(queryFn);
+  queryFnRef.current = queryFn;
 
   const executeWithRetry = useCallback(async (): Promise<T> => {
     let lastError: Error | null = null;
@@ -41,7 +45,7 @@ export function useRetryableQuery<T>(
           await new Promise(resolve => setTimeout(resolve, delay));
         }
 
-        const result = await queryFn();
+        const result = await queryFnRef.current();
         
         // Reset retry state on success
         if (attempt > 0) {
@@ -64,7 +68,7 @@ export function useRetryableQuery<T>(
     setIsRetrying(false);
     setRetryCount(0);
     throw lastError || new Error('Query failed after all retries');
-  }, [queryFn, maxRetries, baseDelay, maxDelay, backoffMultiplier]);
+  }, [maxRetries, baseDelay, maxDelay, backoffMultiplier]);
 
   return {
     executeWithRetry,

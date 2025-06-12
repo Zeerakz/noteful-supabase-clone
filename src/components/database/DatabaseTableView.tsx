@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import {
   Table,
   TableHead,
@@ -12,12 +12,12 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { RefreshCw, AlertTriangle } from 'lucide-react';
 import { useFilteredDatabasePages } from '@/hooks/useFilteredDatabasePages';
 import { useOptimisticPropertyUpdate } from '@/hooks/useOptimisticPropertyUpdate';
-import { DatabaseService } from '@/services/databaseService';
 import { DatabaseField } from '@/types/database';
+import { FilterRule } from '@/components/database/FilterModal';
+import { SortRule } from '@/components/database/SortingModal';
 import { PageService } from '@/services/pageService';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { useRetryableQuery } from '@/hooks/useRetryableQuery';
 import { DatabaseTableHeader } from './table/DatabaseTableHeader';
 import { DatabaseTableBody } from './table/DatabaseTableBody';
 import { NoFieldsEmptyState } from './table/DatabaseTableEmptyStates';
@@ -25,6 +25,9 @@ import { NoFieldsEmptyState } from './table/DatabaseTableEmptyStates';
 interface DatabaseTableViewProps {
   databaseId: string;
   workspaceId: string;
+  fields: DatabaseField[];
+  filters: FilterRule[];
+  sortRules: SortRule[];
 }
 
 interface PageWithProperties {
@@ -40,18 +43,15 @@ interface PageWithProperties {
   properties: Record<string, string>;
 }
 
-export function DatabaseTableView({ databaseId, workspaceId }: DatabaseTableViewProps) {
-  const [fields, setFields] = useState<DatabaseField[]>([]);
-  const [fieldsLoading, setFieldsLoading] = useState(true);
-  const [fieldsError, setFieldsError] = useState<string | null>(null);
+export function DatabaseTableView({ 
+  databaseId, 
+  workspaceId, 
+  fields, 
+  filters, 
+  sortRules 
+}: DatabaseTableViewProps) {
   const { user } = useAuth();
   const { toast } = useToast();
-  
-  // Use retryable query for fields
-  const { executeWithRetry: fetchFieldsWithRetry } = useRetryableQuery(
-    () => DatabaseService.fetchDatabaseFields(databaseId),
-    { maxRetries: 3, baseDelay: 1000 }
-  );
   
   const { 
     pages, 
@@ -60,42 +60,12 @@ export function DatabaseTableView({ databaseId, workspaceId }: DatabaseTableView
     refetch: refetchPages
   } = useFilteredDatabasePages({
     databaseId,
-    filters: [],
+    filters,
     fields,
-    sortRules: []
+    sortRules
   });
 
   const propertyUpdateMutation = useOptimisticPropertyUpdate(databaseId);
-
-  // Fetch database fields with retry logic
-  useEffect(() => {
-    const fetchFields = async () => {
-      try {
-        setFieldsLoading(true);
-        setFieldsError(null);
-        
-        console.log('Fetching fields for database:', databaseId);
-        const { data, error } = await fetchFieldsWithRetry();
-        
-        if (error) {
-          console.error('Fields fetch error:', error);
-          setFieldsError(error);
-        } else {
-          console.log('Fields fetched successfully:', data);
-          setFields((data as DatabaseField[]) || []);
-        }
-      } catch (err) {
-        console.error('Fields fetch exception:', err);
-        setFieldsError(err instanceof Error ? err.message : 'Failed to fetch fields');
-      } finally {
-        setFieldsLoading(false);
-      }
-    };
-
-    if (databaseId) {
-      fetchFields();
-    }
-  }, [databaseId, fetchFieldsWithRetry]);
 
   // Transform pages data with properties
   const pagesWithProperties: PageWithProperties[] = pages.map(page => {
@@ -141,6 +111,7 @@ export function DatabaseTableView({ databaseId, workspaceId }: DatabaseTableView
           title: "Success",
           description: "New row created",
         });
+        refetchPages();
       }
     } catch (err) {
       toast({
@@ -165,6 +136,7 @@ export function DatabaseTableView({ databaseId, workspaceId }: DatabaseTableView
           title: "Success",
           description: "Row deleted",
         });
+        refetchPages();
       }
     } catch (err) {
       toast({
@@ -186,6 +158,8 @@ export function DatabaseTableView({ databaseId, workspaceId }: DatabaseTableView
           description: error,
           variant: "destructive",
         });
+      } else {
+        refetchPages();
       }
     } catch (err) {
       toast({
@@ -204,11 +178,7 @@ export function DatabaseTableView({ databaseId, workspaceId }: DatabaseTableView
     });
   };
 
-  const handleRetry = () => {
-    refetchPages();
-  };
-
-  if (fieldsLoading || pagesLoading) {
+  if (pagesLoading) {
     return (
       <div className="space-y-4">
         <Skeleton className="h-10 w-full" />
@@ -217,17 +187,17 @@ export function DatabaseTableView({ databaseId, workspaceId }: DatabaseTableView
     );
   }
 
-  if (fieldsError || pagesError) {
+  if (pagesError) {
     return (
       <div className="space-y-4">
         <Alert variant="destructive">
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription className="flex items-center justify-between">
-            <span>{fieldsError || pagesError}</span>
+            <span>{pagesError}</span>
             <Button 
               variant="outline" 
               size="sm" 
-              onClick={handleRetry}
+              onClick={refetchPages}
               className="gap-2"
             >
               <RefreshCw className="h-4 w-4" />

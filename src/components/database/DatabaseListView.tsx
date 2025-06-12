@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -9,14 +9,16 @@ import { useOptimisticPropertyUpdate } from '@/hooks/useOptimisticPropertyUpdate
 import { DatabaseField } from '@/types/database';
 import { FilterRule } from '@/components/database/FilterModal';
 import { SortRule } from '@/components/database/SortingModal';
+import { PageService } from '@/services/pageService';
 import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
 
 interface DatabaseListViewProps {
   databaseId: string;
   workspaceId: string;
-  filters?: FilterRule[];
-  fields?: DatabaseField[];
-  sortRules?: SortRule[];
+  fields: DatabaseField[];
+  filters: FilterRule[];
+  sortRules: SortRule[];
 }
 
 interface PageWithProperties {
@@ -25,14 +27,21 @@ interface PageWithProperties {
   properties: Record<string, string>;
 }
 
-export function DatabaseListView({ databaseId, workspaceId, filters = [], fields = [], sortRules = [] }: DatabaseListViewProps) {
-  const { pages, loading, error } = useFilteredDatabasePages({
+export function DatabaseListView({ 
+  databaseId, 
+  workspaceId, 
+  fields, 
+  filters, 
+  sortRules 
+}: DatabaseListViewProps) {
+  const { pages, loading, error, refetch } = useFilteredDatabasePages({
     databaseId,
     filters,
     fields,
     sortRules,
   });
   const { user } = useAuth();
+  const { toast } = useToast();
   const propertyUpdateMutation = useOptimisticPropertyUpdate(databaseId);
 
   // Transform pages data to expected format
@@ -50,7 +59,6 @@ export function DatabaseListView({ databaseId, workspaceId, filters = [], fields
   });
 
   const handleFieldEdit = (pageId: string, fieldId: string, value: string) => {
-    // Use optimistic update mutation
     propertyUpdateMutation.mutate({
       pageId,
       fieldId,
@@ -59,9 +67,56 @@ export function DatabaseListView({ databaseId, workspaceId, filters = [], fields
   };
 
   const handleTitleEdit = async (pageId: string, title: string) => {
-    // This would update the page title in the pages table
-    console.log('Updating page title:', { pageId, title });
-    // TODO: Implement page title update
+    try {
+      const { error } = await PageService.updatePage(pageId, { title: title.trim() });
+      if (error) {
+        toast({
+          title: "Error",
+          description: error,
+          variant: "destructive",
+        });
+      } else {
+        refetch();
+      }
+    } catch (err) {
+      toast({
+        title: "Error",
+        description: "Failed to update title",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleCreateEntry = async () => {
+    if (!user) return;
+
+    try {
+      const { data, error } = await PageService.createPage(
+        workspaceId,
+        user.id,
+        { title: 'Untitled', databaseId }
+      );
+      
+      if (error) {
+        toast({
+          title: "Error",
+          description: error,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Success",
+          description: "New entry created",
+        });
+        refetch();
+      }
+    } catch (err) {
+      toast({
+        title: "Error",
+        description: "Failed to create entry",
+        variant: "destructive",
+      });
+    }
   };
 
   if (loading) {
@@ -80,6 +135,9 @@ export function DatabaseListView({ databaseId, workspaceId, filters = [], fields
     return (
       <div className="text-center py-8">
         <p className="text-destructive">{error}</p>
+        <Button onClick={refetch} className="mt-2">
+          Retry
+        </Button>
       </div>
     );
   }
@@ -91,7 +149,7 @@ export function DatabaseListView({ databaseId, workspaceId, filters = [], fields
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-medium">Database List View</h3>
-        <Button size="sm" className="gap-2">
+        <Button size="sm" className="gap-2" onClick={handleCreateEntry}>
           <Plus className="h-4 w-4" />
           Add Entry
         </Button>
@@ -106,7 +164,7 @@ export function DatabaseListView({ databaseId, workspaceId, filters = [], fields
           <p className="text-muted-foreground mb-4">
             Create your first database entry to see it as a card here.
           </p>
-          <Button className="gap-2">
+          <Button className="gap-2" onClick={handleCreateEntry}>
             <Plus className="h-4 w-4" />
             Create First Entry
           </Button>
