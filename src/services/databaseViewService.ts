@@ -71,12 +71,17 @@ export class DatabaseViewService {
     collapsedGroups?: string[]
   ): Promise<{ data: DatabaseView | null; error: string | null }> {
     try {
+      // First get the current view to preserve the default_view_type
+      const currentView = await this.getDefaultView(databaseId, userId);
+      const defaultViewType = currentView.data?.default_view_type || 'table';
+
       const { data, error } = await supabase
         .from('database_views')
         .upsert(
           {
             database_id: databaseId,
             user_id: userId,
+            default_view_type: defaultViewType,
             grouping_field_id: groupingFieldId,
             grouping_collapsed_groups: collapsedGroups || [],
           },
