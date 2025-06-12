@@ -190,6 +190,7 @@ export type Database = {
           created_at: string | null
           created_by: string
           description: string | null
+          icon: string | null
           id: string
           name: string
           table_name: string
@@ -200,6 +201,7 @@ export type Database = {
           created_at?: string | null
           created_by: string
           description?: string | null
+          icon?: string | null
           id?: string
           name: string
           table_name: string
@@ -210,6 +212,7 @@ export type Database = {
           created_at?: string | null
           created_by?: string
           description?: string | null
+          icon?: string | null
           id?: string
           name?: string
           table_name?: string
