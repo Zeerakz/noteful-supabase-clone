@@ -1,8 +1,7 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Table, List, Calendar, Kanban, FileText, Images } from 'lucide-react';
-import { Clock } from 'lucide-react';
+import { Table, List, Calendar, Kanban, FileText, Images, Clock } from 'lucide-react';
 
 export type DatabaseViewType = 'table' | 'list' | 'calendar' | 'kanban' | 'timeline' | 'form' | 'gallery';
 
