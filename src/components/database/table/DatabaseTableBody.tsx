@@ -38,14 +38,15 @@ export function DatabaseTableBody({
         </TableRow>
       ) : (
         pages.map((page) => (
-          <DatabaseTableRow
-            key={page.id}
-            page={page}
-            fields={fields}
-            onTitleUpdate={onTitleUpdate}
-            onPropertyUpdate={onPropertyUpdate}
-            onDeleteRow={onDeleteRow}
-          />
+          <TableRow key={page.id}>
+            <DatabaseTableRow
+              page={page}
+              fields={fields}
+              onTitleUpdate={onTitleUpdate}
+              onPropertyUpdate={onPropertyUpdate}
+              onDeleteRow={onDeleteRow}
+            />
+          </TableRow>
         ))
       )}
     </TableBody>

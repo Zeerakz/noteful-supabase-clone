@@ -1,11 +1,5 @@
 
 import React from 'react';
-import {
-  Table,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -19,7 +13,7 @@ import { PageService } from '@/services/pageService';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { DatabaseTableHeader } from './table/DatabaseTableHeader';
-import { DatabaseTableBody } from './table/DatabaseTableBody';
+import { VirtualizedTable } from './table/VirtualizedTable';
 import { NoFieldsEmptyState } from './table/DatabaseTableEmptyStates';
 
 interface DatabaseTableViewProps {
@@ -182,7 +176,13 @@ export function DatabaseTableView({
     return (
       <div className="space-y-4">
         <Skeleton className="h-10 w-full" />
-        <Skeleton className="h-32 w-full" />
+        <div className="border rounded-lg p-4">
+          <div className="space-y-3">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <Skeleton key={i} className="h-12 w-full" />
+            ))}
+          </div>
+        </div>
       </div>
     );
   }
@@ -213,31 +213,15 @@ export function DatabaseTableView({
     <div className="space-y-4">
       <DatabaseTableHeader onCreateRow={handleCreateRow} />
 
-      <div className="border rounded-lg overflow-hidden">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-[200px]">Title</TableHead>
-              {fields.map((field) => (
-                <TableHead key={field.id} className="min-w-[150px]">
-                  {field.name}
-                  <span className="ml-2 text-xs text-muted-foreground">
-                    ({field.type})
-                  </span>
-                </TableHead>
-              ))}
-              <TableHead className="w-[50px]"></TableHead>
-            </TableRow>
-          </TableHeader>
-          <DatabaseTableBody
-            pages={pagesWithProperties}
-            fields={fields}
-            onTitleUpdate={handleTitleUpdate}
-            onPropertyUpdate={handlePropertyUpdate}
-            onDeleteRow={handleDeleteRow}
-          />
-        </Table>
-      </div>
+      <VirtualizedTable
+        pages={pagesWithProperties}
+        fields={fields}
+        onTitleUpdate={handleTitleUpdate}
+        onPropertyUpdate={handlePropertyUpdate}
+        onDeleteRow={handleDeleteRow}
+        isLoading={pagesLoading}
+        maxHeight="600px"
+      />
 
       {fields.length === 0 && <NoFieldsEmptyState />}
     </div>

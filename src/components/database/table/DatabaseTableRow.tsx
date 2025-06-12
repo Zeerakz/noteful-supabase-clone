@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { TableCell, TableRow } from '@/components/ui/table';
+import { TableCell } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Trash2 } from 'lucide-react';
 import { EditableCell } from './EditableCell';
@@ -28,7 +28,7 @@ export function DatabaseTableRow({
   onDeleteRow
 }: DatabaseTableRowProps) {
   return (
-    <TableRow key={page.id}>
+    <>
       <TableCell className="font-medium">
         <EditableCell
           value={page.title}
@@ -56,6 +56,6 @@ export function DatabaseTableRow({
           <Trash2 className="h-4 w-4" />
         </Button>
       </TableCell>
-    </TableRow>
+    </>
   );
 }
