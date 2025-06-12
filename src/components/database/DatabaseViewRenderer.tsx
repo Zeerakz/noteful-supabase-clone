@@ -58,9 +58,8 @@ export function DatabaseViewRenderer({
       return (
         <DatabaseListView
           {...baseProps}
-          groupingFieldId={groupingFieldId}
-          collapsedGroups={collapsedGroups}
-          onToggleGroupCollapse={onToggleGroupCollapse}
+          // Note: groupingFieldId and collapsedGroups are temporarily removed
+          // until DatabaseListView interface is updated to support them
         />
       );
 

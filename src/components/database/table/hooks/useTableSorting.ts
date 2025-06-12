@@ -9,7 +9,7 @@ interface UseTableSortingProps {
 
 export function useTableSorting({ sortRules, setSortRules }: UseTableSortingProps) {
   const handleSort = useCallback((fieldId: string, direction: 'asc' | 'desc') => {
-    const existingRuleIndex = sortRules.findIndex(rule => rule.field_id === fieldId);
+    const existingRuleIndex = sortRules.findIndex(rule => rule.fieldId === fieldId);
     
     if (existingRuleIndex !== -1) {
       const currentRule = sortRules[existingRuleIndex];
@@ -28,7 +28,7 @@ export function useTableSorting({ sortRules, setSortRules }: UseTableSortingProp
     } else {
       // Add new sort rule
       const newRule: SortRule = {
-        field_id: fieldId,
+        fieldId,
         direction
       };
       setSortRules([...sortRules, newRule]);
@@ -36,7 +36,7 @@ export function useTableSorting({ sortRules, setSortRules }: UseTableSortingProp
   }, [sortRules, setSortRules]);
 
   const clearSort = useCallback((fieldId: string) => {
-    const newRules = sortRules.filter(rule => rule.field_id !== fieldId);
+    const newRules = sortRules.filter(rule => rule.fieldId !== fieldId);
     setSortRules(newRules);
   }, [sortRules, setSortRules]);
 

@@ -189,6 +189,7 @@ export function DatabaseView({ databaseId, workspaceId }: DatabaseViewProps) {
         fields={fields}
         filterGroup={filterGroup}
         sortRules={sortRules}
+        setSortRules={setSortRules}
         groupingFieldId={groupingFieldId}
         collapsedGroups={collapsedGroups}
         onToggleGroupCollapse={toggleGroupCollapse}

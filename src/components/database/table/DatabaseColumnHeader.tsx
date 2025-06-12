@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -89,7 +88,7 @@ export function DatabaseColumnHeader({
 
   const FieldIcon = fieldTypeIcons[field.type as keyof typeof fieldTypeIcons] || Type;
   
-  const currentSort = sortRules.find(rule => rule.field_id === field.id);
+  const currentSort = sortRules.find(rule => rule.fieldId === field.id);
   const sortDirection = currentSort?.direction;
   
   const hasDescription = field.name in fieldDescriptions;

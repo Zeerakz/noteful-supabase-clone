@@ -59,7 +59,6 @@ export function DatabaseTableRow({
           value={page.title}
           onSave={(newTitle) => onTitleUpdate(page.id, newTitle)}
           placeholder="Untitled"
-          className="font-medium"
         />
       </TableCell>
 
@@ -73,7 +72,7 @@ export function DatabaseTableRow({
           <FieldDisplay
             field={field}
             value={page.properties[field.id] || ''}
-            onChange={(value) => onPropertyUpdate(page.id, field.id, value)}
+            onValueChange={(value) => onPropertyUpdate(page.id, field.id, value)}
           />
         </TableCell>
       ))}
