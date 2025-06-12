@@ -1,4 +1,3 @@
-
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { useFilteredDatabasePages } from '@/hooks/useFilteredDatabasePages';
@@ -149,7 +148,7 @@ export function useDatabaseTableView({
       updated_at: page.updated_at,
       parent_page_id: page.parent_page_id,
       order_index: page.order_index,
-      properties: properties || {},
+      properties: properties as Record<string, string>, // Explicit type assertion
     };
   });
 
