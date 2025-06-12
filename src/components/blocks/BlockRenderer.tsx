@@ -76,7 +76,6 @@ export function BlockRenderer({ block, onUpdateBlock, onDeleteBlock, onCreateBlo
           block={block}
           onUpdateBlock={onUpdateBlock}
           onDeleteBlock={onDeleteBlock}
-          onCreateBlock={onCreateBlock}
           isEditable={isEditable}
           childBlocks={childBlocks}
         />
