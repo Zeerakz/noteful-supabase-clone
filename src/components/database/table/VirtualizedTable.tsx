@@ -38,6 +38,7 @@ export function VirtualizedTable({
 
   return (
     <div className="border rounded-lg overflow-hidden">
+      {/* Fixed header */}
       <Table>
         <TableHeader>
           <TableRow>
@@ -55,9 +56,10 @@ export function VirtualizedTable({
         </TableHeader>
       </Table>
       
+      {/* Scrollable body with virtualization */}
       <div 
         ref={parentRef}
-        className="overflow-auto"
+        className="overflow-auto relative"
         style={{ maxHeight }}
       >
         <Table>

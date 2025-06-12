@@ -55,58 +55,52 @@ export function VirtualizedTableBody({
 
   return (
     <TableBody>
-      <div
-        style={{
-          height: `${virtualizer.getTotalSize()}px`,
-          width: '100%',
-          position: 'relative',
-        }}
-      >
-        {virtualizer.getVirtualItems().map((virtualItem) => {
-          const page = pages[virtualItem.index];
-          const isSkeletonRow = isLoading || !page;
+      {virtualizer.getVirtualItems().map((virtualItem) => {
+        const page = pages[virtualItem.index];
+        const isSkeletonRow = isLoading || !page;
 
-          return (
-            <div
-              key={virtualItem.key}
-              style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                width: '100%',
-                height: `${virtualItem.size}px`,
-                transform: `translateY(${virtualItem.start}px)`,
-              }}
-            >
-              <TableRow>
-                {isSkeletonRow ? (
-                  <>
-                    <TableCell className="font-medium">
-                      <Skeleton className="h-4 w-32" />
-                    </TableCell>
-                    {fields.map((field) => (
-                      <TableCell key={field.id}>
-                        <Skeleton className="h-4 w-24" />
-                      </TableCell>
-                    ))}
-                    <TableCell>
-                      <Skeleton className="h-8 w-8 rounded" />
-                    </TableCell>
-                  </>
-                ) : (
-                  <DatabaseTableRow
-                    page={page}
-                    fields={fields}
-                    onTitleUpdate={onTitleUpdate}
-                    onPropertyUpdate={onPropertyUpdate}
-                    onDeleteRow={onDeleteRow}
-                  />
-                )}
-              </TableRow>
-            </div>
-          );
-        })}
-      </div>
+        return (
+          <TableRow
+            key={virtualItem.key}
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: `${virtualItem.size}px`,
+              transform: `translateY(${virtualItem.start}px)`,
+            }}
+          >
+            {isSkeletonRow ? (
+              <>
+                <TableCell className="font-medium">
+                  <Skeleton className="h-4 w-32" />
+                </TableCell>
+                {fields.map((field) => (
+                  <TableCell key={field.id}>
+                    <Skeleton className="h-4 w-24" />
+                  </TableCell>
+                ))}
+                <TableCell>
+                  <Skeleton className="h-8 w-8 rounded" />
+                </TableCell>
+              </>
+            ) : (
+              <DatabaseTableRow
+                page={page}
+                fields={fields}
+                onTitleUpdate={onTitleUpdate}
+                onPropertyUpdate={onPropertyUpdate}
+                onDeleteRow={onDeleteRow}
+              />
+            )}
+          </TableRow>
+        );
+      })}
+      {/* Virtual spacer to maintain correct scrollable height */}
+      <TableRow style={{ height: `${virtualizer.getTotalSize()}px` }}>
+        <TableCell colSpan={fields.length + 2} className="p-0 border-0" />
+      </TableRow>
     </TableBody>
   );
 }
