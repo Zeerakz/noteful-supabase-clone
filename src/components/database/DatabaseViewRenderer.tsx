@@ -58,10 +58,8 @@ export function DatabaseViewRenderer({
     case 'kanban':
       return (
         <DatabaseKanbanView
-          {...commonProps}
-          groupingFieldId={groupingFieldId}
-          collapsedGroups={collapsedGroups}
-          onToggleGroupCollapse={onToggleGroupCollapse}
+          databaseId={databaseId}
+          workspaceId={workspaceId}
         />
       );
 
