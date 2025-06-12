@@ -30,6 +30,7 @@ interface VirtualizedTableProps {
   rowHeight?: number;
   sortRules: SortRule[];
   setSortRules: (rules: SortRule[]) => void;
+  workspaceId: string;
 }
 
 export function VirtualizedTable({
@@ -43,7 +44,8 @@ export function VirtualizedTable({
   enableVirtualScrolling = false,
   rowHeight = 60,
   sortRules,
-  setSortRules
+  setSortRules,
+  workspaceId
 }: VirtualizedTableProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const containerHeight = parseInt(maxHeight) || 600;
@@ -112,6 +114,7 @@ export function VirtualizedTable({
                 onDeleteRow={onDeleteRow}
                 isLoading={isLoading}
                 columnWidths={columnWidths}
+                workspaceId={workspaceId}
               />
             </div>
           </div>
@@ -151,6 +154,7 @@ export function VirtualizedTable({
           onDeleteRow={onDeleteRow}
           isLoading={isLoading}
           columnWidths={columnWidths}
+          workspaceId={workspaceId}
         />
       </ScrollArea>
     </div>
