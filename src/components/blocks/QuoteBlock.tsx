@@ -41,18 +41,20 @@ export function QuoteBlock({ block, onUpdate, onDelete, isEditable }: QuoteBlock
 
   return (
     <div
-      className="group relative border-l-4 border-accent pl-6 py-2 my-4 bg-muted/30"
+      className="group relative flex items-center gap-2 border-l-4 border-accent pl-6 py-2 my-4 bg-muted/30"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <RichTextEditor
-        initialContent={block.content?.text || ''}
-        onBlur={handleContentChange}
-        placeholder="Enter a quote..."
-      />
+      <div className="flex-1">
+        <RichTextEditor
+          initialContent={block.content?.text || ''}
+          onBlur={handleContentChange}
+          placeholder="Enter a quote..."
+        />
+      </div>
       
       {isHovered && (
-        <div className="absolute top-1 left-1 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 z-20">
+        <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 flex-shrink-0">
           <CommentThreadPanel
             blockId={block.id}
             isOpen={isCommentPanelOpen}

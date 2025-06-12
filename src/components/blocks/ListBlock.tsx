@@ -13,6 +13,7 @@ interface ListBlockProps {
 
 export function ListBlock({ block, onUpdate, onDelete, isEditable }: ListBlockProps) {
   const [isEditing, setIsEditing] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
   const [items, setItems] = useState<string[]>(block.content?.items || ['']);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -48,14 +49,14 @@ export function ListBlock({ block, onUpdate, onDelete, isEditable }: ListBlockPr
 
   if (isEditing) {
     return (
-      <div className="group relative">
+      <div className="group relative flex items-center gap-2">
         <textarea
           ref={textareaRef}
           value={items.join('\n')}
           onChange={(e) => handleTextChange(e.target.value)}
           onBlur={handleSave}
           onKeyDown={handleKeyDown}
-          className="w-full min-h-[4rem] p-2 border border-gray-300 rounded resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="flex-1 min-h-[4rem] p-2 border border-gray-300 rounded resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
           placeholder="Enter list items (one per line)..."
           rows={Math.max(3, items.length + 1)}
         />
@@ -64,9 +65,13 @@ export function ListBlock({ block, onUpdate, onDelete, isEditable }: ListBlockPr
   }
 
   return (
-    <div className="group relative">
+    <div
+      className="group relative flex items-center gap-2"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
       <div
-        className={`p-2 rounded cursor-text ${isEditable ? 'hover:bg-gray-50' : ''}`}
+        className={`flex-1 p-2 rounded cursor-text ${isEditable ? 'hover:bg-gray-50' : ''}`}
         onClick={() => isEditable && setIsEditing(true)}
       >
         {isBulletList ? (
@@ -86,15 +91,18 @@ export function ListBlock({ block, onUpdate, onDelete, isEditable }: ListBlockPr
           <span className="text-gray-400">Click to add list items...</span>
         )}
       </div>
-      {isEditable && (
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={onDelete}
-          className="absolute right-1 top-1 opacity-0 group-hover:opacity-100 h-6 w-6 p-0 text-red-500 hover:text-red-700"
-        >
-          <Trash2 className="h-3 w-3" />
-        </Button>
+      
+      {isEditable && isHovered && (
+        <div className="opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onDelete}
+            className="h-6 w-6 p-0 text-destructive hover:text-destructive/80"
+          >
+            <Trash2 className="h-3 w-3" />
+          </Button>
+        </div>
       )}
     </div>
   );

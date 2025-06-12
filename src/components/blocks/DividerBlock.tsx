@@ -34,14 +34,16 @@ export function DividerBlock({ block, onUpdate, onDelete, isEditable }: DividerB
 
   return (
     <div
-      className="group relative py-3"
+      className="group relative flex items-center gap-2 py-3"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <Separator className="w-full" />
+      <div className="flex-1">
+        <Separator className="w-full" />
+      </div>
       
       {isHovered && (
-        <div className="absolute top-1 left-1 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 z-20">
+        <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 flex-shrink-0">
           <CommentThreadPanel
             blockId={block.id}
             isOpen={isCommentPanelOpen}

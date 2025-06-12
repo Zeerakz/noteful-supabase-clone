@@ -80,82 +80,84 @@ export function CalloutBlock({ block, onUpdate, onDelete, isEditable }: CalloutB
 
   return (
     <div
-      className={`group relative p-4 rounded-lg border-l-4 ${currentType.bgColor} ${currentType.borderColor} my-4`}
+      className={`group relative ${currentType.bgColor} ${currentType.borderColor} my-4`}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <div className="flex items-start gap-3">
-        {/* Emoji/Icon selector */}
-        <div className="flex flex-col gap-1">
-          <input
-            type="text"
-            value={displayEmoji}
-            onChange={(e) => handleEmojiChange(e.target.value)}
-            className="w-8 h-8 text-center text-xl bg-transparent border-none outline-none resize-none"
-            placeholder="😀"
-            maxLength={2}
-          />
-          
-          {/* Type selector */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-6 w-8 p-0 opacity-50 hover:opacity-100"
-              >
-                <currentType.icon className="h-3 w-3" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent>
-              {calloutTypes.map((type) => (
-                <DropdownMenuItem
-                  key={type.id}
-                  onClick={() => handleTypeChange(type.id)}
-                  className="flex items-center gap-2"
-                >
-                  <type.icon className="h-4 w-4" />
-                  {type.label}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-
-        {/* Content editor */}
-        <div className={`flex-1 ${currentType.textColor}`}>
-          <RichTextEditor
-            initialContent={block.content?.text || ''}
-            onBlur={handleContentChange}
-            placeholder="Enter your callout message..."
-          />
-        </div>
-      </div>
-      
-      {isHovered && (
-        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 z-20">
-          <CommentThreadPanel
-            blockId={block.id}
-            isOpen={isCommentPanelOpen}
-            onOpenChange={setIsCommentPanelOpen}
-          >
-            <CommentIcon
-              hasComments={comments.length > 0}
-              commentCount={comments.length}
-              onClick={() => setIsCommentPanelOpen(true)}
+      <div className="flex items-center gap-2 p-4 rounded-lg border-l-4">
+        <div className="flex items-start gap-3 flex-1">
+          {/* Emoji/Icon selector */}
+          <div className="flex flex-col gap-1">
+            <input
+              type="text"
+              value={displayEmoji}
+              onChange={(e) => handleEmojiChange(e.target.value)}
+              className="w-8 h-8 text-center text-xl bg-transparent border-none outline-none resize-none"
+              placeholder="😀"
+              maxLength={2}
             />
-          </CommentThreadPanel>
-          
-          <Button
-            onClick={handleDelete}
-            variant="ghost"
-            size="sm"
-            className="h-6 w-6 p-0 text-destructive hover:text-destructive/80"
-          >
-            <Trash2 className="h-3 w-3" />
-          </Button>
+            
+            {/* Type selector */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 w-8 p-0 opacity-50 hover:opacity-100"
+                >
+                  <currentType.icon className="h-3 w-3" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                {calloutTypes.map((type) => (
+                  <DropdownMenuItem
+                    key={type.id}
+                    onClick={() => handleTypeChange(type.id)}
+                    className="flex items-center gap-2"
+                  >
+                    <type.icon className="h-4 w-4" />
+                    {type.label}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+
+          {/* Content editor */}
+          <div className={`flex-1 ${currentType.textColor}`}>
+            <RichTextEditor
+              initialContent={block.content?.text || ''}
+              onBlur={handleContentChange}
+              placeholder="Enter your callout message..."
+            />
+          </div>
         </div>
-      )}
+        
+        {isHovered && (
+          <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 flex-shrink-0">
+            <CommentThreadPanel
+              blockId={block.id}
+              isOpen={isCommentPanelOpen}
+              onOpenChange={setIsCommentPanelOpen}
+            >
+              <CommentIcon
+                hasComments={comments.length > 0}
+                commentCount={comments.length}
+                onClick={() => setIsCommentPanelOpen(true)}
+              />
+            </CommentThreadPanel>
+            
+            <Button
+              onClick={handleDelete}
+              variant="ghost"
+              size="sm"
+              className="h-6 w-6 p-0 text-destructive hover:text-destructive/80"
+            >
+              <Trash2 className="h-3 w-3" />
+            </Button>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

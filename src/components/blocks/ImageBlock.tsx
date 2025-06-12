@@ -16,6 +16,7 @@ interface ImageBlockProps {
 
 export function ImageBlock({ block, onUpdate, onDelete, isEditable }: ImageBlockProps) {
   const [isUploading, setIsUploading] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
   const [signedUrl, setSignedUrl] = useState<string | null>(null);
   const { toast } = useToast();
   const { user } = useAuth();
@@ -151,80 +152,88 @@ export function ImageBlock({ block, onUpdate, onDelete, isEditable }: ImageBlock
   }
 
   return (
-    <div className="group relative">
-      {imagePath && signedUrl ? (
-        <div className="space-y-2">
-          <div className="relative">
-            <img
-              src={signedUrl}
-              alt={alt}
-              className="max-w-full h-auto rounded border"
-              onError={async () => {
-                console.log('Image failed to load, refreshing signed URL');
-                // Try to refresh the signed URL using the Edge Function
-                if (block.content?.path) {
-                  try {
-                    const { data } = await supabase.functions.invoke('image-upload', {
-                      method: 'GET',
-                      body: JSON.stringify({ path: block.content.path })
-                    });
-                    
-                    if (data?.signedUrl) {
-                      setSignedUrl(data.signedUrl);
+    <div
+      className="group relative flex items-center gap-2"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      <div className="flex-1">
+        {imagePath && signedUrl ? (
+          <div className="space-y-2">
+            <div className="relative">
+              <img
+                src={signedUrl}
+                alt={alt}
+                className="max-w-full h-auto rounded border"
+                onError={async () => {
+                  console.log('Image failed to load, refreshing signed URL');
+                  // Try to refresh the signed URL using the Edge Function
+                  if (block.content?.path) {
+                    try {
+                      const { data } = await supabase.functions.invoke('image-upload', {
+                        method: 'GET',
+                        body: JSON.stringify({ path: block.content.path })
+                      });
+                      
+                      if (data?.signedUrl) {
+                        setSignedUrl(data.signedUrl);
+                      }
+                    } catch (error) {
+                      console.error('Error refreshing signed URL:', error);
                     }
-                  } catch (error) {
-                    console.error('Error refreshing signed URL:', error);
                   }
-                }
-              }}
-            />
+                }}
+              />
+            </div>
+            {caption && (
+              <p className="text-sm text-muted-foreground italic text-center">
+                {caption}
+              </p>
+            )}
           </div>
-          {caption && (
-            <p className="text-sm text-muted-foreground italic text-center">
-              {caption}
-            </p>
-          )}
-        </div>
-      ) : isEditable ? (
-        <div 
-          className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8 text-center hover:border-muted-foreground/50 transition-colors"
-          onDrop={handleDrop}
-          onDragOver={handleDragOver}
-        >
-          <Upload className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-          <p className="text-muted-foreground mb-4">Drop an image here or click to upload</p>
-          <p className="text-xs text-muted-foreground/70 mb-4">
-            Supported: JPEG, PNG, GIF, WebP (max 50MB)
-          </p>
-          <input
-            type="file"
-            accept="image/jpeg,image/png,image/gif,image/webp"
-            onChange={handleImageUpload}
-            disabled={isUploading}
-            className="hidden"
-            id={`image-upload-${block.id}`}
-          />
-          <Button
-            variant="outline"
-            asChild
-            disabled={isUploading}
+        ) : isEditable ? (
+          <div 
+            className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8 text-center hover:border-muted-foreground/50 transition-colors"
+            onDrop={handleDrop}
+            onDragOver={handleDragOver}
           >
-            <label htmlFor={`image-upload-${block.id}`} className="cursor-pointer">
-              {isUploading ? 'Uploading...' : 'Choose Image'}
-            </label>
+            <Upload className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <p className="text-muted-foreground mb-4">Drop an image here or click to upload</p>
+            <p className="text-xs text-muted-foreground/70 mb-4">
+              Supported: JPEG, PNG, GIF, WebP (max 50MB)
+            </p>
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/gif,image/webp"
+              onChange={handleImageUpload}
+              disabled={isUploading}
+              className="hidden"
+              id={`image-upload-${block.id}`}
+            />
+            <Button
+              variant="outline"
+              asChild
+              disabled={isUploading}
+            >
+              <label htmlFor={`image-upload-${block.id}`} className="cursor-pointer">
+                {isUploading ? 'Uploading...' : 'Choose Image'}
+              </label>
+            </Button>
+          </div>
+        ) : null}
+      </div>
+      
+      {isEditable && isHovered && (
+        <div className="opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onDelete}
+            className="h-6 w-6 p-0 text-destructive hover:text-destructive/80"
+          >
+            <Trash2 className="h-3 w-3" />
           </Button>
         </div>
-      ) : null}
-      
-      {isEditable && (
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={onDelete}
-          className="absolute right-1 top-1 opacity-0 group-hover:opacity-100 h-6 w-6 p-0 text-destructive hover:text-destructive/80"
-        >
-          <Trash2 className="h-3 w-3" />
-        </Button>
       )}
     </div>
   );

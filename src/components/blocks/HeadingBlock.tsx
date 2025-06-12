@@ -13,6 +13,7 @@ interface HeadingBlockProps {
 
 export function HeadingBlock({ block, onUpdate, onDelete, isEditable }: HeadingBlockProps) {
   const [isEditing, setIsEditing] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
   const [content, setContent] = useState(block.content?.text || '');
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -57,14 +58,14 @@ export function HeadingBlock({ block, onUpdate, onDelete, isEditable }: HeadingB
 
   if (isEditing) {
     return (
-      <div className="group relative">
+      <div className="group relative flex items-center gap-2">
         <input
           ref={inputRef}
           value={content}
           onChange={(e) => setContent(e.target.value)}
           onBlur={handleSave}
           onKeyDown={handleKeyDown}
-          className={`w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 ${getHeadingStyle()}`}
+          className={`flex-1 p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 ${getHeadingStyle()}`}
           placeholder="Heading..."
         />
       </div>
@@ -72,22 +73,29 @@ export function HeadingBlock({ block, onUpdate, onDelete, isEditable }: HeadingB
   }
 
   return (
-    <div className="group relative">
+    <div
+      className="group relative flex items-center gap-2"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
       <div
-        className={`p-2 rounded cursor-text ${isEditable ? 'hover:bg-gray-50' : ''} ${!content ? 'text-gray-400' : ''} ${getHeadingStyle()}`}
+        className={`flex-1 p-2 rounded cursor-text ${isEditable ? 'hover:bg-gray-50' : ''} ${!content ? 'text-gray-400' : ''} ${getHeadingStyle()}`}
         onClick={() => isEditable && setIsEditing(true)}
       >
         {content || (isEditable ? 'Click to add heading...' : '')}
       </div>
-      {isEditable && (
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={onDelete}
-          className="absolute right-1 top-1 opacity-0 group-hover:opacity-100 h-6 w-6 p-0 text-red-500 hover:text-red-700"
-        >
-          <Trash2 className="h-3 w-3" />
-        </Button>
+      
+      {isEditable && isHovered && (
+        <div className="opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onDelete}
+            className="h-6 w-6 p-0 text-destructive hover:text-destructive/80"
+          >
+            <Trash2 className="h-3 w-3" />
+          </Button>
+        </div>
       )}
     </div>
   );
