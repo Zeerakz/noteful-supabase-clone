@@ -4,6 +4,8 @@ import { DatabaseViewType } from './DatabaseViewSelector';
 import { DatabaseViewManager } from './DatabaseViewManager';
 import { DatabaseViewControls } from './DatabaseViewControls';
 import { DatabaseViewRenderer } from './DatabaseViewRenderer';
+import { ComplexFilterModal } from './filters/ComplexFilterModal';
+import { SortingModal } from './SortingModal';
 import { useDatabaseFields } from '@/hooks/useDatabaseFields';
 import { useSavedDatabaseViews } from '@/hooks/useSavedDatabaseViews';
 import { useComplexFilters } from '@/hooks/useComplexFilters';
@@ -158,7 +160,7 @@ export function DatabaseView({ databaseId, workspaceId }: DatabaseViewProps) {
         groupingFieldId={groupingFieldId}
       />
 
-      {/* View Controls with Enhanced Tabs */}
+      {/* View Controls with Primary Toolbar */}
       <DatabaseViewControls
         fields={fields}
         currentViewType={currentViewType}
@@ -190,6 +192,24 @@ export function DatabaseView({ databaseId, workspaceId }: DatabaseViewProps) {
         groupingFieldId={groupingFieldId}
         collapsedGroups={collapsedGroups}
         onToggleGroupCollapse={toggleGroupCollapse}
+      />
+
+      {/* Filter Modal */}
+      <ComplexFilterModal
+        open={showFilterModal}
+        onOpenChange={setShowFilterModal}
+        fields={fields}
+        filterGroup={filterGroup}
+        onFilterGroupChange={setFilterGroup}
+      />
+
+      {/* Sort Modal */}
+      <SortingModal
+        open={showSortModal}
+        onOpenChange={setShowSortModal}
+        fields={fields}
+        sortRules={sortRules}
+        onSortRulesChange={setSortRules}
       />
     </div>
   );

@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Filter, SortAsc, Plus, MoreHorizontal } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -7,6 +7,7 @@ import { DatabaseField } from '@/types/database';
 import { DatabaseViewTabs } from './DatabaseViewTabs';
 import { DatabaseViewType } from './DatabaseViewSelector';
 import { DatabaseGroupingControls } from './DatabaseGroupingControls';
+import { DatabasePrimaryToolbar } from './DatabasePrimaryToolbar';
 import { FilterGroup } from '@/types/filters';
 import { SortRule } from './SortingModal';
 
@@ -41,66 +42,61 @@ export function DatabaseViewControls({
   setShowFilterModal,
   setShowSortModal,
 }: DatabaseViewControlsProps) {
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const handleNewRecord = () => {
+    // TODO: Implement new record creation
+    console.log('Creating new record...');
+  };
+
+  const handleNewTemplate = () => {
+    // TODO: Implement template creation
+    console.log('Creating new template...');
+  };
+
+  const handleImportData = () => {
+    // TODO: Implement data import
+    console.log('Importing data...');
+  };
+
   return (
-    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4">
-      {/* View Tabs */}
-      <DatabaseViewTabs
-        currentView={currentViewType}
-        onViewChange={onViewChange}
-        className="flex-1"
+    <div className="space-y-4">
+      {/* Primary Toolbar */}
+      <DatabasePrimaryToolbar
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        hasActiveFilters={hasActiveFilters}
+        hasActiveSorts={hasActiveSorts}
+        onFilterClick={() => setShowFilterModal(true)}
+        onSortClick={() => setShowSortModal(true)}
+        onNewRecord={handleNewRecord}
+        onNewTemplate={handleNewTemplate}
+        onImportData={handleImportData}
       />
 
-      {/* Controls */}
-      <div className="flex items-center gap-2">
-        {/* Grouping Controls */}
-        <DatabaseGroupingControls
-          fields={fields}
-          groupingFieldId={groupingFieldId}
-          onGroupingChange={onGroupingChange}
+      {/* View Controls */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 px-4">
+        {/* View Tabs */}
+        <DatabaseViewTabs
+          currentView={currentViewType}
+          onViewChange={onViewChange}
+          className="flex-1"
         />
 
-        {/* Filter Button */}
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setShowFilterModal(true)}
-          className="gap-2"
-        >
-          <Filter className="h-4 w-4" />
-          <span className="hidden sm:inline">Filter</span>
-          {hasActiveFilters && (
-            <Badge variant="secondary" className="h-5 px-1.5 text-xs">
-              !
-            </Badge>
-          )}
-        </Button>
+        {/* Secondary Controls */}
+        <div className="flex items-center gap-2">
+          {/* Grouping Controls */}
+          <DatabaseGroupingControls
+            fields={fields}
+            groupingFieldId={groupingFieldId}
+            onGroupingChange={onGroupingChange}
+          />
 
-        {/* Sort Button */}
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setShowSortModal(true)}
-          className="gap-2"
-        >
-          <SortAsc className="h-4 w-4" />
-          <span className="hidden sm:inline">Sort</span>
-          {hasActiveSorts && (
-            <Badge variant="secondary" className="h-5 px-1.5 text-xs">
-              !
-            </Badge>
-          )}
-        </Button>
-
-        {/* New Record Button */}
-        <Button size="sm" className="gap-2">
-          <Plus className="h-4 w-4" />
-          <span className="hidden sm:inline">New</span>
-        </Button>
-
-        {/* More Options */}
-        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-          <MoreHorizontal className="h-4 w-4" />
-        </Button>
+          {/* More Options */}
+          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+            <MoreHorizontal className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
     </div>
   );
