@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -20,6 +19,10 @@ interface DatabaseField {
   defaultValue?: string;
 }
 
+interface DatabaseWizardProps {
+  onDatabaseCreated?: () => void;
+}
+
 const FIELD_TYPES = [
   { value: 'TEXT', label: 'Text' },
   { value: 'INTEGER', label: 'Number' },
@@ -29,7 +32,7 @@ const FIELD_TYPES = [
   { value: 'JSONB', label: 'JSON' },
 ];
 
-export function DatabaseWizard() {
+export function DatabaseWizard({ onDatabaseCreated }: DatabaseWizardProps) {
   const { workspaceId } = useParams<{ workspaceId: string }>();
   const [open, setOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('templates');
@@ -127,6 +130,11 @@ export function DatabaseWizard() {
       }]);
       setOpen(false);
 
+      // Call the callback to refresh the parent component
+      if (onDatabaseCreated) {
+        onDatabaseCreated();
+      }
+
     } catch (error) {
       console.error('Error creating database:', error);
       toast({
@@ -145,6 +153,11 @@ export function DatabaseWizard() {
       title: "Database created from template!",
       description: "Your new database has been created successfully.",
     });
+    
+    // Call the callback to refresh the parent component
+    if (onDatabaseCreated) {
+      onDatabaseCreated();
+    }
   };
 
   return (

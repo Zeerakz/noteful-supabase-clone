@@ -34,7 +34,7 @@ export function WorkspaceView() {
   const navigate = useNavigate();
   const { workspaces } = useWorkspaces();
   const { pages, createPage } = usePages(workspaceId!);
-  const { databases, deleteDatabase } = useDatabases(workspaceId!);
+  const { databases, deleteDatabase, fetchDatabases } = useDatabases(workspaceId!);
   const { openSearch } = useGlobalSearch();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [databaseToDelete, setDatabaseToDelete] = useState<{ id: string; name: string } | null>(null);
@@ -107,6 +107,11 @@ export function WorkspaceView() {
     }
   };
 
+  const handleDatabaseCreated = () => {
+    // Force a refresh of databases when a new one is created
+    fetchDatabases();
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -129,7 +134,7 @@ export function WorkspaceView() {
             <Bookmark className="h-4 w-4" />
             Templates
           </Button>
-          <DatabaseWizard />
+          <DatabaseWizard onDatabaseCreated={handleDatabaseCreated} />
           <Button onClick={handleCreatePage} className="gap-2">
             <Plus className="h-4 w-4" />
             New Page
@@ -237,7 +242,7 @@ export function WorkspaceView() {
                   Create your first page or database to start organizing your content
                 </p>
                 <div className="flex gap-2">
-                  <DatabaseWizard />
+                  <DatabaseWizard onDatabaseCreated={handleDatabaseCreated} />
                   <Button onClick={handleCreatePage} className="gap-2">
                     <Plus className="h-4 w-4" />
                     Create Page

@@ -11,16 +11,22 @@ export function useDatabases(workspaceId?: string) {
   const { user } = useAuth();
 
   const fetchDatabases = async () => {
-    if (!user || !workspaceId) return;
+    if (!user || !workspaceId) {
+      setDatabases([]);
+      setLoading(false);
+      return;
+    }
 
     try {
       setLoading(true);
+      setError(null);
       const { data, error } = await DatabaseService.fetchDatabases(workspaceId);
 
       if (error) throw new Error(error);
       setDatabases(data || []);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch databases');
+      setDatabases([]);
     } finally {
       setLoading(false);
     }
@@ -29,29 +35,51 @@ export function useDatabases(workspaceId?: string) {
   const createDatabase = async (request: DatabaseCreateRequest) => {
     if (!user || !workspaceId) return { error: 'User not authenticated or workspace not selected' };
 
-    const { data, error } = await DatabaseService.createDatabase(
-      workspaceId, 
-      user.id, 
-      request
-    );
-    
-    if (!error) {
-      // Refresh databases list
+    try {
+      const { data, error } = await DatabaseService.createDatabase(
+        workspaceId, 
+        user.id, 
+        request
+      );
+      
+      if (error) {
+        return { data: null, error };
+      }
+
+      // Immediately add the new database to the local state for instant UI update
+      if (data) {
+        setDatabases(prev => [data, ...prev]);
+      }
+      
+      // Also fetch fresh data to ensure consistency
       await fetchDatabases();
+      
+      return { data, error: null };
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to create database';
+      return { data: null, error: errorMessage };
     }
-    
-    return { data, error };
   };
 
   const deleteDatabase = async (id: string) => {
-    const { error } = await DatabaseService.deleteDatabase(id);
-    
-    if (!error) {
-      // Refresh databases list
+    try {
+      const { error } = await DatabaseService.deleteDatabase(id);
+      
+      if (error) {
+        return { error };
+      }
+
+      // Immediately remove the database from local state for instant UI update
+      setDatabases(prev => prev.filter(db => db.id !== id));
+      
+      // Also fetch fresh data to ensure consistency
       await fetchDatabases();
+      
+      return { error: null };
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to delete database';
+      return { error: errorMessage };
     }
-    
-    return { error };
   };
 
   useEffect(() => {
