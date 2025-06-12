@@ -1,18 +1,22 @@
-
 import React, { useState, useEffect } from 'react';
 import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Plus, CalendarDays } from 'lucide-react';
-import { DatabaseService } from '@/services/databaseService';
+import { useFilteredDatabasePages } from '@/hooks/useFilteredDatabasePages';
 import { PagePropertyService } from '@/services/pagePropertyService';
-import { DatabaseField, PageProperty } from '@/types/database';
+import { DatabaseField } from '@/types/database';
+import { FilterRule } from '@/components/database/FilterModal';
+import { SortRule } from '@/components/database/SortingModal';
 import { useAuth } from '@/contexts/AuthContext';
 import { format, parseISO } from 'date-fns';
 
 interface DatabaseCalendarViewProps {
   databaseId: string;
   workspaceId: string;
+  filters?: FilterRule[];
+  fields?: DatabaseField[];
+  sortRules?: SortRule[];
 }
 
 interface PageWithProperties {
@@ -22,47 +26,38 @@ interface PageWithProperties {
   dateValue?: Date;
 }
 
-export function DatabaseCalendarView({ databaseId, workspaceId }: DatabaseCalendarViewProps) {
-  const [fields, setFields] = useState<DatabaseField[]>([]);
-  const [pages, setPages] = useState<PageWithProperties[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+export function DatabaseCalendarView({ databaseId, workspaceId, filters = [], fields = [], sortRules = [] }: DatabaseCalendarViewProps) {
+  const { pages, loading, error } = useFilteredDatabasePages({
+    databaseId,
+    filters,
+    fields,
+    sortRules,
+  });
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const { user } = useAuth();
 
   // Find the first date-type field
   const dateField = fields.find(field => field.type === 'date');
 
-  // Fetch database fields
-  useEffect(() => {
-    const fetchFields = async () => {
-      try {
-        const { data, error } = await DatabaseService.fetchDatabaseFields(databaseId);
-        if (error) throw new Error(error);
-        setFields(data || []);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to fetch fields');
-      }
+  // Transform pages data to expected format
+  const pagesWithProperties: PageWithProperties[] = pages.map(page => {
+    const properties: Record<string, string> = {};
+    (page.page_properties || []).forEach((prop: any) => {
+      properties[prop.field_id] = prop.value || '';
+    });
+    
+    return {
+      pageId: page.id,
+      title: page.title,
+      properties,
     };
-
-    if (databaseId) {
-      fetchFields();
-    }
-  }, [databaseId]);
-
-  // For now, we'll show a placeholder structure
-  // In a full implementation, you'd fetch pages that belong to this database
-  useEffect(() => {
-    setLoading(false);
-    // Mock data for demonstration - in real implementation, fetch from database
-    setPages([]);
-  }, [databaseId]);
+  });
 
   // Get pages for the selected date
   const getPagesForDate = (date: Date): PageWithProperties[] => {
     if (!dateField) return [];
     
-    return pages.filter(page => {
+    return pagesWithProperties.filter(page => {
       const pageDateValue = page.properties[dateField.id];
       if (!pageDateValue) return false;
       
@@ -80,7 +75,7 @@ export function DatabaseCalendarView({ databaseId, workspaceId }: DatabaseCalend
     if (!dateField) return [];
     
     const dates: Date[] = [];
-    pages.forEach(page => {
+    pagesWithProperties.forEach(page => {
       const pageDateValue = page.properties[dateField.id];
       if (pageDateValue) {
         try {

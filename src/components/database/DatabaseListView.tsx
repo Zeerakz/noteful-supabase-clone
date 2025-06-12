@@ -1,18 +1,22 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Plus, Edit } from 'lucide-react';
-import { DatabaseService } from '@/services/databaseService';
+import { useFilteredDatabasePages } from '@/hooks/useFilteredDatabasePages';
 import { PagePropertyService } from '@/services/pagePropertyService';
-import { DatabaseField, PageProperty } from '@/types/database';
+import { DatabaseField } from '@/types/database';
+import { FilterRule } from '@/components/database/FilterModal';
+import { SortRule } from '@/components/database/SortingModal';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface DatabaseListViewProps {
   databaseId: string;
   workspaceId: string;
+  filters?: FilterRule[];
+  fields?: DatabaseField[];
+  sortRules?: SortRule[];
 }
 
 interface PageWithProperties {
@@ -21,37 +25,28 @@ interface PageWithProperties {
   properties: Record<string, string>;
 }
 
-export function DatabaseListView({ databaseId, workspaceId }: DatabaseListViewProps) {
-  const [fields, setFields] = useState<DatabaseField[]>([]);
-  const [pages, setPages] = useState<PageWithProperties[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+export function DatabaseListView({ databaseId, workspaceId, filters = [], fields = [], sortRules = [] }: DatabaseListViewProps) {
+  const { pages, loading, error } = useFilteredDatabasePages({
+    databaseId,
+    filters,
+    fields,
+    sortRules,
+  });
   const { user } = useAuth();
 
-  // Fetch database fields
-  useEffect(() => {
-    const fetchFields = async () => {
-      try {
-        const { data, error } = await DatabaseService.fetchDatabaseFields(databaseId);
-        if (error) throw new Error(error);
-        setFields(data || []);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to fetch fields');
-      }
+  // Transform pages data to expected format
+  const pagesWithProperties: PageWithProperties[] = pages.map(page => {
+    const properties: Record<string, string> = {};
+    (page.page_properties || []).forEach((prop: any) => {
+      properties[prop.field_id] = prop.value || '';
+    });
+    
+    return {
+      pageId: page.id,
+      title: page.title,
+      properties,
     };
-
-    if (databaseId) {
-      fetchFields();
-    }
-  }, [databaseId]);
-
-  // For now, we'll show a placeholder structure
-  // In a full implementation, you'd fetch pages that belong to this database
-  useEffect(() => {
-    setLoading(false);
-    // Mock data for demonstration
-    setPages([]);
-  }, [databaseId]);
+  });
 
   const handleFieldEdit = async (pageId: string, fieldId: string, value: string) => {
     if (!user) return;
@@ -66,13 +61,6 @@ export function DatabaseListView({ databaseId, workspaceId }: DatabaseListViewPr
       
       if (error) {
         console.error('Failed to update property:', error);
-      } else {
-        // Update local state
-        setPages(prev => prev.map(page => 
-          page.pageId === pageId 
-            ? { ...page, properties: { ...page.properties, [fieldId]: value } }
-            : page
-        ));
       }
     } catch (err) {
       console.error('Error updating property:', err);
@@ -118,7 +106,7 @@ export function DatabaseListView({ databaseId, workspaceId }: DatabaseListViewPr
         </Button>
       </div>
 
-      {pages.length === 0 ? (
+      {pagesWithProperties.length === 0 ? (
         <div className="text-center py-12">
           <div className="mb-4">
             <Edit className="h-12 w-12 text-muted-foreground mx-auto" />
@@ -134,7 +122,7 @@ export function DatabaseListView({ databaseId, workspaceId }: DatabaseListViewPr
         </div>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {pages.map((page) => (
+          {pagesWithProperties.map((page) => (
             <DatabaseCard
               key={page.pageId}
               page={page}

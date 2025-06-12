@@ -3,14 +3,16 @@ import { useState, useEffect } from 'react';
 import { DatabaseService } from '@/services/databaseService';
 import { DatabaseField } from '@/types/database';
 import { FilterRule } from '@/components/database/FilterModal';
+import { SortRule } from '@/components/database/SortingModal';
 
 interface UseFilteredDatabasePagesProps {
   databaseId: string;
   filters: FilterRule[];
   fields: DatabaseField[];
+  sortRules: SortRule[];
 }
 
-export function useFilteredDatabasePages({ databaseId, filters, fields }: UseFilteredDatabasePagesProps) {
+export function useFilteredDatabasePages({ databaseId, filters, fields, sortRules }: UseFilteredDatabasePagesProps) {
   const [pages, setPages] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -30,7 +32,8 @@ export function useFilteredDatabasePages({ databaseId, filters, fields }: UseFil
         const { data, error: fetchError } = await DatabaseService.fetchDatabasePages(
           databaseId,
           filters,
-          fields
+          fields,
+          sortRules
         );
 
         if (fetchError) {
@@ -48,7 +51,7 @@ export function useFilteredDatabasePages({ databaseId, filters, fields }: UseFil
     };
 
     fetchPages();
-  }, [databaseId, filters, fields]);
+  }, [databaseId, filters, fields, sortRules]);
 
   return {
     pages,
@@ -61,7 +64,8 @@ export function useFilteredDatabasePages({ databaseId, filters, fields }: UseFil
           const { data, error: fetchError } = await DatabaseService.fetchDatabasePages(
             databaseId,
             filters,
-            fields
+            fields,
+            sortRules
           );
 
           if (fetchError) {
