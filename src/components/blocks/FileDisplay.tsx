@@ -26,40 +26,42 @@ interface FileDisplayProps {
 
 export function FileDisplay({ fileRecord, isEditable, onDownload, onRemove }: FileDisplayProps) {
   return (
-    <div className="border border-border rounded-lg p-4 bg-background">
-      <div className="flex items-center gap-3">
-        <div className="flex-shrink-0">
-          <File className="h-8 w-8 text-muted-foreground" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <h4 className="text-sm font-medium truncate">{fileRecord.original_filename}</h4>
-          <p className="text-xs text-muted-foreground">
-            {formatFileSize(fileRecord.file_size)}
-            {fileRecord.mime_type && ` • ${fileRecord.mime_type}`}
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            onClick={onDownload}
-            variant="outline"
-            size="sm"
-            className="h-8"
-          >
-            <Download className="h-3 w-3 mr-1" />
-            Download
-          </Button>
-          {isEditable && (
+    <div className="flex items-center gap-3">
+      <div className="flex-1 border border-border rounded-lg p-4 bg-background">
+        <div className="flex items-center gap-3">
+          <div className="flex-shrink-0">
+            <File className="h-8 w-8 text-muted-foreground" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <h4 className="text-sm font-medium truncate">{fileRecord.original_filename}</h4>
+            <p className="text-xs text-muted-foreground">
+              {formatFileSize(fileRecord.file_size)}
+              {fileRecord.mime_type && ` • ${fileRecord.mime_type}`}
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
             <Button
-              onClick={onRemove}
-              variant="ghost"
+              onClick={onDownload}
+              variant="outline"
               size="sm"
-              className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
+              className="h-8"
             >
-              <X className="h-3 w-3" />
+              <Download className="h-3 w-3 mr-1" />
+              Download
             </Button>
-          )}
+          </div>
         </div>
       </div>
+      {isEditable && (
+        <Button
+          onClick={onRemove}
+          variant="ghost"
+          size="sm"
+          className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive flex-shrink-0"
+        >
+          <X className="h-3 w-3" />
+        </Button>
+      )}
     </div>
   );
 }
