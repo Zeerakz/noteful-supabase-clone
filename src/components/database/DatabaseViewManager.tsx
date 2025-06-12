@@ -11,6 +11,7 @@ import { SavedDatabaseView } from '@/types/database';
 import { FilterGroup } from '@/types/filters';
 import { SortRule } from '@/components/database/SortingModal';
 import { DatabaseViewType } from './DatabaseViewSelector';
+import { createEmptyFilterGroup } from '@/utils/filterUtils';
 
 interface DatabaseViewManagerProps {
   views: SavedDatabaseView[];
@@ -115,23 +116,43 @@ export function DatabaseViewManager({
   };
 
   // Parse the current view's filters safely
-  const parseViewFilters = (view: SavedDatabaseView): FilterGroup | null => {
+  const parseViewFilters = (view: SavedDatabaseView): FilterGroup => {
     try {
       if (typeof view.filters === 'string') {
-        return JSON.parse(view.filters);
+        const parsed = JSON.parse(view.filters);
+        // Convert old array format to new FilterGroup format if needed
+        if (Array.isArray(parsed)) {
+          return createEmptyFilterGroup();
+        }
+        // Validate that parsed object has FilterGroup structure
+        if (parsed && typeof parsed === 'object' && 'id' in parsed && 'operator' in parsed) {
+          return parsed as FilterGroup;
+        }
+        return createEmptyFilterGroup();
       }
-      return view.filters as FilterGroup;
+      // Handle case where filters is stored as an array (old format)
+      if (Array.isArray(view.filters)) {
+        return createEmptyFilterGroup();
+      }
+      // Handle case where filters is already a FilterGroup object
+      if (view.filters && typeof view.filters === 'object' && 'id' in view.filters) {
+        return view.filters as FilterGroup;
+      }
+      return createEmptyFilterGroup();
     } catch {
-      return null;
+      return createEmptyFilterGroup();
     }
   };
 
   const parseViewSorts = (view: SavedDatabaseView): SortRule[] => {
     try {
       if (typeof view.sorts === 'string') {
-        return JSON.parse(view.sorts);
+        return JSON.parse(view.sorts) || [];
       }
-      return view.sorts as SortRule[] || [];
+      if (Array.isArray(view.sorts)) {
+        return view.sorts as SortRule[];
+      }
+      return [];
     } catch {
       return [];
     }
@@ -223,8 +244,8 @@ export function DatabaseViewManager({
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => onUpdateView(currentView.id, {
-                    filters: JSON.stringify(currentFilters),
-                    sorts: JSON.stringify(currentSorts),
+                    filters: JSON.stringify(currentFilters) as any,
+                    sorts: JSON.stringify(currentSorts) as any,
                     view_type: currentViewType,
                     grouping_field_id: groupingFieldId,
                   })}
