@@ -120,7 +120,7 @@ export function DatabaseView({ databaseId, workspaceId }: DatabaseViewProps) {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {/* View Manager */}
       <DatabaseViewManager
         views={views}
@@ -137,7 +137,7 @@ export function DatabaseView({ databaseId, workspaceId }: DatabaseViewProps) {
         groupingFieldId={groupingFieldId}
       />
 
-      {/* View Controls */}
+      {/* View Controls with Enhanced Tabs */}
       <DatabaseViewControls
         fields={fields}
         currentViewType={currentViewType}
