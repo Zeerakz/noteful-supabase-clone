@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { DatabaseService } from '@/services/databaseService';
+import { DatabaseQueryService } from '@/services/database/databaseQueryService';
 import { DatabaseField } from '@/types/database';
 import { FilterRule } from '@/components/database/FilterModal';
 import { SortRule } from '@/components/database/SortingModal';
@@ -19,7 +19,7 @@ export function useFilteredDatabasePages({ databaseId, filters, fields, sortRule
   const [error, setError] = useState<string | null>(null);
 
   const { executeWithRetry, retryCount, isRetrying } = useRetryableQuery(
-    () => DatabaseService.fetchDatabasePages(databaseId, filters, fields, sortRules),
+    () => DatabaseQueryService.fetchDatabasePages(databaseId, filters, fields, sortRules),
     { maxRetries: 3, baseDelay: 1000 }
   );
 

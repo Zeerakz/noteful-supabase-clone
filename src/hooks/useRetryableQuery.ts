@@ -1,66 +1,74 @@
 
 import { useState, useCallback } from 'react';
 
-interface RetryConfig {
+export interface RetryableQueryOptions {
   maxRetries?: number;
   baseDelay?: number;
   maxDelay?: number;
+  backoffMultiplier?: number;
 }
 
 export function useRetryableQuery<T>(
-  queryFn: () => Promise<{ data: T | null; error: string | null }>,
-  config: RetryConfig = {}
+  queryFn: () => Promise<T>,
+  options: RetryableQueryOptions = {}
 ) {
-  const { maxRetries = 3, baseDelay = 1000, maxDelay = 8000 } = config;
-  const [retryCount, setRetryCount] = useState(0);
-  const [isRetrying, setIsRetrying] = useState(false);
+  const {
+    maxRetries = 3,
+    baseDelay = 1000,
+    maxDelay = 10000,
+    backoffMultiplier = 2
+  } = options;
 
-  const executeWithRetry = useCallback(async (): Promise<{ data: T | null; error: string | null }> => {
-    let lastError: string | null = null;
+  const [isRetrying, setIsRetrying] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
+
+  const executeWithRetry = useCallback(async (): Promise<T> => {
+    let lastError: Error | null = null;
     
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       try {
-        setRetryCount(attempt);
-        
         if (attempt > 0) {
           setIsRetrying(true);
-          const delay = Math.min(baseDelay * Math.pow(2, attempt - 1), maxDelay);
+          setRetryCount(attempt);
+          
+          // Calculate delay with exponential backoff
+          const delay = Math.min(
+            baseDelay * Math.pow(backoffMultiplier, attempt - 1),
+            maxDelay
+          );
+          
+          console.log(`Retrying query, attempt ${attempt}/${maxRetries}, delay: ${delay}ms`);
           await new Promise(resolve => setTimeout(resolve, delay));
         }
-        
+
         const result = await queryFn();
         
-        if (result.error) {
-          lastError = result.error;
-          // Only retry on network errors or specific database errors
-          if (attempt < maxRetries && (
-            result.error.includes('Failed to fetch') || 
-            result.error.includes('Network') ||
-            result.error.includes('fetch')
-          )) {
-            console.warn(`Query failed, retrying attempt ${attempt + 1}/${maxRetries + 1}:`, result.error);
-            continue;
-          }
+        // Reset retry state on success
+        if (attempt > 0) {
+          setIsRetrying(false);
+          setRetryCount(0);
         }
         
-        setIsRetrying(false);
         return result;
       } catch (error) {
-        lastError = error instanceof Error ? error.message : 'Unknown error';
-        if (attempt < maxRetries) {
-          console.warn(`Query failed, retrying attempt ${attempt + 1}/${maxRetries + 1}:`, lastError);
-          continue;
+        lastError = error instanceof Error ? error : new Error('Unknown error');
+        console.warn(`Query attempt ${attempt + 1} failed:`, lastError.message);
+        
+        // If this is the last attempt, don't continue
+        if (attempt === maxRetries) {
+          break;
         }
       }
     }
-    
+
     setIsRetrying(false);
-    return { data: null, error: lastError || 'Max retries exceeded' };
-  }, [queryFn, maxRetries, baseDelay, maxDelay]);
+    setRetryCount(0);
+    throw lastError || new Error('Query failed after all retries');
+  }, [queryFn, maxRetries, baseDelay, maxDelay, backoffMultiplier]);
 
   return {
     executeWithRetry,
-    retryCount,
-    isRetrying
+    isRetrying,
+    retryCount
   };
 }

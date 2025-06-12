@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { DatabaseField } from '@/types/database';
 import { FilterRule } from '@/components/database/FilterModal';
