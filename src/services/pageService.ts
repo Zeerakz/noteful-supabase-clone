@@ -39,6 +39,23 @@ export class PageService {
     }
   }
 
+  static async getPageProperties(pageId: string): Promise<{ data: any[] | null; error: string | null }> {
+    try {
+      const { data, error } = await supabase
+        .from('page_properties')
+        .select('*')
+        .eq('page_id', pageId);
+
+      if (error) throw error;
+      return { data: data || [], error: null };
+    } catch (err) {
+      return { 
+        data: null, 
+        error: err instanceof Error ? err.message : 'Failed to fetch page properties' 
+      };
+    }
+  }
+
   static async createPage(
     workspaceId: string, 
     userId: string, 

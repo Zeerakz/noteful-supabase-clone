@@ -11,11 +11,12 @@ interface PerformanceMetric {
 export function usePerformanceMetrics() {
   const [metrics, setMetrics] = useState<PerformanceMetric[]>([]);
   const timers = useRef<Map<string, number>>(new Map());
+  const metadataStore = useRef<Map<string, Record<string, any>>>(new Map());
 
   const startTimer = useCallback((name: string, metadata?: Record<string, any>) => {
     timers.current.set(name, performance.now());
     if (metadata) {
-      timers.current.set(`${name}_metadata`, metadata as any);
+      metadataStore.current.set(name, metadata);
     }
   }, []);
 
@@ -23,7 +24,7 @@ export function usePerformanceMetrics() {
     const startTime = timers.current.get(name);
     if (startTime) {
       const duration = performance.now() - startTime;
-      const metadata = timers.current.get(`${name}_metadata`) as Record<string, any> | undefined;
+      const metadata = metadataStore.current.get(name);
       
       const metric: PerformanceMetric = {
         name,
@@ -34,7 +35,7 @@ export function usePerformanceMetrics() {
 
       setMetrics(prev => [...prev.slice(-49), metric]); // Keep last 50 metrics
       timers.current.delete(name);
-      timers.current.delete(`${name}_metadata`);
+      metadataStore.current.delete(name);
       
       return duration;
     }
@@ -83,6 +84,7 @@ export function usePerformanceMetrics() {
   const clearMetrics = useCallback(() => {
     setMetrics([]);
     timers.current.clear();
+    metadataStore.current.clear();
   }, []);
 
   return {

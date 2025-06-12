@@ -54,10 +54,14 @@ export function DatabaseTableView({
       pagesError={pagesError}
       onCreateRow={handleCreateRow}
       onTitleUpdate={handleTitleUpdate}
-      onPropertyUpdate={onPropertyUpdate}
+      onPropertyUpdate={handlePropertyUpdate}
       onDeleteRow={handleDeleteRow}
       onRefetch={refetchPages}
-      pagination={pagination}
+      pagination={pagination ? {
+        ...pagination,
+        totalItems: totalPages,
+        itemsPerPage: itemsPerPage
+      } : null}
       totalPages={totalPages}
       databaseId={databaseId}
     />
