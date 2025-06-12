@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { DatabaseViewSelector, DatabaseViewType } from './DatabaseViewSelector';
 import { DatabaseTableView } from './DatabaseTableView';
@@ -100,7 +99,9 @@ export function DatabaseView({ databaseId, workspaceId, className }: DatabaseVie
           <div className="flex items-center gap-2">
             {hasActiveFilters && (
               <Badge variant="secondary" className="flex items-center gap-1">
-                <Filter className="h-3 w-3" />
+                <span className="modal-icon">
+                  <Filter className="h-3 w-3 pointer-events-none shrink-0" />
+                </span>
                 <span>{filters.length} filter{filters.length !== 1 ? 's' : ''}</span>
               </Badge>
             )}
@@ -111,7 +112,9 @@ export function DatabaseView({ databaseId, workspaceId, className }: DatabaseVie
               onClick={() => setShowFilterModal(true)}
               className="flex items-center gap-2 whitespace-nowrap"
             >
-              <Filter className="h-4 w-4 flex-shrink-0" />
+              <span className="button-icon">
+                <Filter className="h-4 w-4" />
+              </span>
               <span className="text-sm">Filter</span>
             </Button>
           </div>
