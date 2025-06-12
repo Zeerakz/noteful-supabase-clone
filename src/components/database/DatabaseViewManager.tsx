@@ -114,9 +114,32 @@ export function DatabaseViewManager({
     }
   };
 
+  // Parse the current view's filters safely
+  const parseViewFilters = (view: SavedDatabaseView): FilterGroup | null => {
+    try {
+      if (typeof view.filters === 'string') {
+        return JSON.parse(view.filters);
+      }
+      return view.filters as FilterGroup;
+    } catch {
+      return null;
+    }
+  };
+
+  const parseViewSorts = (view: SavedDatabaseView): SortRule[] => {
+    try {
+      if (typeof view.sorts === 'string') {
+        return JSON.parse(view.sorts);
+      }
+      return view.sorts as SortRule[] || [];
+    } catch {
+      return [];
+    }
+  };
+
   const hasUnsavedChanges = currentView && (
-    JSON.stringify(currentView.filters) !== JSON.stringify(currentFilters) ||
-    JSON.stringify(currentView.sorts) !== JSON.stringify(currentSorts) ||
+    JSON.stringify(parseViewFilters(currentView)) !== JSON.stringify(currentFilters) ||
+    JSON.stringify(parseViewSorts(currentView)) !== JSON.stringify(currentSorts) ||
     currentView.view_type !== currentViewType ||
     currentView.grouping_field_id !== groupingFieldId
   );
@@ -200,8 +223,8 @@ export function DatabaseViewManager({
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => onUpdateView(currentView.id, {
-                    filters: currentFilters,
-                    sorts: currentSorts,
+                    filters: JSON.stringify(currentFilters),
+                    sorts: JSON.stringify(currentSorts),
                     view_type: currentViewType,
                     grouping_field_id: groupingFieldId,
                   })}
