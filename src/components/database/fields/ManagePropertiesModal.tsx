@@ -1,18 +1,7 @@
+
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -23,31 +12,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { 
-  Plus, 
-  MoreHorizontal, 
-  GripVertical, 
-  Copy, 
-  Trash2, 
-  Type,
-  Hash,
-  Calendar,
-  CheckSquare,
-  Link,
-  Mail,
-  Phone,
-  Tag,
-  Tags,
-  File,
-  Image as ImageIcon,
-  Calculator,
-  Database,
-  TrendingUp
-} from 'lucide-react';
 import { DatabaseField } from '@/types/database';
 import { PropertyType } from '@/types/property';
-import { RegistryBasedFieldTypeSelector } from '@/components/property/RegistryBasedFieldTypeSelector';
-import { FieldConfigurationPanel } from './FieldConfigurationPanel';
+import { PropertyList } from './PropertyList';
+import { PropertyEditPanel } from './PropertyEditPanel';
 import { NewPropertyWizard } from './NewPropertyWizard';
 
 interface ManagePropertiesModalProps {
@@ -60,24 +28,6 @@ interface ManagePropertiesModalProps {
   onFieldDelete: (fieldId: string) => Promise<void>;
   onFieldCreate: (field: { name: string; type: PropertyType; settings?: any }) => Promise<void>;
 }
-
-const fieldTypeIcons = {
-  text: Type,
-  number: Hash,
-  date: Calendar,
-  datetime: Calendar,
-  checkbox: CheckSquare,
-  url: Link,
-  email: Mail,
-  phone: Phone,
-  select: Tag,
-  multi_select: Tags,
-  file_attachment: File,
-  image: ImageIcon,
-  formula: Calculator,
-  relation: Database,
-  rollup: TrendingUp,
-};
 
 export function ManagePropertiesModal({ 
   open, 
@@ -92,27 +42,6 @@ export function ManagePropertiesModal({
   const [editingField, setEditingField] = useState<DatabaseField | null>(null);
   const [deleteFieldId, setDeleteFieldId] = useState<string | null>(null);
   const [showPropertyWizard, setShowPropertyWizard] = useState(false);
-  const [draggedField, setDraggedField] = useState<DatabaseField | null>(null);
-  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
-
-  const handleSaveEdit = async () => {
-    if (!editingField) return;
-    
-    try {
-      await onFieldUpdate(editingField.id, {
-        name: editingField.name,
-        type: editingField.type,
-        settings: editingField.settings
-      });
-      setEditingField(null);
-    } catch (error) {
-      console.error('Failed to update field:', error);
-    }
-  };
-
-  const handleCancelEdit = () => {
-    setEditingField(null);
-  };
 
   const handleDeleteField = async (fieldId: string) => {
     try {
@@ -131,58 +60,6 @@ export function ManagePropertiesModal({
     }
   };
 
-  const handleDragStart = (field: DatabaseField) => {
-    setDraggedField(field);
-  };
-
-  const handleDragOver = (e: React.DragEvent, index: number) => {
-    e.preventDefault();
-    setDragOverIndex(index);
-  };
-
-  const handleDragLeave = () => {
-    setDragOverIndex(null);
-  };
-
-  const handleDrop = async (e: React.DragEvent, targetIndex: number) => {
-    e.preventDefault();
-    
-    if (!draggedField) return;
-    
-    const currentIndex = fields.findIndex(f => f.id === draggedField.id);
-    if (currentIndex === -1 || currentIndex === targetIndex) return;
-    
-    // Create new array with reordered fields
-    const newFields = [...fields];
-    newFields.splice(currentIndex, 1);
-    newFields.splice(targetIndex, 0, draggedField);
-    
-    // Update positions
-    const updatedFields = newFields.map((field, index) => ({
-      ...field,
-      pos: index
-    }));
-    
-    try {
-      await onFieldsReorder(updatedFields);
-    } catch (error) {
-      console.error('Failed to reorder fields:', error);
-    }
-    
-    setDraggedField(null);
-    setDragOverIndex(null);
-  };
-
-  const handleDragEnd = () => {
-    setDraggedField(null);
-    setDragOverIndex(null);
-  };
-
-  const getFieldIcon = (type: string) => {
-    const IconComponent = fieldTypeIcons[type as keyof typeof fieldTypeIcons] || Type;
-    return <IconComponent className="h-4 w-4" />;
-  };
-
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
@@ -192,180 +69,34 @@ export function ManagePropertiesModal({
           </DialogHeader>
           
           <div className="flex gap-6 h-[60vh]">
-            {/* Properties List */}
-            <div className="flex-1">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm font-medium">Properties</h3>
-                <Button
-                  size="sm"
-                  onClick={() => setShowPropertyWizard(true)}
-                  className="gap-2"
-                >
-                  <Plus className="h-4 w-4" />
-                  Add Property
-                </Button>
-              </div>
-              
-              <ScrollArea className="h-full border rounded-lg">
-                <div className="p-2 space-y-1">
-                  {fields.map((field, index) => {
-                    const isEditing = editingField?.id === field.id;
-                    const isDragOver = dragOverIndex === index;
-                    
-                    return (
-                      <div
-                        key={field.id}
-                        className={`
-                          group flex items-center gap-3 p-3 rounded-lg border
-                          ${isDragOver ? 'border-primary bg-primary/5' : 'border-border hover:bg-muted/50'}
-                          ${isEditing ? 'ring-2 ring-primary' : ''}
-                        `}
-                        draggable
-                        onDragStart={() => handleDragStart(field)}
-                        onDragOver={(e) => handleDragOver(e, index)}
-                        onDragLeave={handleDragLeave}
-                        onDrop={(e) => handleDrop(e, index)}
-                        onDragEnd={handleDragEnd}
-                      >
-                        {/* Drag Handle */}
-                        <div className="cursor-grab active:cursor-grabbing opacity-50 group-hover:opacity-100">
-                          <GripVertical className="h-4 w-4 text-muted-foreground" />
-                        </div>
-                        
-                        {/* Field Icon */}
-                        <div className="flex-shrink-0">
-                          {getFieldIcon(field.type)}
-                        </div>
-                        
-                        {/* Field Info */}
-                        <div className="flex-1 min-w-0">
-                          {isEditing ? (
-                            <Input
-                              value={editingField.name}
-                              onChange={(e) => setEditingField({ ...editingField, name: e.target.value })}
-                              className="text-sm"
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter') handleSaveEdit();
-                                if (e.key === 'Escape') handleCancelEdit();
-                              }}
-                            />
-                          ) : (
-                            <div>
-                              <div className="font-medium text-sm">{field.name}</div>
-                              <div className="text-xs text-muted-foreground capitalize">
-                                {field.type.replace('_', ' ')}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                        
-                        {/* Type Badge */}
-                        <Badge variant="secondary" className="text-xs">
-                          {field.type.replace('_', ' ')}
-                        </Badge>
-                        
-                        {/* Actions */}
-                        <div className="flex items-center gap-1">
-                          {isEditing ? (
-                            <>
-                              <Button size="sm" variant="ghost" onClick={handleSaveEdit}>
-                                Save
-                              </Button>
-                              <Button size="sm" variant="ghost" onClick={handleCancelEdit}>
-                                Cancel
-                              </Button>
-                            </>
-                          ) : (
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button 
-                                  size="sm" 
-                                  variant="ghost" 
-                                  className="opacity-0 group-hover:opacity-100"
-                                >
-                                  <MoreHorizontal className="h-4 w-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem
-                                  onClick={() => setEditingField(field)}
-                                >
-                                  Edit Property
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  onClick={() => handleDuplicateField(field)}
-                                >
-                                  <Copy className="h-4 w-4 mr-2" />
-                                  Duplicate
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem
-                                  onClick={() => setDeleteFieldId(field.id)}
-                                  className="text-destructive"
-                                >
-                                  <Trash2 className="h-4 w-4 mr-2" />
-                                  Delete
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </ScrollArea>
-            </div>
+            <PropertyList
+              fields={fields}
+              editingField={editingField}
+              onEditingFieldChange={setEditingField}
+              onFieldsReorder={onFieldsReorder}
+              onFieldUpdate={onFieldUpdate}
+              onFieldDuplicate={handleDuplicateField}
+              onFieldDelete={setDeleteFieldId}
+              onAddProperty={() => setShowPropertyWizard(true)}
+            />
             
-            {/* Edit Panel */}
             {editingField && (
               <>
                 <Separator orientation="vertical" />
-                <div className="w-80">
-                  <h3 className="text-sm font-medium mb-4">Edit Property</h3>
-                  
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="field-name">Property Name</Label>
-                      <Input
-                        id="field-name"
-                        value={editingField.name}
-                        onChange={(e) => setEditingField({ ...editingField, name: e.target.value })}
-                        placeholder="Enter property name"
-                      />
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="field-type">Property Type</Label>
-                      <RegistryBasedFieldTypeSelector
-                        value={editingField.type as PropertyType}
-                        onValueChange={(type) => setEditingField({ ...editingField, type })}
-                        disabled={true}
-                      />
-                    </div>
-                    
-                    {/* Field Configuration */}
-                    <FieldConfigurationPanel
-                      fieldType={editingField.type as any}
-                      settings={editingField.settings}
-                      onSettingsChange={(settings) => setEditingField({ ...editingField, settings })}
-                      availableFields={fields}
-                      workspaceId=""
-                    />
-                    
-                    <div className="flex gap-2 pt-4">
-                      <Button onClick={handleSaveEdit} className="flex-1">
-                        Save Changes
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        onClick={() => setEditingField(null)}
-                      >
-                        Cancel
-                      </Button>
-                    </div>
-                  </div>
-                </div>
+                <PropertyEditPanel
+                  editingField={editingField}
+                  fields={fields}
+                  onFieldChange={setEditingField}
+                  onSave={async () => {
+                    await onFieldUpdate(editingField.id, {
+                      name: editingField.name,
+                      type: editingField.type,
+                      settings: editingField.settings
+                    });
+                    setEditingField(null);
+                  }}
+                  onCancel={() => setEditingField(null)}
+                />
               </>
             )}
           </div>
