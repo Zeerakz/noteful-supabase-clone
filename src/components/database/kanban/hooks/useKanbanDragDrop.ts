@@ -11,7 +11,7 @@ interface UseKanbanDragDropProps {
   fields: DatabaseField[];
   pages: PageWithProperties[];
   columns: KanbanColumn[];
-  selectField: DatabaseField | undefined;
+  selectField: DatabaseField | null;
   setColumns: (columns: KanbanColumn[]) => void;
   setPages: React.Dispatch<React.SetStateAction<PageWithProperties[]>>;
 }

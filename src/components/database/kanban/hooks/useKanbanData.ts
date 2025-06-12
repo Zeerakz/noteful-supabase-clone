@@ -6,17 +6,15 @@ import { PageWithProperties, KanbanColumn } from '../types';
 
 interface UseKanbanDataProps {
   databaseId: string;
+  selectedField: DatabaseField | null;
 }
 
-export function useKanbanData({ databaseId }: UseKanbanDataProps) {
+export function useKanbanData({ databaseId, selectedField }: UseKanbanDataProps) {
   const [fields, setFields] = useState<DatabaseField[]>([]);
   const [pages, setPages] = useState<PageWithProperties[]>([]);
   const [columns, setColumns] = useState<KanbanColumn[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  // Find the first select-type field for grouping
-  const selectField = fields.find(field => field.type === 'select' || field.type === 'multi-select');
 
   // Fetch database fields
   useEffect(() => {
@@ -43,17 +41,19 @@ export function useKanbanData({ databaseId }: UseKanbanDataProps) {
     setPages([]);
   }, [databaseId]);
 
-  // Create columns based on select field options
+  // Create columns based on selected field options
   useEffect(() => {
-    if (!selectField) {
+    if (!selectedField) {
       setColumns([]);
       return;
     }
 
-    const options = selectField.settings?.options || [];
-    const defaultColumns: KanbanColumn[] = options.map((option: string) => ({
-      id: option.toLowerCase().replace(/\s+/g, '-'),
-      title: option,
+    const options = selectedField.settings?.options || [];
+    const defaultColumns: KanbanColumn[] = options.map((option: any) => ({
+      id: typeof option === 'string' 
+        ? option.toLowerCase().replace(/\s+/g, '-')
+        : option.id || option.name?.toLowerCase().replace(/\s+/g, '-'),
+      title: typeof option === 'string' ? option : option.name || option.id,
       pages: [],
     }));
 
@@ -64,12 +64,12 @@ export function useKanbanData({ databaseId }: UseKanbanDataProps) {
       pages: [],
     });
 
-    // Group pages by select field value and sort by position
+    // Group pages by selected field value and sort by position
     const groupedColumns = defaultColumns.map(column => ({
       ...column,
       pages: pages
         .filter(page => {
-          const fieldValue = page.properties[selectField.id];
+          const fieldValue = page.properties[selectedField.id];
           if (column.id === 'no-status') {
             return !fieldValue || fieldValue.trim() === '';
           }
@@ -79,7 +79,7 @@ export function useKanbanData({ databaseId }: UseKanbanDataProps) {
     }));
 
     setColumns(groupedColumns);
-  }, [selectField, pages]);
+  }, [selectedField, pages]);
 
   return {
     fields,
@@ -87,7 +87,6 @@ export function useKanbanData({ databaseId }: UseKanbanDataProps) {
     columns,
     loading,
     error,
-    selectField,
     setColumns,
     setPages
   };

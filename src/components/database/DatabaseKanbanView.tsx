@@ -1,10 +1,11 @@
 
 import React from 'react';
-import { Button } from '@/components/ui/button';
-import { Plus, Kanban } from 'lucide-react';
+import { Kanban } from 'lucide-react';
 import { DragDropContext } from 'react-beautiful-dnd';
 import { KanbanColumn } from './kanban/KanbanColumn';
+import { KanbanViewHeader } from './kanban/KanbanViewHeader';
 import { useKanbanData } from './kanban/hooks/useKanbanData';
+import { useKanbanFieldSelection } from './kanban/hooks/useKanbanFieldSelection';
 import { useKanbanDragDrop } from './kanban/hooks/useKanbanDragDrop';
 
 interface DatabaseKanbanViewProps {
@@ -19,21 +20,37 @@ export function DatabaseKanbanView({ databaseId, workspaceId }: DatabaseKanbanVi
     columns,
     loading,
     error,
-    selectField,
     setColumns,
     setPages
-  } = useKanbanData({ databaseId });
+  } = useKanbanData({ databaseId, selectedField: null });
+
+  const {
+    selectedField,
+    selectFields,
+    handleFieldChange
+  } = useKanbanFieldSelection({ fields });
+
+  // Re-fetch data when selected field changes
+  const {
+    fields: updatedFields,
+    pages: updatedPages,
+    columns: updatedColumns,
+    loading: updatedLoading,
+    error: updatedError,
+    setColumns: setUpdatedColumns,
+    setPages: setUpdatedPages
+  } = useKanbanData({ databaseId, selectedField });
 
   const { handleDragEnd } = useKanbanDragDrop({
-    fields,
-    pages,
-    columns,
-    selectField,
-    setColumns,
-    setPages
+    fields: updatedFields,
+    pages: updatedPages,
+    columns: updatedColumns,
+    selectField: selectedField,
+    setColumns: setUpdatedColumns,
+    setPages: setUpdatedPages
   });
 
-  if (loading) {
+  if (updatedLoading) {
     return (
       <div className="flex items-center justify-center py-8">
         <div className="text-center">
@@ -44,15 +61,15 @@ export function DatabaseKanbanView({ databaseId, workspaceId }: DatabaseKanbanVi
     );
   }
 
-  if (error) {
+  if (updatedError) {
     return (
       <div className="text-center py-8">
-        <p className="text-destructive">{error}</p>
+        <p className="text-destructive">{updatedError}</p>
       </div>
     );
   }
 
-  if (!selectField) {
+  if (selectFields.length === 0) {
     return (
       <div className="text-center py-12">
         <Kanban className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
@@ -69,42 +86,31 @@ export function DatabaseKanbanView({ databaseId, workspaceId }: DatabaseKanbanVi
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-lg font-medium">Kanban View</h3>
-          <p className="text-sm text-muted-foreground">
-            Grouped by {selectField.name}
-          </p>
-        </div>
-        <Button size="sm" className="gap-2">
-          <Plus className="h-4 w-4" />
-          Add Card
-        </Button>
-      </div>
+      <KanbanViewHeader
+        selectFields={selectFields}
+        selectedField={selectedField}
+        onFieldChange={handleFieldChange}
+      />
 
       <DragDropContext onDragEnd={handleDragEnd}>
         <div className="flex gap-6 overflow-x-auto pb-4">
-          {columns.map((column) => (
+          {updatedColumns.map((column) => (
             <KanbanColumn
               key={column.id}
               column={column}
-              fields={fields}
+              fields={updatedFields}
             />
           ))}
         </div>
       </DragDropContext>
 
-      {pages.length === 0 && (
+      {updatedPages.length === 0 && (
         <div className="text-center py-8">
           <Kanban className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
           <h3 className="text-lg font-medium mb-2">No cards yet</h3>
           <p className="text-muted-foreground mb-4">
             Create your first database entry to see it on the kanban board.
           </p>
-          <Button className="gap-2">
-            <Plus className="h-4 w-4" />
-            Create First Card
-          </Button>
         </div>
       )}
     </div>
