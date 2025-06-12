@@ -1,7 +1,8 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { DatabaseViewSelector, DatabaseViewType } from './DatabaseViewSelector';
 import { DatabaseGroupingControls } from './DatabaseGroupingControls';
+import { DatabaseViewManager } from './DatabaseViewManager';
 import { DatabaseTableView } from './DatabaseTableView';
 import { DatabaseListView } from './DatabaseListView';
 import { DatabaseTimelineView } from './DatabaseTimelineView';
@@ -12,7 +13,7 @@ import { DatabaseFormView } from './DatabaseFormView';
 import { FilterModal } from './FilterModal';
 import { SortingModal } from './SortingModal';
 import { useDatabaseFields } from '@/hooks/useDatabaseFields';
-import { useDatabaseView } from '@/hooks/useDatabaseView';
+import { useSavedDatabaseViews } from '@/hooks/useSavedDatabaseViews';
 import { useFilters } from '@/hooks/useFilters';
 import { useSorting } from '@/hooks/useSorting';
 import { Button } from '@/components/ui/button';
@@ -26,14 +27,20 @@ interface DatabaseViewProps {
 export function DatabaseView({ databaseId, workspaceId }: DatabaseViewProps) {
   const { fields, loading: fieldsLoading, error: fieldsError } = useDatabaseFields(databaseId);
   const { 
-    defaultView, 
-    groupingFieldId, 
-    collapsedGroups,
-    saveDefaultView, 
-    updateGrouping,
-    toggleGroupCollapse 
-  } = useDatabaseView(databaseId);
-  const [currentView, setCurrentView] = useState<DatabaseViewType>(defaultView);
+    views,
+    currentView,
+    setCurrentView,
+    loading: viewsLoading,
+    createView,
+    updateView,
+    deleteView,
+    duplicateView,
+    setDefaultView,
+  } = useSavedDatabaseViews(databaseId, workspaceId);
+  
+  const [currentViewType, setCurrentViewType] = useState<DatabaseViewType>('table');
+  const [groupingFieldId, setGroupingFieldId] = useState<string | undefined>();
+  const [collapsedGroups, setCollapsedGroups] = useState<string[]>([]);
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [showSortModal, setShowSortModal] = useState(false);
 
@@ -51,12 +58,52 @@ export function DatabaseView({ databaseId, workspaceId }: DatabaseViewProps) {
     clearSorts,
   } = useSorting();
 
+  // Update local state when current view changes
+  useEffect(() => {
+    if (currentView) {
+      setCurrentViewType(currentView.view_type as DatabaseViewType);
+      setGroupingFieldId(currentView.grouping_field_id);
+      setCollapsedGroups(currentView.grouping_collapsed_groups || []);
+      
+      try {
+        const parsedFilters = typeof currentView.filters === 'string' 
+          ? JSON.parse(currentView.filters) 
+          : currentView.filters;
+        setFilters(parsedFilters || []);
+      } catch {
+        setFilters([]);
+      }
+      
+      try {
+        const parsedSorts = typeof currentView.sorts === 'string' 
+          ? JSON.parse(currentView.sorts) 
+          : currentView.sorts;
+        setSortRules(parsedSorts || []);
+      } catch {
+        setSortRules([]);
+      }
+    }
+  }, [currentView, setFilters, setSortRules]);
+
   const handleViewChange = (view: DatabaseViewType) => {
-    setCurrentView(view);
-    saveDefaultView(view);
+    setCurrentViewType(view);
   };
 
-  if (fieldsLoading) {
+  const handleGroupingChange = (fieldId?: string) => {
+    setGroupingFieldId(fieldId);
+    setCollapsedGroups([]); // Reset collapsed groups when changing grouping field
+  };
+
+  const toggleGroupCollapse = (groupValue: string) => {
+    setCollapsedGroups(prev => {
+      const isCollapsed = prev.includes(groupValue);
+      return isCollapsed
+        ? prev.filter(g => g !== groupValue)
+        : [...prev, groupValue];
+    });
+  };
+
+  if (fieldsLoading || viewsLoading) {
     return (
       <div className="flex items-center justify-center p-8">
         <div className="text-muted-foreground">Loading database...</div>
@@ -84,7 +131,7 @@ export function DatabaseView({ databaseId, workspaceId }: DatabaseViewProps) {
       onToggleGroupCollapse: toggleGroupCollapse,
     };
 
-    switch (currentView) {
+    switch (currentViewType) {
       case 'table':
         return <DatabaseTableView {...commonProps} />;
       case 'list':
@@ -112,18 +159,34 @@ export function DatabaseView({ databaseId, workspaceId }: DatabaseViewProps) {
 
   return (
     <div className="space-y-4">
+      {/* View Manager */}
+      <DatabaseViewManager
+        views={views}
+        currentView={currentView}
+        onViewSelect={setCurrentView}
+        onCreateView={createView}
+        onUpdateView={updateView}
+        onDeleteView={deleteView}
+        onDuplicateView={duplicateView}
+        onSetDefaultView={setDefaultView}
+        currentFilters={filters}
+        currentSorts={sortRules}
+        currentViewType={currentViewType}
+        groupingFieldId={groupingFieldId}
+      />
+
       <div className="flex items-center justify-between">
         <DatabaseViewSelector
-          currentView={currentView}
+          currentView={currentViewType}
           onViewChange={handleViewChange}
         />
 
-        {currentView !== 'form' && (
+        {currentViewType !== 'form' && (
           <div className="flex items-center gap-4">
             <DatabaseGroupingControls
               fields={fields}
               groupingFieldId={groupingFieldId}
-              onGroupingChange={updateGrouping}
+              onGroupingChange={handleGroupingChange}
             />
 
             <div className="flex items-center gap-2">

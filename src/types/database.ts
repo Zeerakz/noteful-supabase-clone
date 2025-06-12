@@ -54,6 +54,34 @@ export interface DatabaseView {
   updated_at: string;
 }
 
+export interface SavedDatabaseView {
+  id: string;
+  database_id: string;
+  user_id: string;
+  workspace_id: string;
+  name: string;
+  description?: string;
+  view_type: 'table' | 'list' | 'timeline' | 'calendar' | 'kanban' | 'form' | 'gallery';
+  filters: any[];
+  sorts: any[];
+  grouping_field_id?: string;
+  grouping_collapsed_groups?: string[];
+  is_shared: boolean;
+  is_default: boolean;
+  created_at: string;
+  updated_at: string;
+  created_by: string;
+}
+
+export interface SavedViewPermission {
+  id: string;
+  view_id: string;
+  user_id: string;
+  permission_type: 'view' | 'edit';
+  granted_by: string;
+  created_at: string;
+}
+
 export interface FieldDependency {
   id: string;
   source_field_id: string;

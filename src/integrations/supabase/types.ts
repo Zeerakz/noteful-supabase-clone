@@ -470,6 +470,98 @@ export type Database = {
         }
         Relationships: []
       }
+      saved_database_views: {
+        Row: {
+          created_at: string
+          created_by: string
+          database_id: string
+          description: string | null
+          filters: Json | null
+          grouping_collapsed_groups: Json | null
+          grouping_field_id: string | null
+          id: string
+          is_default: boolean | null
+          is_shared: boolean | null
+          name: string
+          sorts: Json | null
+          updated_at: string
+          user_id: string
+          view_type: string
+          workspace_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          database_id: string
+          description?: string | null
+          filters?: Json | null
+          grouping_collapsed_groups?: Json | null
+          grouping_field_id?: string | null
+          id?: string
+          is_default?: boolean | null
+          is_shared?: boolean | null
+          name: string
+          sorts?: Json | null
+          updated_at?: string
+          user_id: string
+          view_type: string
+          workspace_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          database_id?: string
+          description?: string | null
+          filters?: Json | null
+          grouping_collapsed_groups?: Json | null
+          grouping_field_id?: string | null
+          id?: string
+          is_default?: boolean | null
+          is_shared?: boolean | null
+          name?: string
+          sorts?: Json | null
+          updated_at?: string
+          user_id?: string
+          view_type?: string
+          workspace_id?: string
+        }
+        Relationships: []
+      }
+      saved_view_permissions: {
+        Row: {
+          created_at: string
+          granted_by: string
+          id: string
+          permission_type: string
+          user_id: string
+          view_id: string
+        }
+        Insert: {
+          created_at?: string
+          granted_by: string
+          id?: string
+          permission_type?: string
+          user_id: string
+          view_id: string
+        }
+        Update: {
+          created_at?: string
+          granted_by?: string
+          id?: string
+          permission_type?: string
+          user_id?: string
+          view_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "saved_view_permissions_view_id_fkey"
+            columns: ["view_id"]
+            isOneToOne: false
+            referencedRelation: "saved_database_views"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       templates: {
         Row: {
           content: Json
