@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Download, X, File } from 'lucide-react';
+import { Download, File } from 'lucide-react';
 import { formatFileSize } from '@/utils/fileUtils';
 
 interface FileRecord {
@@ -26,7 +26,7 @@ interface FileDisplayProps {
 
 export function FileDisplay({ fileRecord, isEditable, onDownload, onRemove }: FileDisplayProps) {
   return (
-    <div className="flex items-center gap-3">
+    <div className="flex items-center gap-6">
       <div className="flex-1 border border-border rounded-lg p-4 bg-background">
         <div className="flex items-center gap-3">
           <div className="flex-shrink-0">
@@ -52,16 +52,6 @@ export function FileDisplay({ fileRecord, isEditable, onDownload, onRemove }: Fi
           </div>
         </div>
       </div>
-      {isEditable && (
-        <Button
-          onClick={onRemove}
-          variant="ghost"
-          size="sm"
-          className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive flex-shrink-0"
-        >
-          <X className="h-3 w-3" />
-        </Button>
-      )}
     </div>
   );
 }
