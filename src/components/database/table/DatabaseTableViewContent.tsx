@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback } from 'react';
 import { DatabaseField, PageProperty } from '@/types/database';
 import { DatabaseTableHeader } from './DatabaseTableHeader';
@@ -138,7 +139,6 @@ export function DatabaseTableViewContent({
                   onTitleUpdate={(newTitle) => onTitleUpdate(page.id, newTitle)}
                   onPropertyUpdate={(fieldId, value) => onPropertyUpdate(page.id, fieldId, value)}
                   onDeleteRow={() => onDeleteRow(page.id)}
-                  databaseId={databaseId}
                   workspaceId={workspaceId}
                 />
               ))}
