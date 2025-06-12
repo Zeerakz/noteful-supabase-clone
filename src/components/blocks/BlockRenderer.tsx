@@ -8,6 +8,7 @@ import { ImageBlock } from './ImageBlock';
 import { TwoColumnBlock } from './TwoColumnBlock';
 import { TableBlock } from './TableBlock';
 import { DividerBlock } from './DividerBlock';
+import { QuoteBlock } from './QuoteBlock';
 
 interface BlockRendererProps {
   block: Block;
@@ -88,6 +89,15 @@ export function BlockRenderer({ block, onUpdateBlock, onDeleteBlock, isEditable,
     case 'divider':
       return (
         <DividerBlock
+          block={block}
+          onUpdate={handleContentUpdate}
+          onDelete={handleDelete}
+          isEditable={isEditable}
+        />
+      );
+    case 'quote':
+      return (
+        <QuoteBlock
           block={block}
           onUpdate={handleContentUpdate}
           onDelete={handleDelete}
