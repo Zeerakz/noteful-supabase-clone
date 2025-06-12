@@ -41,7 +41,7 @@ export function DatabaseListView({
     refetch
   );
 
-  // Transform pages data to expected format - simplified
+  // Transform pages data to expected format
   const pagesWithProperties: PageWithProperties[] = pages.map(page => {
     const properties: Record<string, string> = {};
     
@@ -61,15 +61,17 @@ export function DatabaseListView({
   });
 
   return (
-    <DatabaseListContent
-      pagesWithProperties={pagesWithProperties}
-      fields={fields}
-      loading={loading}
-      error={error}
-      onCreateEntry={handleCreateEntry}
-      onFieldEdit={handleFieldEdit}
-      onTitleEdit={handleTitleEdit}
-      onRefetch={refetch}
-    />
+    <div className="h-full bg-background">
+      <DatabaseListContent
+        pagesWithProperties={pagesWithProperties}
+        fields={fields}
+        loading={loading}
+        error={error}
+        onCreateEntry={handleCreateEntry}
+        onFieldEdit={handleFieldEdit}
+        onTitleEdit={handleTitleEdit}
+        onRefetch={refetch}
+      />
+    </div>
   );
 }
