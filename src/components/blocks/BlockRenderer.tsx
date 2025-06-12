@@ -10,6 +10,7 @@ import { TableBlock } from './TableBlock';
 import { DividerBlock } from './DividerBlock';
 import { QuoteBlock } from './QuoteBlock';
 import { CalloutBlock } from './CalloutBlock';
+import { ToggleBlock } from './ToggleBlock';
 
 interface BlockRendererProps {
   block: Block;
@@ -112,6 +113,18 @@ export function BlockRenderer({ block, onUpdateBlock, onDeleteBlock, isEditable,
           onUpdate={handleContentUpdate}
           onDelete={handleDelete}
           isEditable={isEditable}
+        />
+      );
+    case 'toggle':
+      return (
+        <ToggleBlock
+          block={block}
+          onUpdate={handleContentUpdate}
+          onDelete={handleDelete}
+          onUpdateBlock={onUpdateBlock}
+          onDeleteBlock={onDeleteBlock}
+          isEditable={isEditable}
+          childBlocks={childBlocks}
         />
       );
     default:
