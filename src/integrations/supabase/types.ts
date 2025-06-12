@@ -794,6 +794,20 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      create_database_with_fields: {
+        Args: {
+          p_workspace_id: string
+          p_user_id: string
+          p_name: string
+          p_description?: string
+          p_fields?: Json
+        }
+        Returns: {
+          database_id: string
+          database_name: string
+          table_name: string
+        }[]
+      }
       get_user_workspace_role: {
         Args: { workspace_uuid: string; user_uuid: string }
         Returns: string
