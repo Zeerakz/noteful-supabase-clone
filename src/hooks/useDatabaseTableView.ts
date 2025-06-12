@@ -11,7 +11,7 @@ import { PageService } from '@/services/pageService';
 import { DatabaseField } from '@/types/database';
 import { FilterGroup } from '@/types/filters';
 import { SortRule } from '@/components/database/SortingModal';
-import { useEffect, useMemo, useCallback } from 'react';
+import { useEffect, useMemo, useCallback, useRef } from 'react';
 
 interface PageWithProperties {
   id: string;
@@ -50,9 +50,21 @@ export function useDatabaseTableView({
   const { user } = useAuth();
   const { toast } = useToast();
   const { startTimer, endTimer } = usePerformanceMetrics();
+
+  // Use refs to stabilize fields to prevent infinite re-renders
+  const prevFieldsRef = useRef<DatabaseField[]>();
+  const prevFieldsStrRef = useRef<string>('');
   
-  // Stabilize fields to prevent infinite re-renders
-  const stableFields = useMemo(() => fields, [JSON.stringify(fields)]);
+  const currentFieldsStr = JSON.stringify(fields);
+  
+  const stableFields = useMemo(() => {
+    if (prevFieldsStrRef.current !== currentFieldsStr) {
+      prevFieldsStrRef.current = currentFieldsStr;
+      prevFieldsRef.current = fields;
+      return fields;
+    }
+    return prevFieldsRef.current || fields;
+  }, [currentFieldsStr, fields]);
   
   // Stabilize cache configuration to prevent re-creation
   const cacheConfig = useMemo(() => ({
@@ -71,8 +83,14 @@ export function useDatabaseTableView({
     sortCount: sortRules.length
   }), [databaseId, enablePagination, enableVirtualScrolling, filterGroup.rules.length, sortRules.length]);
 
+  // Track if performance timer has started
+  const performanceStartedRef = useRef(false);
+
   useEffect(() => {
-    startTimer('page_load', performanceMetadata);
+    if (!performanceStartedRef.current) {
+      startTimer('page_load', performanceMetadata);
+      performanceStartedRef.current = true;
+    }
   }, [startTimer, performanceMetadata]);
   
   const { 
@@ -89,8 +107,9 @@ export function useDatabaseTableView({
 
   // End performance tracking when pages load
   useEffect(() => {
-    if (!pagesLoading && pages.length > 0) {
+    if (!pagesLoading && pages.length > 0 && performanceStartedRef.current) {
       endTimer('page_load');
+      performanceStartedRef.current = false;
     }
   }, [pagesLoading, pages.length, endTimer]);
 
