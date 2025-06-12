@@ -74,14 +74,18 @@ export function DatabaseTableView({ databaseId, workspaceId }: DatabaseTableView
         setFieldsLoading(true);
         setFieldsError(null);
         
+        console.log('Fetching fields for database:', databaseId);
         const { data, error } = await fetchFieldsWithRetry();
         
         if (error) {
+          console.error('Fields fetch error:', error);
           setFieldsError(error);
         } else {
-          setFields(data as DatabaseField[] || []);
+          console.log('Fields fetched successfully:', data);
+          setFields((data as DatabaseField[]) || []);
         }
       } catch (err) {
+        console.error('Fields fetch exception:', err);
         setFieldsError(err instanceof Error ? err.message : 'Failed to fetch fields');
       } finally {
         setFieldsLoading(false);
