@@ -6,7 +6,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { VirtualizedTableBody } from './VirtualizedTableBody';
+import { SimpleTableBody } from './SimpleTableBody';
 import { DatabaseField } from '@/types/database';
 
 interface PageWithProperties {
@@ -34,8 +34,6 @@ export function VirtualizedTable({
   isLoading = false,
   maxHeight = "600px"
 }: VirtualizedTableProps) {
-  const parentRef = useRef<HTMLDivElement>(null);
-
   return (
     <div className="border rounded-lg overflow-hidden">
       {/* Fixed header */}
@@ -60,20 +58,18 @@ export function VirtualizedTable({
         </Table>
       </div>
       
-      {/* Scrollable body with virtualization */}
+      {/* Scrollable body */}
       <div 
-        ref={parentRef}
         className="overflow-auto"
         style={{ maxHeight }}
       >
-        <VirtualizedTableBody
+        <SimpleTableBody
           pages={pages}
           fields={fields}
           onTitleUpdate={onTitleUpdate}
           onPropertyUpdate={onPropertyUpdate}
           onDeleteRow={onDeleteRow}
           isLoading={isLoading}
-          parentRef={parentRef}
         />
       </div>
     </div>
