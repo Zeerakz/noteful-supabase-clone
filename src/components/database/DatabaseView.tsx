@@ -18,6 +18,8 @@ interface DatabaseViewProps {
 }
 
 export function DatabaseView({ databaseId, workspaceId }: DatabaseViewProps) {
+  const [fieldsRefreshKey, setFieldsRefreshKey] = useState(0);
+  
   const { fields, loading: fieldsLoading, error: fieldsError } = useDatabaseFields(databaseId);
   const { 
     views,
@@ -112,6 +114,11 @@ export function DatabaseView({ databaseId, workspaceId }: DatabaseViewProps) {
     });
   };
 
+  // Enhanced fields change handler
+  const handleFieldsChange = () => {
+    setFieldsRefreshKey(prev => prev + 1);
+  };
+
   // Show loading state
   if (fieldsLoading || viewsLoading) {
     return (
@@ -134,7 +141,7 @@ export function DatabaseView({ databaseId, workspaceId }: DatabaseViewProps) {
   const showViewsWarning = viewsError && !viewsError.includes('default view');
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" key={fieldsRefreshKey}>
       {/* Show warning if views couldn't be loaded */}
       {showViewsWarning && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3">
@@ -194,6 +201,7 @@ export function DatabaseView({ databaseId, workspaceId }: DatabaseViewProps) {
         groupingFieldId={groupingFieldId}
         collapsedGroups={collapsedGroups}
         onToggleGroupCollapse={toggleGroupCollapse}
+        onFieldsChange={handleFieldsChange}
       />
 
       {/* Filter Modal */}

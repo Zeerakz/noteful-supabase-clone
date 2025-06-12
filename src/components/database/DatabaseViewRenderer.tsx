@@ -4,9 +4,8 @@ import { DatabaseTableView } from './DatabaseTableView';
 import { DatabaseListView } from './DatabaseListView';
 import { DatabaseKanbanView } from './DatabaseKanbanView';
 import { DatabaseCalendarView } from './DatabaseCalendarView';
-import { DatabaseTimelineView } from './DatabaseTimelineView';
 import { DatabaseGalleryView } from './DatabaseGalleryView';
-import { DatabaseFormView } from './DatabaseFormView';
+import { DatabaseTimelineView } from './DatabaseTimelineView';
 import { DatabaseViewType } from './DatabaseViewSelector';
 import { DatabaseField } from '@/types/database';
 import { FilterGroup } from '@/types/filters';
@@ -23,6 +22,7 @@ interface DatabaseViewRendererProps {
   groupingFieldId?: string;
   collapsedGroups: string[];
   onToggleGroupCollapse: (groupValue: string) => void;
+  onFieldsChange?: () => void;
 }
 
 export function DatabaseViewRenderer({
@@ -36,75 +36,45 @@ export function DatabaseViewRenderer({
   groupingFieldId,
   collapsedGroups,
   onToggleGroupCollapse,
+  onFieldsChange,
 }: DatabaseViewRendererProps) {
-  const baseProps = {
+  const commonProps = {
     databaseId,
     workspaceId,
     fields,
     filterGroup,
     sortRules,
+    setSortRules,
+    onFieldsChange,
   };
 
   switch (currentViewType) {
     case 'table':
-      return (
-        <DatabaseTableView
-          {...baseProps}
-          setSortRules={setSortRules}
-        />
-      );
+      return <DatabaseTableView {...commonProps} />;
 
     case 'list':
-      return (
-        <DatabaseListView
-          {...baseProps}
-          // Note: groupingFieldId and collapsedGroups are temporarily removed
-          // until DatabaseListView interface is updated to support them
-        />
-      );
+      return <DatabaseListView {...commonProps} />;
 
     case 'kanban':
       return (
         <DatabaseKanbanView
-          {...baseProps}
+          {...commonProps}
+          groupingFieldId={groupingFieldId}
+          collapsedGroups={collapsedGroups}
+          onToggleGroupCollapse={onToggleGroupCollapse}
         />
       );
 
     case 'calendar':
-      return (
-        <DatabaseCalendarView
-          {...baseProps}
-        />
-      );
-
-    case 'timeline':
-      return (
-        <DatabaseTimelineView
-          {...baseProps}
-        />
-      );
+      return <DatabaseCalendarView {...commonProps} />;
 
     case 'gallery':
-      return (
-        <DatabaseGalleryView
-          {...baseProps}
-        />
-      );
+      return <DatabaseGalleryView {...commonProps} />;
 
-    case 'form':
-      return (
-        <DatabaseFormView
-          {...baseProps}
-        />
-      );
+    case 'timeline':
+      return <DatabaseTimelineView {...commonProps} />;
 
     default:
-      return (
-        <div className="flex items-center justify-center p-8">
-          <div className="text-muted-foreground">
-            View type "{currentViewType}" is not implemented yet.
-          </div>
-        </div>
-      );
+      return <DatabaseTableView {...commonProps} />;
   }
 }

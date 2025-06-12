@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useDatabaseTableView } from '@/hooks/useDatabaseTableView';
 import { DatabaseTableViewContent } from './table/DatabaseTableViewContent';
 import { ManagePropertiesModal } from './fields/ManagePropertiesModal';
@@ -31,9 +31,10 @@ export function DatabaseTableView({
   const [itemsPerPage, setItemsPerPage] = useState(50);
   const [showManageProperties, setShowManageProperties] = useState(false);
   const [optimisticFields, setOptimisticFields] = useState<DatabaseField[]>(fields);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   // Update optimistic fields when props change
-  React.useEffect(() => {
+  useEffect(() => {
     setOptimisticFields(fields);
   }, [fields]);
 
@@ -43,7 +44,13 @@ export function DatabaseTableView({
     database_id: field.database_id || databaseId
   }));
 
-  const fieldOperations = useDatabaseFieldOperations(databaseId, onFieldsChange);
+  // Enhanced onFieldsChange that triggers a refresh
+  const handleFieldsChange = () => {
+    setRefreshKey(prev => prev + 1);
+    onFieldsChange?.();
+  };
+
+  const fieldOperations = useDatabaseFieldOperations(databaseId, handleFieldsChange);
 
   const {
     pagesWithProperties,
@@ -98,7 +105,7 @@ export function DatabaseTableView({
       // Update the database
       await fieldOperations.reorderFields(reorderedFields);
       // Trigger refetch to ensure consistency
-      onFieldsChange?.();
+      handleFieldsChange();
     } catch (error) {
       console.error('Failed to reorder fields:', error);
       // Revert optimistic update on error
@@ -106,9 +113,45 @@ export function DatabaseTableView({
     }
   };
 
+  // Enhanced field operations with proper refresh handling
+  const enhancedFieldOperations = {
+    ...fieldOperations,
+    createField: async (field: { name: string; type: any; settings?: any }) => {
+      try {
+        await fieldOperations.createField(field);
+        // Force a refresh of the page data to show new property columns
+        await refetchPages();
+      } catch (error) {
+        console.error('Failed to create field:', error);
+        throw error;
+      }
+    },
+    deleteField: async (fieldId: string) => {
+      try {
+        await fieldOperations.deleteField(fieldId);
+        // Force a refresh of the page data to remove deleted property columns
+        await refetchPages();
+      } catch (error) {
+        console.error('Failed to delete field:', error);
+        throw error;
+      }
+    },
+    updateField: async (fieldId: string, updates: Partial<DatabaseField>) => {
+      try {
+        await fieldOperations.updateField(fieldId, updates);
+        // Force a refresh of the page data to show updated property columns
+        await refetchPages();
+      } catch (error) {
+        console.error('Failed to update field:', error);
+        throw error;
+      }
+    }
+  };
+
   return (
     <>
       <DatabaseTableViewContent
+        key={refreshKey} // Force re-render when fields change
         pagesWithProperties={pagesWithProperties}
         fields={fieldsWithDatabaseId}
         pagesLoading={pagesLoading}
@@ -118,7 +161,7 @@ export function DatabaseTableView({
         onPropertyUpdate={handlePropertyUpdate}
         onDeleteRow={handleDeleteRow}
         onRefetch={refetchPages}
-        onFieldsChange={onFieldsChange}
+        onFieldsChange={handleFieldsChange}
         onFieldReorder={handleFieldReorder}
         pagination={pagination ? {
           ...pagination,
@@ -140,10 +183,10 @@ export function DatabaseTableView({
         onOpenChange={setShowManageProperties}
         fields={fieldsWithDatabaseId}
         onFieldsReorder={fieldOperations.reorderFields}
-        onFieldUpdate={fieldOperations.updateField}
+        onFieldUpdate={enhancedFieldOperations.updateField}
         onFieldDuplicate={fieldOperations.duplicateField}
-        onFieldDelete={fieldOperations.deleteField}
-        onFieldCreate={fieldOperations.createField}
+        onFieldDelete={enhancedFieldOperations.deleteField}
+        onFieldCreate={enhancedFieldOperations.createField}
       />
     </>
   );
