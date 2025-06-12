@@ -177,16 +177,16 @@ export class DatabaseService {
             const field = fields.find(f => f.id === sortRule.fieldId);
             if (!field) continue;
 
-            let aValue = aProperties[sortRule.fieldId] || '';
-            let bValue = bProperties[sortRule.fieldId] || '';
+            let aValue: string | number = aProperties[sortRule.fieldId] || '';
+            let bValue: string | number = bProperties[sortRule.fieldId] || '';
 
             // Handle different field types for proper sorting
             if (field.type === 'number') {
-              aValue = parseFloat(aValue) || 0;
-              bValue = parseFloat(bValue) || 0;
+              aValue = parseFloat(String(aValue)) || 0;
+              bValue = parseFloat(String(bValue)) || 0;
             } else if (field.type === 'date') {
-              aValue = new Date(aValue || '1970-01-01').getTime();
-              bValue = new Date(bValue || '1970-01-01').getTime();
+              aValue = new Date(String(aValue) || '1970-01-01').getTime();
+              bValue = new Date(String(bValue) || '1970-01-01').getTime();
             } else {
               // For text fields, do case-insensitive comparison
               aValue = String(aValue).toLowerCase();
