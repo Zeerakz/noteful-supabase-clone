@@ -41,14 +41,16 @@ export function EmbedBlock({ block, onUpdate, onDelete, isEditable }: EmbedBlock
 
   const getEmbedInfo = (inputUrl: string) => {
     try {
+      console.log('EmbedBlock: Processing URL:', inputUrl);
       const urlObj = new URL(inputUrl);
       const hostname = urlObj.hostname.toLowerCase();
 
-      // Twitter/X
+      // Twitter/X - Enhanced detection
       if (hostname.includes('twitter.com') || hostname.includes('x.com') || hostname.includes('mobile.twitter.com')) {
+        console.log('EmbedBlock: Detected Twitter/X URL');
         return {
           type: 'twitter',
-          embedUrl: inputUrl, // For Twitter, we'll use the original URL
+          embedUrl: inputUrl,
           title: 'Twitter/X Post'
         };
       }
@@ -61,6 +63,7 @@ export function EmbedBlock({ block, onUpdate, onDelete, isEditable }: EmbedBlock
         } else {
           videoId = urlObj.pathname.slice(1);
         }
+        console.log('EmbedBlock: Detected YouTube URL, video ID:', videoId);
         return {
           type: 'youtube',
           embedUrl: `https://www.youtube.com/embed/${videoId}`,
@@ -71,6 +74,7 @@ export function EmbedBlock({ block, onUpdate, onDelete, isEditable }: EmbedBlock
       // Vimeo
       if (hostname.includes('vimeo.com')) {
         const videoId = urlObj.pathname.split('/')[1];
+        console.log('EmbedBlock: Detected Vimeo URL, video ID:', videoId);
         return {
           type: 'vimeo',
           embedUrl: `https://player.vimeo.com/video/${videoId}`,
@@ -82,6 +86,7 @@ export function EmbedBlock({ block, onUpdate, onDelete, isEditable }: EmbedBlock
       if (hostname.includes('codepen.io')) {
         const parts = urlObj.pathname.split('/');
         if (parts[1] && parts[2] && parts[3]) {
+          console.log('EmbedBlock: Detected CodePen URL');
           return {
             type: 'codepen',
             embedUrl: `https://codepen.io/${parts[1]}/embed/${parts[3]}`,
@@ -90,13 +95,15 @@ export function EmbedBlock({ block, onUpdate, onDelete, isEditable }: EmbedBlock
         }
       }
 
-      // Generic embed - just show the URL in an iframe
+      // Generic embed
+      console.log('EmbedBlock: Using generic embed for URL');
       return {
         type: 'generic',
         embedUrl: inputUrl,
         title: 'Embedded Content'
       };
     } catch (error) {
+      console.error('EmbedBlock: Error processing URL:', error);
       return null;
     }
   };
@@ -104,6 +111,7 @@ export function EmbedBlock({ block, onUpdate, onDelete, isEditable }: EmbedBlock
   const handleUrlSubmit = async () => {
     if (!urlInput.trim()) return;
 
+    console.log('EmbedBlock: Submitting URL:', urlInput.trim());
     const embedInfo = getEmbedInfo(urlInput.trim());
     if (embedInfo) {
       await onUpdate({
@@ -177,11 +185,13 @@ export function EmbedBlock({ block, onUpdate, onDelete, isEditable }: EmbedBlock
       ) : (
         <div className="border border-border rounded-lg overflow-hidden bg-background">
           {type === 'twitter' ? (
-            <TwitterEmbed 
-              url={url!} 
-              onEdit={isEditable ? handleEdit : undefined}
-              isEditable={isEditable}
-            />
+            <div className="p-4">
+              <TwitterEmbed 
+                url={url!} 
+                onEdit={isEditable ? handleEdit : undefined}
+                isEditable={isEditable}
+              />
+            </div>
           ) : embedUrl ? (
             <div className="relative">
               <iframe
