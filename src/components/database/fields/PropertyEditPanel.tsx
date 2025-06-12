@@ -7,6 +7,7 @@ import { DatabaseField } from '@/types/database';
 import { PropertyType } from '@/types/property';
 import { RegistryBasedFieldTypeSelector } from '@/components/property/RegistryBasedFieldTypeSelector';
 import { FieldConfigurationPanel } from './FieldConfigurationPanel';
+import { FieldVisibilitySettings } from './FieldVisibilitySettings';
 
 interface PropertyEditPanelProps {
   editingField: DatabaseField;
@@ -46,6 +47,14 @@ export function PropertyEditPanel({
             disabled={true}
           />
         </div>
+
+        {/* Visibility Settings */}
+        <FieldVisibilitySettings
+          value={editingField.visibility_setting || 'show_when_not_empty'}
+          onValueChange={(visibility_setting) => 
+            onFieldChange({ ...editingField, visibility_setting })
+          }
+        />
         
         {/* Field Configuration */}
         <FieldConfigurationPanel

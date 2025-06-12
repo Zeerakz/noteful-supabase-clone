@@ -6,7 +6,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, Minus } from 'lucide-react';
 import { DatabaseField, SavedDatabaseView } from '@/types/database';
 
 interface FieldVisibilityManagerProps {
@@ -54,6 +54,30 @@ export function FieldVisibilityManager({
 
   const visibleCount = visibleFieldIds.length;
   const totalCount = fields.length;
+
+  const getVisibilityIcon = (field: DatabaseField) => {
+    switch (field.visibility_setting) {
+      case 'always_show':
+        return <Eye className="h-3 w-3 text-blue-500" />;
+      case 'always_hide':
+        return <EyeOff className="h-3 w-3 text-red-500" />;
+      case 'show_when_not_empty':
+      default:
+        return <Minus className="h-3 w-3 text-yellow-500" />;
+    }
+  };
+
+  const getVisibilityText = (field: DatabaseField) => {
+    switch (field.visibility_setting) {
+      case 'always_show':
+        return 'Always show';
+      case 'always_hide':
+        return 'Always hide';
+      case 'show_when_not_empty':
+      default:
+        return 'Hide when empty';
+    }
+  };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -119,8 +143,11 @@ export function FieldVisibilityManager({
                       >
                         {field.name}
                       </Label>
-                      <div className="text-xs text-muted-foreground capitalize">
-                        {field.type.replace('_', ' ')}
+                      <div className="flex items-center gap-1">
+                        {getVisibilityIcon(field)}
+                        <span className="text-xs text-muted-foreground">
+                          {getVisibilityText(field)}
+                        </span>
                       </div>
                     </div>
                   </div>

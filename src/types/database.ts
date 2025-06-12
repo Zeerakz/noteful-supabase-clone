@@ -1,4 +1,3 @@
-
 export interface Database {
   id: string;
   workspace_id: string;
@@ -18,6 +17,7 @@ export interface DatabaseField {
   type: string;
   settings?: any;
   pos: number;
+  visibility_setting?: 'always_show' | 'always_hide' | 'show_when_not_empty';
   created_by: string;
   created_at: string;
   updated_at: string;

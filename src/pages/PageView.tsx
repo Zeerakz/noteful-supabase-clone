@@ -4,7 +4,10 @@ import { useParams, Navigate, useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { BlockEditor } from '@/components/blocks/BlockEditor';
+import { PagePropertiesSection } from '@/components/database/fields/PagePropertiesSection';
 import { useWorkspaces } from '@/hooks/useWorkspaces';
+import { useDatabaseFields } from '@/hooks/useDatabaseFields';
+import { usePageProperties } from '@/hooks/usePageProperties';
 import { supabase } from '@/integrations/supabase/client';
 import { Page } from '@/types/page';
 
@@ -21,6 +24,10 @@ export function PageView() {
   const { workspaces, loading: workspacesLoading } = useWorkspaces();
   const [pageWithWorkspace, setPageWithWorkspace] = useState<PageWithWorkspace | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // Get database fields and properties if this page belongs to a database
+  const { fields } = useDatabaseFields(pageWithWorkspace?.database_id || '');
+  const { properties, updateProperty } = usePageProperties(pageId);
 
   useEffect(() => {
     const fetchPageWithWorkspace = async () => {
@@ -60,6 +67,13 @@ export function PageView() {
     fetchPageWithWorkspace();
   }, [pageId, workspacesLoading]);
 
+  const handlePropertyUpdate = async (fieldId: string, value: string) => {
+    const result = await updateProperty(fieldId, value);
+    if (result.error) {
+      throw new Error(result.error);
+    }
+  };
+
   if (workspacesLoading || loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -77,6 +91,9 @@ export function PageView() {
   const handleBack = () => {
     navigate(`/workspace/${workspace.id}`);
   };
+
+  // Show properties section if this page belongs to a database
+  const showProperties = page.database_id && fields.length > 0;
 
   return (
     <div className="min-h-screen bg-background">
@@ -99,7 +116,20 @@ export function PageView() {
         </div>
       </div>
       
-      <div className="container mx-auto max-w-4xl">
+      <div className="container mx-auto max-w-4xl px-4 py-6 space-y-6">
+        {/* Properties Section */}
+        {showProperties && (
+          <PagePropertiesSection
+            fields={fields}
+            properties={properties}
+            pageId={page.id}
+            workspaceId={workspace.id}
+            onPropertyUpdate={handlePropertyUpdate}
+            isEditable={true}
+          />
+        )}
+
+        {/* Page Content */}
         <BlockEditor pageId={page.id} isEditable={true} />
       </div>
     </div>
