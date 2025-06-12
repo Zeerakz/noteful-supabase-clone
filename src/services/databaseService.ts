@@ -1,5 +1,12 @@
 
-// Re-export all services from the main DatabaseService for backward compatibility
+// Import all the service classes
+import { DatabaseCoreService } from './database/databaseCoreService';
+import { DatabaseFieldService } from './database/databaseFieldService';
+import { DatabasePageService } from './database/databasePageService';
+import { DatabasePropertyService } from './database/databasePropertyService';
+import { DatabaseQueryService } from './database/databaseQueryService';
+
+// Re-export all services for backward compatibility
 export { DatabaseCoreService } from './database/databaseCoreService';
 export { DatabaseFieldService } from './database/databaseFieldService';
 export { DatabasePageService } from './database/databasePageService';

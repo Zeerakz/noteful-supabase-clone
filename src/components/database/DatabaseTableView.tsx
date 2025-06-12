@@ -79,7 +79,7 @@ export function DatabaseTableView({ databaseId, workspaceId }: DatabaseTableView
         if (error) {
           setFieldsError(error);
         } else {
-          setFields(data || []);
+          setFields(data as DatabaseField[] || []);
         }
       } catch (err) {
         setFieldsError(err instanceof Error ? err.message : 'Failed to fetch fields');
