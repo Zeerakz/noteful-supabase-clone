@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Block } from '@/hooks/useBlocks';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,6 +9,7 @@ import { CommentThreadPanel } from './CommentThreadPanel';
 import { useComments } from '@/hooks/useComments';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface FileAttachmentBlockProps {
   block: Block;
@@ -17,22 +18,56 @@ interface FileAttachmentBlockProps {
   isEditable: boolean;
 }
 
-interface FileContent {
-  fileName?: string;
-  fileSize?: number;
-  filePath?: string;
-  fileType?: string;
+interface FileRecord {
+  id: string;
+  filename: string;
+  original_filename: string;
+  file_size: number;
+  mime_type: string;
+  storage_path: string;
+  workspace_id: string;
+  uploaded_by: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export function FileAttachmentBlock({ block, onUpdate, onDelete, isEditable }: FileAttachmentBlockProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [isCommentPanelOpen, setIsCommentPanelOpen] = useState(false);
+  const [fileRecord, setFileRecord] = useState<FileRecord | null>(null);
+  const [loading, setLoading] = useState(true);
   const { comments } = useComments(block.id);
   const { toast } = useToast();
+  const { user } = useAuth();
 
-  const content: FileContent = block.content || {};
-  const { fileName, fileSize, filePath, fileType } = content;
+  // Fetch file record associated with this block
+  useEffect(() => {
+    const fetchFileRecord = async () => {
+      if (!block.id) return;
+
+      try {
+        const { data, error } = await supabase
+          .from('files')
+          .select('*')
+          .eq('block_id', block.id)
+          .maybeSingle();
+
+        if (error && error.code !== 'PGRST116') {
+          console.error('Error fetching file record:', error);
+          return;
+        }
+
+        setFileRecord(data);
+      } catch (error) {
+        console.error('Error fetching file record:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchFileRecord();
+  }, [block.id]);
 
   const formatFileSize = (bytes: number = 0) => {
     if (bytes === 0) return '0 Bytes';
@@ -44,27 +79,56 @@ export function FileAttachmentBlock({ block, onUpdate, onDelete, isEditable }: F
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file) return;
+    if (!file || !user) return;
+
+    // Get workspace_id from the block's page
+    const { data: pageData, error: pageError } = await supabase
+      .from('pages')
+      .select('workspace_id')
+      .eq('id', block.page_id)
+      .single();
+
+    if (pageError || !pageData) {
+      toast({
+        title: "Error",
+        description: "Could not determine workspace for file upload",
+        variant: "destructive",
+      });
+      return;
+    }
 
     setIsUploading(true);
     try {
-      // Upload file to Supabase storage
+      // Generate unique filename
       const fileExt = file.name.split('.').pop();
-      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+      const uniqueFilename = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
       
+      // Upload file to Supabase storage
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('planna_uploads')
-        .upload(fileName, file);
+        .upload(uniqueFilename, file);
 
       if (uploadError) throw uploadError;
 
-      // Update block content with file information
-      await onUpdate({
-        fileName: file.name,
-        fileSize: file.size,
-        filePath: uploadData.path,
-        fileType: file.type,
-      });
+      // Create file record in database
+      const { data: fileData, error: fileError } = await supabase
+        .from('files')
+        .insert({
+          filename: uniqueFilename,
+          original_filename: file.name,
+          file_size: file.size,
+          mime_type: file.type,
+          storage_path: uploadData.path,
+          block_id: block.id,
+          workspace_id: pageData.workspace_id,
+          uploaded_by: user.id,
+        })
+        .select()
+        .single();
+
+      if (fileError) throw fileError;
+
+      setFileRecord(fileData);
 
       toast({
         title: "Success",
@@ -85,12 +149,12 @@ export function FileAttachmentBlock({ block, onUpdate, onDelete, isEditable }: F
   };
 
   const handleDownload = async () => {
-    if (!filePath) return;
+    if (!fileRecord) return;
 
     try {
       const { data, error } = await supabase.storage
         .from('planna_uploads')
-        .download(filePath);
+        .download(fileRecord.storage_path);
 
       if (error) throw error;
 
@@ -98,7 +162,7 @@ export function FileAttachmentBlock({ block, onUpdate, onDelete, isEditable }: F
       const url = URL.createObjectURL(data);
       const a = document.createElement('a');
       a.href = url;
-      a.download = fileName || 'download';
+      a.download = fileRecord.original_filename;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -114,16 +178,28 @@ export function FileAttachmentBlock({ block, onUpdate, onDelete, isEditable }: F
   };
 
   const handleRemoveFile = async () => {
-    try {
-      // Remove file from storage if it exists
-      if (filePath) {
-        await supabase.storage
-          .from('planna_uploads')
-          .remove([filePath]);
-      }
+    if (!fileRecord) return;
 
-      // Clear block content
-      await onUpdate({});
+    try {
+      // Remove file from storage
+      await supabase.storage
+        .from('planna_uploads')
+        .remove([fileRecord.storage_path]);
+
+      // Remove file record from database
+      const { error } = await supabase
+        .from('files')
+        .delete()
+        .eq('id', fileRecord.id);
+
+      if (error) throw error;
+
+      setFileRecord(null);
+
+      toast({
+        title: "Success",
+        description: "File removed successfully",
+      });
     } catch (error) {
       console.error('Error removing file:', error);
       toast({
@@ -134,7 +210,15 @@ export function FileAttachmentBlock({ block, onUpdate, onDelete, isEditable }: F
     }
   };
 
-  if (!isEditable && !fileName) {
+  if (loading) {
+    return (
+      <div className="my-4 p-4 border border-border rounded-lg">
+        <div className="text-center text-muted-foreground">Loading file...</div>
+      </div>
+    );
+  }
+
+  if (!isEditable && !fileRecord) {
     return null;
   }
 
@@ -144,7 +228,7 @@ export function FileAttachmentBlock({ block, onUpdate, onDelete, isEditable }: F
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      {!fileName ? (
+      {!fileRecord ? (
         <div className="border-2 border-dashed border-muted rounded-lg p-6">
           <div className="text-center">
             <Paperclip className="h-8 w-8 mx-auto mb-3 text-muted-foreground" />
@@ -191,10 +275,10 @@ export function FileAttachmentBlock({ block, onUpdate, onDelete, isEditable }: F
               <File className="h-8 w-8 text-muted-foreground" />
             </div>
             <div className="flex-1 min-w-0">
-              <h4 className="text-sm font-medium truncate">{fileName}</h4>
+              <h4 className="text-sm font-medium truncate">{fileRecord.original_filename}</h4>
               <p className="text-xs text-muted-foreground">
-                {formatFileSize(fileSize)}
-                {fileType && ` • ${fileType}`}
+                {formatFileSize(fileRecord.file_size)}
+                {fileRecord.mime_type && ` • ${fileRecord.mime_type}`}
               </p>
             </div>
             <div className="flex items-center gap-2">
@@ -222,7 +306,7 @@ export function FileAttachmentBlock({ block, onUpdate, onDelete, isEditable }: F
         </div>
       )}
       
-      {isHovered && isEditable && fileName && (
+      {isHovered && isEditable && fileRecord && (
         <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 z-20">
           <CommentThreadPanel
             blockId={block.id}

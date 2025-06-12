@@ -206,6 +206,63 @@ export type Database = {
         }
         Relationships: []
       }
+      files: {
+        Row: {
+          block_id: string | null
+          created_at: string
+          file_size: number
+          filename: string
+          id: string
+          mime_type: string
+          original_filename: string
+          storage_path: string
+          updated_at: string
+          uploaded_by: string
+          workspace_id: string
+        }
+        Insert: {
+          block_id?: string | null
+          created_at?: string
+          file_size: number
+          filename: string
+          id?: string
+          mime_type: string
+          original_filename: string
+          storage_path: string
+          updated_at?: string
+          uploaded_by: string
+          workspace_id: string
+        }
+        Update: {
+          block_id?: string | null
+          created_at?: string
+          file_size?: number
+          filename?: string
+          id?: string
+          mime_type?: string
+          original_filename?: string
+          storage_path?: string
+          updated_at?: string
+          uploaded_by?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "files_block_id_fkey"
+            columns: ["block_id"]
+            isOneToOne: false
+            referencedRelation: "blocks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "files_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       page_properties: {
         Row: {
           created_at: string | null
@@ -532,6 +589,10 @@ export type Database = {
       refresh_search_index_for_workspace: {
         Args: { workspace_uuid: string }
         Returns: undefined
+      }
+      user_has_workspace_access: {
+        Args: { target_workspace_id: string; user_id: string }
+        Returns: boolean
       }
     }
     Enums: {
