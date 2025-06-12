@@ -24,10 +24,16 @@ export function EnhancedTableHeader({
   stickyHeader = false
 }: EnhancedTableHeaderProps) {
   return (
-    <TableHeader className={`${stickyHeader ? 'sticky top-0 z-20' : ''} bg-background/95 backdrop-blur-sm`}>
+    <TableHeader 
+      className={`
+        ${stickyHeader ? 'sticky top-0 z-30' : ''} 
+        bg-background/98 backdrop-blur-md border-b-2 border-border
+        shadow-sm
+      `}
+    >
       <TableRow className="hover:bg-transparent border-none">
         {/* Title Column */}
-        <TableHead className="w-[250px] sticky left-0 bg-background/95 backdrop-blur-sm border-r border-border/60 p-0 shadow-sm">
+        <TableHead className="w-[250px] sticky left-0 z-40 bg-background/98 backdrop-blur-md border-r border-border/80 p-0 shadow-[2px_0_4px_rgba(0,0,0,0.05)]">
           <DatabaseColumnHeader
             field={{
               id: 'title',
@@ -43,7 +49,7 @@ export function EnhancedTableHeader({
             onSort={onSort}
             onResize={onColumnResize}
             width={columnWidths['title'] || 250}
-            className="border-b-0"
+            className="border-b-0 bg-background/98"
           />
         </TableHead>
 
@@ -51,7 +57,7 @@ export function EnhancedTableHeader({
         {fields.map((field) => (
           <TableHead 
             key={field.id} 
-            className="min-w-[160px] relative p-0"
+            className="min-w-[160px] relative p-0 bg-background/98 backdrop-blur-md"
             style={{ width: columnWidths[field.id] ? `${columnWidths[field.id]}px` : '160px' }}
           >
             <DatabaseColumnHeader
@@ -60,14 +66,14 @@ export function EnhancedTableHeader({
               onSort={onSort}
               onResize={onColumnResize}
               width={columnWidths[field.id] || 160}
-              className="border-b-0"
+              className="border-b-0 bg-background/98"
             />
           </TableHead>
         ))}
 
         {/* Actions Column */}
-        <TableHead className="w-[60px] p-0">
-          <div className="flex items-center justify-center px-3 py-3 text-xs font-semibold text-muted-foreground border-b-2 border-border/60 bg-background/95 backdrop-blur-sm">
+        <TableHead className="w-[60px] p-0 bg-background/98 backdrop-blur-md">
+          <div className="flex items-center justify-center px-3 py-3 text-xs font-semibold text-muted-foreground bg-background/98 backdrop-blur-md border-b-2 border-border">
             <MoreHorizontal className="h-4 w-4" />
           </div>
         </TableHead>

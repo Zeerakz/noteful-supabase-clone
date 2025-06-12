@@ -97,7 +97,8 @@ export function DatabaseTableViewContent({
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex-1 overflow-auto">
+      {/* Scrollable table container with sticky header */}
+      <div className="flex-1 overflow-auto relative">
         <div className="min-w-full">
           <Table className="relative">
             <EnhancedTableHeader
@@ -121,8 +122,9 @@ export function DatabaseTableViewContent({
         </div>
       </div>
 
+      {/* Fixed pagination footer with visual separation */}
       {pagination && pagination.totalPages > 1 && (
-        <div className="border-t border-border bg-background/95 backdrop-blur-sm p-4">
+        <div className="border-t-2 border-border bg-background/98 backdrop-blur-md p-4 shadow-[0_-2px_8px_rgba(0,0,0,0.05)]">
           <PaginationControls
             currentPage={pagination.currentPage}
             totalPages={pagination.totalPages}

@@ -74,9 +74,9 @@ export function VirtualizedTable({
 
   if (enableVirtualScrolling && pages.length > 50) {
     return (
-      <div className="border rounded-lg overflow-hidden">
-        {/* Fixed header */}
-        <div className="border-b bg-muted/50">
+      <div className="border-2 border-border rounded-lg overflow-hidden shadow-sm">
+        {/* Fixed sticky header */}
+        <div className="border-b-2 border-border bg-background/98 backdrop-blur-md sticky top-0 z-30 shadow-sm">
           <Table>
             <EnhancedTableHeader
               fields={fields}
@@ -84,7 +84,7 @@ export function VirtualizedTable({
               onSort={handleSort}
               onColumnResize={updateColumnWidth}
               columnWidths={columnWidths}
-              stickyHeader={true}
+              stickyHeader={false}
             />
           </Table>
         </div>
@@ -120,8 +120,8 @@ export function VirtualizedTable({
           </div>
         </div>
 
-        {/* Virtual scrolling info */}
-        <div className="p-2 border-t bg-muted/20 text-xs text-muted-foreground">
+        {/* Virtual scrolling info footer */}
+        <div className="p-2 border-t-2 border-border bg-background/98 backdrop-blur-md text-xs text-muted-foreground shadow-[0_-2px_4px_rgba(0,0,0,0.05)]">
           Showing {virtualScrolling.startIndex + 1}-{virtualScrolling.endIndex + 1} of {pages.length} rows
         </div>
       </div>
@@ -129,9 +129,9 @@ export function VirtualizedTable({
   }
 
   return (
-    <div className="border rounded-lg overflow-hidden">
-      {/* Fixed header */}
-      <div className="border-b bg-muted/50">
+    <div className="border-2 border-border rounded-lg overflow-hidden shadow-sm">
+      {/* Fixed sticky header */}
+      <div className="border-b-2 border-border bg-background/98 backdrop-blur-md sticky top-0 z-30 shadow-sm">
         <Table>
           <EnhancedTableHeader
             fields={fields}
@@ -139,7 +139,7 @@ export function VirtualizedTable({
             onSort={handleSort}
             onColumnResize={updateColumnWidth}
             columnWidths={columnWidths}
-            stickyHeader={true}
+            stickyHeader={false}
           />
         </Table>
       </div>

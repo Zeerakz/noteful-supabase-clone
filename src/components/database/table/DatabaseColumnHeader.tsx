@@ -135,7 +135,12 @@ export function DatabaseColumnHeader({
   return (
     <TooltipProvider>
       <div 
-        className={`relative flex items-center justify-between group border-b-2 border-border/60 bg-background/95 backdrop-blur-sm hover:bg-muted/50 transition-colors ${className}`}
+        className={`
+          relative flex items-center justify-between group 
+          border-b-2 border-border bg-background/98 backdrop-blur-md 
+          hover:bg-muted/50 transition-colors 
+          ${className}
+        `}
         style={{ width: width ? `${width}px` : undefined }}
       >
         {/* Header Content */}
@@ -212,9 +217,12 @@ export function DatabaseColumnHeader({
         {/* Resize Handle */}
         {isResizable && onResize && (
           <div
-            className={`absolute right-0 top-0 bottom-0 w-2 cursor-col-resize opacity-0 group-hover:opacity-100 transition-opacity hover:bg-primary/20 flex items-center justify-center ${
-              isResizing ? 'opacity-100 bg-primary/30' : ''
-            }`}
+            className={`
+              absolute right-0 top-0 bottom-0 w-2 cursor-col-resize 
+              opacity-0 group-hover:opacity-100 transition-opacity 
+              hover:bg-primary/20 flex items-center justify-center
+              ${isResizing ? 'opacity-100 bg-primary/30' : ''}
+            `}
             onMouseDown={handleResizeStart}
           >
             <div className="w-0.5 h-4 bg-muted-foreground/50 rounded-full" />
