@@ -16,6 +16,7 @@ interface DatabaseTableBodyProps {
   onTitleUpdate: (pageId: string, newTitle: string) => void;
   onPropertyUpdate: (pageId: string, fieldId: string, value: string) => void;
   onDeleteRow: (pageId: string) => void;
+  workspaceId: string;
 }
 
 export function DatabaseTableBody({
@@ -23,7 +24,8 @@ export function DatabaseTableBody({
   fields,
   onTitleUpdate,
   onPropertyUpdate,
-  onDeleteRow
+  onDeleteRow,
+  workspaceId
 }: DatabaseTableBodyProps) {
   return (
     <TableBody>
@@ -45,6 +47,7 @@ export function DatabaseTableBody({
               onTitleUpdate={onTitleUpdate}
               onPropertyUpdate={onPropertyUpdate}
               onDeleteRow={onDeleteRow}
+              workspaceId={workspaceId}
             />
           </TableRow>
         ))

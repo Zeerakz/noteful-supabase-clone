@@ -18,6 +18,7 @@ interface SimpleTableBodyProps {
   onPropertyUpdate: (pageId: string, fieldId: string, value: string) => void;
   onDeleteRow: (pageId: string) => void;
   isLoading?: boolean;
+  workspaceId: string;
 }
 
 export function SimpleTableBody({
@@ -26,7 +27,8 @@ export function SimpleTableBody({
   onTitleUpdate,
   onPropertyUpdate,
   onDeleteRow,
-  isLoading = false
+  isLoading = false,
+  workspaceId
 }: SimpleTableBodyProps) {
   if (isLoading) {
     return (
@@ -71,6 +73,7 @@ export function SimpleTableBody({
               onTitleUpdate={onTitleUpdate}
               onPropertyUpdate={onPropertyUpdate}
               onDeleteRow={onDeleteRow}
+              workspaceId={workspaceId}
             />
           </TableRow>
         ))}

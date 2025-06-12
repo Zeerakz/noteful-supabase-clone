@@ -21,6 +21,7 @@ interface VirtualizedTableBodyProps {
   onDeleteRow: (pageId: string) => void;
   isLoading?: boolean;
   columnWidths?: Record<string, number>;
+  workspaceId: string;
 }
 
 export function VirtualizedTableBody({
@@ -30,7 +31,8 @@ export function VirtualizedTableBody({
   onPropertyUpdate,
   onDeleteRow,
   isLoading = false,
-  columnWidths = {}
+  columnWidths = {},
+  workspaceId
 }: VirtualizedTableBodyProps) {
   if (isLoading) {
     return (
@@ -68,6 +70,7 @@ export function VirtualizedTableBody({
             onPropertyUpdate={onPropertyUpdate}
             onDeleteRow={onDeleteRow}
             columnWidths={columnWidths}
+            workspaceId={workspaceId}
           />
         ))}
       </TableBody>

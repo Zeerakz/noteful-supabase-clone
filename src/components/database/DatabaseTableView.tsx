@@ -48,6 +48,10 @@ export function DatabaseTableView({
     enableVirtualScrolling: false // Default to false, can be calculated later if needed
   });
 
+  const handleItemsPerPageChange = (newItemsPerPage: number) => {
+    setItemsPerPage(newItemsPerPage);
+  };
+
   return (
     <DatabaseTableViewContent
       pagesWithProperties={pagesWithProperties}
@@ -62,13 +66,15 @@ export function DatabaseTableView({
       pagination={pagination ? {
         ...pagination,
         totalItems: totalPages,
-        itemsPerPage: itemsPerPage
+        itemsPerPage: itemsPerPage,
+        prevPage: pagination.previousPage
       } : null}
       totalPages={totalPages}
       databaseId={databaseId}
       sortRules={sortRules}
       setSortRules={setSortRules}
       workspaceId={workspaceId}
+      onItemsPerPageChange={handleItemsPerPageChange}
     />
   );
 }

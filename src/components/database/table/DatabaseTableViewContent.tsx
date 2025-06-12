@@ -42,6 +42,7 @@ interface DatabaseTableViewContentProps {
   sortRules: SortRule[];
   setSortRules: (rules: SortRule[]) => void;
   workspaceId: string;
+  onItemsPerPageChange: (itemsPerPage: number) => void;
 }
 
 export function DatabaseTableViewContent({
@@ -59,7 +60,8 @@ export function DatabaseTableViewContent({
   databaseId,
   sortRules,
   setSortRules,
-  workspaceId
+  workspaceId,
+  onItemsPerPageChange
 }: DatabaseTableViewContentProps) {
   if (pagesLoading) {
     return (
@@ -139,6 +141,9 @@ export function DatabaseTableViewContent({
           onPageChange={pagination.goToPage}
           itemsPerPage={pagination.itemsPerPage}
           totalItems={pagination.totalItems}
+          onItemsPerPageChange={onItemsPerPageChange}
+          startIndex={pagination.startIndex}
+          endIndex={pagination.endIndex}
         />
       )}
     </div>
