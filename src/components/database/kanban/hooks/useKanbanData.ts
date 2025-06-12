@@ -6,20 +6,17 @@ import { PageWithProperties, KanbanColumn } from '../types';
 
 interface UseKanbanDataProps {
   databaseId: string;
-  selectedFieldId?: string;
 }
 
-export function useKanbanData({ databaseId, selectedFieldId }: UseKanbanDataProps) {
+export function useKanbanData({ databaseId }: UseKanbanDataProps) {
   const [fields, setFields] = useState<DatabaseField[]>([]);
   const [pages, setPages] = useState<PageWithProperties[]>([]);
   const [columns, setColumns] = useState<KanbanColumn[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Find the select field for grouping based on selectedFieldId
-  const selectField = fields.find(field => 
-    field.id === selectedFieldId && (field.type === 'select' || field.type === 'multi_select')
-  );
+  // Find the first select-type field for grouping
+  const selectField = fields.find(field => field.type === 'select' || field.type === 'multi-select');
 
   // Fetch database fields
   useEffect(() => {
@@ -38,39 +35,12 @@ export function useKanbanData({ databaseId, selectedFieldId }: UseKanbanDataProp
     }
   }, [databaseId]);
 
-  // Fetch database pages
+  // For now, we'll show a placeholder structure
+  // In a full implementation, you'd fetch pages that belong to this database
   useEffect(() => {
-    const fetchPages = async () => {
-      if (!databaseId) return;
-      
-      try {
-        const { data, error } = await DatabaseService.fetchDatabasePages(databaseId);
-        if (error) throw new Error(error);
-        
-        // Transform the pages data to match our PageWithProperties format
-        const transformedPages: PageWithProperties[] = (data || []).map(page => {
-          const properties: Record<string, string> = {};
-          (page.page_properties || []).forEach((prop: any) => {
-            properties[prop.field_id] = prop.value || '';
-          });
-          
-          return {
-            pageId: page.id,
-            title: page.title,
-            properties,
-            pos: page.pos || 0,
-          };
-        });
-        
-        setPages(transformedPages);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to fetch pages');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchPages();
+    setLoading(false);
+    // Mock data for demonstration - in real implementation, fetch from database
+    setPages([]);
   }, [databaseId]);
 
   // Create columns based on select field options
@@ -81,9 +51,9 @@ export function useKanbanData({ databaseId, selectedFieldId }: UseKanbanDataProp
     }
 
     const options = selectField.settings?.options || [];
-    const defaultColumns: KanbanColumn[] = options.map((option: any) => ({
-      id: typeof option === 'string' ? option.toLowerCase().replace(/\s+/g, '-') : option.id,
-      title: typeof option === 'string' ? option : option.name,
+    const defaultColumns: KanbanColumn[] = options.map((option: string) => ({
+      id: option.toLowerCase().replace(/\s+/g, '-'),
+      title: option,
       pages: [],
     }));
 
@@ -95,34 +65,18 @@ export function useKanbanData({ databaseId, selectedFieldId }: UseKanbanDataProp
     });
 
     // Group pages by select field value and sort by position
-    const groupedColumns = defaultColumns.map(column => {
-      const columnPages = pages.filter(page => {
-        const fieldValue = page.properties[selectField.id];
-        
-        if (column.id === 'no-status') {
-          return !fieldValue || fieldValue.trim() === '';
-        }
-        
-        // Handle both string options and object options
-        if (selectField.type === 'multi_select') {
-          // For multi-select, check if the option is in the comma-separated values
-          const selectedValues = fieldValue ? fieldValue.split(',') : [];
-          return selectedValues.some(value => {
-            const optionId = typeof options[0] === 'string' ? column.title : column.title;
-            return value.trim() === optionId;
-          });
-        } else {
-          // For single select, direct comparison
-          const optionValue = typeof options[0] === 'string' ? column.title : column.title;
-          return fieldValue === optionValue;
-        }
-      }).sort((a, b) => (a.pos || 0) - (b.pos || 0));
-
-      return {
-        ...column,
-        pages: columnPages,
-      };
-    });
+    const groupedColumns = defaultColumns.map(column => ({
+      ...column,
+      pages: pages
+        .filter(page => {
+          const fieldValue = page.properties[selectField.id];
+          if (column.id === 'no-status') {
+            return !fieldValue || fieldValue.trim() === '';
+          }
+          return fieldValue === column.title;
+        })
+        .sort((a, b) => (a.pos || 0) - (b.pos || 0)),
+    }));
 
     setColumns(groupedColumns);
   }, [selectField, pages]);

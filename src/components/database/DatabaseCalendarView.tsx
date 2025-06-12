@@ -1,17 +1,15 @@
-
 import React, { useState, useEffect } from 'react';
 import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, CalendarDays, Settings } from 'lucide-react';
+import { Plus, CalendarDays } from 'lucide-react';
 import { useFilteredDatabasePages } from '@/hooks/useFilteredDatabasePages';
+import { PagePropertyService } from '@/services/pagePropertyService';
 import { DatabaseField } from '@/types/database';
 import { FilterRule } from '@/components/database/FilterModal';
 import { SortRule } from '@/components/database/SortingModal';
 import { useAuth } from '@/contexts/AuthContext';
 import { format, parseISO } from 'date-fns';
-import { FieldDisplay } from './fields/FieldDisplay';
 
 interface DatabaseCalendarViewProps {
   databaseId: string;
@@ -36,21 +34,10 @@ export function DatabaseCalendarView({ databaseId, workspaceId, filters = [], fi
     sortRules,
   });
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
-  const [selectedDateFieldId, setSelectedDateFieldId] = useState<string>('');
   const { user } = useAuth();
 
-  // Find all date-type fields
-  const dateFields = fields.filter(field => field.type === 'date');
-
-  // Set default date field
-  useEffect(() => {
-    if (dateFields.length > 0 && !selectedDateFieldId) {
-      setSelectedDateFieldId(dateFields[0].id);
-    }
-  }, [dateFields, selectedDateFieldId]);
-
-  // Get the currently selected date field
-  const selectedDateField = dateFields.find(field => field.id === selectedDateFieldId);
+  // Find the first date-type field
+  const dateField = fields.find(field => field.type === 'date');
 
   // Transform pages data to expected format
   const pagesWithProperties: PageWithProperties[] = pages.map(page => {
@@ -68,10 +55,10 @@ export function DatabaseCalendarView({ databaseId, workspaceId, filters = [], fi
 
   // Get pages for the selected date
   const getPagesForDate = (date: Date): PageWithProperties[] => {
-    if (!selectedDateField) return [];
+    if (!dateField) return [];
     
     return pagesWithProperties.filter(page => {
-      const pageDateValue = page.properties[selectedDateField.id];
+      const pageDateValue = page.properties[dateField.id];
       if (!pageDateValue) return false;
       
       try {
@@ -85,11 +72,11 @@ export function DatabaseCalendarView({ databaseId, workspaceId, filters = [], fi
 
   // Get all dates that have entries
   const getDatesWithEntries = (): Date[] => {
-    if (!selectedDateField) return [];
+    if (!dateField) return [];
     
     const dates: Date[] = [];
     pagesWithProperties.forEach(page => {
-      const pageDateValue = page.properties[selectedDateField.id];
+      const pageDateValue = page.properties[dateField.id];
       if (pageDateValue) {
         try {
           const date = parseISO(pageDateValue);
@@ -125,7 +112,7 @@ export function DatabaseCalendarView({ databaseId, workspaceId, filters = [], fi
     );
   }
 
-  if (dateFields.length === 0) {
+  if (!dateField) {
     return (
       <div className="text-center py-12">
         <CalendarDays className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
@@ -143,33 +130,12 @@ export function DatabaseCalendarView({ databaseId, workspaceId, filters = [], fi
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <div>
-            <h3 className="text-lg font-medium">Calendar View</h3>
-            <p className="text-sm text-muted-foreground">
-              Viewing entries by date field
-            </p>
-          </div>
-          
-          {dateFields.length > 1 && (
-            <div className="flex items-center gap-2">
-              <Settings className="h-4 w-4 text-muted-foreground" />
-              <Select value={selectedDateFieldId} onValueChange={setSelectedDateFieldId}>
-                <SelectTrigger className="w-48">
-                  <SelectValue placeholder="Select date field" />
-                </SelectTrigger>
-                <SelectContent>
-                  {dateFields.map((field) => (
-                    <SelectItem key={field.id} value={field.id}>
-                      {field.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
+        <div>
+          <h3 className="text-lg font-medium">Calendar View</h3>
+          <p className="text-sm text-muted-foreground">
+            Viewing entries by {dateField.name}
+          </p>
         </div>
-        
         <Button size="sm" className="gap-2">
           <Plus className="h-4 w-4" />
           Add Entry
@@ -180,9 +146,7 @@ export function DatabaseCalendarView({ databaseId, workspaceId, filters = [], fi
         {/* Calendar Component */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">
-              Calendar - {selectedDateField?.name || 'Date Field'}
-            </CardTitle>
+            <CardTitle className="text-base">Calendar</CardTitle>
           </CardHeader>
           <CardContent>
             <Calendar
@@ -226,7 +190,6 @@ export function DatabaseCalendarView({ databaseId, workspaceId, filters = [], fi
                       key={page.pageId}
                       page={page}
                       fields={fields}
-                      selectedDateFieldId={selectedDateFieldId}
                     />
                   ))}
                 </div>
@@ -273,28 +236,21 @@ export function DatabaseCalendarView({ databaseId, workspaceId, filters = [], fi
 interface CalendarEntryCardProps {
   page: PageWithProperties;
   fields: DatabaseField[];
-  selectedDateFieldId: string;
 }
 
-function CalendarEntryCard({ page, fields, selectedDateFieldId }: CalendarEntryCardProps) {
-  // Show first few non-date fields that aren't the selected date field
-  const displayFields = fields
-    .filter(field => field.type !== 'date' || field.id !== selectedDateFieldId)
-    .slice(0, 3);
+function CalendarEntryCard({ page, fields }: CalendarEntryCardProps) {
+  // Show first few non-date fields
+  const displayFields = fields.filter(field => field.type !== 'date').slice(0, 3);
 
   return (
-    <div className="border rounded-lg p-3 hover:bg-muted/50 transition-colors cursor-pointer">
+    <div className="border rounded-lg p-3 hover:bg-muted/50 transition-colors">
       <h4 className="font-medium text-sm mb-2">{page.title || 'Untitled'}</h4>
       {displayFields.length > 0 && (
         <div className="space-y-1">
           {displayFields.map((field) => (
-            <div key={field.id} className="text-xs flex items-center gap-1">
-              <span className="text-muted-foreground font-medium">{field.name}:</span>
-              <FieldDisplay
-                field={field}
-                value={page.properties[field.id] || null}
-                pageId={page.pageId}
-              />
+            <div key={field.id} className="text-xs">
+              <span className="text-muted-foreground">{field.name}:</span>{' '}
+              <span>{page.properties[field.id] || 'Empty'}</span>
             </div>
           ))}
         </div>
