@@ -2,11 +2,14 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { DatabaseViewService } from '@/services/databaseViewService';
 
 export type DatabaseViewType = 'table' | 'list' | 'timeline' | 'calendar' | 'kanban' | 'form' | 'gallery';
 
 export function useDatabaseView(databaseId: string) {
   const [defaultView, setDefaultView] = useState<DatabaseViewType>('table');
+  const [groupingFieldId, setGroupingFieldId] = useState<string | undefined>();
+  const [collapsedGroups, setCollapsedGroups] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
 
@@ -18,22 +21,19 @@ export function useDatabaseView(databaseId: string) {
       }
 
       try {
-        const { data, error } = await supabase
-          .from('database_views')
-          .select('default_view_type')
-          .eq('database_id', databaseId)
-          .eq('user_id', user.id)
-          .maybeSingle();
+        const { data, error } = await DatabaseViewService.getDefaultView(databaseId, user.id);
 
         if (error) {
-          console.warn('Error fetching default view:', error.message);
-          // Use default 'table' view if there's an error
-        } else if (data?.default_view_type) {
+          console.warn('Error fetching default view:', error);
+          // Use default values if there's an error
+        } else if (data) {
           setDefaultView(data.default_view_type as DatabaseViewType);
+          setGroupingFieldId(data.grouping_field_id);
+          setCollapsedGroups(data.grouping_collapsed_groups || []);
         }
       } catch (err) {
         console.warn('Error fetching default view:', err);
-        // Use default 'table' view if there's an error
+        // Use default values if there's an error
       } finally {
         setLoading(false);
       }
@@ -48,21 +48,10 @@ export function useDatabaseView(databaseId: string) {
     try {
       setDefaultView(viewType);
 
-      const { error } = await supabase
-        .from('database_views')
-        .upsert(
-          {
-            database_id: databaseId,
-            user_id: user.id,
-            default_view_type: viewType,
-          },
-          {
-            onConflict: 'database_id,user_id'
-          }
-        );
+      const { error } = await DatabaseViewService.setDefaultView(databaseId, user.id, viewType);
 
       if (error) {
-        console.warn('Error saving default view:', error.message);
+        console.warn('Error saving default view:', error);
         // Don't throw error to avoid breaking the UI
       }
     } catch (err) {
@@ -71,9 +60,55 @@ export function useDatabaseView(databaseId: string) {
     }
   };
 
+  const updateGrouping = async (fieldId?: string) => {
+    if (!user || !databaseId) return;
+
+    try {
+      setGroupingFieldId(fieldId);
+      setCollapsedGroups([]); // Reset collapsed groups when changing grouping field
+
+      const { error } = await DatabaseViewService.updateGrouping(
+        databaseId,
+        user.id,
+        fieldId,
+        []
+      );
+
+      if (error) {
+        console.warn('Error updating grouping:', error);
+      }
+    } catch (err) {
+      console.warn('Error updating grouping:', err);
+    }
+  };
+
+  const toggleGroupCollapse = async (groupValue: string) => {
+    if (!user || !databaseId) return;
+
+    try {
+      const { data, error } = await DatabaseViewService.toggleGroupCollapse(
+        databaseId,
+        user.id,
+        groupValue
+      );
+
+      if (error) {
+        console.warn('Error toggling group collapse:', error);
+      } else if (data) {
+        setCollapsedGroups(data.grouping_collapsed_groups || []);
+      }
+    } catch (err) {
+      console.warn('Error toggling group collapse:', err);
+    }
+  };
+
   return {
     defaultView,
+    groupingFieldId,
+    collapsedGroups,
     saveDefaultView,
+    updateGrouping,
+    toggleGroupCollapse,
     loading,
   };
 }

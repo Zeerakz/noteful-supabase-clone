@@ -48,6 +48,8 @@ export interface DatabaseView {
   database_id: string;
   user_id: string;
   default_view_type: 'table' | 'list' | 'timeline' | 'calendar' | 'kanban' | 'form' | 'gallery';
+  grouping_field_id?: string;
+  grouping_collapsed_groups?: string[];
   created_at: string;
   updated_at: string;
 }

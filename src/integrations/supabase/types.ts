@@ -107,6 +107,8 @@ export type Database = {
           created_at: string
           database_id: string
           default_view_type: string
+          grouping_collapsed_groups: Json | null
+          grouping_field_id: string | null
           id: string
           updated_at: string
           user_id: string
@@ -115,6 +117,8 @@ export type Database = {
           created_at?: string
           database_id: string
           default_view_type: string
+          grouping_collapsed_groups?: Json | null
+          grouping_field_id?: string | null
           id?: string
           updated_at?: string
           user_id: string
@@ -123,6 +127,8 @@ export type Database = {
           created_at?: string
           database_id?: string
           default_view_type?: string
+          grouping_collapsed_groups?: Json | null
+          grouping_field_id?: string | null
           id?: string
           updated_at?: string
           user_id?: string
