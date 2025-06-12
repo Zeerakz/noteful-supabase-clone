@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { SavedDatabaseView } from '@/types/database';
@@ -24,8 +23,8 @@ export function useSavedDatabaseViews(databaseId: string, workspaceId: string) {
       name: 'All Campaigns',
       description: null,
       view_type: 'table',
-      filters: createEmptyFilterGroup(),
-      sorts: [],
+      filters: JSON.stringify(createEmptyFilterGroup()),
+      sorts: JSON.stringify([]),
       grouping_field_id: null,
       grouping_collapsed_groups: [],
       is_shared: false,
