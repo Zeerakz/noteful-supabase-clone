@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { DatabaseField } from '@/types/database';
 import { FilterRule } from '@/components/database/FilterModal';
@@ -12,7 +11,9 @@ export class DatabaseQueryService {
     sortRules?: SortRule[]
   ): Promise<{ data: any[] | null; error: string | null }> {
     try {
-      // First get all pages for this database
+      console.log('Fetching pages for database:', databaseId);
+      
+      // First get all pages for this database with their properties
       let pagesQuery = supabase
         .from('pages')
         .select(`
@@ -26,12 +27,18 @@ export class DatabaseQueryService {
         .order('created_at', { ascending: false });
 
       const { data: pages, error: pagesError } = await pagesQuery;
-      if (pagesError) throw pagesError;
+      
+      if (pagesError) {
+        console.error('Supabase error fetching pages:', pagesError);
+        throw pagesError;
+      }
 
       if (!pages) {
+        console.log('No pages found');
         return { data: [], error: null };
       }
 
+      console.log('Pages fetched successfully:', pages.length);
       let processedPages = pages;
 
       // Apply filters on the client side since we need to filter by page properties
@@ -46,6 +53,7 @@ export class DatabaseQueryService {
 
       return { data: processedPages, error: null };
     } catch (err) {
+      console.error('Error in fetchDatabasePages:', err);
       return { 
         data: null, 
         error: err instanceof Error ? err.message : 'Failed to fetch database pages' 
