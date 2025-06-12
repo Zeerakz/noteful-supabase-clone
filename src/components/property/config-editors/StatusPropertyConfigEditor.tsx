@@ -5,7 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
-import { SelectOptionManager } from './SelectOptionManager';
+import { StatusGroupManager } from './StatusGroupManager';
 
 interface StatusPropertyConfigEditorProps {
   config: any;
@@ -19,8 +19,11 @@ export function StatusPropertyConfigEditor({ config, onConfigChange }: StatusPro
     onConfigChange({ ...statusConfig, ...updates });
   };
 
+  // Get all available options across all groups
+  const allOptions = statusConfig.groups?.flatMap(group => group.options || []) || [];
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div className="space-y-2">
         <Label htmlFor="displayAs">Display As</Label>
         <Select 
@@ -38,11 +41,9 @@ export function StatusPropertyConfigEditor({ config, onConfigChange }: StatusPro
         </Select>
       </div>
 
-      <SelectOptionManager
-        options={statusConfig.options || []}
-        onOptionsChange={(options) => updateConfig({ options })}
-        label="Status Options"
-        placeholder="Enter status name and press Enter"
+      <StatusGroupManager
+        groups={statusConfig.groups || []}
+        onGroupsChange={(groups) => updateConfig({ groups })}
       />
 
       <div className="space-y-2">
@@ -55,16 +56,23 @@ export function StatusPropertyConfigEditor({ config, onConfigChange }: StatusPro
             <SelectValue placeholder="Select default status" />
           </SelectTrigger>
           <SelectContent>
-            {(statusConfig.options || []).map((status) => (
-              <SelectItem key={status.id} value={status.id}>
-                <div className="flex items-center gap-2">
-                  <div 
-                    className="w-3 h-3 rounded-full" 
-                    style={{ backgroundColor: status.color }}
-                  />
-                  {status.name}
+            {statusConfig.groups?.map((group) => (
+              <React.Fragment key={group.id}>
+                <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
+                  {group.name}
                 </div>
-              </SelectItem>
+                {group.options?.map((option) => (
+                  <SelectItem key={option.id} value={option.id}>
+                    <div className="flex items-center gap-2">
+                      <div 
+                        className="w-3 h-3 rounded-full" 
+                        style={{ backgroundColor: option.color }}
+                      />
+                      {option.name}
+                    </div>
+                  </SelectItem>
+                ))}
+              </React.Fragment>
             ))}
           </SelectContent>
         </Select>

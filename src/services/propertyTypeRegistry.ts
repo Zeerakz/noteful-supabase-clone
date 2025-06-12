@@ -2,20 +2,20 @@
 import { propertyRegistry } from '@/types/propertyRegistry';
 import { textPropertyType } from '@/components/property/types/TextPropertyType';
 import { numberPropertyType } from '@/components/property/types/NumberPropertyType';
+import { statusPropertyType } from '@/components/property/types/StatusPropertyType';
 
 // Import other property types as they are created
 // import { selectPropertyType } from '@/components/property/types/SelectPropertyType';
-// import { statusPropertyType } from '@/components/property/types/StatusPropertyType';
 // ... etc
 
 export function initializePropertyRegistry() {
   // Register all built-in property types
   propertyRegistry.register(textPropertyType);
   propertyRegistry.register(numberPropertyType);
+  propertyRegistry.register(statusPropertyType);
   
   // TODO: Register other property types
   // propertyRegistry.register(selectPropertyType);
-  // propertyRegistry.register(statusPropertyType);
   // propertyRegistry.register(datePropertyType);
   // propertyRegistry.register(checkboxPropertyType);
   // propertyRegistry.register(urlPropertyType);
