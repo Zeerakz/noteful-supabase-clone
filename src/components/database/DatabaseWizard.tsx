@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Trash2, Database, FileTemplate } from 'lucide-react';
+import { Plus, Trash2, Database, FileText } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useParams } from 'react-router-dom';
 import { useDatabases } from '@/hooks/useDatabases';
@@ -163,7 +163,7 @@ export function DatabaseWizard() {
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="templates" className="flex items-center gap-2">
-              <FileTemplate className="h-4 w-4" />
+              <FileText className="h-4 w-4" />
               Use Template
             </TabsTrigger>
             <TabsTrigger value="custom" className="flex items-center gap-2">
