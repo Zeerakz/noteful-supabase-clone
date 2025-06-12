@@ -14,7 +14,7 @@ interface TeamMembersDisplayProps {
 }
 
 export function TeamMembersDisplay({ value, maxVisible = 3 }: TeamMembersDisplayProps) {
-  if (!value) {
+  if (!value || value.trim() === '') {
     return <span className="text-muted-foreground">—</span>;
   }
 
@@ -45,7 +45,7 @@ export function TeamMembersDisplay({ value, maxVisible = 3 }: TeamMembersDisplay
         {visibleMembers.map((member) => (
           <Avatar key={member.id} className="h-6 w-6 border-2 border-background">
             <AvatarImage src={member.avatar_url} alt={member.name} />
-            <AvatarFallback className="text-xs">
+            <AvatarFallback className="text-xs bg-muted text-muted-foreground">
               {member.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
             </AvatarFallback>
           </Avatar>

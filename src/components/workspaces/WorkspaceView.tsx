@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Plus, FileText, Database, Bookmark, Search, MoreHorizontal, Trash2 } from 'lucide-react';
 import { DatabaseWizard } from '@/components/database/DatabaseWizard';
+import { DarkModeToggle } from '@/components/ui/dark-mode-toggle';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -116,6 +117,7 @@ export function WorkspaceView() {
           )}
         </div>
         <div className="flex gap-2">
+          <DarkModeToggle />
           <Button variant="outline" onClick={openSearch} className="gap-2">
             <Search className="h-4 w-4" />
             Search

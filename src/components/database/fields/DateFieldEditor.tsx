@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { format } from 'date-fns';
+import { format, parseISO, isValid } from 'date-fns';
 import { Calendar as CalendarIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -13,14 +13,35 @@ interface DateFieldEditorProps {
 }
 
 export function DateFieldEditor({ value, onChange }: DateFieldEditorProps) {
-  const [date, setDate] = React.useState<Date | undefined>(
-    value ? new Date(value) : undefined
-  );
+  const [date, setDate] = React.useState<Date | undefined>(() => {
+    if (!value || value.trim() === '') return undefined;
+    
+    try {
+      let parsedDate: Date;
+      
+      if (value.includes('T') || value.includes('Z')) {
+        // ISO format
+        parsedDate = parseISO(value);
+      } else if (value.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        // YYYY-MM-DD format
+        parsedDate = new Date(value + 'T00:00:00');
+      } else {
+        // Try general date parsing
+        parsedDate = new Date(value);
+      }
+      
+      return isValid(parsedDate) ? parsedDate : undefined;
+    } catch {
+      return undefined;
+    }
+  });
 
   const handleDateSelect = (selectedDate: Date | undefined) => {
     setDate(selectedDate);
     if (selectedDate) {
-      onChange(selectedDate.toISOString());
+      // Convert to ISO date string (YYYY-MM-DD format)
+      const isoString = selectedDate.toISOString().split('T')[0];
+      onChange(isoString);
     } else {
       onChange('');
     }
@@ -32,7 +53,7 @@ export function DateFieldEditor({ value, onChange }: DateFieldEditorProps) {
         <Button
           variant="outline"
           className={cn(
-            "w-full justify-start text-left font-normal",
+            "w-full justify-start text-left font-normal bg-transparent border-none shadow-none hover:bg-muted/50 focus-visible:ring-1",
             !date && "text-muted-foreground"
           )}
         >
@@ -40,13 +61,13 @@ export function DateFieldEditor({ value, onChange }: DateFieldEditorProps) {
           {date ? format(date, "PPP") : <span>Pick a date</span>}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-auto p-0" align="start">
+      <PopoverContent className="w-auto p-0 bg-popover border border-border shadow-md" align="start">
         <Calendar
           mode="single"
           selected={date}
           onSelect={handleDateSelect}
           initialFocus
-          className={cn("p-3 pointer-events-auto")}
+          className="rounded-md border-0"
         />
       </PopoverContent>
     </Popover>

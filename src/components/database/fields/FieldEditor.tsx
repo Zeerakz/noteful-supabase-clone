@@ -82,9 +82,11 @@ export function FieldEditor({ field, value, onChange, workspaceId, pageId }: Fie
     handleSave(newValue);
   };
 
-  const inputClassName = `border-none bg-transparent p-1 focus-visible:ring-1 ${
-    isUpdating ? 'opacity-60' : ''
-  } ${localValue !== lastSavedValue ? 'bg-yellow-50 border-yellow-200' : ''}`;
+  const inputClassName = `
+    border-none bg-transparent p-1 focus-visible:ring-1 focus-visible:ring-ring
+    ${isUpdating ? 'opacity-60' : ''} 
+    ${localValue !== lastSavedValue ? 'bg-accent/30 border-accent-foreground/20' : ''}
+  `;
 
   switch (field.type) {
     case 'text':
@@ -136,11 +138,13 @@ export function FieldEditor({ field, value, onChange, workspaceId, pageId }: Fie
 
     case 'checkbox':
       return (
-        <Checkbox
-          checked={localValue === 'true'}
-          onCheckedChange={handleCheckboxChange}
-          disabled={isUpdating}
-        />
+        <div className="flex items-center justify-center">
+          <Checkbox
+            checked={localValue === 'true'}
+            onCheckedChange={handleCheckboxChange}
+            disabled={isUpdating}
+          />
+        </div>
       );
 
     case 'select':
@@ -183,7 +187,7 @@ export function FieldEditor({ field, value, onChange, workspaceId, pageId }: Fie
     case 'formula':
     case 'rollup':
       return (
-        <div className="flex items-center space-x-2 p-2 bg-muted/50 rounded border">
+        <div className="flex items-center space-x-2 p-2 bg-muted/50 rounded border border-border">
           <span className="text-sm text-muted-foreground italic">
             {localValue || 'Not calculated'} (Read-only)
           </span>

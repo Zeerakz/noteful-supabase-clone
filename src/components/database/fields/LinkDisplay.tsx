@@ -1,12 +1,13 @@
 
 import React from 'react';
+import { ExternalLink } from 'lucide-react';
 
 interface LinkDisplayProps {
   value: string | null;
 }
 
 export function LinkDisplay({ value }: LinkDisplayProps) {
-  if (!value) {
+  if (!value || value.trim() === '') {
     return <span className="text-muted-foreground">—</span>;
   }
 
@@ -30,18 +31,21 @@ export function LinkDisplay({ value }: LinkDisplayProps) {
     const displayText = value.replace(/^https?:\/\//, '').replace(/^www\./, '');
     
     return (
-      <a 
-        href={href}
-        target="_blank" 
-        rel="noopener noreferrer"
-        className="text-blue-600 hover:text-blue-800 hover:underline transition-colors duration-150 truncate max-w-[200px] inline-block"
-        title={value}
-      >
-        {displayText}
-      </a>
+      <div className="flex items-center gap-2">
+        <a 
+          href={href}
+          target="_blank" 
+          rel="noopener noreferrer"
+          className="text-primary hover:text-primary/80 hover:underline transition-colors duration-150 truncate max-w-[200px] inline-block"
+          title={value}
+        >
+          {displayText}
+        </a>
+        <ExternalLink className="h-3 w-3 text-muted-foreground" />
+      </div>
     );
   }
 
   // For non-URL text, just display as is
-  return <span className="truncate">{value}</span>;
+  return <span className="text-foreground truncate">{value}</span>;
 }

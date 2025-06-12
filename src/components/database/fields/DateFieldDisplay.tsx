@@ -9,7 +9,7 @@ interface DateFieldDisplayProps {
 }
 
 export function DateFieldDisplay({ value, showIcon = false }: DateFieldDisplayProps) {
-  if (!value) {
+  if (!value || value.trim() === '') {
     return (
       <div className="flex items-center gap-2 text-muted-foreground">
         {showIcon && <Calendar className="h-3 w-3" />}
@@ -25,8 +25,11 @@ export function DateFieldDisplay({ value, showIcon = false }: DateFieldDisplayPr
     if (value.includes('T') || value.includes('Z')) {
       // ISO format
       date = parseISO(value);
+    } else if (value.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      // YYYY-MM-DD format
+      date = new Date(value + 'T00:00:00');
     } else {
-      // Simple date format
+      // Try general date parsing
       date = new Date(value);
     }
     

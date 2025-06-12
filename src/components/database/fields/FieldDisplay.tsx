@@ -18,7 +18,8 @@ interface FieldDisplayProps {
 }
 
 export function FieldDisplay({ field, value, pageId, onValueChange }: FieldDisplayProps) {
-  if (!value) {
+  // Handle empty values consistently
+  if (!value || value.trim() === '') {
     return <span className="text-muted-foreground">—</span>;
   }
 
@@ -62,7 +63,7 @@ export function FieldDisplay({ field, value, pageId, onValueChange }: FieldDispl
     case 'number':
     case 'email':
     case 'phone':
-      return <span>{value}</span>;
+      return <span className="text-foreground">{value}</span>;
 
     case 'url':
       return <LinkDisplay value={value} />;
@@ -72,6 +73,7 @@ export function FieldDisplay({ field, value, pageId, onValueChange }: FieldDispl
         <Checkbox
           checked={value === 'true'}
           disabled
+          className="pointer-events-none"
         />
       );
 
@@ -114,6 +116,6 @@ export function FieldDisplay({ field, value, pageId, onValueChange }: FieldDispl
       return <span className="text-muted-foreground italic">{value || 'Not calculated'}</span>;
 
     default:
-      return <span>{value}</span>;
+      return <span className="text-foreground">{value}</span>;
   }
 }

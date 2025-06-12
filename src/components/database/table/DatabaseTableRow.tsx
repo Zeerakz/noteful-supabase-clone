@@ -86,10 +86,10 @@ export function DatabaseTableRow({
     <TableRow 
       className={`
         group transition-colors duration-150 border-b border-border/40
-        hover:bg-muted/50 
-        ${isSelected ? 'bg-primary/5 border-primary/20' : ''}
-        ${isEvenRow ? 'bg-muted/20' : 'bg-background'}
-        ${isSelected && isEvenRow ? 'bg-primary/8' : ''}
+        hover:bg-muted/30 
+        ${isSelected ? 'bg-accent/50 border-accent-foreground/20' : ''}
+        ${isEvenRow ? 'bg-muted/10' : 'bg-background'}
+        ${isSelected && isEvenRow ? 'bg-accent/60' : ''}
       `}
     >
       {/* Selection Checkbox */}
@@ -118,7 +118,7 @@ export function DatabaseTableRow({
               variant="ghost"
               size="sm"
               onClick={handleToggleExpand}
-              className="h-6 w-6 p-0 hover:bg-muted/80"
+              className="h-6 w-6 p-0 hover:bg-muted"
             >
               {isExpanded ? (
                 <ChevronDown className="h-3 w-3" />
@@ -157,7 +157,7 @@ export function DatabaseTableRow({
             </div>
           ) : (
             <div
-              className="min-h-[32px] px-2 py-1 cursor-text hover:bg-muted/50 rounded flex items-center transition-colors duration-150"
+              className="min-h-[32px] px-2 py-1 cursor-text hover:bg-muted/30 rounded flex items-center transition-colors duration-150"
               onClick={() => setEditingField(field.id)}
             >
               <FieldDisplay
@@ -182,7 +182,7 @@ export function DatabaseTableRow({
               <MoreHorizontal className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
+          <DropdownMenuContent align="end" className="bg-popover border border-border shadow-md">
             <DropdownMenuItem
               onClick={handleDelete}
               disabled={isDeleting}
