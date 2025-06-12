@@ -7,14 +7,14 @@ interface UseSlashMenuProps {
 
 export function useSlashMenu({ onSelectCommand }: UseSlashMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [position, setPosition] = useState({ top: 0, left: 0 });
   const [triggerElement, setTriggerElement] = useState<HTMLElement | null>(null);
 
   const openSlashMenu = useCallback((element: HTMLElement) => {
     const rect = element.getBoundingClientRect();
     setPosition({
-      x: rect.left,
-      y: rect.bottom,
+      left: rect.left,
+      top: rect.bottom,
     });
     setTriggerElement(element);
     setIsOpen(true);
