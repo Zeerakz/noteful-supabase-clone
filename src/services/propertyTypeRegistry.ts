@@ -1,18 +1,18 @@
 
 import { propertyRegistry } from '@/types/propertyRegistry';
 import { textPropertyType } from '@/components/property/types/TextPropertyType';
+import { numberPropertyType } from '@/components/property/types/NumberPropertyType';
 
 // Import other property types as they are created
-// import { numberPropertyType } from '@/components/property/types/NumberPropertyType';
 // import { selectPropertyType } from '@/components/property/types/SelectPropertyType';
 // ... etc
 
 export function initializePropertyRegistry() {
   // Register all built-in property types
   propertyRegistry.register(textPropertyType);
+  propertyRegistry.register(numberPropertyType);
   
   // TODO: Register other property types
-  // propertyRegistry.register(numberPropertyType);
   // propertyRegistry.register(selectPropertyType);
   // propertyRegistry.register(datePropertyType);
   // propertyRegistry.register(checkboxPropertyType);

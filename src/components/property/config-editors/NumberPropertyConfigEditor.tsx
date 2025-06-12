@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
+import { Separator } from '@/components/ui/separator';
 
 interface NumberPropertyConfigEditorProps {
   config: any;
@@ -22,6 +23,24 @@ export function NumberPropertyConfigEditor({ config, onConfigChange }: NumberPro
   return (
     <div className="space-y-4">
       <div className="space-y-2">
+        <Label htmlFor="displayAs">Display Format</Label>
+        <Select 
+          value={numberConfig.displayAs || 'plain'} 
+          onValueChange={(value) => updateConfig({ displayAs: value as 'plain' | 'currency' | 'percentage' | 'progress' })}
+        >
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="plain">Plain Number</SelectItem>
+            <SelectItem value="currency">Currency</SelectItem>
+            <SelectItem value="percentage">Percentage</SelectItem>
+            <SelectItem value="progress">Progress Bar</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="space-y-2">
         <Label htmlFor="format">Number Format</Label>
         <Select value={numberConfig.format || 'decimal'} onValueChange={(value) => updateConfig({ format: value as 'integer' | 'decimal' | 'percentage' })}>
           <SelectTrigger>
@@ -30,7 +49,7 @@ export function NumberPropertyConfigEditor({ config, onConfigChange }: NumberPro
           <SelectContent>
             <SelectItem value="integer">Integer</SelectItem>
             <SelectItem value="decimal">Decimal</SelectItem>
-            <SelectItem value="percentage">Percentage</SelectItem>
+            <SelectItem value="percentage">Percentage (0-100)</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -87,27 +106,48 @@ export function NumberPropertyConfigEditor({ config, onConfigChange }: NumberPro
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="prefix">Prefix</Label>
-          <Input
-            id="prefix"
-            value={numberConfig.prefix || ''}
-            onChange={(e) => updateConfig({ prefix: e.target.value })}
-            placeholder="e.g., $"
-          />
-        </div>
+      {(numberConfig.displayAs === 'currency' || numberConfig.displayAs === 'plain') && (
+        <>
+          <Separator />
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="prefix">Prefix</Label>
+              <Input
+                id="prefix"
+                value={numberConfig.prefix || ''}
+                onChange={(e) => updateConfig({ prefix: e.target.value })}
+                placeholder={numberConfig.displayAs === 'currency' ? '$' : 'e.g., $'}
+              />
+            </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="suffix">Suffix</Label>
-          <Input
-            id="suffix"
-            value={numberConfig.suffix || ''}
-            onChange={(e) => updateConfig({ suffix: e.target.value })}
-            placeholder="e.g., %"
-          />
-        </div>
-      </div>
+            <div className="space-y-2">
+              <Label htmlFor="suffix">Suffix</Label>
+              <Input
+                id="suffix"
+                value={numberConfig.suffix || ''}
+                onChange={(e) => updateConfig({ suffix: e.target.value })}
+                placeholder="e.g., USD"
+              />
+            </div>
+          </div>
+        </>
+      )}
+
+      {numberConfig.displayAs === 'progress' && (
+        <>
+          <Separator />
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="showPercentage"
+              checked={numberConfig.showPercentage || false}
+              onCheckedChange={(checked) => updateConfig({ showPercentage: checked as boolean })}
+            />
+            <Label htmlFor="showPercentage">Show percentage in progress bar</Label>
+          </div>
+        </>
+      )}
+
+      <Separator />
 
       <div className="space-y-2">
         <Label htmlFor="defaultValue">Default Value</Label>

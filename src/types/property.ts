@@ -55,6 +55,8 @@ export interface NumberPropertyConfig extends BasePropertyConfig {
   prefix?: string;
   suffix?: string;
   defaultValue?: number;
+  displayAs?: 'plain' | 'currency' | 'percentage' | 'progress';
+  showPercentage?: boolean;
 }
 
 // Select and Multi-select property configuration
@@ -389,7 +391,7 @@ export function getDefaultConfigForType(type: PropertyType): PropertyConfig {
     case 'text':
       return { required: false, multiline: false, wrapText: false };
     case 'number':
-      return { required: false, format: 'decimal', precision: 2 };
+      return { required: false, format: 'decimal', precision: 2, displayAs: 'plain', showPercentage: false };
     case 'select':
     case 'multi_select':
       return { required: false, options: [], allowMultiple: type === 'multi_select' };
