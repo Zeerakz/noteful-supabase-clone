@@ -11,9 +11,10 @@ interface FieldDisplayProps {
   field: DatabaseField;
   value: string | null;
   pageId?: string;
+  onValueChange?: (value: string) => void;
 }
 
-export function FieldDisplay({ field, value, pageId }: FieldDisplayProps) {
+export function FieldDisplay({ field, value, pageId, onValueChange }: FieldDisplayProps) {
   if (!value) {
     return <span className="text-muted-foreground">—</span>;
   }
