@@ -5,7 +5,14 @@ import { DatabaseTableView } from './DatabaseTableView';
 import { DatabaseListView } from './DatabaseListView';
 import { DatabaseCalendarView } from './DatabaseCalendarView';
 import { DatabaseKanbanView } from './DatabaseKanbanView';
+import { FilterModal, FilterRule } from './FilterModal';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { useDatabaseView } from '@/hooks/useDatabaseView';
+import { useFilters } from '@/hooks/useFilters';
+import { useDatabases } from '@/hooks/useDatabases';
+import { DatabaseService } from '@/services/databaseService';
+import { Filter, FilterX } from 'lucide-react';
 
 interface DatabaseViewProps {
   databaseId: string;
@@ -15,12 +22,32 @@ interface DatabaseViewProps {
 
 export function DatabaseView({ databaseId, workspaceId, className }: DatabaseViewProps) {
   const { defaultView, saveDefaultView, loading } = useDatabaseView(databaseId);
+  const { filters, setFilters, hasActiveFilters, clearFilters } = useFilters();
   const [activeView, setActiveView] = useState<DatabaseViewType>(defaultView);
+  const [showFilterModal, setShowFilterModal] = useState(false);
+  const [fields, setFields] = useState([]);
 
   // Update active view when default view loads
   useEffect(() => {
     setActiveView(defaultView);
   }, [defaultView]);
+
+  // Fetch database fields for filtering
+  useEffect(() => {
+    const fetchFields = async () => {
+      if (!databaseId) return;
+      
+      try {
+        const { data, error } = await DatabaseService.fetchDatabaseFields(databaseId);
+        if (error) throw new Error(error);
+        setFields(data || []);
+      } catch (err) {
+        console.error('Error fetching fields:', err);
+      }
+    };
+
+    fetchFields();
+  }, [databaseId]);
 
   const handleViewChange = (view: DatabaseViewType) => {
     setActiveView(view);
@@ -29,35 +56,22 @@ export function DatabaseView({ databaseId, workspaceId, className }: DatabaseVie
   };
 
   const renderView = () => {
+    const viewProps = {
+      databaseId,
+      workspaceId,
+      filters,
+      fields,
+    };
+
     switch (activeView) {
       case 'table':
-        return (
-          <DatabaseTableView 
-            databaseId={databaseId} 
-            workspaceId={workspaceId}
-          />
-        );
+        return <DatabaseTableView {...viewProps} />;
       case 'list':
-        return (
-          <DatabaseListView
-            databaseId={databaseId}
-            workspaceId={workspaceId}
-          />
-        );
+        return <DatabaseListView {...viewProps} />;
       case 'calendar':
-        return (
-          <DatabaseCalendarView
-            databaseId={databaseId}
-            workspaceId={workspaceId}
-          />
-        );
+        return <DatabaseCalendarView {...viewProps} />;
       case 'kanban':
-        return (
-          <DatabaseKanbanView
-            databaseId={databaseId}
-            workspaceId={workspaceId}
-          />
-        );
+        return <DatabaseKanbanView {...viewProps} />;
       default:
         return null;
     }
@@ -77,15 +91,54 @@ export function DatabaseView({ databaseId, workspaceId, className }: DatabaseVie
   return (
     <div className={className}>
       <div className="space-y-4">
-        <DatabaseViewSelector 
-          activeView={activeView} 
-          onViewChange={handleViewChange}
-        />
+        <div className="flex items-center justify-between">
+          <DatabaseViewSelector 
+            activeView={activeView} 
+            onViewChange={handleViewChange}
+          />
+          
+          <div className="flex items-center gap-2">
+            {hasActiveFilters && (
+              <div className="flex items-center gap-2">
+                <Badge variant="secondary" className="gap-1">
+                  <Filter className="h-3 w-3" />
+                  {filters.length} filter{filters.length !== 1 ? 's' : ''}
+                </Badge>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={clearFilters}
+                  className="h-8 px-2"
+                >
+                  <FilterX className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
+            
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowFilterModal(true)}
+              className="gap-2"
+            >
+              <Filter className="h-4 w-4" />
+              Filter
+            </Button>
+          </div>
+        </div>
         
         <div className="min-h-[400px]">
           {renderView()}
         </div>
       </div>
+
+      <FilterModal
+        open={showFilterModal}
+        onOpenChange={setShowFilterModal}
+        fields={fields}
+        filters={filters}
+        onFiltersChange={setFilters}
+      />
     </div>
   );
 }
