@@ -33,7 +33,7 @@ export function BlockEditor({ pageId, isEditable, workspaceId }: BlockEditorProp
     onSelectCommand: handleCreateBlock,
   });
 
-  async function handleCreateBlock(type: string) {
+  async function handleCreateBlock(type: string, content?: any, parentBlockId?: string) {
     if (type === 'from_template') {
       if (!workspaceId) {
         toast({
@@ -91,7 +91,7 @@ export function BlockEditor({ pageId, isEditable, workspaceId }: BlockEditorProp
     }
 
     if (type === 'two_column') {
-      const { data: containerBlock, error: containerError } = await createBlock('two_column', {});
+      const { data: containerBlock, error: containerError } = await createBlock('two_column', {}, parentBlockId);
       
       if (containerError) {
         toast({
@@ -119,7 +119,7 @@ export function BlockEditor({ pageId, isEditable, workspaceId }: BlockEditorProp
         type: 'info', 
         emoji: '💡', 
         text: '' 
-      });
+      }, parentBlockId);
       
       if (error) {
         toast({
@@ -132,7 +132,7 @@ export function BlockEditor({ pageId, isEditable, workspaceId }: BlockEditorProp
       const { error } = await createBlock(type, { 
         title: '', 
         expanded: true 
-      });
+      }, parentBlockId);
       
       if (error) {
         toast({
@@ -142,7 +142,7 @@ export function BlockEditor({ pageId, isEditable, workspaceId }: BlockEditorProp
         });
       }
     } else {
-      const { error } = await createBlock(type);
+      const { error } = await createBlock(type, content || {}, parentBlockId);
       
       if (error) {
         toast({
@@ -222,6 +222,7 @@ export function BlockEditor({ pageId, isEditable, workspaceId }: BlockEditorProp
             block={block}
             onUpdateBlock={handleUpdateBlock}
             onDeleteBlock={handleDeleteBlock}
+            onCreateBlock={handleCreateBlock}
             isEditable={isEditable}
             childBlocks={childBlocks}
           />

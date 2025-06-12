@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Block } from '@/hooks/useBlocks';
 import { Button } from '@/components/ui/button';
-import { Trash2, ChevronRight, ChevronDown } from 'lucide-react';
+import { Trash2, ChevronRight, ChevronDown, Plus } from 'lucide-react';
 import { RichTextEditor } from './RichTextEditor';
 import { BlockRenderer } from './BlockRenderer';
 import { CommentIcon } from './CommentIcon';
@@ -15,6 +15,7 @@ interface ToggleBlockProps {
   onDelete: () => Promise<void>;
   onUpdateBlock: (id: string, updates: any) => Promise<void>;
   onDeleteBlock: (id: string) => Promise<void>;
+  onCreateBlock?: (type: string, content?: any, parentBlockId?: string) => Promise<void>;
   isEditable: boolean;
   childBlocks?: Block[];
 }
@@ -25,6 +26,7 @@ export function ToggleBlock({
   onDelete, 
   onUpdateBlock,
   onDeleteBlock,
+  onCreateBlock,
   isEditable, 
   childBlocks = [] 
 }: ToggleBlockProps) {
@@ -51,6 +53,19 @@ export function ToggleBlock({
 
   const handleDelete = async () => {
     await onDelete();
+  };
+
+  const handleAddChildBlock = async () => {
+    if (onCreateBlock) {
+      await onCreateBlock('text', {}, block.id);
+    }
+  };
+
+  const handleEmptyAreaClick = (e: React.MouseEvent) => {
+    // Only handle clicks on the empty area itself, not on child elements
+    if (e.target === e.currentTarget && isEditable && onCreateBlock) {
+      handleAddChildBlock();
+    }
   };
 
   // Get child blocks that belong to this toggle block
@@ -82,6 +97,7 @@ export function ToggleBlock({
                 block={childBlock}
                 onUpdateBlock={onUpdateBlock}
                 onDeleteBlock={onDeleteBlock}
+                onCreateBlock={onCreateBlock}
                 isEditable={isEditable}
                 childBlocks={childBlocks}
               />
@@ -103,7 +119,7 @@ export function ToggleBlock({
           variant="ghost"
           size="sm"
           onClick={handleToggle}
-          className="h-8 w-8 p-0 mt-1 hover:bg-muted"
+          className="h-8 w-8 p-0 mt-1 hover:bg-muted flex-shrink-0"
         >
           {isExpanded ? (
             <ChevronDown className="h-4 w-4" />
@@ -122,23 +138,38 @@ export function ToggleBlock({
       </div>
       
       {isExpanded && (
-        <div className="ml-6 mt-2 space-y-2 border-l-2 border-muted pl-4">
-          {toggleChildBlocks.length > 0 ? (
-            toggleChildBlocks.map((childBlock) => (
+        <div className="ml-6 mt-2 border-l-2 border-muted pl-4">
+          <div className="space-y-2">
+            {toggleChildBlocks.map((childBlock) => (
               <BlockRenderer
                 key={childBlock.id}
                 block={childBlock}
                 onUpdateBlock={onUpdateBlock}
                 onDeleteBlock={onDeleteBlock}
+                onCreateBlock={onCreateBlock}
                 isEditable={isEditable}
                 childBlocks={childBlocks}
               />
-            ))
-          ) : (
-            <div className="text-muted-foreground text-sm py-2">
-              Click here to add content inside the toggle...
-            </div>
-          )}
+            ))}
+          </div>
+          
+          {/* Empty area for adding new blocks */}
+          <div 
+            className="min-h-[40px] py-2 cursor-pointer hover:bg-muted/30 rounded transition-colors"
+            onClick={handleEmptyAreaClick}
+          >
+            {toggleChildBlocks.length === 0 ? (
+              <div className="text-muted-foreground text-sm flex items-center gap-2">
+                <Plus className="h-4 w-4" />
+                Click here to add content inside the toggle...
+              </div>
+            ) : (
+              <div className="text-muted-foreground text-sm opacity-0 hover:opacity-100 transition-opacity flex items-center gap-2">
+                <Plus className="h-4 w-4" />
+                Add block
+              </div>
+            )}
+          </div>
         </div>
       )}
       

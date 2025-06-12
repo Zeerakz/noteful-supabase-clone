@@ -16,11 +16,12 @@ interface BlockRendererProps {
   block: Block;
   onUpdateBlock: (id: string, updates: any) => Promise<void>;
   onDeleteBlock: (id: string) => Promise<void>;
+  onCreateBlock?: (type: string, content?: any, parentBlockId?: string) => Promise<void>;
   isEditable: boolean;
   childBlocks?: Block[];
 }
 
-export function BlockRenderer({ block, onUpdateBlock, onDeleteBlock, isEditable, childBlocks = [] }: BlockRendererProps) {
+export function BlockRenderer({ block, onUpdateBlock, onDeleteBlock, onCreateBlock, isEditable, childBlocks = [] }: BlockRendererProps) {
   const handleContentUpdate = async (content: any) => {
     await onUpdateBlock(block.id, { content });
   };
@@ -75,6 +76,7 @@ export function BlockRenderer({ block, onUpdateBlock, onDeleteBlock, isEditable,
           block={block}
           onUpdateBlock={onUpdateBlock}
           onDeleteBlock={onDeleteBlock}
+          onCreateBlock={onCreateBlock}
           isEditable={isEditable}
           childBlocks={childBlocks}
         />
@@ -123,6 +125,7 @@ export function BlockRenderer({ block, onUpdateBlock, onDeleteBlock, isEditable,
           onDelete={handleDelete}
           onUpdateBlock={onUpdateBlock}
           onDeleteBlock={onDeleteBlock}
+          onCreateBlock={onCreateBlock}
           isEditable={isEditable}
           childBlocks={childBlocks}
         />
