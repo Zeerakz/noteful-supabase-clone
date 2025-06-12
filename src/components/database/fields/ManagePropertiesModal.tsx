@@ -47,7 +47,7 @@ import {
 } from 'lucide-react';
 import { DatabaseField } from '@/types/database';
 import { PropertyType } from '@/types/property';
-import { FieldTypeSelector } from './FieldTypeSelector';
+import { RegistryBasedFieldTypeSelector } from '@/components/property/RegistryBasedFieldTypeSelector';
 import { FieldConfigurationPanel } from './FieldConfigurationPanel';
 
 interface ManagePropertiesModalProps {
@@ -65,6 +65,7 @@ const fieldTypeIcons = {
   text: Type,
   number: Hash,
   date: Calendar,
+  datetime: Calendar,
   checkbox: CheckSquare,
   url: Link,
   email: Mail,
@@ -367,7 +368,7 @@ export function ManagePropertiesModal({
                     
                     <div className="space-y-2">
                       <Label htmlFor="field-type">Property Type</Label>
-                      <FieldTypeSelector
+                      <RegistryBasedFieldTypeSelector
                         value={editingField ? editingField.type as PropertyType : newFieldType}
                         onValueChange={(type) => {
                           if (editingField) {
