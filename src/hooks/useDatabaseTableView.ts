@@ -275,7 +275,11 @@ export function useDatabaseTableView({
 
   const handlePropertyUpdate = useCallback((pageId: string, fieldId: string, value: string) => {
     console.log('useDatabaseTableView: Updating property', { pageId, fieldId, value });
+    
+    // Clear cache to ensure fresh data
     cache.invalidate(`page-${pageId}`);
+    
+    // Trigger optimistic update
     propertyUpdateMutation.mutate({
       pageId,
       fieldId,

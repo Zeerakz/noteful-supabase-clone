@@ -50,23 +50,26 @@ export function useOptimisticPropertyUpdate(databaseId: string) {
               (prop: any) => prop.field_id === fieldId
             );
             
+            const propertyUpdate = {
+              page_id: pageId,
+              field_id: fieldId,
+              value,
+              id: existingIndex >= 0 ? updatedProperties[existingIndex].id : `temp-${Date.now()}`,
+              created_by: user?.id,
+              created_at: existingIndex >= 0 ? updatedProperties[existingIndex].created_at : new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            };
+            
             if (existingIndex >= 0) {
-              updatedProperties[existingIndex] = {
-                ...updatedProperties[existingIndex],
-                value
-              };
+              updatedProperties[existingIndex] = propertyUpdate;
             } else {
-              updatedProperties.push({
-                page_id: pageId,
-                field_id: fieldId,
-                value,
-                id: `temp-${Date.now()}`, // Temporary ID for optimistic update
-              });
+              updatedProperties.push(propertyUpdate);
             }
             
             return {
               ...page,
-              page_properties: updatedProperties
+              page_properties: updatedProperties,
+              updated_at: new Date().toISOString(),
             };
           }
           return page;
@@ -88,15 +91,43 @@ export function useOptimisticPropertyUpdate(databaseId: string) {
         variant: "destructive",
       });
     },
-    onSuccess: () => {
-      // Optionally show success message
+    onSuccess: (data, variables) => {
+      // Update the cache with the actual server response
+      queryClient.setQueryData(['database-pages', databaseId], (old: any) => {
+        if (!old) return old;
+        
+        return old.map((page: any) => {
+          if (page.id === variables.pageId) {
+            const updatedProperties = page.page_properties ? [...page.page_properties] : [];
+            
+            // Find and update the property with server data
+            const existingIndex = updatedProperties.findIndex(
+              (prop: any) => prop.field_id === variables.fieldId
+            );
+            
+            if (existingIndex >= 0) {
+              updatedProperties[existingIndex] = data;
+            } else {
+              updatedProperties.push(data);
+            }
+            
+            return {
+              ...page,
+              page_properties: updatedProperties,
+              updated_at: new Date().toISOString(),
+            };
+          }
+          return page;
+        });
+      });
+
       toast({
-        title: "Success",
+        title: "Success", 
         description: "Property updated successfully",
       });
     },
     onSettled: () => {
-      // Always refetch after mutation settles
+      // Force refetch to ensure consistency
       queryClient.invalidateQueries({ 
         queryKey: ['database-pages', databaseId] 
       });

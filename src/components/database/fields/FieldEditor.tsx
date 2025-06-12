@@ -24,6 +24,7 @@ export function FieldEditor({ field, value, onChange, workspaceId, pageId }: Fie
 
   const handleBlur = () => {
     if (localValue !== (value || '')) {
+      console.log('FieldEditor: Saving value on blur', { fieldId: field.id, value: localValue });
       onChange(localValue);
     }
   };
@@ -31,11 +32,29 @@ export function FieldEditor({ field, value, onChange, workspaceId, pageId }: Fie
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       e.preventDefault();
+      console.log('FieldEditor: Saving value on Enter', { fieldId: field.id, value: localValue });
       onChange(localValue);
     } else if (e.key === 'Escape') {
       e.preventDefault();
       setLocalValue(value || '');
     }
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newValue = e.target.value;
+    setLocalValue(newValue);
+    console.log('FieldEditor: Local value changed', { fieldId: field.id, value: newValue });
+  };
+
+  const handleCheckboxChange = (checked: boolean) => {
+    const newValue = checked ? 'true' : 'false';
+    console.log('FieldEditor: Checkbox changed', { fieldId: field.id, value: newValue });
+    onChange(newValue);
+  };
+
+  const handleSelectChange = (newValue: string) => {
+    console.log('FieldEditor: Select changed', { fieldId: field.id, value: newValue });
+    onChange(newValue);
   };
 
   switch (field.type) {
@@ -46,7 +65,7 @@ export function FieldEditor({ field, value, onChange, workspaceId, pageId }: Fie
         <Input
           type={field.type === 'email' ? 'email' : field.type === 'phone' ? 'tel' : 'text'}
           value={localValue}
-          onChange={(e) => setLocalValue(e.target.value)}
+          onChange={handleChange}
           onBlur={handleBlur}
           onKeyDown={handleKeyDown}
           placeholder={`Enter ${field.name.toLowerCase()}`}
@@ -60,7 +79,7 @@ export function FieldEditor({ field, value, onChange, workspaceId, pageId }: Fie
         <Input
           type="number"
           value={localValue}
-          onChange={(e) => setLocalValue(e.target.value)}
+          onChange={handleChange}
           onBlur={handleBlur}
           onKeyDown={handleKeyDown}
           placeholder={`Enter ${field.name.toLowerCase()}`}
@@ -74,7 +93,7 @@ export function FieldEditor({ field, value, onChange, workspaceId, pageId }: Fie
         <Input
           type="url"
           value={localValue}
-          onChange={(e) => setLocalValue(e.target.value)}
+          onChange={handleChange}
           onBlur={handleBlur}
           onKeyDown={handleKeyDown}
           placeholder="https://example.com"
@@ -87,7 +106,7 @@ export function FieldEditor({ field, value, onChange, workspaceId, pageId }: Fie
       return (
         <Checkbox
           checked={value === 'true'}
-          onCheckedChange={(checked) => onChange(checked ? 'true' : 'false')}
+          onCheckedChange={handleCheckboxChange}
         />
       );
 
@@ -96,7 +115,7 @@ export function FieldEditor({ field, value, onChange, workspaceId, pageId }: Fie
         <SelectFieldEditor
           value={value}
           settings={field.settings}
-          onChange={onChange}
+          onChange={handleSelectChange}
         />
       );
 
@@ -105,7 +124,7 @@ export function FieldEditor({ field, value, onChange, workspaceId, pageId }: Fie
         <SelectFieldEditor
           value={value}
           settings={field.settings}
-          onChange={onChange}
+          onChange={handleSelectChange}
           multiSelect
         />
       );
@@ -114,7 +133,7 @@ export function FieldEditor({ field, value, onChange, workspaceId, pageId }: Fie
       return (
         <DateFieldEditor
           value={value}
-          onChange={onChange}
+          onChange={handleSelectChange}
         />
       );
 
@@ -123,7 +142,7 @@ export function FieldEditor({ field, value, onChange, workspaceId, pageId }: Fie
         <RelationFieldEditor
           value={value}
           settings={field.settings}
-          onChange={onChange}
+          onChange={handleSelectChange}
           workspaceId={workspaceId}
         />
       );
@@ -143,7 +162,7 @@ export function FieldEditor({ field, value, onChange, workspaceId, pageId }: Fie
       return (
         <Input
           value={localValue}
-          onChange={(e) => setLocalValue(e.target.value)}
+          onChange={handleChange}
           onBlur={handleBlur}
           onKeyDown={handleKeyDown}
           placeholder={`Enter ${field.name.toLowerCase()}`}
