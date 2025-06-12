@@ -20,11 +20,14 @@ export function DateFieldEditor({ value, onChange }: DateFieldEditorProps) {
       let parsedDate: Date;
       
       if (value.includes('T') || value.includes('Z')) {
-        // ISO format
+        // ISO format or timestamp
         parsedDate = parseISO(value);
       } else if (value.match(/^\d{4}-\d{2}-\d{2}$/)) {
         // YYYY-MM-DD format
         parsedDate = new Date(value + 'T00:00:00');
+      } else if (value.match(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}/)) {
+        // YYYY-MM-DD HH:mm:ss format (common for timestamp fields)
+        parsedDate = new Date(value);
       } else {
         // Try general date parsing
         parsedDate = new Date(value);
@@ -39,13 +42,34 @@ export function DateFieldEditor({ value, onChange }: DateFieldEditorProps) {
   const handleDateSelect = (selectedDate: Date | undefined) => {
     setDate(selectedDate);
     if (selectedDate) {
-      // Convert to ISO date string (YYYY-MM-DD format)
+      // For timestamp fields, preserve time if it exists in original value
+      const hasTime = value && (value.includes('T') || value.includes(' ') || value.includes(':'));
+      
+      if (hasTime && value) {
+        try {
+          // Try to preserve the time component from the original value
+          const originalDate = new Date(value);
+          if (isValid(originalDate)) {
+            selectedDate.setHours(originalDate.getHours());
+            selectedDate.setMinutes(originalDate.getMinutes());
+            selectedDate.setSeconds(originalDate.getSeconds());
+            onChange(selectedDate.toISOString());
+            return;
+          }
+        } catch {
+          // Fall back to date-only format
+        }
+      }
+      
+      // Convert to ISO date string (YYYY-MM-DD format) for date fields
       const isoString = selectedDate.toISOString().split('T')[0];
       onChange(isoString);
     } else {
       onChange('');
     }
   };
+
+  const displayText = date ? format(date, "PPP") : "Pick a date";
 
   return (
     <Popover>
@@ -58,7 +82,7 @@ export function DateFieldEditor({ value, onChange }: DateFieldEditorProps) {
           )}
         >
           <CalendarIcon className="mr-2 h-4 w-4" />
-          {date ? format(date, "PPP") : <span>Pick a date</span>}
+          <span>{displayText}</span>
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0 bg-popover border border-border shadow-md" align="start">

@@ -31,8 +31,10 @@ export function useCalendarData({ databaseId, filterGroup, fields, sortRules }: 
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [selectedDateField, setSelectedDateField] = useState<DatabaseField | null>(null);
 
-  // Find all date-type fields
-  const dateFields = fields.filter(field => field.type === 'date');
+  // Find all date-type fields (including timestamp fields)
+  const dateFields = fields.filter(field => 
+    field.type === 'date' || field.type === 'timestamp'
+  );
 
   // Set default date field (first one found)
   useEffect(() => {
@@ -52,7 +54,22 @@ export function useCalendarData({ databaseId, filterGroup, fields, sortRules }: 
       // If this property is for the selected date field, parse the date
       if (selectedDateField && prop.field_id === selectedDateField.id && prop.value) {
         try {
-          const parsedDate = parseISO(prop.value);
+          // Handle both ISO date strings and timestamp values
+          let parsedDate: Date;
+          
+          if (typeof prop.value === 'string') {
+            // Try parsing as ISO string first
+            parsedDate = parseISO(prop.value);
+            
+            // If not valid, try creating a new Date object
+            if (!isValid(parsedDate)) {
+              parsedDate = new Date(prop.value);
+            }
+          } else {
+            // Handle timestamp or other date formats
+            parsedDate = new Date(prop.value);
+          }
+          
           if (isValid(parsedDate)) {
             dateValue = parsedDate;
           }

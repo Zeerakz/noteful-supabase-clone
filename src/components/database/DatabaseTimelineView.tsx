@@ -24,7 +24,7 @@ export function DatabaseTimelineView({
   filterGroup,
   sortRules
 }: DatabaseTimelineViewProps) {
-  const dateFields = fields.filter(field => field.type === 'date');
+  const dateFields = fields.filter(field => field.type === 'date' || field.type === 'timestamp');
   const [selectedStartField, setSelectedStartField] = useState<DatabaseField | null>(
     dateFields[0] || null
   );
@@ -57,8 +57,8 @@ export function DatabaseTimelineView({
     return (
       <div className="flex items-center justify-center p-8">
         <div className="text-center text-muted-foreground">
-          <p>No date fields found in this database.</p>
-          <p className="text-sm mt-1">Add a date field to use the timeline view.</p>
+          <p>No date or timestamp fields found in this database.</p>
+          <p className="text-sm mt-1">Add a date or timestamp field to use the timeline view.</p>
         </div>
       </div>
     );

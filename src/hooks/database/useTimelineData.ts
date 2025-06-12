@@ -41,16 +41,31 @@ export function useTimelineData({
         const startDateValue = page.properties?.[startDateField.id];
         if (!startDateValue) return null;
 
-        const startDate = new Date(startDateValue);
-        if (isNaN(startDate.getTime())) return null;
+        // Handle both date and timestamp field types
+        let startDate: Date;
+        try {
+          if (typeof startDateValue === 'string') {
+            startDate = new Date(startDateValue);
+          } else {
+            startDate = new Date(startDateValue);
+          }
+          
+          if (isNaN(startDate.getTime())) return null;
+        } catch {
+          return null;
+        }
 
         let endDate: Date | undefined;
         if (endDateField) {
           const endDateValue = page.properties?.[endDateField.id];
           if (endDateValue) {
-            const parsedEndDate = new Date(endDateValue);
-            if (!isNaN(parsedEndDate.getTime())) {
-              endDate = parsedEndDate;
+            try {
+              const parsedEndDate = new Date(endDateValue);
+              if (!isNaN(parsedEndDate.getTime())) {
+                endDate = parsedEndDate;
+              }
+            } catch {
+              // Invalid end date, continue without it
             }
           }
         }
