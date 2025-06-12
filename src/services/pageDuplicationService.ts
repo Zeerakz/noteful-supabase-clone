@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Page } from '@/types/page';
 import { Block } from '@/hooks/useBlocks';
 import { PageProperty } from '@/types/database';
+import { blockCreationService } from '@/hooks/blocks/useBlockCreation';
 
 export class PageDuplicationService {
   static async duplicatePage(
@@ -54,12 +55,78 @@ export class PageDuplicationService {
           const newBlockId = crypto.randomUUID();
           blockIdMapping[block.id] = newBlockId;
           
+          // Use block creation service to ensure proper content structure
+          let clonedContent = block.content;
+          
+          // For complex block types, ensure the content structure is valid
+          try {
+            if (block.type === 'table' && block.content?.table) {
+              // Preserve table structure with unique IDs
+              clonedContent = {
+                table: {
+                  headers: block.content.table.headers?.map((header: any, i: number) => ({
+                    id: `header-${i}-${Date.now()}`,
+                    content: header.content || `Column ${i + 1}`
+                  })) || [],
+                  rows: block.content.table.rows?.map((row: any, rowIndex: number) => ({
+                    id: `row-${rowIndex}-${Date.now()}`,
+                    cells: row.cells?.map((cell: any, colIndex: number) => ({
+                      id: `cell-${rowIndex}-${colIndex}-${Date.now()}`,
+                      content: cell.content || ''
+                    })) || []
+                  })) || []
+                }
+              };
+            } else if (block.type === 'callout' && block.content) {
+              // Preserve callout structure
+              clonedContent = {
+                type: block.content.type || 'info',
+                emoji: block.content.emoji || '💡',
+                text: block.content.text || ''
+              };
+            } else if (block.type === 'toggle' && block.content) {
+              // Preserve toggle structure
+              clonedContent = {
+                title: block.content.title || '',
+                expanded: block.content.expanded !== undefined ? block.content.expanded : true
+              };
+            } else if (block.type === 'embed' && block.content) {
+              // Preserve embed structure
+              clonedContent = {
+                url: block.content.url || ''
+              };
+            } else if (block.type === 'image' && block.content) {
+              // Preserve image structure
+              clonedContent = {
+                url: block.content.url || '',
+                caption: block.content.caption || ''
+              };
+            } else if ((block.type === 'bullet_list' || block.type === 'numbered_list') && block.content) {
+              // Preserve list structure
+              clonedContent = {
+                items: Array.isArray(block.content.items) ? block.content.items : ['']
+              };
+            } else if (block.type === 'two_column' && block.content) {
+              // Preserve two column structure
+              clonedContent = {
+                columnSizes: Array.isArray(block.content.columnSizes) ? block.content.columnSizes : [50, 50]
+              };
+            } else {
+              // For other block types, preserve the original content or use defaults
+              clonedContent = block.content || blockCreationService.getInitialContent(block.type);
+            }
+          } catch (error) {
+            console.warn(`Failed to clone content for block type ${block.type}:`, error);
+            // Fallback to default content for this block type
+            clonedContent = blockCreationService.getInitialContent(block.type);
+          }
+          
           return {
             id: newBlockId,
             page_id: newPage.id,
             parent_block_id: null, // We'll update this in the second pass
             type: block.type,
-            content: block.content,
+            content: clonedContent,
             pos: block.pos,
             created_by: userId,
           };
