@@ -7,6 +7,7 @@ import { Trash2, ExternalLink, Globe } from 'lucide-react';
 import { CommentIcon } from './CommentIcon';
 import { CommentThreadPanel } from './CommentThreadPanel';
 import { useComments } from '@/hooks/useComments';
+import { TwitterEmbed } from './TwitterEmbed';
 
 interface EmbedBlockProps {
   block: Block;
@@ -42,6 +43,15 @@ export function EmbedBlock({ block, onUpdate, onDelete, isEditable }: EmbedBlock
     try {
       const urlObj = new URL(inputUrl);
       const hostname = urlObj.hostname.toLowerCase();
+
+      // Twitter/X
+      if (hostname.includes('twitter.com') || hostname.includes('x.com') || hostname.includes('mobile.twitter.com')) {
+        return {
+          type: 'twitter',
+          embedUrl: inputUrl, // For Twitter, we'll use the original URL
+          title: 'Twitter/X Post'
+        };
+      }
 
       // YouTube
       if (hostname.includes('youtube.com') || hostname.includes('youtu.be')) {
@@ -148,7 +158,7 @@ export function EmbedBlock({ block, onUpdate, onDelete, isEditable }: EmbedBlock
             <Input
               value={urlInput}
               onChange={(e) => setUrlInput(e.target.value)}
-              placeholder="Paste a YouTube, Vimeo, CodePen, or any URL..."
+              placeholder="Paste a YouTube, Vimeo, CodePen, Twitter/X, or any URL..."
               onKeyDown={handleKeyDown}
               autoFocus
               className="flex-1"
@@ -161,12 +171,18 @@ export function EmbedBlock({ block, onUpdate, onDelete, isEditable }: EmbedBlock
             </Button>
           </div>
           <p className="text-xs text-muted-foreground mt-2">
-            Supports YouTube, Vimeo, CodePen, and other embeddable URLs
+            Supports YouTube, Vimeo, CodePen, Twitter/X, and other embeddable URLs
           </p>
         </div>
       ) : (
         <div className="border border-border rounded-lg overflow-hidden bg-background">
-          {embedUrl ? (
+          {type === 'twitter' ? (
+            <TwitterEmbed 
+              url={url!} 
+              onEdit={isEditable ? handleEdit : undefined}
+              isEditable={isEditable}
+            />
+          ) : embedUrl ? (
             <div className="relative">
               <iframe
                 src={embedUrl}
@@ -214,7 +230,7 @@ export function EmbedBlock({ block, onUpdate, onDelete, isEditable }: EmbedBlock
             </div>
           )}
           
-          {url && (
+          {url && type !== 'twitter' && (
             <div className="p-3 border-t border-border bg-muted/50">
               <div className="flex items-center justify-between">
                 <a
