@@ -55,7 +55,7 @@ export function useKanbanData({ databaseId, selectedFieldId }: UseKanbanDataProp
           });
           
           return {
-            id: page.id,
+            pageId: page.id,
             title: page.title,
             properties,
             pos: page.pos || 0,
