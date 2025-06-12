@@ -13,7 +13,14 @@ export function DateFieldDisplay({ value }: DateFieldDisplayProps) {
 
   try {
     const date = new Date(value);
-    return <span>{format(date, "MMM d, yyyy")}</span>;
+    
+    // Check if it's a valid date
+    if (isNaN(date.getTime())) {
+      return <span className="text-muted-foreground">Invalid date</span>;
+    }
+    
+    // Format as "Jun 22" for consistent display
+    return <span className="text-sm">{format(date, "MMM d")}</span>;
   } catch (error) {
     return <span className="text-muted-foreground">Invalid date</span>;
   }
