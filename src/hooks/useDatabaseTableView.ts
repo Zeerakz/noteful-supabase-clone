@@ -51,6 +51,9 @@ export function useDatabaseTableView({
   const { toast } = useToast();
   const { startTimer, endTimer } = usePerformanceMetrics();
   
+  // Stabilize fields to prevent infinite re-renders
+  const stableFields = useMemo(() => fields, [JSON.stringify(fields)]);
+  
   // Stabilize cache configuration to prevent re-creation
   const cacheConfig = useMemo(() => ({
     cacheKey: `table-${databaseId}`,
@@ -80,7 +83,7 @@ export function useDatabaseTableView({
   } = useFilteredDatabasePages({
     databaseId,
     filterGroup,
-    fields,
+    fields: stableFields,
     sortRules
   });
 
@@ -117,7 +120,7 @@ export function useDatabaseTableView({
     isPageLoading
   } = useLazyProperties({
     pageIds,
-    fields,
+    fields: stableFields,
     enabled: currentPageItems.length > 0
   });
 

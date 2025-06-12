@@ -18,15 +18,16 @@ export function useFilteredDatabasePages({ databaseId, filterGroup, fields, sort
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Stabilize the filter and sort dependencies using useMemo
+  // Stabilize all dependencies using useMemo to prevent infinite re-renders
   const stableFilterGroup = useMemo(() => filterGroup, [JSON.stringify(filterGroup)]);
+  const stableFields = useMemo(() => fields, [JSON.stringify(fields)]);
   const stableSortRules = useMemo(() => sortRules, [JSON.stringify(sortRules)]);
 
   // Create a stable query function that doesn't change on every render
   const queryFunction = useCallback(() => {
     console.log('Query function called for database:', databaseId);
-    return DatabaseQueryService.fetchDatabasePages(databaseId, stableFilterGroup, fields, stableSortRules);
-  }, [databaseId, stableFilterGroup, fields, stableSortRules]);
+    return DatabaseQueryService.fetchDatabasePages(databaseId, stableFilterGroup, stableFields, stableSortRules);
+  }, [databaseId, stableFilterGroup, stableFields, stableSortRules]);
 
   const { executeWithRetry, retryCount, isRetrying } = useRetryableQuery(
     queryFunction,
