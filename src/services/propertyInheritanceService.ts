@@ -1,11 +1,22 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { DatabaseField, PageProperty } from '@/types/database';
+import { PropertyConfig } from '@/types/property';
 import { propertyRegistry } from '@/types/propertyRegistry';
 import { DatabaseFieldService } from '@/services/database/databaseFieldService';
 import { PagePropertyService } from '@/services/pagePropertyService';
 
 export class PropertyInheritanceService {
+  /**
+   * Safely converts Supabase Json type to PropertyConfig
+   */
+  private static safelyParseConfig(settings: any): PropertyConfig {
+    if (!settings || typeof settings !== 'object' || Array.isArray(settings)) {
+      return {};
+    }
+    return settings as PropertyConfig;
+  }
+
   /**
    * Applies database property inheritance to a page that was moved into a database
    */
@@ -49,7 +60,7 @@ export class PropertyInheritanceService {
         // Determine the default value
         let defaultValue = '';
         if (definition) {
-          const config = field.settings || {};
+          const config = this.safelyParseConfig(field.settings);
           defaultValue = definition.getDefaultValue(config);
           
           // Format the value according to the property type
@@ -171,8 +182,9 @@ export class PropertyInheritanceService {
 
         for (const field of addedFields) {
           const definition = propertyRegistry.get(field.type as any);
-          const defaultValue = definition ? definition.getDefaultValue(field.settings || {}) : '';
-          const formattedValue = definition ? definition.formatValue(defaultValue, field.settings || {}) : defaultValue;
+          const config = this.safelyParseConfig(field.settings);
+          const defaultValue = definition ? definition.getDefaultValue(config) : '';
+          const formattedValue = definition ? definition.formatValue(defaultValue, config) : defaultValue;
 
           for (const pageId of pageIds) {
             additionPromises.push(
