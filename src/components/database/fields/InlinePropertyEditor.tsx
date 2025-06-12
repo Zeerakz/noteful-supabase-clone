@@ -166,7 +166,7 @@ export function InlinePropertyEditor({
               <Label className="text-xs font-medium">Field Type</Label>
               <RegistryBasedFieldTypeSelector
                 value={fieldType}
-                onChange={setFieldType}
+                onValueChange={setFieldType}
               />
             </div>
 

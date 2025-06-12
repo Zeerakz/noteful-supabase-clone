@@ -1,6 +1,8 @@
+
 import React from 'react';
 import { DatabaseColumnHeader } from './DatabaseColumnHeader';
 import { DatabaseField } from '@/types/database';
+import { SortRule } from '@/components/database/SortingModal';
 
 interface DatabaseTableHeaderProps {
   fields: DatabaseField[];

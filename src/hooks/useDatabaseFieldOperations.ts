@@ -10,7 +10,7 @@ export function useDatabaseFieldOperations(databaseId: string, onFieldsChange?: 
   const { user } = useAuth();
   const { toast } = useToast();
 
-  const updateField = async (fieldId: string, updates: Partial<DatabaseField>) => {
+  const updateField = async (fieldId: string, updates: Partial<DatabaseField>): Promise<void> => {
     if (!user) {
       toast({
         title: "Error",
@@ -29,7 +29,6 @@ export function useDatabaseFieldOperations(databaseId: string, onFieldsChange?: 
       }
 
       onFieldsChange?.();
-      return data;
     } catch (error) {
       console.error('Failed to update field:', error);
       throw error;
@@ -38,7 +37,7 @@ export function useDatabaseFieldOperations(databaseId: string, onFieldsChange?: 
     }
   };
 
-  const duplicateField = async (field: DatabaseField) => {
+  const duplicateField = async (field: DatabaseField): Promise<void> => {
     if (!user) {
       toast({
         title: "Error",
@@ -68,7 +67,6 @@ export function useDatabaseFieldOperations(databaseId: string, onFieldsChange?: 
       }
 
       onFieldsChange?.();
-      return data;
     } catch (error) {
       console.error('Failed to duplicate field:', error);
       throw error;
@@ -77,7 +75,7 @@ export function useDatabaseFieldOperations(databaseId: string, onFieldsChange?: 
     }
   };
 
-  const deleteField = async (fieldId: string) => {
+  const deleteField = async (fieldId: string): Promise<void> => {
     setLoading(true);
     try {
       const { error } = await DatabaseFieldService.deleteDatabaseField(fieldId);

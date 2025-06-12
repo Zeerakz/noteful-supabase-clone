@@ -2,7 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { DatabaseField, PageProperty } from '@/types/database';
 import { DatabaseTableHeader } from './DatabaseTableHeader';
 import { DatabaseTableRow } from './DatabaseTableRow';
-import { Table, TableBody, TableCaption, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Table, TableBody, TableCaption, TableHead, TableHeader, TableRow, TableCell } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Pagination } from '@/components/ui/pagination';
 import { SortRule } from '@/components/database/SortingModal';
@@ -118,7 +118,6 @@ export function DatabaseTableViewContent({
     );
   }
 
-  // Update the DatabaseTableHeader props to include onFieldsChange
   return (
     <div className="flex flex-col h-full">
       <div className="flex-1 min-h-0">
@@ -139,7 +138,6 @@ export function DatabaseTableViewContent({
                   onTitleUpdate={(newTitle) => onTitleUpdate(page.id, newTitle)}
                   onPropertyUpdate={(fieldId, value) => onPropertyUpdate(page.id, fieldId, value)}
                   onDeleteRow={() => onDeleteRow(page.id)}
-                  onRefetch={onRefetch}
                   databaseId={databaseId}
                   workspaceId={workspaceId}
                 />
