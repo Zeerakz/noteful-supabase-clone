@@ -102,6 +102,56 @@ export type Database = {
           },
         ]
       }
+      database_templates: {
+        Row: {
+          category: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          is_system_template: boolean
+          name: string
+          preview_image_url: string | null
+          template_data: Json
+          updated_at: string
+          workspace_id: string | null
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_system_template?: boolean
+          name: string
+          preview_image_url?: string | null
+          template_data: Json
+          updated_at?: string
+          workspace_id?: string | null
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_system_template?: boolean
+          name?: string
+          preview_image_url?: string | null
+          template_data?: Json
+          updated_at?: string
+          workspace_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "database_templates_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       database_views: {
         Row: {
           created_at: string
@@ -593,6 +643,53 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "templates_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      view_templates: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          is_system_template: boolean
+          name: string
+          template_config: Json
+          updated_at: string
+          view_type: string
+          workspace_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_system_template?: boolean
+          name: string
+          template_config: Json
+          updated_at?: string
+          view_type: string
+          workspace_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_system_template?: boolean
+          name?: string
+          template_config?: Json
+          updated_at?: string
+          view_type?: string
+          workspace_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "view_templates_workspace_id_fkey"
             columns: ["workspace_id"]
             isOneToOne: false
             referencedRelation: "workspaces"
