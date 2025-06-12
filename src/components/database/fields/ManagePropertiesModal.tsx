@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -49,6 +48,7 @@ import { DatabaseField } from '@/types/database';
 import { PropertyType } from '@/types/property';
 import { RegistryBasedFieldTypeSelector } from '@/components/property/RegistryBasedFieldTypeSelector';
 import { FieldConfigurationPanel } from './FieldConfigurationPanel';
+import { NewPropertyWizard } from './NewPropertyWizard';
 
 interface ManagePropertiesModalProps {
   open: boolean;
@@ -91,10 +91,7 @@ export function ManagePropertiesModal({
 }: ManagePropertiesModalProps) {
   const [editingField, setEditingField] = useState<DatabaseField | null>(null);
   const [deleteFieldId, setDeleteFieldId] = useState<string | null>(null);
-  const [showAddField, setShowAddField] = useState(false);
-  const [newFieldName, setNewFieldName] = useState('');
-  const [newFieldType, setNewFieldType] = useState<PropertyType>('text');
-  const [newFieldSettings, setNewFieldSettings] = useState<any>({});
+  const [showPropertyWizard, setShowPropertyWizard] = useState(false);
   const [draggedField, setDraggedField] = useState<DatabaseField | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
 
@@ -131,26 +128,6 @@ export function ManagePropertiesModal({
       await onFieldDuplicate(field);
     } catch (error) {
       console.error('Failed to duplicate field:', error);
-    }
-  };
-
-  const handleAddField = async () => {
-    if (!newFieldName.trim()) return;
-    
-    try {
-      await onFieldCreate({
-        name: newFieldName,
-        type: newFieldType,
-        settings: newFieldSettings
-      });
-      
-      // Reset form
-      setNewFieldName('');
-      setNewFieldType('text');
-      setNewFieldSettings({});
-      setShowAddField(false);
-    } catch (error) {
-      console.error('Failed to create field:', error);
     }
   };
 
@@ -221,7 +198,7 @@ export function ManagePropertiesModal({
                 <h3 className="text-sm font-medium">Properties</h3>
                 <Button
                   size="sm"
-                  onClick={() => setShowAddField(true)}
+                  onClick={() => setShowPropertyWizard(true)}
                   className="gap-2"
                 >
                   <Plus className="h-4 w-4" />
@@ -340,28 +317,20 @@ export function ManagePropertiesModal({
               </ScrollArea>
             </div>
             
-            {/* Add/Edit Panel */}
-            {(showAddField || editingField) && (
+            {/* Edit Panel */}
+            {editingField && (
               <>
                 <Separator orientation="vertical" />
                 <div className="w-80">
-                  <h3 className="text-sm font-medium mb-4">
-                    {editingField ? 'Edit Property' : 'Add Property'}
-                  </h3>
+                  <h3 className="text-sm font-medium mb-4">Edit Property</h3>
                   
                   <div className="space-y-4">
                     <div className="space-y-2">
                       <Label htmlFor="field-name">Property Name</Label>
                       <Input
                         id="field-name"
-                        value={editingField ? editingField.name : newFieldName}
-                        onChange={(e) => {
-                          if (editingField) {
-                            setEditingField({ ...editingField, name: e.target.value });
-                          } else {
-                            setNewFieldName(e.target.value);
-                          }
-                        }}
+                        value={editingField.name}
+                        onChange={(e) => setEditingField({ ...editingField, name: e.target.value })}
                         placeholder="Enter property name"
                       />
                     </div>
@@ -369,59 +338,31 @@ export function ManagePropertiesModal({
                     <div className="space-y-2">
                       <Label htmlFor="field-type">Property Type</Label>
                       <RegistryBasedFieldTypeSelector
-                        value={editingField ? editingField.type as PropertyType : newFieldType}
-                        onValueChange={(type) => {
-                          if (editingField) {
-                            setEditingField({ ...editingField, type });
-                          } else {
-                            setNewFieldType(type);
-                          }
-                        }}
-                        disabled={!!editingField}
+                        value={editingField.type as PropertyType}
+                        onValueChange={(type) => setEditingField({ ...editingField, type })}
+                        disabled={true}
                       />
                     </div>
                     
                     {/* Field Configuration */}
                     <FieldConfigurationPanel
-                      fieldType={editingField ? editingField.type as PropertyType : newFieldType}
-                      settings={editingField ? editingField.settings : newFieldSettings}
-                      onSettingsChange={(settings) => {
-                        if (editingField) {
-                          setEditingField({ ...editingField, settings });
-                        } else {
-                          setNewFieldSettings(settings);
-                        }
-                      }}
+                      fieldType={editingField.type as any}
+                      settings={editingField.settings}
+                      onSettingsChange={(settings) => setEditingField({ ...editingField, settings })}
                       availableFields={fields}
                       workspaceId=""
                     />
                     
                     <div className="flex gap-2 pt-4">
-                      {editingField ? (
-                        <>
-                          <Button onClick={handleSaveEdit} className="flex-1">
-                            Save Changes
-                          </Button>
-                          <Button 
-                            variant="outline" 
-                            onClick={() => setEditingField(null)}
-                          >
-                            Cancel
-                          </Button>
-                        </>
-                      ) : (
-                        <>
-                          <Button onClick={handleAddField} className="flex-1">
-                            Add Property
-                          </Button>
-                          <Button 
-                            variant="outline" 
-                            onClick={() => setShowAddField(false)}
-                          >
-                            Cancel
-                          </Button>
-                        </>
-                      )}
+                      <Button onClick={handleSaveEdit} className="flex-1">
+                        Save Changes
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        onClick={() => setEditingField(null)}
+                      >
+                        Cancel
+                      </Button>
                     </div>
                   </div>
                 </div>
@@ -430,6 +371,14 @@ export function ManagePropertiesModal({
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* New Property Wizard */}
+      <NewPropertyWizard
+        open={showPropertyWizard}
+        onOpenChange={setShowPropertyWizard}
+        onPropertyCreate={onFieldCreate}
+        workspaceId=""
+      />
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={!!deleteFieldId} onOpenChange={() => setDeleteFieldId(null)}>
