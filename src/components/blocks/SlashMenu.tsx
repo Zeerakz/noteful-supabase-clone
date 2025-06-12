@@ -1,174 +1,106 @@
-
-import React, { useState, useEffect, useRef } from 'react';
-import { Type, Heading1, CheckSquare, Image, Columns2, Copy, Bookmark } from 'lucide-react';
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from '@/components/ui/command';
-
-interface SlashMenuItem {
-  id: string;
-  title: string;
-  description: string;
-  icon: React.ComponentType<any>;
-  command: string;
-}
-
-const SLASH_MENU_ITEMS: SlashMenuItem[] = [
-  {
-    id: 'text',
-    title: 'Text',
-    description: 'Start writing with plain text',
-    icon: Type,
-    command: 'text',
-  },
-  {
-    id: 'heading',
-    title: 'Heading',
-    description: 'Big section heading',
-    icon: Heading1,
-    command: 'heading1',
-  },
-  {
-    id: 'checklist',
-    title: 'Checklist',
-    description: 'Track tasks with a to-do list',
-    icon: CheckSquare,
-    command: 'bullet_list',
-  },
-  {
-    id: 'image',
-    title: 'Image',
-    description: 'Upload or embed with a link',
-    icon: Image,
-    command: 'image',
-  },
-  {
-    id: 'two-column',
-    title: 'Two Column',
-    description: 'Create a two-column layout',
-    icon: Columns2,
-    command: 'two_column',
-  },
-  {
-    id: 'duplicate-page',
-    title: 'Duplicate Page',
-    description: 'Create a copy of the current page',
-    icon: Copy,
-    command: 'duplicate_page',
-  },
-  {
-    id: 'from-template',
-    title: 'From Template',
-    description: 'Create a page from an existing template',
-    icon: Bookmark,
-    command: 'from_template',
-  },
-];
+import React, { useEffect, useRef } from 'react';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { 
+  Type, 
+  Heading1, 
+  Heading2, 
+  Heading3, 
+  List, 
+  ListOrdered, 
+  Image, 
+  Table, 
+  Minus, 
+  Quote,
+  MessageSquare,
+  ChevronRight,
+  Copy,
+  FileText,
+  Globe
+} from 'lucide-react';
 
 interface SlashMenuProps {
   isOpen: boolean;
   onClose: () => void;
-  onSelectItem: (command: string) => void;
-  position: { x: number; y: number };
+  onSelectItem: (type: string) => void;
+  position: { top: number; left: number };
 }
 
+const menuItems = [
+  { type: 'text', label: 'Text', icon: Type, description: 'Just start writing with plain text' },
+  { type: 'heading1', label: 'Heading 1', icon: Heading1, description: 'Big section heading' },
+  { type: 'heading2', label: 'Heading 2', icon: Heading2, description: 'Medium section heading' },
+  { type: 'heading3', label: 'Heading 3', icon: Heading3, description: 'Small section heading' },
+  { type: 'bullet_list', label: 'Bulleted list', icon: List, description: 'Create a simple bulleted list' },
+  { type: 'numbered_list', label: 'Numbered list', icon: ListOrdered, description: 'Create a list with numbering' },
+  { type: 'quote', label: 'Quote', icon: Quote, description: 'Capture a quote' },
+  { type: 'callout', label: 'Callout', icon: MessageSquare, description: 'Make writing stand out' },
+  { type: 'toggle', label: 'Toggle list', icon: ChevronRight, description: 'Toggles can hide and show content' },
+  { type: 'image', label: 'Image', icon: Image, description: 'Upload or embed with a link' },
+  { type: 'embed', label: 'Embed', icon: Globe, description: 'Embed YouTube, Vimeo, CodePen, or any URL' },
+  { type: 'table', label: 'Table', icon: Table, description: 'Create a simple table' },
+  { type: 'divider', label: 'Divider', icon: Minus, description: 'Visually divide blocks' },
+  { type: 'two_column', label: 'Columns', icon: Copy, description: 'Create a two-column layout' },
+  { type: 'duplicate_page', label: 'Duplicate page', icon: Copy, description: 'Duplicate this page' },
+  { type: 'from_template', label: 'From template', icon: FileText, description: 'Create from a template' },
+];
+
 export function SlashMenu({ isOpen, onClose, onSelectItem, position }: SlashMenuProps) {
-  const [searchValue, setSearchValue] = useState('');
-  const [selectedIndex, setSelectedIndex] = useState(0);
-  const commandRef = useRef<HTMLDivElement>(null);
-
-  const filteredItems = SLASH_MENU_ITEMS.filter(item =>
-    item.title.toLowerCase().includes(searchValue.toLowerCase()) ||
-    item.description.toLowerCase().includes(searchValue.toLowerCase())
-  );
+  const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (isOpen) {
-      setSearchValue('');
-      setSelectedIndex(0);
-    }
-  }, [isOpen]);
+    if (!isOpen) return;
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (!isOpen) return;
-
-      switch (e.key) {
-        case 'ArrowDown':
-          e.preventDefault();
-          setSelectedIndex(prev => Math.min(prev + 1, filteredItems.length - 1));
-          break;
-        case 'ArrowUp':
-          e.preventDefault();
-          setSelectedIndex(prev => Math.max(prev - 1, 0));
-          break;
-        case 'Enter':
-          e.preventDefault();
-          if (filteredItems[selectedIndex]) {
-            onSelectItem(filteredItems[selectedIndex].command);
-          }
-          break;
-        case 'Escape':
-          e.preventDefault();
-          onClose();
-          break;
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        onClose();
       }
     };
 
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, selectedIndex, filteredItems, onSelectItem, onClose]);
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
   return (
-    <div 
-      className="fixed z-50"
-      style={{ 
-        left: position.x, 
-        top: position.y,
-        transform: 'translateY(8px)'
+    <div
+      style={{
+        position: 'fixed',
+        top: position.top,
+        left: position.left,
+        zIndex: 50,
       }}
+      ref={menuRef}
     >
-      <div className="w-80 bg-background border border-border rounded-md shadow-md">
-        <Command ref={commandRef} className="rounded-md">
-          <CommandInput
-            placeholder="Search for commands..."
-            value={searchValue}
-            onValueChange={setSearchValue}
-            className="border-0 focus:ring-0"
-          />
-          <CommandList className="max-h-64">
-            <CommandEmpty>No commands found.</CommandEmpty>
-            <CommandGroup>
-              {filteredItems.map((item, index) => {
-                const Icon = item.icon;
-                return (
-                  <CommandItem
-                    key={item.id}
-                    value={item.title}
-                    onSelect={() => onSelectItem(item.command)}
-                    className={`cursor-pointer px-3 py-2 ${
-                      index === selectedIndex ? 'bg-accent' : ''
-                    }`}
-                  >
-                    <Icon className="mr-3 h-4 w-4" />
-                    <div className="flex flex-col">
-                      <span className="font-medium">{item.title}</span>
-                      <span className="text-sm text-muted-foreground">{item.description}</span>
-                    </div>
-                  </CommandItem>
-                );
-              })}
-            </CommandGroup>
-          </CommandList>
-        </Command>
-      </div>
+      <Card className="w-[300px]">
+        <div className="p-2">
+          <div className="text-sm text-muted-foreground mb-2">
+            Type '/' to insert a block
+          </div>
+          {menuItems.map((item) => (
+            <Button
+              key={item.type}
+              variant="ghost"
+              className="justify-start w-full hover:bg-secondary/50"
+              onClick={() => {
+                onSelectItem(item.type);
+                onClose();
+              }}
+            >
+              <item.icon className="h-4 w-4 mr-2" />
+              <div className="flex flex-col items-start">
+                <span className="text-sm font-medium">{item.label}</span>
+                <span className="text-xs text-muted-foreground">
+                  {item.description}
+                </span>
+              </div>
+            </Button>
+          ))}
+        </div>
+      </Card>
     </div>
   );
 }

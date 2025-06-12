@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Plus, Type, Heading1, Heading2, Heading3, List, ListOrdered, Image, Table, Minus, Quote, MessageSquare, ChevronRight } from 'lucide-react';
+import { Plus, Type, Heading1, Heading2, Heading3, List, ListOrdered, Image, Table, Minus, Quote, MessageSquare, ChevronRight, Globe } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { BlockRenderer } from './BlockRenderer';
@@ -132,6 +132,18 @@ export function BlockEditor({ pageId, isEditable, workspaceId }: BlockEditorProp
       const { error } = await createBlock(type, { 
         title: '', 
         expanded: true 
+      }, parentBlockId);
+      
+      if (error) {
+        toast({
+          title: "Error",
+          description: error,
+          variant: "destructive",
+        });
+      }
+    } else if (type === 'embed') {
+      const { error } = await createBlock(type, { 
+        url: '' 
       }, parentBlockId);
       
       if (error) {
@@ -286,6 +298,10 @@ export function BlockEditor({ pageId, isEditable, workspaceId }: BlockEditorProp
               <DropdownMenuItem onClick={() => handleCreateBlock('divider')}>
                 <Minus className="h-4 w-4 mr-2" />
                 Divider
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleCreateBlock('embed')}>
+                <Globe className="h-4 w-4 mr-2" />
+                Embed
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

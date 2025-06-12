@@ -11,6 +11,7 @@ import { DividerBlock } from './DividerBlock';
 import { QuoteBlock } from './QuoteBlock';
 import { CalloutBlock } from './CalloutBlock';
 import { ToggleBlock } from './ToggleBlock';
+import { EmbedBlock } from './EmbedBlock';
 
 interface BlockRendererProps {
   block: Block;
@@ -127,6 +128,15 @@ export function BlockRenderer({ block, onUpdateBlock, onDeleteBlock, onCreateBlo
           onCreateBlock={onCreateBlock}
           isEditable={isEditable}
           childBlocks={childBlocks}
+        />
+      );
+    case 'embed':
+      return (
+        <EmbedBlock
+          block={block}
+          onUpdate={handleContentUpdate}
+          onDelete={handleDelete}
+          isEditable={isEditable}
         />
       );
     default:
