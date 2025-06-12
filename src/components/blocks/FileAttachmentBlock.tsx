@@ -2,7 +2,6 @@
 import React, { useState } from 'react';
 import { Block } from '@/hooks/useBlocks';
 import { Button } from '@/components/ui/button';
-import { Trash2 } from 'lucide-react';
 import { CommentIcon } from './CommentIcon';
 import { CommentThreadPanel } from './CommentThreadPanel';
 import { useComments } from '@/hooks/useComments';
@@ -67,19 +66,6 @@ export function FileAttachmentBlock({ block, onUpdate, onDelete, isEditable }: F
               onFileUpload={handleFileUpload}
             />
           </div>
-          
-          {isHovered && isEditable && (
-            <div className="opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-              <Button
-                onClick={onDelete}
-                variant="ghost"
-                size="sm"
-                className="h-6 w-6 p-0 text-destructive hover:text-destructive/80"
-              >
-                <Trash2 className="h-3 w-3" />
-              </Button>
-            </div>
-          )}
         </div>
       ) : (
         <div className="flex items-center gap-2">
@@ -105,15 +91,6 @@ export function FileAttachmentBlock({ block, onUpdate, onDelete, isEditable }: F
                   onClick={() => setIsCommentPanelOpen(true)}
                 />
               </CommentThreadPanel>
-              
-              <Button
-                onClick={onDelete}
-                variant="ghost"
-                size="sm"
-                className="h-6 w-6 p-0 text-destructive hover:text-destructive/80"
-              >
-                <Trash2 className="h-3 w-3" />
-              </Button>
             </div>
           )}
         </div>
