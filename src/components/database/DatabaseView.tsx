@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { DatabaseViewSelector, DatabaseViewType } from './DatabaseViewSelector';
 import { DatabaseTableView } from './DatabaseTableView';
@@ -12,7 +11,7 @@ import { useDatabaseView } from '@/hooks/useDatabaseView';
 import { useFilters } from '@/hooks/useFilters';
 import { useDatabases } from '@/hooks/useDatabases';
 import { DatabaseService } from '@/services/databaseService';
-import { Filter, FilterX } from 'lucide-react';
+import { Filter } from 'lucide-react';
 
 interface DatabaseViewProps {
   databaseId: string;
@@ -99,20 +98,10 @@ export function DatabaseView({ databaseId, workspaceId, className }: DatabaseVie
           
           <div className="flex items-center gap-2">
             {hasActiveFilters && (
-              <div className="flex items-center gap-2">
-                <Badge variant="secondary" className="gap-1">
-                  <Filter className="h-3 w-3" />
-                  {filters.length} filter{filters.length !== 1 ? 's' : ''}
-                </Badge>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={clearFilters}
-                  className="h-8 px-2"
-                >
-                  <FilterX className="h-4 w-4" />
-                </Button>
-              </div>
+              <Badge variant="secondary" className="gap-1">
+                <Filter className="h-3 w-3" />
+                {filters.length} filter{filters.length !== 1 ? 's' : ''}
+              </Badge>
             )}
             
             <Button
