@@ -1,67 +1,38 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Table, List, Calendar, Kanban } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { Table, List, Calendar, Kanban, FileText } from 'lucide-react';
 
-export type DatabaseViewType = 'table' | 'list' | 'calendar' | 'kanban';
+export type DatabaseViewType = 'table' | 'list' | 'calendar' | 'kanban' | 'form';
 
 interface DatabaseViewSelectorProps {
-  activeView: DatabaseViewType;
+  currentView: DatabaseViewType;
   onViewChange: (view: DatabaseViewType) => void;
-  className?: string;
 }
 
-const viewOptions = [
-  {
-    type: 'table' as const,
-    label: 'Table',
-    icon: Table,
-  },
-  {
-    type: 'list' as const,
-    label: 'List',
-    icon: List,
-  },
-  {
-    type: 'calendar' as const,
-    label: 'Calendar',
-    icon: Calendar,
-  },
-  {
-    type: 'kanban' as const,
-    label: 'Kanban',
-    icon: Kanban,
-  },
-];
+export function DatabaseViewSelector({ currentView, onViewChange }: DatabaseViewSelectorProps) {
+  const views = [
+    { type: 'table' as const, label: 'Table', icon: Table },
+    { type: 'list' as const, label: 'List', icon: List },
+    { type: 'calendar' as const, label: 'Calendar', icon: Calendar },
+    { type: 'kanban' as const, label: 'Kanban', icon: Kanban },
+    { type: 'form' as const, label: 'Form', icon: FileText },
+  ];
 
-export function DatabaseViewSelector({ 
-  activeView, 
-  onViewChange, 
-  className 
-}: DatabaseViewSelectorProps) {
   return (
-    <div className={cn("flex gap-1 p-1 bg-muted rounded-lg", className)}>
-      {viewOptions.map((option) => {
-        const Icon = option.icon;
-        const isActive = activeView === option.type;
-        
-        return (
-          <Button
-            key={option.type}
-            variant={isActive ? "default" : "ghost"}
-            size="sm"
-            onClick={() => onViewChange(option.type)}
-            className={cn(
-              "gap-2 min-w-[80px]",
-              isActive && "bg-background shadow-sm"
-            )}
-          >
-            <Icon className="h-4 w-4" />
-            {option.label}
-          </Button>
-        );
-      })}
+    <div className="flex items-center gap-1 border rounded-lg p-1 bg-muted/30">
+      {views.map(({ type, label, icon: Icon }) => (
+        <Button
+          key={type}
+          variant={currentView === type ? 'default' : 'ghost'}
+          size="sm"
+          onClick={() => onViewChange(type)}
+          className="h-8 gap-2"
+        >
+          <Icon className="h-4 w-4" />
+          <span className="hidden sm:inline">{label}</span>
+        </Button>
+      ))}
     </div>
   );
 }

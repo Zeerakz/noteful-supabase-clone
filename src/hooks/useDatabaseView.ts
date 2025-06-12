@@ -1,7 +1,9 @@
+
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { DatabaseViewService } from '@/services/databaseViewService';
-import { DatabaseViewType } from '@/components/database/DatabaseViewSelector';
+
+export type DatabaseViewType = 'table' | 'list' | 'calendar' | 'kanban' | 'form';
 
 export function useDatabaseView(databaseId: string) {
   const [defaultView, setDefaultView] = useState<DatabaseViewType>('table');
