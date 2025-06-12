@@ -153,14 +153,14 @@ export function FileAttachmentBlock({ block, onUpdate, onDelete, isEditable }: F
               Click to browse or drag and drop a file
             </p>
             <div className="flex justify-center">
-              <label htmlFor={`file-upload-${block.id}`}>
-                <Button 
-                  as="span"
-                  variant="outline" 
-                  size="sm" 
-                  disabled={isUploading}
-                  className="cursor-pointer"
-                >
+              <Button 
+                asChild
+                variant="outline" 
+                size="sm" 
+                disabled={isUploading}
+                className="cursor-pointer"
+              >
+                <label htmlFor={`file-upload-${block.id}`}>
                   {isUploading ? (
                     <>
                       <Upload className="h-4 w-4 mr-2 animate-spin" />
@@ -172,8 +172,8 @@ export function FileAttachmentBlock({ block, onUpdate, onDelete, isEditable }: F
                       Choose File
                     </>
                   )}
-                </Button>
-              </label>
+                </label>
+              </Button>
               <Input
                 id={`file-upload-${block.id}`}
                 type="file"
