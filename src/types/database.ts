@@ -1,10 +1,10 @@
-
 export interface Database {
   id: string;
   workspace_id: string;
   name: string;
   table_name: string;
   description?: string;
+  icon?: string;
   created_by: string;
   created_at: string;
   updated_at: string;

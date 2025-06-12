@@ -1,34 +1,47 @@
 
-// Import all the service classes
-import { DatabaseCoreService } from './database/databaseCoreService';
-import { DatabaseFieldService } from './database/databaseFieldService';
-import { DatabasePageService } from './database/databasePageService';
-import { DatabasePropertyService } from './database/databasePropertyService';
-import { DatabaseQueryService } from './database/databaseQueryService';
+import { supabase } from '@/integrations/supabase/client';
+import { Database, DatabaseCreateRequest } from '@/types/database';
 
-// Re-export all services for backward compatibility
-export { DatabaseCoreService } from './database/databaseCoreService';
-export { DatabaseFieldService } from './database/databaseFieldService';
-export { DatabasePageService } from './database/databasePageService';
-export { DatabasePropertyService } from './database/databasePropertyService';
-export { DatabaseQueryService } from './database/databaseQueryService';
-
-// Main DatabaseService class that aggregates all functionality
 export class DatabaseService {
-  // Database CRUD operations
-  static createDatabase = DatabaseCoreService.createDatabase;
-  static fetchDatabases = DatabaseCoreService.fetchDatabases;
-  static deleteDatabase = DatabaseCoreService.deleteDatabase;
+  static async fetchDatabases(workspaceId: string) {
+    const { data, error } = await supabase
+      .from('databases')
+      .select('*')
+      .eq('workspace_id', workspaceId)
+      .order('created_at', { ascending: false });
 
-  // Field operations
-  static fetchDatabaseFields = DatabaseFieldService.fetchDatabaseFields;
+    return { data, error: error?.message };
+  }
 
-  // Page operations
-  static createDatabasePage = DatabasePageService.createDatabasePage;
+  static async createDatabase(workspaceId: string, userId: string, request: DatabaseCreateRequest) {
+    const { data, error } = await supabase.rpc('create_database_with_fields', {
+      p_workspace_id: workspaceId,
+      p_user_id: userId,
+      p_name: request.name,
+      p_description: request.description,
+      p_fields: request.fields
+    });
 
-  // Property operations
-  static createPageProperty = DatabasePropertyService.createPageProperty;
+    return { data, error: error?.message };
+  }
 
-  // Query operations
-  static fetchDatabasePages = DatabaseQueryService.fetchDatabasePages;
+  static async updateDatabase(databaseId: string, updates: Partial<Pick<Database, 'name' | 'description' | 'icon'>>) {
+    const { data, error } = await supabase
+      .from('databases')
+      .update(updates)
+      .eq('id', databaseId)
+      .select()
+      .single();
+
+    return { data, error: error?.message };
+  }
+
+  static async deleteDatabase(databaseId: string) {
+    const { error } = await supabase
+      .from('databases')
+      .delete()
+      .eq('id', databaseId);
+
+    return { error: error?.message };
+  }
 }
