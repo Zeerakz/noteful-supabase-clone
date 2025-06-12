@@ -5,7 +5,6 @@ import { useFilteredDatabasePages } from '@/hooks/useFilteredDatabasePages';
 import { useOptimisticPropertyUpdate } from '@/hooks/useOptimisticPropertyUpdate';
 import { useLazyProperties } from '@/hooks/useLazyProperties';
 import { useViewCache } from '@/hooks/useViewCache';
-import { usePerformanceMetrics } from '@/hooks/usePerformanceMetrics';
 import { usePagination } from '@/hooks/usePagination';
 import { PageService } from '@/services/pageService';
 import { DatabaseField } from '@/types/database';
@@ -49,36 +48,6 @@ export function useDatabaseTableView({
 }: UseDatabaseTableViewProps) {
   const { user } = useAuth();
   const { toast } = useToast();
-  const { startTimer, endTimer } = usePerformanceMetrics();
-
-  // Create stable references to prevent infinite loops
-  const fieldsRef = useRef(fields);
-  const filterGroupRef = useRef(filterGroup);
-  const sortRulesRef = useRef(sortRules);
-  
-  // Only update refs when content actually changes
-  const fieldsKey = fields.map(f => `${f.id}-${f.name}-${f.type}`).join(',');
-  const filterKey = `${filterGroup.operator}-${filterGroup.rules.length}-${filterGroup.groups.length}`;
-  const sortKey = sortRules.map(r => `${r.fieldId}-${r.direction}`).join(',');
-  
-  const fieldsKeyRef = useRef(fieldsKey);
-  const filterKeyRef = useRef(filterKey);
-  const sortKeyRef = useRef(sortKey);
-  
-  if (fieldsKeyRef.current !== fieldsKey) {
-    fieldsRef.current = fields;
-    fieldsKeyRef.current = fieldsKey;
-  }
-  
-  if (filterKeyRef.current !== filterKey) {
-    filterGroupRef.current = filterGroup;
-    filterKeyRef.current = filterKey;
-  }
-  
-  if (sortKeyRef.current !== sortKey) {
-    sortRulesRef.current = sortRules;
-    sortKeyRef.current = sortKey;
-  }
 
   console.log('useDatabaseTableView: Hook called', { 
     databaseId, 
@@ -91,27 +60,10 @@ export function useDatabaseTableView({
   });
 
   // Stable cache configuration
-  const cache = useViewCache(useMemo(() => ({
+  const cache = useViewCache({
     cacheKey: `table-${databaseId}`,
     ttl: 5 * 60 * 1000
-  }), [databaseId]));
-
-  // Performance tracking - only start once
-  const performanceStartedRef = useRef(false);
-  
-  useEffect(() => {
-    if (!performanceStartedRef.current) {
-      console.log('useDatabaseTableView: Starting performance timer');
-      startTimer('page_load', {
-        databaseId, 
-        enablePagination, 
-        enableVirtualScrolling,
-        filterCount: filterGroup.rules.length,
-        sortCount: sortRules.length
-      });
-      performanceStartedRef.current = true;
-    }
-  }, [databaseId]); // Only depend on databaseId to prevent loops
+  });
   
   const { 
     pages, 
@@ -120,9 +72,9 @@ export function useDatabaseTableView({
     refetch: refetchPages
   } = useFilteredDatabasePages({
     databaseId,
-    filterGroup: filterGroupRef.current,
-    fields: fieldsRef.current,
-    sortRules: sortRulesRef.current
+    filterGroup,
+    fields,
+    sortRules
   });
 
   console.log('useDatabaseTableView: Pages data', { 
@@ -164,36 +116,12 @@ export function useDatabaseTableView({
   
   const {
     getPropertiesForPage,
-    loadPropertiesForPages,
     isPageLoading
   } = useLazyProperties({
     pageIds,
-    fields: fieldsRef.current,
+    fields,
     enabled: pageIds.length > 0 && !pagesLoading
   });
-
-  // Load properties effect - stable and only run when necessary
-  const pageIdsKey = pageIds.join(',');
-  const loadingTriggeredRef = useRef<string>('');
-  
-  useEffect(() => {
-    if (pageIds.length > 0 && !pagesLoading && loadingTriggeredRef.current !== pageIdsKey) {
-      console.log('useDatabaseTableView: Loading properties for pages', { count: pageIds.length });
-      loadingTriggeredRef.current = pageIdsKey;
-      
-      // Load properties without performance tracking to avoid loops
-      loadPropertiesForPages(pageIds);
-    }
-  }, [pageIdsKey, pagesLoading, loadPropertiesForPages]);
-
-  // End performance tracking when pages finish loading
-  useEffect(() => {
-    if (!pagesLoading && pages.length >= 0 && performanceStartedRef.current) {
-      console.log('useDatabaseTableView: Ending performance timer');
-      endTimer('page_load');
-      performanceStartedRef.current = false;
-    }
-  }, [pagesLoading, pages.length, endTimer]);
 
   // Transform pages data with properties - stable computation
   const pagesWithProperties: PageWithProperties[] = useMemo(() => {

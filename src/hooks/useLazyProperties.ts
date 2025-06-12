@@ -11,38 +11,23 @@ interface UseLazyPropertiesProps {
 export function useLazyProperties({ pageIds, fields, enabled = true }: UseLazyPropertiesProps) {
   const [loadedProperties, setLoadedProperties] = useState<Record<string, Record<string, string>>>({});
   const [loadingProperties, setLoadingProperties] = useState<Set<string>>(new Set());
-  const [propertyLoadTimes, setPropertyLoadTimes] = useState<Record<string, number>>({});
 
   // Track which pages we've already loaded to prevent duplicates
   const loadedPagesRef = useRef<Set<string>>(new Set());
   const loadingPagesRef = useRef<Set<string>>(new Set());
   
-  // Stable references to prevent infinite loops
-  const enabledRef = useRef(enabled);
-  const fieldsRef = useRef(fields);
-  const pageIdsRef = useRef(pageIds);
-  
-  // Update refs only when values actually change
-  enabledRef.current = enabled;
-  
-  const fieldsKey = fields.map(f => `${f.id}-${f.type}`).join(',');
-  const fieldsKeyRef = useRef(fieldsKey);
-  if (fieldsKeyRef.current !== fieldsKey) {
-    fieldsRef.current = fields;
-    fieldsKeyRef.current = fieldsKey;
-  }
-  
+  // Create stable keys for dependency comparison
   const pageIdsKey = pageIds.join(',');
-  const pageIdsKeyRef = useRef(pageIdsKey);
-  if (pageIdsKeyRef.current !== pageIdsKey) {
-    pageIdsRef.current = pageIds;
-    pageIdsKeyRef.current = pageIdsKey;
-  }
+  const fieldsKey = fields.map(f => `${f.id}-${f.type}`).join(',');
+  
+  // Store the last processed keys to prevent unnecessary re-processing
+  const lastPageIdsKeyRef = useRef<string>('');
+  const lastFieldsKeyRef = useRef<string>('');
 
   const loadPropertiesForPage = useCallback(async (pageId: string) => {
-    console.log('useLazyProperties: loadPropertiesForPage called', { pageId, enabled: enabledRef.current });
+    console.log('useLazyProperties: loadPropertiesForPage called', { pageId, enabled });
     
-    if (!enabledRef.current) {
+    if (!enabled) {
       console.log('useLazyProperties: Skipping load - disabled');
       return;
     }
@@ -55,9 +40,7 @@ export function useLazyProperties({ pageIds, fields, enabled = true }: UseLazyPr
 
     // Mark as loading
     loadingPagesRef.current.add(pageId);
-    setLoadingProperties(prev => new Set(prev).add(pageId));
-
-    const startTime = performance.now();
+    setLoadingProperties(prev => new Set([...prev, pageId]));
     
     try {
       const { data, error } = await PageService.getPageProperties(pageId);
@@ -78,13 +61,6 @@ export function useLazyProperties({ pageIds, fields, enabled = true }: UseLazyPr
           ...prev,
           [pageId]: properties
         }));
-
-        // Record load time
-        const loadTime = performance.now() - startTime;
-        setPropertyLoadTimes(prev => ({
-          ...prev,
-          [pageId]: loadTime
-        }));
       } else {
         console.error('useLazyProperties: Error loading properties', { pageId, error });
       }
@@ -99,7 +75,7 @@ export function useLazyProperties({ pageIds, fields, enabled = true }: UseLazyPr
         return newSet;
       });
     }
-  }, []); // No dependencies to prevent recreation
+  }, [enabled]);
 
   const loadPropertiesForPages = useCallback(async (targetPageIds: string[]) => {
     console.log('useLazyProperties: loadPropertiesForPages called', { pageCount: targetPageIds.length });
@@ -122,7 +98,6 @@ export function useLazyProperties({ pageIds, fields, enabled = true }: UseLazyPr
 
   const getPropertiesForPage = useCallback((pageId: string) => {
     const properties = loadedProperties[pageId] || {};
-    console.log('useLazyProperties: getPropertiesForPage', { pageId, propertyCount: Object.keys(properties).length });
     return properties;
   }, [loadedProperties]);
 
@@ -132,28 +107,34 @@ export function useLazyProperties({ pageIds, fields, enabled = true }: UseLazyPr
 
   // Reset loaded pages when pageIds change significantly
   useEffect(() => {
-    const currentPageIdsSet = new Set(pageIdsRef.current);
-    const hasSignificantChange = pageIdsRef.current.length === 0 || 
-      pageIdsRef.current.some(id => !loadedPagesRef.current.has(id));
-    
-    if (hasSignificantChange) {
+    if (lastPageIdsKeyRef.current !== pageIdsKey) {
+      const currentPageIdsSet = new Set(pageIds);
+      
       // Clear references for pages that are no longer in the list
-      const pagesToKeep = new Set();
+      const pagesToKeep = new Set<string>();
       for (const pageId of loadedPagesRef.current) {
         if (currentPageIdsSet.has(pageId)) {
           pagesToKeep.add(pageId);
         }
       }
       loadedPagesRef.current = pagesToKeep;
+      lastPageIdsKeyRef.current = pageIdsKey;
     }
-  }, [pageIdsKey]);
+  }, [pageIdsKey, pageIds]);
+
+  // Auto-load properties when pageIds change (but only once per change)
+  useEffect(() => {
+    if (pageIds.length > 0 && enabled && lastPageIdsKeyRef.current !== pageIdsKey) {
+      console.log('useLazyProperties: Auto-loading properties for page IDs change');
+      loadPropertiesForPages(pageIds);
+    }
+  }, [pageIdsKey, enabled, pageIds, loadPropertiesForPages]);
 
   return {
     loadedProperties,
     loadPropertiesForPage,
     loadPropertiesForPages,
     getPropertiesForPage,
-    isPageLoading,
-    propertyLoadTimes
+    isPageLoading
   };
 }
