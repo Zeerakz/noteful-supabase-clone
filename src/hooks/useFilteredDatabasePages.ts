@@ -4,6 +4,7 @@ import { DatabaseService } from '@/services/databaseService';
 import { DatabaseField } from '@/types/database';
 import { FilterRule } from '@/components/database/FilterModal';
 import { SortRule } from '@/components/database/SortingModal';
+import { useRetryableQuery } from './useRetryableQuery';
 
 interface UseFilteredDatabasePagesProps {
   databaseId: string;
@@ -17,6 +18,11 @@ export function useFilteredDatabasePages({ databaseId, filters, fields, sortRule
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const { executeWithRetry, retryCount, isRetrying } = useRetryableQuery(
+    () => DatabaseService.fetchDatabasePages(databaseId, filters, fields, sortRules),
+    { maxRetries: 3, baseDelay: 1000 }
+  );
+
   useEffect(() => {
     const fetchPages = async () => {
       if (!databaseId) {
@@ -29,12 +35,7 @@ export function useFilteredDatabasePages({ databaseId, filters, fields, sortRule
         setLoading(true);
         setError(null);
         
-        const { data, error: fetchError } = await DatabaseService.fetchDatabasePages(
-          databaseId,
-          filters,
-          fields,
-          sortRules
-        );
+        const { data, error: fetchError } = await executeWithRetry();
 
         if (fetchError) {
           setError(fetchError);
@@ -51,36 +52,30 @@ export function useFilteredDatabasePages({ databaseId, filters, fields, sortRule
     };
 
     fetchPages();
-  }, [databaseId, filters, fields, sortRules]);
+  }, [databaseId, filters, fields, sortRules, executeWithRetry]);
+
+  const refetch = async () => {
+    try {
+      setLoading(true);
+      const { data, error: fetchError } = await executeWithRetry();
+
+      if (fetchError) {
+        setError(fetchError);
+      } else {
+        setPages(data || []);
+        setError(null);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch pages');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return {
     pages,
-    loading,
-    error,
-    refetch: () => {
-      const fetchPages = async () => {
-        try {
-          setLoading(true);
-          const { data, error: fetchError } = await DatabaseService.fetchDatabasePages(
-            databaseId,
-            filters,
-            fields,
-            sortRules
-          );
-
-          if (fetchError) {
-            setError(fetchError);
-          } else {
-            setPages(data || []);
-            setError(null);
-          }
-        } catch (err) {
-          setError(err instanceof Error ? err.message : 'Failed to fetch pages');
-        } finally {
-          setLoading(false);
-        }
-      };
-      fetchPages();
-    }
+    loading: loading || isRetrying,
+    error: error ? `${error}${retryCount > 0 ? ` (Retry ${retryCount}/3)` : ''}` : null,
+    refetch
   };
 }

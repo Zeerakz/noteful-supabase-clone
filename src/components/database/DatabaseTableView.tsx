@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import {
   Table,
@@ -11,7 +10,8 @@ import {
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Plus, Trash2 } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Plus, Trash2, RefreshCw, AlertTriangle } from 'lucide-react';
 import { useFilteredDatabasePages } from '@/hooks/useFilteredDatabasePages';
 import { useOptimisticPropertyUpdate } from '@/hooks/useOptimisticPropertyUpdate';
 import { DatabaseService } from '@/services/databaseService';
@@ -19,6 +19,7 @@ import { DatabaseField } from '@/types/database';
 import { PageService } from '@/services/pageService';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { useRetryableQuery } from '@/hooks/useRetryableQuery';
 
 interface DatabaseTableViewProps {
   databaseId: string;
@@ -41,13 +42,21 @@ interface PageWithProperties {
 export function DatabaseTableView({ databaseId, workspaceId }: DatabaseTableViewProps) {
   const [fields, setFields] = useState<DatabaseField[]>([]);
   const [fieldsLoading, setFieldsLoading] = useState(true);
+  const [fieldsError, setFieldsError] = useState<string | null>(null);
   const { user } = useAuth();
   const { toast } = useToast();
+  
+  // Use retryable query for fields
+  const { executeWithRetry: fetchFieldsWithRetry } = useRetryableQuery(
+    () => DatabaseService.fetchDatabaseFields(databaseId),
+    { maxRetries: 3, baseDelay: 1000 }
+  );
   
   const { 
     pages, 
     loading: pagesLoading, 
-    error: pagesError
+    error: pagesError,
+    refetch: refetchPages
   } = useFilteredDatabasePages({
     databaseId,
     filters: [],
@@ -57,20 +66,22 @@ export function DatabaseTableView({ databaseId, workspaceId }: DatabaseTableView
 
   const propertyUpdateMutation = useOptimisticPropertyUpdate(databaseId);
 
-  // Fetch database fields
+  // Fetch database fields with retry logic
   useEffect(() => {
     const fetchFields = async () => {
       try {
         setFieldsLoading(true);
-        const { data, error } = await DatabaseService.fetchDatabaseFields(databaseId);
-        if (error) throw new Error(error);
-        setFields(data || []);
+        setFieldsError(null);
+        
+        const { data, error } = await fetchFieldsWithRetry();
+        
+        if (error) {
+          setFieldsError(error);
+        } else {
+          setFields(data || []);
+        }
       } catch (err) {
-        toast({
-          title: "Error",
-          description: err instanceof Error ? err.message : 'Failed to fetch fields',
-          variant: "destructive",
-        });
+        setFieldsError(err instanceof Error ? err.message : 'Failed to fetch fields');
       } finally {
         setFieldsLoading(false);
       }
@@ -79,13 +90,12 @@ export function DatabaseTableView({ databaseId, workspaceId }: DatabaseTableView
     if (databaseId) {
       fetchFields();
     }
-  }, [databaseId, toast]);
+  }, [databaseId, fetchFieldsWithRetry]);
 
   // Transform pages data with properties
   const pagesWithProperties: PageWithProperties[] = pages.map(page => {
     const properties: Record<string, string> = {};
     
-    // Handle the page_properties from the database response
     const pageProperties = (page as any).page_properties || [];
     pageProperties.forEach((prop: any) => {
       properties[prop.field_id] = prop.value || '';
@@ -182,12 +192,15 @@ export function DatabaseTableView({ databaseId, workspaceId }: DatabaseTableView
   };
 
   const handlePropertyUpdate = (pageId: string, fieldId: string, value: string) => {
-    // Use optimistic update mutation
     propertyUpdateMutation.mutate({
       pageId,
       fieldId,
       value
     });
+  };
+
+  const handleRetry = () => {
+    refetchPages();
   };
 
   if (fieldsLoading || pagesLoading) {
@@ -199,10 +212,24 @@ export function DatabaseTableView({ databaseId, workspaceId }: DatabaseTableView
     );
   }
 
-  if (pagesError) {
+  if (fieldsError || pagesError) {
     return (
-      <div className="text-center py-8">
-        <p className="text-destructive">{pagesError}</p>
+      <div className="space-y-4">
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription className="flex items-center justify-between">
+            <span>{fieldsError || pagesError}</span>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleRetry}
+              className="gap-2"
+            >
+              <RefreshCw className="h-4 w-4" />
+              Retry
+            </Button>
+          </AlertDescription>
+        </Alert>
       </div>
     );
   }
@@ -301,7 +328,6 @@ function EditableCell({ value, onSave, fieldType, placeholder = "Enter value..."
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(value);
 
-  // Update editValue when value prop changes
   useEffect(() => {
     setEditValue(value);
   }, [value]);
