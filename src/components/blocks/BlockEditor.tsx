@@ -1,6 +1,5 @@
-
 import React, { useState, useRef, useEffect } from 'react';
-import { Plus, Type, Heading1, Heading2, Heading3, List, ListOrdered, Image, Table, Minus, Quote } from 'lucide-react';
+import { Plus, Type, Heading1, Heading2, Heading3, List, ListOrdered, Image, Table, Minus, Quote, MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { BlockRenderer } from './BlockRenderer';
@@ -114,6 +113,20 @@ export function BlockEditor({ pageId, isEditable, workspaceId }: BlockEditorProp
             variant: "destructive",
           });
         }
+      }
+    } else if (type === 'callout') {
+      const { error } = await createBlock(type, { 
+        type: 'info', 
+        emoji: '💡', 
+        text: '' 
+      });
+      
+      if (error) {
+        toast({
+          title: "Error",
+          description: error,
+          variant: "destructive",
+        });
       }
     } else {
       const { error } = await createBlock(type);
@@ -239,6 +252,10 @@ export function BlockEditor({ pageId, isEditable, workspaceId }: BlockEditorProp
               <DropdownMenuItem onClick={() => handleCreateBlock('quote')}>
                 <Quote className="h-4 w-4 mr-2" />
                 Quote
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleCreateBlock('callout')}>
+                <MessageSquare className="h-4 w-4 mr-2" />
+                Callout
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => handleCreateBlock('image')}>
                 <Image className="h-4 w-4 mr-2" />

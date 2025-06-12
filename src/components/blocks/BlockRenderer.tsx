@@ -9,6 +9,7 @@ import { TwoColumnBlock } from './TwoColumnBlock';
 import { TableBlock } from './TableBlock';
 import { DividerBlock } from './DividerBlock';
 import { QuoteBlock } from './QuoteBlock';
+import { CalloutBlock } from './CalloutBlock';
 
 interface BlockRendererProps {
   block: Block;
@@ -98,6 +99,15 @@ export function BlockRenderer({ block, onUpdateBlock, onDeleteBlock, isEditable,
     case 'quote':
       return (
         <QuoteBlock
+          block={block}
+          onUpdate={handleContentUpdate}
+          onDelete={handleDelete}
+          isEditable={isEditable}
+        />
+      );
+    case 'callout':
+      return (
+        <CalloutBlock
           block={block}
           onUpdate={handleContentUpdate}
           onDelete={handleDelete}
