@@ -1,6 +1,8 @@
 
 import React from 'react';
 import { Property, PropertyType, PropertyConfig, getDefaultConfigForType } from '@/types/property';
+import { propertyRegistry } from '@/types/propertyRegistry';
+import { RegistryBasedPropertyConfigEditor } from './RegistryBasedPropertyConfigEditor';
 import { TextPropertyConfigEditor } from './config-editors/TextPropertyConfigEditor';
 import { NumberPropertyConfigEditor } from './config-editors/NumberPropertyConfigEditor';
 import { SelectPropertyConfigEditor } from './config-editors/SelectPropertyConfigEditor';
@@ -38,6 +40,20 @@ export function PropertyConfigEditor({
   // Ensure we have a valid config object
   const safeConfig = config || getDefaultConfigForType(propertyType);
 
+  // First, check if the type is registered in the new registry
+  if (propertyRegistry.has(propertyType)) {
+    return (
+      <RegistryBasedPropertyConfigEditor
+        propertyType={propertyType}
+        config={safeConfig}
+        onConfigChange={onConfigChange}
+        workspaceId={workspaceId}
+        availableProperties={availableProperties}
+      />
+    );
+  }
+
+  // Fallback to existing hardcoded switch statement for backwards compatibility
   const renderConfigEditor = () => {
     switch (propertyType) {
       case 'text':
@@ -195,7 +211,7 @@ export function PropertyConfigEditor({
       default:
         return (
           <div className="text-sm text-muted-foreground">
-            No additional configuration options for this property type.
+            No configuration options available for this property type.
           </div>
         );
     }
