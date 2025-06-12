@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { DatabaseViewSelector, DatabaseViewType } from './DatabaseViewSelector';
 import { DatabaseTableView } from './DatabaseTableView';
@@ -11,7 +12,7 @@ import { useDatabaseView } from '@/hooks/useDatabaseView';
 import { useFilters } from '@/hooks/useFilters';
 import { useDatabases } from '@/hooks/useDatabases';
 import { DatabaseService } from '@/services/databaseService';
-import { Filter } from 'lucide-react';
+import { Filter, FilterX } from 'lucide-react';
 
 interface DatabaseViewProps {
   databaseId: string;
@@ -98,24 +99,30 @@ export function DatabaseView({ databaseId, workspaceId, className }: DatabaseVie
           
           <div className="flex items-center gap-2">
             {hasActiveFilters && (
-              <Badge variant="secondary" className="flex items-center gap-1">
-                <span className="modal-icon">
-                  <Filter className="h-3 w-3 pointer-events-none shrink-0" />
-                </span>
-                <span>{filters.length} filter{filters.length !== 1 ? 's' : ''}</span>
-              </Badge>
+              <div className="flex items-center gap-2">
+                <Badge variant="secondary" className="gap-1">
+                  <Filter className="h-3 w-3" />
+                  {filters.length} filter{filters.length !== 1 ? 's' : ''}
+                </Badge>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={clearFilters}
+                  className="h-8 px-2"
+                >
+                  <FilterX className="h-4 w-4" />
+                </Button>
+              </div>
             )}
             
             <Button
               variant="outline"
               size="sm"
               onClick={() => setShowFilterModal(true)}
-              className="flex items-center gap-2 whitespace-nowrap"
+              className="gap-2"
             >
-              <span className="button-icon">
-                <Filter className="h-4 w-4" />
-              </span>
-              <span className="text-sm">Filter</span>
+              <Filter className="h-4 w-4" />
+              Filter
             </Button>
           </div>
         </div>

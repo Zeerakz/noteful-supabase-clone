@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import {
   Dialog,
@@ -222,10 +221,8 @@ export function FilterModal({
                   disabled={!form.watch('fieldId')}
                   className="w-full"
                 >
-                  <span className="button-icon">
-                    <Plus className="h-4 w-4" />
-                  </span>
-                  <span>Add Filter</span>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Filter
                 </Button>
               </form>
             </Form>
