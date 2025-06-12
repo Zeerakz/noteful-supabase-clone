@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Plus, Type, Heading1, Heading2, Heading3, List, ListOrdered, Image, Table, Minus, Quote, MessageSquare, ChevronRight, Globe, Paperclip } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -29,7 +30,7 @@ export function BlockEditor({ pageId, isEditable, workspaceId }: BlockEditorProp
   // Use presence context instead of calling usePresence directly
   const { activeUsers, loading: presenceLoading } = usePresenceContext();
 
-  const { isOpen, position, openSlashMenu, closeSlashMenu, handleSelectItem } = useSlashMenu({
+  const { isOpen, position, searchTerm, openSlashMenu, closeSlashMenu, updateSearchTerm, handleSelectItem } = useSlashMenu({
     onSelectCommand: handleCreateBlock,
   });
 
@@ -163,6 +164,20 @@ export function BlockEditor({ pageId, isEditable, workspaceId }: BlockEditorProp
           variant: "destructive",
         });
       }
+    } else if (type === 'table') {
+      const { error } = await createBlock(type, {
+        rows: 3,
+        cols: 3,
+        data: Array(3).fill(null).map(() => Array(3).fill(''))
+      }, parentBlockId);
+      
+      if (error) {
+        toast({
+          title: "Error",
+          description: error,
+          variant: "destructive",
+        });
+      }
     } else {
       const { error } = await createBlock(type, content || {}, parentBlockId);
       
@@ -203,20 +218,86 @@ export function BlockEditor({ pageId, isEditable, workspaceId }: BlockEditorProp
   useEffect(() => {
     if (!isEditable) return;
 
+    let isTrackingSlash = false;
+    let slashPosition = 0;
+    let currentElement: HTMLElement | null = null;
+
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === '/' && !isOpen) {
-        const target = event.target as HTMLElement;
-        if (target && (target.contentEditable === 'true' || target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) {
+      const target = event.target as HTMLElement;
+      
+      // Check if we're in an editable element
+      if (!target || !(target.contentEditable === 'true' || target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) {
+        return;
+      }
+
+      if (event.key === '/') {
+        // Start tracking for slash commands
+        isTrackingSlash = true;
+        slashPosition = target.selectionStart || 0;
+        currentElement = target;
+        
+        // Small delay to let the '/' character be inserted
+        setTimeout(() => {
+          if (currentElement) {
+            openSlashMenu(currentElement, '');
+          }
+        }, 50);
+      } else if (isTrackingSlash && currentElement) {
+        if (event.key === 'Escape') {
+          isTrackingSlash = false;
+          closeSlashMenu();
+        } else if (event.key === 'Enter' || event.key === 'Tab') {
+          // Don't interfere with menu navigation
+          return;
+        } else if (event.key === 'Backspace') {
+          // Check if we're deleting the slash
+          const currentPos = currentElement.selectionStart || 0;
+          if (currentPos <= slashPosition) {
+            isTrackingSlash = false;
+            closeSlashMenu();
+          }
+        } else if (event.key.length === 1) {
+          // Update search term as user types
           setTimeout(() => {
-            openSlashMenu(target);
-          }, 50);
+            if (currentElement && isTrackingSlash) {
+              const text = currentElement.textContent || '';
+              const slashIndex = text.lastIndexOf('/');
+              if (slashIndex !== -1) {
+                const term = text.substring(slashIndex + 1);
+                updateSearchTerm(term);
+              }
+            }
+          }, 10);
+        }
+      }
+    };
+
+    const handleInput = (event: Event) => {
+      const target = event.target as HTMLElement;
+      
+      if (isTrackingSlash && currentElement === target) {
+        const text = target.textContent || '';
+        const slashIndex = text.lastIndexOf('/');
+        
+        if (slashIndex === -1) {
+          // Slash was removed
+          isTrackingSlash = false;
+          closeSlashMenu();
+        } else {
+          const term = text.substring(slashIndex + 1);
+          updateSearchTerm(term);
         }
       }
     };
 
     document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [isEditable, isOpen, openSlashMenu]);
+    document.addEventListener('input', handleInput);
+    
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('input', handleInput);
+    };
+  }, [isEditable, openSlashMenu, closeSlashMenu, updateSearchTerm]);
 
   if (loading) {
     return (
@@ -333,6 +414,7 @@ export function BlockEditor({ pageId, isEditable, workspaceId }: BlockEditorProp
         onClose={closeSlashMenu}
         onSelectItem={handleSelectItem}
         position={position}
+        searchTerm={searchTerm}
       />
     </div>
   );

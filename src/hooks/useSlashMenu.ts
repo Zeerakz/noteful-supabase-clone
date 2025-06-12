@@ -9,20 +9,27 @@ export function useSlashMenu({ onSelectCommand }: UseSlashMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [position, setPosition] = useState({ top: 0, left: 0 });
   const [triggerElement, setTriggerElement] = useState<HTMLElement | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
 
-  const openSlashMenu = useCallback((element: HTMLElement) => {
+  const openSlashMenu = useCallback((element: HTMLElement, term = '') => {
     const rect = element.getBoundingClientRect();
     setPosition({
       left: rect.left,
-      top: rect.bottom,
+      top: rect.bottom + window.scrollY,
     });
     setTriggerElement(element);
+    setSearchTerm(term);
     setIsOpen(true);
   }, []);
 
   const closeSlashMenu = useCallback(() => {
     setIsOpen(false);
     setTriggerElement(null);
+    setSearchTerm('');
+  }, []);
+
+  const updateSearchTerm = useCallback((term: string) => {
+    setSearchTerm(term);
   }, []);
 
   const handleSelectItem = useCallback((command: string) => {
@@ -46,8 +53,10 @@ export function useSlashMenu({ onSelectCommand }: UseSlashMenuProps) {
   return {
     isOpen,
     position,
+    searchTerm,
     openSlashMenu,
     closeSlashMenu,
+    updateSearchTerm,
     handleSelectItem,
   };
 }
