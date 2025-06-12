@@ -39,22 +39,24 @@ export function VirtualizedTable({
   return (
     <div className="border rounded-lg overflow-hidden">
       {/* Fixed header */}
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="w-[200px]">Title</TableHead>
-            {fields.map((field) => (
-              <TableHead key={field.id} className="min-w-[150px]">
-                {field.name}
-                <span className="ml-2 text-xs text-muted-foreground">
-                  ({field.type})
-                </span>
-              </TableHead>
-            ))}
-            <TableHead className="w-[50px]"></TableHead>
-          </TableRow>
-        </TableHeader>
-      </Table>
+      <div className="border-b bg-muted/50">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-[200px] sticky left-0 bg-muted/50">Title</TableHead>
+              {fields.map((field) => (
+                <TableHead key={field.id} className="min-w-[150px]">
+                  {field.name}
+                  <span className="ml-2 text-xs text-muted-foreground">
+                    ({field.type})
+                  </span>
+                </TableHead>
+              ))}
+              <TableHead className="w-[50px]"></TableHead>
+            </TableRow>
+          </TableHeader>
+        </Table>
+      </div>
       
       {/* Scrollable body with virtualization */}
       <div 
@@ -62,17 +64,15 @@ export function VirtualizedTable({
         className="overflow-auto relative"
         style={{ maxHeight }}
       >
-        <Table>
-          <VirtualizedTableBody
-            pages={pages}
-            fields={fields}
-            onTitleUpdate={onTitleUpdate}
-            onPropertyUpdate={onPropertyUpdate}
-            onDeleteRow={onDeleteRow}
-            isLoading={isLoading}
-            parentRef={parentRef}
-          />
-        </Table>
+        <VirtualizedTableBody
+          pages={pages}
+          fields={fields}
+          onTitleUpdate={onTitleUpdate}
+          onPropertyUpdate={onPropertyUpdate}
+          onDeleteRow={onDeleteRow}
+          isLoading={isLoading}
+          parentRef={parentRef}
+        />
       </div>
     </div>
   );
