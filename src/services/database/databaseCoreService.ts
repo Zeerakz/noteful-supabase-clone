@@ -3,87 +3,63 @@ import { supabase } from '@/integrations/supabase/client';
 import { Database, DatabaseCreateRequest } from '@/types/database';
 
 export class DatabaseCoreService {
-  static async createDatabase(
-    workspaceId: string,
-    userId: string,
-    request: DatabaseCreateRequest
-  ): Promise<{ data: Database | null; error: string | null }> {
+  static async fetchDatabases(workspaceId: string) {
+    const { data, error } = await supabase
+      .from('databases')
+      .select('*')
+      .eq('workspace_id', workspaceId)
+      .order('created_at', { ascending: false });
+
+    return { data, error: error?.message };
+  }
+
+  static async createDatabase(workspaceId: string, userId: string, request: DatabaseCreateRequest) {
     try {
-      const tableName = `db_${request.name.toLowerCase().replace(/[^a-z0-9_]/g, '_')}`;
-      
-      // Create database record
-      const { data: database, error: dbError } = await supabase
-        .from('databases')
-        .insert([
-          {
-            workspace_id: workspaceId,
-            name: request.name,
-            table_name: tableName,
-            description: request.description,
-            created_by: userId,
-          },
-        ])
-        .select()
-        .single();
+      // Use the RPC function to create database with fields
+      const { data, error } = await supabase.rpc('create_database_with_fields', {
+        p_workspace_id: workspaceId,
+        p_user_id: userId,
+        p_name: request.name,
+        p_description: request.description || null,
+        p_fields: request.fields || []
+      });
 
-      if (dbError) throw dbError;
+      if (error) {
+        console.error('Database creation error:', error);
+        return { data: null, error: error.message };
+      }
 
-      // Create field records
-      const fieldsToCreate = request.fields.map((field, index) => ({
-        database_id: database.id,
-        name: field.name,
-        type: field.type,
-        settings: field.settings || {},
-        pos: index,
-        created_by: userId,
-      }));
+      if (!data || data.length === 0) {
+        return { data: null, error: 'No data returned from database creation' };
+      }
 
-      const { error: fieldsError } = await supabase
-        .from('fields')
-        .insert(fieldsToCreate);
-
-      if (fieldsError) throw fieldsError;
-
-      return { data: database as Database, error: null };
-    } catch (err) {
+      // Return the first result from the RPC function
+      const result = data[0];
       return { 
-        data: null, 
-        error: err instanceof Error ? err.message : 'Failed to create database' 
+        data: {
+          id: result.database_id,
+          name: result.database_name,
+          table_name: result.table_name,
+          workspace_id: workspaceId,
+          description: request.description,
+          created_by: userId,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }, 
+        error: null 
       };
+    } catch (err) {
+      console.error('Database creation error:', err);
+      return { data: null, error: 'Failed to create database' };
     }
   }
 
-  static async fetchDatabases(workspaceId: string): Promise<{ data: Database[] | null; error: string | null }> {
-    try {
-      const { data, error } = await supabase
-        .from('databases')
-        .select('*')
-        .eq('workspace_id', workspaceId)
-        .order('created_at', { ascending: false });
+  static async deleteDatabase(databaseId: string) {
+    const { error } = await supabase
+      .from('databases')
+      .delete()
+      .eq('id', databaseId);
 
-      if (error) throw error;
-      return { data: (data || []) as Database[], error: null };
-    } catch (err) {
-      return { 
-        data: null, 
-        error: err instanceof Error ? err.message : 'Failed to fetch databases' 
-      };
-    }
-  }
-
-  static async deleteDatabase(databaseId: string): Promise<{ error: string | null }> {
-    try {
-      const { error } = await supabase
-        .from('databases')
-        .delete()
-        .eq('id', databaseId);
-
-      if (error) throw error;
-      return { error: null };
-    } catch (err) {
-      return { 
-        error: err instanceof Error ? err.message : 'Failed to delete database' 
-      };
-    }
+    return { error: error?.message };
   }
 }

@@ -3,119 +3,65 @@ import { supabase } from '@/integrations/supabase/client';
 import { DatabaseField } from '@/types/database';
 
 export class DatabaseFieldService {
-  static async fetchDatabaseFields(databaseId: string): Promise<{ data: DatabaseField[] | null; error: string | null }> {
-    try {
-      console.log('Fetching fields for database:', databaseId);
-      
-      const { data, error } = await supabase
-        .from('fields')
-        .select('*')
-        .eq('database_id', databaseId)
-        .order('pos', { ascending: true });
+  static async fetchDatabaseFields(databaseId: string) {
+    const { data, error } = await supabase
+      .from('fields')
+      .select('*')
+      .eq('database_id', databaseId)
+      .order('pos', { ascending: true });
 
-      if (error) {
-        console.error('Supabase error fetching fields:', error);
-        throw error;
-      }
-
-      console.log('Fields fetched successfully:', data);
-      return { data: (data || []) as DatabaseField[], error: null };
-    } catch (err) {
-      console.error('Error in fetchDatabaseFields:', err);
-      return { 
-        data: null, 
-        error: err instanceof Error ? err.message : 'Failed to fetch database fields' 
-      };
-    }
+    return { data, error: error?.message };
   }
 
-  static async createDatabaseField(
-    databaseId: string,
-    userId: string,
-    field: Omit<DatabaseField, 'id' | 'created_at' | 'updated_at' | 'created_by' | 'database_id'>
-  ): Promise<{ data: DatabaseField | null; error: string | null }> {
-    try {
-      console.log('Creating field for database:', databaseId);
-      
-      const { data, error } = await supabase
-        .from('fields')
-        .insert([
-          {
-            database_id: databaseId,
-            created_by: userId,
-            ...field
-          }
-        ])
-        .select()
-        .single();
+  static async createDatabaseField(databaseId: string, userId: string, field: Partial<DatabaseField>) {
+    // Get the next position
+    const { data: existingFields } = await supabase
+      .from('fields')
+      .select('pos')
+      .eq('database_id', databaseId)
+      .order('pos', { ascending: false })
+      .limit(1);
 
-      if (error) {
-        console.error('Supabase error creating field:', error);
-        throw error;
-      }
+    const nextPos = existingFields && existingFields.length > 0 ? existingFields[0].pos + 1 : 0;
 
-      console.log('Field created successfully:', data);
-      return { data: data as DatabaseField, error: null };
-    } catch (err) {
-      console.error('Error in createDatabaseField:', err);
-      return { 
-        data: null, 
-        error: err instanceof Error ? err.message : 'Failed to create database field' 
-      };
-    }
+    const { data, error } = await supabase
+      .from('fields')
+      .insert({
+        database_id: databaseId,
+        name: field.name,
+        type: field.type,
+        settings: field.settings || {},
+        pos: nextPos,
+        created_by: userId
+      })
+      .select()
+      .single();
+
+    return { data, error: error?.message };
   }
 
-  static async updateDatabaseField(
-    fieldId: string,
-    updates: Partial<Omit<DatabaseField, 'id' | 'created_at' | 'created_by' | 'database_id'>>
-  ): Promise<{ data: DatabaseField | null; error: string | null }> {
-    try {
-      console.log('Updating field:', fieldId);
-      
-      const { data, error } = await supabase
-        .from('fields')
-        .update({ ...updates, updated_at: new Date().toISOString() })
-        .eq('id', fieldId)
-        .select()
-        .single();
+  static async updateDatabaseField(fieldId: string, updates: Partial<DatabaseField>) {
+    const { data, error } = await supabase
+      .from('fields')
+      .update({
+        name: updates.name,
+        type: updates.type,
+        settings: updates.settings,
+        pos: updates.pos
+      })
+      .eq('id', fieldId)
+      .select()
+      .single();
 
-      if (error) {
-        console.error('Supabase error updating field:', error);
-        throw error;
-      }
-
-      console.log('Field updated successfully:', data);
-      return { data: data as DatabaseField, error: null };
-    } catch (err) {
-      console.error('Error in updateDatabaseField:', err);
-      return { 
-        data: null, 
-        error: err instanceof Error ? err.message : 'Failed to update database field' 
-      };
-    }
+    return { data, error: error?.message };
   }
 
-  static async deleteDatabaseField(fieldId: string): Promise<{ error: string | null }> {
-    try {
-      console.log('Deleting field:', fieldId);
-      
-      const { error } = await supabase
-        .from('fields')
-        .delete()
-        .eq('id', fieldId);
+  static async deleteDatabaseField(fieldId: string) {
+    const { error } = await supabase
+      .from('fields')
+      .delete()
+      .eq('id', fieldId);
 
-      if (error) {
-        console.error('Supabase error deleting field:', error);
-        throw error;
-      }
-
-      console.log('Field deleted successfully');
-      return { error: null };
-    } catch (err) {
-      console.error('Error in deleteDatabaseField:', err);
-      return { 
-        error: err instanceof Error ? err.message : 'Failed to delete database field' 
-      };
-    }
+    return { error: error?.message };
   }
 }
