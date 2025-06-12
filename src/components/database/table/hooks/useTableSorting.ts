@@ -14,7 +14,7 @@ export function useTableSorting({ sortRules, setSortRules }: UseTableSortingProp
     if (existingRuleIndex !== -1) {
       const currentRule = sortRules[existingRuleIndex];
       
-      // If same direction, remove the sort rule
+      // If clicking the same direction twice, remove the sort rule
       if (currentRule.direction === direction) {
         const newRules = sortRules.filter((_, index) => index !== existingRuleIndex);
         setSortRules(newRules);

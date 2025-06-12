@@ -1,16 +1,25 @@
 
-import React from 'react';
-import { Table, TableBody, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Button } from '@/components/ui/button';
-import { Plus, RefreshCw } from 'lucide-react';
-import { DatabaseTableRow } from './DatabaseTableRow';
+import React, { useState } from 'react';
+import { Table } from '@/components/ui/table';
+import { EnhancedTableHeader } from './EnhancedTableHeader';
+import { DatabaseTableBody } from './DatabaseTableBody';
+import { DatabaseTableEmptyStates } from './DatabaseTableEmptyStates';
+import { PaginationControls } from '../PaginationControls';
 import { DatabaseField } from '@/types/database';
 import { SortRule } from '@/components/database/SortingModal';
-import { PaginationControls } from '@/components/database/PaginationControls';
+import { useColumnResizing } from './hooks/useColumnResizing';
+import { useTableSorting } from './hooks/useTableSorting';
 
 interface PageWithProperties {
   id: string;
   title: string;
+  workspace_id: string;
+  database_id: string | null;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+  parent_page_id: string | null;
+  order_index: number;
   properties: Record<string, string>;
 }
 
@@ -19,9 +28,6 @@ interface PaginationInfo {
   totalPages: number;
   totalItems: number;
   itemsPerPage: number;
-  startIndex: number;
-  endIndex: number;
-  goToPage: (page: number) => void;
   nextPage: () => void;
   prevPage: () => void;
 }
@@ -32,7 +38,7 @@ interface DatabaseTableViewContentProps {
   pagesLoading: boolean;
   pagesError: string | null;
   onCreateRow: () => void;
-  onTitleUpdate: (pageId: string, newTitle: string) => void;
+  onTitleUpdate: (pageId: string, title: string) => void;
   onPropertyUpdate: (pageId: string, fieldId: string, value: string) => void;
   onDeleteRow: (pageId: string) => void;
   onRefetch: () => void;
@@ -42,7 +48,7 @@ interface DatabaseTableViewContentProps {
   sortRules: SortRule[];
   setSortRules: (rules: SortRule[]) => void;
   workspaceId: string;
-  onItemsPerPageChange: (itemsPerPage: number) => void;
+  onItemsPerPageChange?: (itemsPerPage: number) => void;
 }
 
 export function DatabaseTableViewContent({
@@ -63,88 +69,70 @@ export function DatabaseTableViewContent({
   workspaceId,
   onItemsPerPageChange
 }: DatabaseTableViewContentProps) {
+  const { columnWidths, updateColumnWidth } = useColumnResizing({
+    defaultWidths: {
+      title: 250,
+      ...fields.reduce((acc, field) => ({
+        ...acc,
+        [field.id]: 160
+      }), {})
+    },
+    minWidth: 120,
+    maxWidth: 400
+  });
+
+  const { handleSort } = useTableSorting({ sortRules, setSortRules });
+
   if (pagesLoading) {
-    return (
-      <div className="flex items-center justify-center p-8">
-        <div className="text-muted-foreground">Loading rows...</div>
-      </div>
-    );
+    return <DatabaseTableEmptyStates.Loading />;
   }
 
   if (pagesError) {
-    return (
-      <div className="flex flex-col items-center justify-center p-8 space-y-4">
-        <div className="text-destructive">Error: {pagesError}</div>
-        <Button onClick={onRefetch} variant="outline" size="sm">
-          <RefreshCw className="h-4 w-4 mr-2" />
-          Retry
-        </Button>
-      </div>
-    );
+    return <DatabaseTableEmptyStates.Error error={pagesError} onRetry={onRefetch} />;
+  }
+
+  if (pagesWithProperties.length === 0) {
+    return <DatabaseTableEmptyStates.Empty onCreateRow={onCreateRow} />;
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div className="text-sm text-muted-foreground">
-          {totalPages} total rows
+    <div className="flex flex-col h-full">
+      <div className="flex-1 overflow-auto">
+        <div className="min-w-full">
+          <Table className="relative">
+            <EnhancedTableHeader
+              fields={fields}
+              sortRules={sortRules}
+              onSort={handleSort}
+              onColumnResize={updateColumnWidth}
+              columnWidths={columnWidths}
+              stickyHeader={true}
+            />
+            <DatabaseTableBody
+              pagesWithProperties={pagesWithProperties}
+              fields={fields}
+              onTitleUpdate={onTitleUpdate}
+              onPropertyUpdate={onPropertyUpdate}
+              onDeleteRow={onDeleteRow}
+              workspaceId={workspaceId}
+              columnWidths={columnWidths}
+            />
+          </Table>
         </div>
-        <Button onClick={onCreateRow} size="sm">
-          <Plus className="h-4 w-4 mr-2" />
-          New Row
-        </Button>
       </div>
 
-      <div className="border rounded-md overflow-hidden">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="sticky left-0 bg-background border-r w-[200px]">
-                Title
-              </TableHead>
-              {fields.map((field) => (
-                <TableHead key={field.id} className="min-w-[150px]">
-                  {field.name}
-                </TableHead>
-              ))}
-              <TableHead className="w-[50px]"></TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {pagesWithProperties.length === 0 ? (
-              <TableRow>
-                <td colSpan={fields.length + 2} className="text-center py-8 text-muted-foreground">
-                  No rows found. Click "New Row" to add the first row.
-                </td>
-              </TableRow>
-            ) : (
-              pagesWithProperties.map((page) => (
-                <DatabaseTableRow
-                  key={page.id}
-                  page={page}
-                  fields={fields}
-                  onTitleUpdate={onTitleUpdate}
-                  onPropertyUpdate={onPropertyUpdate}
-                  onDeleteRow={onDeleteRow}
-                  workspaceId={workspaceId}
-                />
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
-
-      {pagination && (
-        <PaginationControls
-          currentPage={pagination.currentPage}
-          totalPages={pagination.totalPages}
-          onPageChange={pagination.goToPage}
-          itemsPerPage={pagination.itemsPerPage}
-          totalItems={pagination.totalItems}
-          onItemsPerPageChange={onItemsPerPageChange}
-          startIndex={pagination.startIndex}
-          endIndex={pagination.endIndex}
-        />
+      {pagination && pagination.totalPages > 1 && (
+        <div className="border-t border-border bg-background/95 backdrop-blur-sm p-4">
+          <PaginationControls
+            currentPage={pagination.currentPage}
+            totalPages={pagination.totalPages}
+            totalItems={pagination.totalItems}
+            itemsPerPage={pagination.itemsPerPage}
+            onNextPage={pagination.nextPage}
+            onPrevPage={pagination.prevPage}
+            onItemsPerPageChange={onItemsPerPageChange}
+          />
+        </div>
       )}
     </div>
   );
