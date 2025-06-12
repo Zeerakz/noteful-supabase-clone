@@ -14,6 +14,12 @@ interface CommentIconProps {
 export function CommentIcon({ hasComments, commentCount, onClick, className }: CommentIconProps) {
   const IconComponent = hasComments ? MessageSquareIcon : MessageSquarePlusIcon;
   
+  const handleClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onClick();
+  };
+  
   return (
     <TooltipProvider>
       <Tooltip>
@@ -21,7 +27,7 @@ export function CommentIcon({ hasComments, commentCount, onClick, className }: C
           <Button
             variant="ghost"
             size="sm"
-            onClick={onClick}
+            onClick={handleClick}
             className={`h-6 w-6 p-0 text-muted-foreground hover:text-foreground ${className}`}
           >
             <IconComponent className="h-3 w-3" />
