@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { EditableCell } from './EditableCell';
 import { FieldEditor } from '../fields/FieldEditor';
+import { FieldDisplay } from '../fields/FieldDisplay';
 import { DatabaseField } from '@/types/database';
 
 interface PageWithProperties {
@@ -159,11 +160,11 @@ export function DatabaseTableRow({
               className="min-h-[32px] px-2 py-1 cursor-text hover:bg-muted/50 rounded flex items-center transition-colors duration-150"
               onClick={() => setEditingField(field.id)}
             >
-              {page.properties[field.id] ? (
-                <span className="truncate">{page.properties[field.id]}</span>
-              ) : (
-                <span className="text-muted-foreground italic">Empty</span>
-              )}
+              <FieldDisplay
+                field={field}
+                value={page.properties[field.id] || null}
+                pageId={page.id}
+              />
             </div>
           )}
         </TableCell>

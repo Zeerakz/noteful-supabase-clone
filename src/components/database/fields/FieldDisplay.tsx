@@ -25,6 +25,13 @@ export function FieldDisplay({ field, value, pageId, onValueChange }: FieldDispl
   // Check field name patterns for intelligent rendering
   const fieldNameLower = field.name.toLowerCase();
   
+  // Date fields - check both type and name patterns
+  if (field.type === 'date' || fieldNameLower.includes('date') || 
+      fieldNameLower.includes('due') || fieldNameLower.includes('deadline') ||
+      fieldNameLower.includes('created') || fieldNameLower.includes('updated')) {
+    return <DateFieldDisplay value={value} showIcon={true} />;
+  }
+  
   // Status fields
   if (fieldNameLower.includes('status') || fieldNameLower.includes('state')) {
     return <StatusDisplay value={value} />;
@@ -86,7 +93,7 @@ export function FieldDisplay({ field, value, pageId, onValueChange }: FieldDispl
       );
 
     case 'date':
-      return <DateFieldDisplay value={value} />;
+      return <DateFieldDisplay value={value} showIcon={true} />;
 
     case 'relation':
       return (
