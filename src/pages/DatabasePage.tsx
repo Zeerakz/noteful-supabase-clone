@@ -4,6 +4,7 @@ import { useParams, Navigate } from 'react-router-dom';
 import { useWorkspaces } from '@/hooks/useWorkspaces';
 import { useDatabases } from '@/hooks/useDatabases';
 import { DatabaseView } from '@/components/database/DatabaseView';
+import { DatabaseHeader } from '@/components/database/DatabaseHeader';
 import { AppLayoutWithSidebar } from '@/components/layout/AppLayoutWithSidebar';
 
 export function DatabasePage() {
@@ -31,17 +32,33 @@ export function DatabasePage() {
     { label: database.name }
   ];
 
+  const handleTitleChange = (newTitle: string) => {
+    // TODO: Implement database title update
+    console.log('Update database title:', newTitle);
+  };
+
+  const handleDescriptionChange = (newDescription: string) => {
+    // TODO: Implement database description update
+    console.log('Update database description:', newDescription);
+  };
+
+  const handleIconChange = (newIcon: string) => {
+    // TODO: Implement database icon update
+    console.log('Update database icon:', newIcon);
+  };
+
   return (
     <AppLayoutWithSidebar breadcrumbs={breadcrumbs}>
       <div className="h-full flex flex-col space-y-6">
-        <div className="flex items-center justify-between flex-shrink-0">
-          <div>
-            <h1 className="text-2xl font-bold">{database.name}</h1>
-            {database.description && (
-              <p className="text-muted-foreground mt-1">{database.description}</p>
-            )}
-          </div>
-        </div>
+        <DatabaseHeader
+          title={database.name}
+          description={database.description}
+          icon="📊"
+          onTitleChange={handleTitleChange}
+          onDescriptionChange={handleDescriptionChange}
+          onIconChange={handleIconChange}
+          breadcrumbs={breadcrumbs}
+        />
 
         <div className="flex-1 min-h-0">
           <DatabaseView 

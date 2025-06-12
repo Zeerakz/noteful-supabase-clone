@@ -4,14 +4,6 @@ import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/s
 import { PagesSidebar } from '@/components/sidebar/PagesSidebar';
 import { Separator } from '@/components/ui/separator';
 import { DarkModeToggle } from '@/components/ui/dark-mode-toggle';
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from '@/components/ui/breadcrumb';
 
 interface AppLayoutWithSidebarProps {
   children: React.ReactNode;
@@ -30,33 +22,11 @@ export function AppLayoutWithSidebar({ children, breadcrumbs }: AppLayoutWithSid
           <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
             <SidebarTrigger className="-ml-1" />
             <Separator orientation="vertical" className="mr-2 h-4" />
-            {breadcrumbs && (
-              <Breadcrumb>
-                <BreadcrumbList>
-                  {breadcrumbs.map((breadcrumb, index) => (
-                    <React.Fragment key={index}>
-                      <BreadcrumbItem className="hidden md:block">
-                        {breadcrumb.href ? (
-                          <BreadcrumbLink href={breadcrumb.href}>
-                            {breadcrumb.label}
-                          </BreadcrumbLink>
-                        ) : (
-                          <BreadcrumbPage>{breadcrumb.label}</BreadcrumbPage>
-                        )}
-                      </BreadcrumbItem>
-                      {index < breadcrumbs.length - 1 && (
-                        <BreadcrumbSeparator className="hidden md:block" />
-                      )}
-                    </React.Fragment>
-                  ))}
-                </BreadcrumbList>
-              </Breadcrumb>
-            )}
             <div className="ml-auto">
               <DarkModeToggle />
             </div>
           </header>
-          <div className="flex-1 overflow-auto p-4">
+          <div className="flex-1 overflow-auto p-6">
             {children}
           </div>
         </SidebarInset>
