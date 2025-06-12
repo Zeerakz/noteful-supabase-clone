@@ -62,8 +62,8 @@ export interface SavedDatabaseView {
   name: string;
   description?: string;
   view_type: 'table' | 'list' | 'timeline' | 'calendar' | 'kanban' | 'form' | 'gallery';
-  filters: any[];
-  sorts: any[];
+  filters: any; // Changed from any[] to any to support both JSON strings and parsed objects
+  sorts: any; // Changed from any[] to any to support both JSON strings and parsed objects
   grouping_field_id?: string;
   grouping_collapsed_groups?: string[];
   is_shared: boolean;
