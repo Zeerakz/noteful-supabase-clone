@@ -108,10 +108,10 @@ export function DatabaseView({ databaseId, workspaceId, className }: DatabaseVie
               variant="outline"
               size="sm"
               onClick={() => setShowFilterModal(true)}
-              className="gap-2"
+              className="flex items-center gap-2"
             >
               <Filter className="h-4 w-4" />
-              Filter
+              <span>Filter</span>
             </Button>
           </div>
         </div>
