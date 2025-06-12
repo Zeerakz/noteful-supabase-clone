@@ -101,7 +101,9 @@ export function DatabaseView({ databaseId, workspaceId, className }: DatabaseVie
             {hasActiveFilters && (
               <div className="flex items-center gap-2">
                 <Badge variant="secondary" className="gap-1">
-                  <Filter className="h-3 w-3" />
+                  <span className="inline-flex">
+                    <Filter className="h-3 w-3" />
+                  </span>
                   {filters.length} filter{filters.length !== 1 ? 's' : ''}
                 </Badge>
                 <Button
@@ -110,7 +112,9 @@ export function DatabaseView({ databaseId, workspaceId, className }: DatabaseVie
                   onClick={clearFilters}
                   className="h-8 px-2"
                 >
-                  <FilterX className="h-4 w-4" />
+                  <span className="inline-flex">
+                    <FilterX className="h-4 w-4" />
+                  </span>
                 </Button>
               </div>
             )}
@@ -121,7 +125,9 @@ export function DatabaseView({ databaseId, workspaceId, className }: DatabaseVie
               onClick={() => setShowFilterModal(true)}
               className="gap-2"
             >
-              <Filter className="h-4 w-4" />
+              <span className="inline-flex">
+                <Filter className="h-4 w-4" />
+              </span>
               Filter
             </Button>
           </div>
