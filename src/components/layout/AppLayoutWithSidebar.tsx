@@ -24,9 +24,9 @@ interface AppLayoutWithSidebarProps {
 export function AppLayoutWithSidebar({ children, breadcrumbs }: AppLayoutWithSidebarProps) {
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full">
+      <div className="min-h-screen max-h-screen flex w-full overflow-hidden">
         <PagesSidebar />
-        <SidebarInset>
+        <SidebarInset className="flex flex-col h-screen">
           <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
             <SidebarTrigger className="-ml-1" />
             <Separator orientation="vertical" className="mr-2 h-4" />
@@ -56,7 +56,7 @@ export function AppLayoutWithSidebar({ children, breadcrumbs }: AppLayoutWithSid
               <DarkModeToggle />
             </div>
           </header>
-          <div className="flex flex-1 flex-col gap-4 p-4">
+          <div className="flex-1 overflow-auto p-4">
             {children}
           </div>
         </SidebarInset>
