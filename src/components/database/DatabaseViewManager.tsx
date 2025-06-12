@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,9 +7,9 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Plus, MoreHorizontal, Star, Copy, Trash2, Share2 } from 'lucide-react';
 import { SavedDatabaseView } from '@/types/database';
-import { FilterRule } from '@/components/database/FilterModal';
+import { FilterGroup } from '@/types/filters';
 import { SortRule } from '@/components/database/SortingModal';
-import { DatabaseViewType } from '@/hooks/useDatabaseView';
+import { DatabaseViewType } from './DatabaseViewSelector';
 
 interface DatabaseViewManagerProps {
   views: SavedDatabaseView[];
@@ -19,7 +18,7 @@ interface DatabaseViewManagerProps {
   onCreateView: (
     name: string,
     viewType: string,
-    filters?: FilterRule[],
+    filters?: FilterGroup,
     sorts?: SortRule[],
     groupingFieldId?: string,
     description?: string
@@ -28,7 +27,7 @@ interface DatabaseViewManagerProps {
   onDeleteView: (viewId: string) => void;
   onDuplicateView: (viewId: string, newName: string) => Promise<SavedDatabaseView | null>;
   onSetDefaultView: (viewId: string) => void;
-  currentFilters: FilterRule[];
+  currentFilters: FilterGroup;
   currentSorts: SortRule[];
   currentViewType: DatabaseViewType;
   groupingFieldId?: string;
