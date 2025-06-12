@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Download, Trash2, File } from 'lucide-react';
+import { Download, X, File } from 'lucide-react';
 import { formatFileSize } from '@/utils/fileUtils';
 
 interface FileRecord {
@@ -55,7 +55,7 @@ export function FileDisplay({ fileRecord, isEditable, onDownload, onRemove }: Fi
               size="sm"
               className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
             >
-              <Trash2 className="h-3 w-3" />
+              <X className="h-3 w-3" />
             </Button>
           )}
         </div>
