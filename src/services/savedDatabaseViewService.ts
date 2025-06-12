@@ -36,7 +36,8 @@ export class SavedDatabaseViewService {
     filters: FilterGroup,
     sorts: SortRule[] = [],
     groupingFieldId?: string,
-    description?: string
+    description?: string,
+    visibleFieldIds?: string[]
   ): Promise<{ data: SavedDatabaseView | null; error: string | null }> {
     try {
       const { data, error } = await supabase
@@ -52,6 +53,7 @@ export class SavedDatabaseViewService {
           sorts: JSON.stringify(sorts),
           grouping_field_id: groupingFieldId,
           grouping_collapsed_groups: [],
+          visible_field_ids: visibleFieldIds || [],
           is_shared: false,
           is_default: false,
           created_by: userId,
@@ -137,6 +139,7 @@ export class SavedDatabaseViewService {
           sorts: originalView.sorts,
           grouping_field_id: originalView.grouping_field_id,
           grouping_collapsed_groups: originalView.grouping_collapsed_groups,
+          visible_field_ids: originalView.visible_field_ids,
           is_shared: false,
           is_default: false,
           created_by: originalView.user_id,

@@ -27,6 +27,7 @@ export function useSavedDatabaseViews(databaseId: string, workspaceId: string) {
       sorts: JSON.stringify([]),
       grouping_field_id: null,
       grouping_collapsed_groups: [],
+      visible_field_ids: [], // Initialize as empty array
       is_shared: false,
       is_default: true,
       created_by: user?.id || '',
@@ -86,7 +87,8 @@ export function useSavedDatabaseViews(databaseId: string, workspaceId: string) {
     filters: FilterGroup,
     sorts: SortRule[] = [],
     groupingFieldId?: string,
-    description?: string
+    description?: string,
+    visibleFieldIds?: string[]
   ): Promise<SavedDatabaseView> => {
     if (!user) throw new Error('User not authenticated');
 
@@ -99,7 +101,8 @@ export function useSavedDatabaseViews(databaseId: string, workspaceId: string) {
       filters,
       sorts,
       groupingFieldId,
-      description
+      description,
+      visibleFieldIds
     );
 
     if (error) {

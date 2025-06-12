@@ -148,6 +148,7 @@ export function DatabaseView({ databaseId, workspaceId }: DatabaseViewProps) {
       <DatabaseViewManager
         views={views}
         currentView={currentView}
+        fields={fields}
         onViewSelect={setCurrentView}
         onCreateView={createView}
         onUpdateView={updateView}

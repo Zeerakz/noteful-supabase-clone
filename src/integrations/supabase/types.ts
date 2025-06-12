@@ -540,6 +540,7 @@ export type Database = {
           updated_at: string
           user_id: string
           view_type: string
+          visible_field_ids: Json | null
           workspace_id: string
         }
         Insert: {
@@ -558,6 +559,7 @@ export type Database = {
           updated_at?: string
           user_id: string
           view_type: string
+          visible_field_ids?: Json | null
           workspace_id: string
         }
         Update: {
@@ -576,6 +578,7 @@ export type Database = {
           updated_at?: string
           user_id?: string
           view_type?: string
+          visible_field_ids?: Json | null
           workspace_id?: string
         }
         Relationships: []

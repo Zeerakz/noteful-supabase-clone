@@ -7,15 +7,17 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Plus, MoreHorizontal, Star, Copy, Trash2, Share2 } from 'lucide-react';
-import { SavedDatabaseView } from '@/types/database';
+import { SavedDatabaseView, DatabaseField } from '@/types/database';
 import { FilterGroup } from '@/types/filters';
 import { SortRule } from '@/components/database/SortingModal';
 import { DatabaseViewType } from './DatabaseViewSelector';
+import { FieldVisibilityManager } from './fields/FieldVisibilityManager';
 import { createEmptyFilterGroup } from '@/utils/filterUtils';
 
 interface DatabaseViewManagerProps {
   views: SavedDatabaseView[];
   currentView: SavedDatabaseView | null;
+  fields: DatabaseField[];
   onViewSelect: (view: SavedDatabaseView) => void;
   onCreateView: (
     name: string,
@@ -23,7 +25,8 @@ interface DatabaseViewManagerProps {
     filters?: FilterGroup,
     sorts?: SortRule[],
     groupingFieldId?: string,
-    description?: string
+    description?: string,
+    visibleFieldIds?: string[]
   ) => Promise<SavedDatabaseView | null>;
   onUpdateView: (viewId: string, updates: Partial<SavedDatabaseView>) => void;
   onDeleteView: (viewId: string) => void;
@@ -43,6 +46,7 @@ const countFilters = (group: FilterGroup): number => {
 export function DatabaseViewManager({
   views,
   currentView,
+  fields,
   onViewSelect,
   onCreateView,
   onUpdateView,
@@ -60,6 +64,11 @@ export function DatabaseViewManager({
   const [duplicateViewId, setDuplicateViewId] = useState<string | null>(null);
   const [duplicateViewName, setDuplicateViewName] = useState('');
 
+  // Get currently visible field IDs - default to all fields if not set
+  const currentVisibleFieldIds = currentView?.visible_field_ids?.length ? 
+    currentView.visible_field_ids : 
+    fields.map(f => f.id);
+
   const handleCreateView = async () => {
     if (!newViewName.trim()) return;
 
@@ -69,7 +78,8 @@ export function DatabaseViewManager({
       currentFilters,
       currentSorts,
       groupingFieldId,
-      newViewDescription.trim() || undefined
+      newViewDescription.trim() || undefined,
+      currentVisibleFieldIds
     );
 
     if (view) {
@@ -107,11 +117,19 @@ export function DatabaseViewManager({
       currentViewType,
       currentFilters,
       currentSorts,
-      groupingFieldId
+      groupingFieldId,
+      undefined,
+      currentVisibleFieldIds
     );
 
     if (view) {
       onViewSelect(view);
+    }
+  };
+
+  const handleVisibilityUpdate = (visibleFieldIds: string[]) => {
+    if (currentView) {
+      onUpdateView(currentView.id, { visible_field_ids: visibleFieldIds });
     }
   };
 
@@ -162,70 +180,80 @@ export function DatabaseViewManager({
     JSON.stringify(parseViewFilters(currentView)) !== JSON.stringify(currentFilters) ||
     JSON.stringify(parseViewSorts(currentView)) !== JSON.stringify(currentSorts) ||
     currentView.view_type !== currentViewType ||
-    currentView.grouping_field_id !== groupingFieldId
+    currentView.grouping_field_id !== groupingFieldId ||
+    JSON.stringify(currentView.visible_field_ids || []) !== JSON.stringify(currentVisibleFieldIds)
   );
 
   return (
-    <div className="flex items-center gap-2">
-      {/* View Tabs */}
-      <Tabs value={currentView?.id || 'new'} className="flex-1">
-        <TabsList className="grid w-full grid-cols-auto gap-1">
-          {views.map((view) => (
-            <TabsTrigger
-              key={view.id}
-              value={view.id}
-              onClick={() => onViewSelect(view)}
-              className="relative"
-            >
-              <div className="flex items-center gap-1">
-                {view.is_default && <Star className="h-3 w-3" />}
-                <span>{view.name}</span>
-              </div>
-            </TabsTrigger>
-          ))}
-          
-          {/* Create View Button */}
-          <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-            <DialogTrigger asChild>
-              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                <Plus className="h-4 w-4" />
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Create New View</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium">Name</label>
-                  <Input
-                    value={newViewName}
-                    onChange={(e) => setNewViewName(e.target.value)}
-                    placeholder="Enter view name"
-                  />
+    <div className="flex items-center justify-between">
+      <div className="flex items-center gap-4">
+        {/* View Tabs */}
+        <Tabs value={currentView?.id || 'new'} className="flex-1">
+          <TabsList className="grid w-full grid-cols-auto gap-1">
+            {views.map((view) => (
+              <TabsTrigger
+                key={view.id}
+                value={view.id}
+                onClick={() => onViewSelect(view)}
+                className="relative"
+              >
+                <div className="flex items-center gap-1">
+                  {view.is_default && <Star className="h-3 w-3" />}
+                  <span>{view.name}</span>
                 </div>
-                <div>
-                  <label className="text-sm font-medium">Description (optional)</label>
-                  <Textarea
-                    value={newViewDescription}
-                    onChange={(e) => setNewViewDescription(e.target.value)}
-                    placeholder="Describe this view"
-                    rows={3}
-                  />
+              </TabsTrigger>
+            ))}
+            
+            {/* Create View Button */}
+            <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+              <DialogTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Create New View</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-sm font-medium">Name</label>
+                    <Input
+                      value={newViewName}
+                      onChange={(e) => setNewViewName(e.target.value)}
+                      placeholder="Enter view name"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium">Description (optional)</label>
+                    <Textarea
+                      value={newViewDescription}
+                      onChange={(e) => setNewViewDescription(e.target.value)}
+                      placeholder="Describe this view"
+                      rows={3}
+                    />
+                  </div>
+                  <div className="flex justify-end gap-2">
+                    <Button variant="outline" onClick={() => setShowCreateDialog(false)}>
+                      Cancel
+                    </Button>
+                    <Button onClick={handleCreateView} disabled={!newViewName.trim()}>
+                      Create View
+                    </Button>
+                  </div>
                 </div>
-                <div className="flex justify-end gap-2">
-                  <Button variant="outline" onClick={() => setShowCreateDialog(false)}>
-                    Cancel
-                  </Button>
-                  <Button onClick={handleCreateView} disabled={!newViewName.trim()}>
-                    Create View
-                  </Button>
-                </div>
-              </div>
-            </DialogContent>
-          </Dialog>
-        </TabsList>
-      </Tabs>
+              </DialogContent>
+            </Dialog>
+          </TabsList>
+        </Tabs>
+
+        {/* Field Visibility Manager */}
+        <FieldVisibilityManager
+          fields={fields}
+          currentView={currentView}
+          onVisibilityUpdate={handleVisibilityUpdate}
+        />
+      </div>
 
       {/* View Actions */}
       {currentView && (
@@ -248,6 +276,7 @@ export function DatabaseViewManager({
                     sorts: JSON.stringify(currentSorts) as any,
                     view_type: currentViewType,
                     grouping_field_id: groupingFieldId,
+                    visible_field_ids: currentVisibleFieldIds,
                   })}
                 >
                   <Copy className="h-4 w-4 mr-2" />

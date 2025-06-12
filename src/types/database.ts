@@ -1,3 +1,4 @@
+
 export interface Database {
   id: string;
   workspace_id: string;
@@ -66,6 +67,7 @@ export interface SavedDatabaseView {
   sorts: any; // Changed from any[] to any to support both JSON strings and parsed objects
   grouping_field_id?: string;
   grouping_collapsed_groups?: string[];
+  visible_field_ids: string[]; // New property for visible fields
   is_shared: boolean;
   is_default: boolean;
   created_at: string;
