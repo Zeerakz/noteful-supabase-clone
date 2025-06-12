@@ -1,5 +1,7 @@
+
 import React from 'react';
 import { Button } from '@/components/ui/button';
+import { TableCell } from '@/components/ui/table';
 import { Trash2 } from 'lucide-react';
 import { EditableCell } from './EditableCell';
 import { DatabaseField } from '@/types/database';
