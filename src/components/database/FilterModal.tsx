@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import {
   Dialog,
@@ -126,7 +125,7 @@ export function FilterModal({
               </div>
               <div className="space-y-2">
                 {filters.map((filter) => (
-                  <div key={filter.id} className="group relative flex items-center gap-2">
+                  <div key={filter.id} className="flex items-center gap-2">
                     <div className="flex-1">
                       <Badge variant="secondary" className="flex items-center gap-2 px-3 py-1 w-full">
                         <span className="font-medium">{getFieldName(filter.fieldId)}</span>
@@ -137,16 +136,14 @@ export function FilterModal({
                       </Badge>
                     </div>
                     
-                    <div className="flex items-center gap-1 flex-shrink-0">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => removeFilter(filter.id)}
-                        className="h-6 w-6 p-0 text-destructive hover:text-destructive/80"
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
-                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => removeFilter(filter.id)}
+                      className="h-8 w-8 p-0 text-destructive hover:text-destructive/80 hover:bg-destructive/10"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
                   </div>
                 ))}
               </div>
