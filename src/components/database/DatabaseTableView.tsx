@@ -12,11 +12,11 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Plus, Trash2 } from 'lucide-react';
-import { useDatabasePages } from '@/hooks/useDatabasePages';
+import { useFilteredDatabasePages } from '@/hooks/useFilteredDatabasePages';
 import { useOptimisticPropertyUpdate } from '@/hooks/useOptimisticPropertyUpdate';
 import { DatabaseService } from '@/services/databaseService';
 import { DatabaseField } from '@/types/database';
-import { Page } from '@/types/page';
+import { PageService } from '@/services/pageService';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 
@@ -25,24 +25,35 @@ interface DatabaseTableViewProps {
   workspaceId: string;
 }
 
-interface PageWithProperties extends Page {
+interface PageWithProperties {
+  id: string;
+  title: string;
+  workspace_id: string;
+  database_id: string | null;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+  parent_page_id: string | null;
+  order_index: number;
   properties: Record<string, string>;
 }
 
 export function DatabaseTableView({ databaseId, workspaceId }: DatabaseTableViewProps) {
   const [fields, setFields] = useState<DatabaseField[]>([]);
   const [fieldsLoading, setFieldsLoading] = useState(true);
-  const [pagesWithProperties, setPagesWithProperties] = useState<PageWithProperties[]>([]);
   const { user } = useAuth();
   const { toast } = useToast();
   
   const { 
     pages, 
     loading: pagesLoading, 
-    createDatabasePage, 
-    updatePage, 
-    deletePage 
-  } = useDatabasePages(databaseId, workspaceId);
+    error: pagesError
+  } = useFilteredDatabasePages({
+    databaseId,
+    filters: [],
+    fields,
+    sortRules: []
+  });
 
   const propertyUpdateMutation = useOptimisticPropertyUpdate(databaseId);
 
@@ -71,28 +82,39 @@ export function DatabaseTableView({ databaseId, workspaceId }: DatabaseTableView
   }, [databaseId, toast]);
 
   // Transform pages data with properties
-  useEffect(() => {
-    const transformedPages = pages.map(page => {
-      const properties: Record<string, string> = {};
-      
-      if (page.page_properties) {
-        page.page_properties.forEach((prop: any) => {
-          properties[prop.field_id] = prop.value || '';
-        });
-      }
-
-      return {
-        ...page,
-        properties,
-      };
+  const pagesWithProperties: PageWithProperties[] = pages.map(page => {
+    const properties: Record<string, string> = {};
+    
+    // Handle the page_properties from the database response
+    const pageProperties = (page as any).page_properties || [];
+    pageProperties.forEach((prop: any) => {
+      properties[prop.field_id] = prop.value || '';
     });
 
-    setPagesWithProperties(transformedPages);
-  }, [pages]);
+    return {
+      id: page.id,
+      title: page.title,
+      workspace_id: page.workspace_id,
+      database_id: page.database_id,
+      created_by: page.created_by,
+      created_at: page.created_at,
+      updated_at: page.updated_at,
+      parent_page_id: page.parent_page_id,
+      order_index: page.order_index,
+      properties,
+    };
+  });
 
   const handleCreateRow = async () => {
+    if (!user) return;
+
     try {
-      const { error } = await createDatabasePage('Untitled');
+      const { data, error } = await PageService.createPage(
+        workspaceId,
+        user.id,
+        { title: 'Untitled', databaseId }
+      );
+      
       if (error) {
         toast({
           title: "Error",
@@ -116,7 +138,7 @@ export function DatabaseTableView({ databaseId, workspaceId }: DatabaseTableView
 
   const handleDeleteRow = async (pageId: string) => {
     try {
-      const { error } = await deletePage(pageId);
+      const { error } = await PageService.deletePage(pageId);
       if (error) {
         toast({
           title: "Error",
@@ -142,7 +164,7 @@ export function DatabaseTableView({ databaseId, workspaceId }: DatabaseTableView
     if (!newTitle.trim()) return;
 
     try {
-      const { error } = await updatePage(pageId, { title: newTitle.trim() });
+      const { error } = await PageService.updatePage(pageId, { title: newTitle.trim() });
       if (error) {
         toast({
           title: "Error",
@@ -173,6 +195,14 @@ export function DatabaseTableView({ databaseId, workspaceId }: DatabaseTableView
       <div className="space-y-4">
         <Skeleton className="h-10 w-full" />
         <Skeleton className="h-32 w-full" />
+      </div>
+    );
+  }
+
+  if (pagesError) {
+    return (
+      <div className="text-center py-8">
+        <p className="text-destructive">{pagesError}</p>
       </div>
     );
   }

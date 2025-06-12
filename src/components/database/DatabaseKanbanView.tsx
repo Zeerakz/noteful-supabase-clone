@@ -46,6 +46,7 @@ export function DatabaseKanbanView({ databaseId, workspaceId }: DatabaseKanbanVi
     pages: updatedPages,
     columns: updatedColumns,
     selectField: selectedField,
+    databaseId,
     setColumns: setUpdatedColumns,
     setPages: setUpdatedPages
   });
