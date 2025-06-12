@@ -18,39 +18,45 @@ export function useFilteredDatabasePages({ databaseId, filterGroup, fields, sort
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Use refs to track previous values and only update when content actually changes
-  const prevFilterGroupRef = useRef<string>('');
-  const prevFieldsRef = useRef<string>('');
-  const prevSortRulesRef = useRef<string>('');
+  // Use refs to store the actual objects and their serialized versions
+  const prevFilterGroupRef = useRef<FilterGroup>();
+  const prevFilterGroupStrRef = useRef<string>('');
+  const prevFieldsRef = useRef<DatabaseField[]>();
+  const prevFieldsStrRef = useRef<string>('');
+  const prevSortRulesRef = useRef<SortRule[]>();
+  const prevSortRulesStrRef = useRef<string>('');
   
   const currentFilterGroupStr = JSON.stringify(filterGroup);
   const currentFieldsStr = JSON.stringify(fields);
   const currentSortRulesStr = JSON.stringify(sortRules);
   
-  // Only update when the serialized values actually change
+  // Only update when the serialized values actually change, but return the original objects
   const stableFilterGroup = useMemo(() => {
-    if (prevFilterGroupRef.current !== currentFilterGroupStr) {
-      prevFilterGroupRef.current = currentFilterGroupStr;
+    if (prevFilterGroupStrRef.current !== currentFilterGroupStr) {
+      prevFilterGroupStrRef.current = currentFilterGroupStr;
+      prevFilterGroupRef.current = filterGroup;
       return filterGroup;
     }
-    return JSON.parse(prevFilterGroupRef.current);
-  }, [currentFilterGroupStr]);
+    return prevFilterGroupRef.current || filterGroup;
+  }, [currentFilterGroupStr, filterGroup]);
   
   const stableFields = useMemo(() => {
-    if (prevFieldsRef.current !== currentFieldsStr) {
-      prevFieldsRef.current = currentFieldsStr;
+    if (prevFieldsStrRef.current !== currentFieldsStr) {
+      prevFieldsStrRef.current = currentFieldsStr;
+      prevFieldsRef.current = fields;
       return fields;
     }
-    return JSON.parse(prevFieldsRef.current);
-  }, [currentFieldsStr]);
+    return prevFieldsRef.current || fields;
+  }, [currentFieldsStr, fields]);
   
   const stableSortRules = useMemo(() => {
-    if (prevSortRulesRef.current !== currentSortRulesStr) {
-      prevSortRulesRef.current = currentSortRulesStr;
+    if (prevSortRulesStrRef.current !== currentSortRulesStr) {
+      prevSortRulesStrRef.current = currentSortRulesStr;
+      prevSortRulesRef.current = sortRules;
       return sortRules;
     }
-    return JSON.parse(prevSortRulesRef.current);
-  }, [currentSortRulesStr]);
+    return prevSortRulesRef.current || sortRules;
+  }, [currentSortRulesStr, sortRules]);
 
   // Create a stable query function that doesn't change on every render
   const queryFunction = useCallback(() => {
