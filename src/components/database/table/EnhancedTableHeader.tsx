@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Checkbox } from '@/components/ui/checkbox';
 import { DatabaseColumnHeader } from './DatabaseColumnHeader';
 import { DatabaseField } from '@/types/database';
 import { SortRule } from '@/components/database/SortingModal';
@@ -13,6 +14,9 @@ interface EnhancedTableHeaderProps {
   onColumnResize?: (fieldId: string, width: number) => void;
   columnWidths?: Record<string, number>;
   stickyHeader?: boolean;
+  selectedCount?: number;
+  totalCount?: number;
+  onSelectAll?: (selected: boolean) => void;
 }
 
 export function EnhancedTableHeader({
@@ -21,8 +25,20 @@ export function EnhancedTableHeader({
   onSort,
   onColumnResize,
   columnWidths = {},
-  stickyHeader = false
+  stickyHeader = false,
+  selectedCount = 0,
+  totalCount = 0,
+  onSelectAll
 }: EnhancedTableHeaderProps) {
+  const isAllSelected = totalCount > 0 && selectedCount === totalCount;
+  const isPartiallySelected = selectedCount > 0 && selectedCount < totalCount;
+
+  const handleSelectAll = (checked: boolean) => {
+    if (onSelectAll) {
+      onSelectAll(checked);
+    }
+  };
+
   return (
     <TableHeader 
       className={`
@@ -32,8 +48,22 @@ export function EnhancedTableHeader({
       `}
     >
       <TableRow className="hover:bg-transparent border-none">
+        {/* Selection Column */}
+        <TableHead className="w-[48px] p-2 sticky left-0 z-40 bg-background/98 backdrop-blur-md border-r border-border/80 shadow-[2px_0_4px_rgba(0,0,0,0.05)]">
+          <div className="flex items-center justify-center">
+            <Checkbox
+              checked={isAllSelected}
+              ref={(el) => {
+                if (el) el.indeterminate = isPartiallySelected;
+              }}
+              onCheckedChange={handleSelectAll}
+              className="transition-opacity duration-200"
+            />
+          </div>
+        </TableHead>
+
         {/* Title Column */}
-        <TableHead className="w-[250px] sticky left-0 z-40 bg-background/98 backdrop-blur-md border-r border-border/80 p-0 shadow-[2px_0_4px_rgba(0,0,0,0.05)]">
+        <TableHead className="w-[250px] sticky left-[48px] z-40 bg-background/98 backdrop-blur-md border-r border-border/80 p-0 shadow-[2px_0_4px_rgba(0,0,0,0.05)]">
           <DatabaseColumnHeader
             field={{
               id: 'title',

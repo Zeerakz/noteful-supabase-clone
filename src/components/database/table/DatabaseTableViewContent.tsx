@@ -69,6 +69,9 @@ export function DatabaseTableViewContent({
   workspaceId,
   onItemsPerPageChange
 }: DatabaseTableViewContentProps) {
+  // Row selection state
+  const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
+
   const { columnWidths, updateColumnWidth } = useColumnResizing({
     defaultWidths: {
       title: 250,
@@ -82,6 +85,26 @@ export function DatabaseTableViewContent({
   });
 
   const { handleSort } = useTableSorting({ sortRules, setSortRules });
+
+  // Row selection handlers
+  const handleRowSelect = (pageId: string, selected: boolean) => {
+    const newSelection = new Set(selectedRows);
+    if (selected) {
+      newSelection.add(pageId);
+    } else {
+      newSelection.delete(pageId);
+    }
+    setSelectedRows(newSelection);
+  };
+
+  const handleSelectAll = (selected: boolean) => {
+    if (selected) {
+      const allIds = new Set(pagesWithProperties.map(page => page.id));
+      setSelectedRows(allIds);
+    } else {
+      setSelectedRows(new Set());
+    }
+  };
 
   if (pagesLoading) {
     return <DatabaseTableEmptyStates.Loading />;
@@ -108,6 +131,9 @@ export function DatabaseTableViewContent({
               onColumnResize={updateColumnWidth}
               columnWidths={columnWidths}
               stickyHeader={true}
+              selectedCount={selectedRows.size}
+              totalCount={pagesWithProperties.length}
+              onSelectAll={handleSelectAll}
             />
             <DatabaseTableBody
               pagesWithProperties={pagesWithProperties}
@@ -115,8 +141,12 @@ export function DatabaseTableViewContent({
               onTitleUpdate={onTitleUpdate}
               onPropertyUpdate={onPropertyUpdate}
               onDeleteRow={onDeleteRow}
+              onCreateRow={onCreateRow}
               workspaceId={workspaceId}
               columnWidths={columnWidths}
+              selectedRows={selectedRows}
+              onRowSelect={handleRowSelect}
+              showNewRow={true}
             />
           </Table>
         </div>
