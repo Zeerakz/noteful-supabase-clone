@@ -637,7 +637,23 @@ export type Database = {
         Args: { workspace_uuid: string }
         Returns: undefined
       }
+      user_can_edit_workspace: {
+        Args: { target_workspace_id: string; user_id: string }
+        Returns: boolean
+      }
       user_has_workspace_access: {
+        Args: { target_workspace_id: string; user_id: string }
+        Returns: boolean
+      }
+      user_has_workspace_access_with_role: {
+        Args: {
+          target_workspace_id: string
+          user_id: string
+          required_role?: string
+        }
+        Returns: boolean
+      }
+      user_is_workspace_admin: {
         Args: { target_workspace_id: string; user_id: string }
         Returns: boolean
       }
