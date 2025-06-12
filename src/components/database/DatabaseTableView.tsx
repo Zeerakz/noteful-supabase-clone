@@ -43,7 +43,7 @@ export function DatabaseTableView({
     sortRules,
     enablePagination,
     itemsPerPage,
-    enableVirtualScrolling: totalPages > 100
+    enableVirtualScrolling: false // Default to false, can be calculated later if needed
   });
 
   return (

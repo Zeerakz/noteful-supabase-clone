@@ -128,7 +128,12 @@ export function useDatabaseTableView({
     let properties = cache.get(cacheKey);
     
     if (!properties) {
-      properties = getPropertiesForPage(page.id);
+      const pageProperties = getPropertiesForPage(page.id);
+      // Ensure properties is always Record<string, string>
+      properties = pageProperties && typeof pageProperties === 'object' 
+        ? pageProperties as Record<string, string>
+        : {};
+      
       if (Object.keys(properties).length > 0) {
         cache.set(cacheKey, properties);
       }
