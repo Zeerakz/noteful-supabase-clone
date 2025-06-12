@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -23,7 +22,7 @@ export function DatabaseFormView({ databaseId, fields, workspaceId }: DatabaseFo
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   const { user } = useAuth();
-  const { refetch } = useDatabasePages(databaseId, [], fields, []);
+  const { fetchPages } = useDatabasePages(databaseId, workspaceId);
   const { toast } = useToast();
 
   const handleFieldChange = (fieldId: string, value: string) => {
@@ -87,7 +86,7 @@ export function DatabaseFormView({ databaseId, fields, workspaceId }: DatabaseFo
 
       // Reset form and refresh data
       handleCancel();
-      refetch();
+      fetchPages();
     } catch (error) {
       console.error('Error creating entry:', error);
       toast({

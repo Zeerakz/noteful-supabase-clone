@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { DatabaseViewSelector, DatabaseViewType } from './DatabaseViewSelector';
 import { DatabaseTableView } from './DatabaseTableView';
@@ -60,9 +59,6 @@ export function DatabaseView({ databaseId, workspaceId }: DatabaseViewProps) {
         return (
           <DatabaseTableView
             databaseId={databaseId}
-            fields={fields}
-            filters={filters}
-            sortRules={sortRules}
             workspaceId={workspaceId}
           />
         );
@@ -70,9 +66,6 @@ export function DatabaseView({ databaseId, workspaceId }: DatabaseViewProps) {
         return (
           <DatabaseListView
             databaseId={databaseId}
-            fields={fields}
-            filters={filters}
-            sortRules={sortRules}
             workspaceId={workspaceId}
           />
         );
@@ -80,9 +73,6 @@ export function DatabaseView({ databaseId, workspaceId }: DatabaseViewProps) {
         return (
           <DatabaseCalendarView
             databaseId={databaseId}
-            fields={fields}
-            filters={filters}
-            sortRules={sortRules}
             workspaceId={workspaceId}
           />
         );
@@ -90,9 +80,6 @@ export function DatabaseView({ databaseId, workspaceId }: DatabaseViewProps) {
         return (
           <DatabaseKanbanView
             databaseId={databaseId}
-            fields={fields}
-            filters={filters}
-            sortRules={sortRules}
             workspaceId={workspaceId}
           />
         );
@@ -182,16 +169,16 @@ export function DatabaseView({ databaseId, workspaceId }: DatabaseViewProps) {
       {renderView()}
 
       <FilterModal
-        isOpen={showFilterModal}
-        onClose={() => setShowFilterModal(false)}
+        open={showFilterModal}
+        onOpenChange={setShowFilterModal}
         fields={fields}
         filters={filters}
         onFiltersChange={setFilters}
       />
 
       <SortingModal
-        isOpen={showSortModal}
-        onClose={() => setShowSortModal(false)}
+        open={showSortModal}
+        onOpenChange={setShowSortModal}
         fields={fields}
         sortRules={sortRules}
         onSortRulesChange={setSortRules}

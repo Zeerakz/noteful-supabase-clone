@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Database, DatabaseCreateRequest, DatabaseField } from '@/types/database';
 import { FilterRule } from '@/components/database/FilterModal';
@@ -88,6 +87,64 @@ export class DatabaseService {
       return { 
         data: null, 
         error: err instanceof Error ? err.message : 'Failed to fetch database fields' 
+      };
+    }
+  }
+
+  static async createDatabasePage(
+    databaseId: string,
+    userId: string,
+    title: string
+  ): Promise<{ data: any | null; error: string | null }> {
+    try {
+      const { data, error } = await supabase
+        .from('pages')
+        .insert([
+          {
+            database_id: databaseId,
+            title: title,
+            created_by: userId,
+          },
+        ])
+        .select()
+        .single();
+
+      if (error) throw error;
+      return { data, error: null };
+    } catch (err) {
+      return { 
+        data: null, 
+        error: err instanceof Error ? err.message : 'Failed to create database page' 
+      };
+    }
+  }
+
+  static async createPageProperty(
+    pageId: string,
+    fieldId: string,
+    value: string,
+    userId: string
+  ): Promise<{ data: any | null; error: string | null }> {
+    try {
+      const { data, error } = await supabase
+        .from('page_properties')
+        .insert([
+          {
+            page_id: pageId,
+            field_id: fieldId,
+            value: value,
+            created_by: userId,
+          },
+        ])
+        .select()
+        .single();
+
+      if (error) throw error;
+      return { data, error: null };
+    } catch (err) {
+      return { 
+        data: null, 
+        error: err instanceof Error ? err.message : 'Failed to create page property' 
       };
     }
   }
