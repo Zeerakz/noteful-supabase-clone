@@ -2,12 +2,12 @@
 import React from 'react';
 import { DatabaseViewSelector, DatabaseViewType } from './DatabaseViewSelector';
 import { DatabaseGroupingControls } from './DatabaseGroupingControls';
-import { FilterModal } from './FilterModal';
+import { ComplexFilterModal } from './filters/ComplexFilterModal';
 import { SortingModal } from './SortingModal';
 import { Button } from '@/components/ui/button';
-import { Filter, ArrowUpDown, X } from 'lucide-react';
+import { Filter, ArrowUpDown, X, Settings } from 'lucide-react';
 import { DatabaseField } from '@/types/database';
-import { FilterRule } from './FilterModal';
+import { FilterGroup } from '@/types/filters';
 import { SortRule } from './SortingModal';
 
 interface DatabaseViewControlsProps {
@@ -16,8 +16,8 @@ interface DatabaseViewControlsProps {
   onViewChange: (view: DatabaseViewType) => void;
   groupingFieldId?: string;
   onGroupingChange: (fieldId?: string) => void;
-  filters: FilterRule[];
-  setFilters: (filters: FilterRule[]) => void;
+  filterGroup: FilterGroup;
+  setFilterGroup: (group: FilterGroup) => void;
   sortRules: SortRule[];
   setSortRules: (sorts: SortRule[]) => void;
   hasActiveFilters: boolean;
@@ -36,8 +36,8 @@ export function DatabaseViewControls({
   onViewChange,
   groupingFieldId,
   onGroupingChange,
-  filters,
-  setFilters,
+  filterGroup,
+  setFilterGroup,
   sortRules,
   setSortRules,
   hasActiveFilters,
@@ -49,6 +49,8 @@ export function DatabaseViewControls({
   showSortModal,
   setShowSortModal,
 }: DatabaseViewControlsProps) {
+  const filterCount = countFilters(filterGroup);
+
   return (
     <>
       <div className="flex items-center justify-between">
@@ -103,7 +105,7 @@ export function DatabaseViewControls({
                 Filter
                 {hasActiveFilters && (
                   <span className="bg-primary text-primary-foreground rounded-full px-2 py-0.5 text-xs">
-                    {filters.length}
+                    {filterCount}
                   </span>
                 )}
               </Button>
@@ -127,12 +129,12 @@ export function DatabaseViewControls({
         )}
       </div>
 
-      <FilterModal
+      <ComplexFilterModal
         open={showFilterModal}
         onOpenChange={setShowFilterModal}
         fields={fields}
-        filters={filters}
-        onFiltersChange={setFilters}
+        filterGroup={filterGroup}
+        onFilterGroupChange={setFilterGroup}
       />
 
       <SortingModal
@@ -144,4 +146,8 @@ export function DatabaseViewControls({
       />
     </>
   );
+}
+
+function countFilters(group: FilterGroup): number {
+  return group.rules.length + group.groups.reduce((count, subGroup) => count + countFilters(subGroup), 0);
 }

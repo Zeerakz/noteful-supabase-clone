@@ -9,7 +9,7 @@ import { DatabaseKanbanView } from './DatabaseKanbanView';
 import { DatabaseGalleryView } from './DatabaseGalleryView';
 import { DatabaseFormView } from './DatabaseFormView';
 import { DatabaseField } from '@/types/database';
-import { FilterRule } from './FilterModal';
+import { FilterGroup } from '@/types/filters';
 import { SortRule } from './SortingModal';
 
 interface DatabaseViewRendererProps {
@@ -17,7 +17,7 @@ interface DatabaseViewRendererProps {
   databaseId: string;
   workspaceId: string;
   fields: DatabaseField[];
-  filters: FilterRule[];
+  filterGroup: FilterGroup;
   sortRules: SortRule[];
   groupingFieldId?: string;
   collapsedGroups: string[];
@@ -29,7 +29,7 @@ export function DatabaseViewRenderer({
   databaseId,
   workspaceId,
   fields,
-  filters,
+  filterGroup,
   sortRules,
   groupingFieldId,
   collapsedGroups,
@@ -39,7 +39,7 @@ export function DatabaseViewRenderer({
     databaseId,
     workspaceId,
     fields,
-    filters,
+    filterGroup,
     sortRules,
     groupingFieldId,
     collapsedGroups,

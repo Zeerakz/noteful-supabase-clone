@@ -3,14 +3,14 @@ import React from 'react';
 import { useDatabaseTableView } from '@/hooks/useDatabaseTableView';
 import { DatabaseTableViewContent } from './table/DatabaseTableViewContent';
 import { DatabaseField } from '@/types/database';
-import { FilterRule } from '@/components/database/FilterModal';
+import { FilterGroup } from '@/types/filters';
 import { SortRule } from '@/components/database/SortingModal';
 
 interface DatabaseTableViewProps {
   databaseId: string;
   workspaceId: string;
   fields: DatabaseField[];
-  filters: FilterRule[];
+  filterGroup: FilterGroup;
   sortRules: SortRule[];
 }
 
@@ -18,7 +18,7 @@ export function DatabaseTableView({
   databaseId, 
   workspaceId, 
   fields, 
-  filters, 
+  filterGroup, 
   sortRules 
 }: DatabaseTableViewProps) {
   const {
@@ -33,7 +33,7 @@ export function DatabaseTableView({
   } = useDatabaseTableView({
     databaseId,
     workspaceId,
-    filters,
+    filterGroup,
     fields,
     sortRules
   });

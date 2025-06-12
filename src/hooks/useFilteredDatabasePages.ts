@@ -2,18 +2,18 @@
 import { useState, useEffect, useCallback } from 'react';
 import { DatabaseQueryService } from '@/services/database/databaseQueryService';
 import { DatabaseField } from '@/types/database';
-import { FilterRule } from '@/components/database/FilterModal';
+import { FilterGroup } from '@/types/filters';
 import { SortRule } from '@/components/database/SortingModal';
 import { useRetryableQuery } from './useRetryableQuery';
 
 interface UseFilteredDatabasePagesProps {
   databaseId: string;
-  filters: FilterRule[];
+  filterGroup: FilterGroup;
   fields: DatabaseField[];
   sortRules: SortRule[];
 }
 
-export function useFilteredDatabasePages({ databaseId, filters, fields, sortRules }: UseFilteredDatabasePagesProps) {
+export function useFilteredDatabasePages({ databaseId, filterGroup, fields, sortRules }: UseFilteredDatabasePagesProps) {
   const [pages, setPages] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -21,8 +21,8 @@ export function useFilteredDatabasePages({ databaseId, filters, fields, sortRule
   // Create a stable query function that doesn't change on every render
   const queryFunction = useCallback(() => {
     console.log('Query function called for database:', databaseId);
-    return DatabaseQueryService.fetchDatabasePages(databaseId, filters, fields, sortRules);
-  }, [databaseId, JSON.stringify(filters), JSON.stringify(sortRules)]);
+    return DatabaseQueryService.fetchDatabasePages(databaseId, filterGroup, fields, sortRules);
+  }, [databaseId, JSON.stringify(filterGroup), JSON.stringify(sortRules)]);
 
   const { executeWithRetry, retryCount, isRetrying } = useRetryableQuery(
     queryFunction,
@@ -41,7 +41,7 @@ export function useFilteredDatabasePages({ databaseId, filters, fields, sortRule
         setLoading(true);
         setError(null);
         
-        console.log('Fetching pages with filters:', filters.length, 'sorts:', sortRules.length);
+        console.log('Fetching pages with filter group:', filterGroup, 'sorts:', sortRules.length);
         const { data, error: fetchError } = await executeWithRetry();
 
         if (fetchError) {

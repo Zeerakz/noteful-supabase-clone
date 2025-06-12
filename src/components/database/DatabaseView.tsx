@@ -6,8 +6,9 @@ import { DatabaseViewControls } from './DatabaseViewControls';
 import { DatabaseViewRenderer } from './DatabaseViewRenderer';
 import { useDatabaseFields } from '@/hooks/useDatabaseFields';
 import { useSavedDatabaseViews } from '@/hooks/useSavedDatabaseViews';
-import { useFilters } from '@/hooks/useFilters';
+import { useComplexFilters } from '@/hooks/useComplexFilters';
 import { useSorting } from '@/hooks/useSorting';
+import { createEmptyFilterGroup } from '@/utils/filterUtils';
 
 interface DatabaseViewProps {
   databaseId: string;
@@ -35,11 +36,11 @@ export function DatabaseView({ databaseId, workspaceId }: DatabaseViewProps) {
   const [showSortModal, setShowSortModal] = useState(false);
 
   const {
-    filters,
-    setFilters,
+    filterGroup,
+    setFilterGroup,
     hasActiveFilters,
     clearFilters,
-  } = useFilters();
+  } = useComplexFilters();
 
   const {
     sortRules,
@@ -59,9 +60,18 @@ export function DatabaseView({ databaseId, workspaceId }: DatabaseViewProps) {
         const parsedFilters = typeof currentView.filters === 'string' 
           ? JSON.parse(currentView.filters) 
           : currentView.filters;
-        setFilters(parsedFilters || []);
+        // Convert old format to new format if needed
+        if (Array.isArray(parsedFilters)) {
+          const newFilterGroup = createEmptyFilterGroup();
+          // Could convert old filter rules to new format here if needed
+          setFilterGroup(newFilterGroup);
+        } else if (parsedFilters && parsedFilters.id) {
+          setFilterGroup(parsedFilters);
+        } else {
+          setFilterGroup(createEmptyFilterGroup());
+        }
       } catch {
-        setFilters([]);
+        setFilterGroup(createEmptyFilterGroup());
       }
       
       try {
@@ -73,7 +83,7 @@ export function DatabaseView({ databaseId, workspaceId }: DatabaseViewProps) {
         setSortRules([]);
       }
     }
-  }, [currentView, setFilters, setSortRules]);
+  }, [currentView, setFilterGroup, setSortRules]);
 
   const handleViewChange = (view: DatabaseViewType) => {
     setCurrentViewType(view);
@@ -121,7 +131,7 @@ export function DatabaseView({ databaseId, workspaceId }: DatabaseViewProps) {
         onDeleteView={deleteView}
         onDuplicateView={duplicateView}
         onSetDefaultView={setDefaultView}
-        currentFilters={filters}
+        currentFilters={filterGroup}
         currentSorts={sortRules}
         currentViewType={currentViewType}
         groupingFieldId={groupingFieldId}
@@ -134,8 +144,8 @@ export function DatabaseView({ databaseId, workspaceId }: DatabaseViewProps) {
         onViewChange={handleViewChange}
         groupingFieldId={groupingFieldId}
         onGroupingChange={handleGroupingChange}
-        filters={filters}
-        setFilters={setFilters}
+        filterGroup={filterGroup}
+        setFilterGroup={setFilterGroup}
         sortRules={sortRules}
         setSortRules={setSortRules}
         hasActiveFilters={hasActiveFilters}
@@ -154,7 +164,7 @@ export function DatabaseView({ databaseId, workspaceId }: DatabaseViewProps) {
         databaseId={databaseId}
         workspaceId={workspaceId}
         fields={fields}
-        filters={filters}
+        filterGroup={filterGroup}
         sortRules={sortRules}
         groupingFieldId={groupingFieldId}
         collapsedGroups={collapsedGroups}

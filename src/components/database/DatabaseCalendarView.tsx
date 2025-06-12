@@ -2,7 +2,7 @@
 import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { DatabaseField } from '@/types/database';
-import { FilterRule } from '@/components/database/FilterModal';
+import { FilterGroup } from '@/types/filters';
 import { SortRule } from '@/components/database/SortingModal';
 import { CalendarViewHeader } from './calendar/CalendarViewHeader';
 import { CalendarGrid } from './calendar/CalendarGrid';
@@ -18,7 +18,7 @@ import { useCalendarData } from './calendar/hooks/useCalendarData';
 interface DatabaseCalendarViewProps {
   databaseId: string;
   workspaceId: string;
-  filters?: FilterRule[];
+  filterGroup?: FilterGroup;
   fields?: DatabaseField[];
   sortRules?: SortRule[];
 }
@@ -26,7 +26,7 @@ interface DatabaseCalendarViewProps {
 export function DatabaseCalendarView({ 
   databaseId, 
   workspaceId, 
-  filters = [], 
+  filterGroup, 
   fields = [], 
   sortRules = [] 
 }: DatabaseCalendarViewProps) {
@@ -42,7 +42,7 @@ export function DatabaseCalendarView({
     pagesWithProperties,
     datesWithEntries,
     selectedDatePages,
-  } = useCalendarData({ databaseId, filters, fields, sortRules });
+  } = useCalendarData({ databaseId, filterGroup, fields, sortRules });
 
   if (loading) {
     return <LoadingState />;

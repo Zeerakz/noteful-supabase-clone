@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { DatabaseField } from '@/types/database';
-import { FilterRule } from '@/components/database/FilterModal';
+import { FilterGroup } from '@/types/filters';
 import { SortRule } from '@/components/database/SortingModal';
 import { TimelineViewMode } from './timeline/types';
 import { TimelineViewHeader } from './timeline/TimelineViewHeader';
@@ -13,7 +13,7 @@ interface DatabaseTimelineViewProps {
   databaseId: string;
   workspaceId: string;
   fields: DatabaseField[];
-  filters: FilterRule[];
+  filterGroup: FilterGroup;
   sortRules: SortRule[];
 }
 
@@ -21,7 +21,7 @@ export function DatabaseTimelineView({
   databaseId,
   workspaceId,
   fields,
-  filters,
+  filterGroup,
   sortRules
 }: DatabaseTimelineViewProps) {
   const dateFields = fields.filter(field => field.type === 'date');
@@ -40,7 +40,7 @@ export function DatabaseTimelineView({
   } = useTimelineData({
     databaseId,
     fields,
-    filters,
+    filterGroup,
     sortRules,
     startDateField: selectedStartField,
     endDateField: selectedEndField,
