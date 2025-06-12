@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Plus, Type, Heading1, Heading2, Heading3, List, ListOrdered, Image, Table, Minus, Quote, MessageSquare, ChevronRight, Globe, Paperclip } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -222,6 +221,14 @@ export function BlockEditor({ pageId, isEditable, workspaceId }: BlockEditorProp
     let slashPosition = 0;
     let currentElement: HTMLElement | null = null;
 
+    const getSelectionStart = (element: HTMLElement): number => {
+      if (element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement) {
+        return element.selectionStart || 0;
+      }
+      // For contentEditable elements, we'll use 0 as a fallback
+      return 0;
+    };
+
     const handleKeyDown = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement;
       
@@ -233,7 +240,7 @@ export function BlockEditor({ pageId, isEditable, workspaceId }: BlockEditorProp
       if (event.key === '/') {
         // Start tracking for slash commands
         isTrackingSlash = true;
-        slashPosition = target.selectionStart || 0;
+        slashPosition = getSelectionStart(target);
         currentElement = target;
         
         // Small delay to let the '/' character be inserted
@@ -251,7 +258,7 @@ export function BlockEditor({ pageId, isEditable, workspaceId }: BlockEditorProp
           return;
         } else if (event.key === 'Backspace') {
           // Check if we're deleting the slash
-          const currentPos = currentElement.selectionStart || 0;
+          const currentPos = getSelectionStart(currentElement);
           if (currentPos <= slashPosition) {
             isTrackingSlash = false;
             closeSlashMenu();
