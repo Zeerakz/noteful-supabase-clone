@@ -13,7 +13,8 @@ import {
   Phone, 
   ArrowRightLeft,
   Calculator,
-  TrendingUp
+  TrendingUp,
+  Tag
 } from 'lucide-react';
 
 interface FieldTypeSelectorProps {
@@ -25,7 +26,7 @@ interface FieldTypeSelectorProps {
 const fieldTypeOptions: { value: FieldType; label: string; icon: React.ReactNode; description: string }[] = [
   { value: 'text', label: 'Text', icon: <Type className="h-4 w-4" />, description: 'Single line of text' },
   { value: 'number', label: 'Number', icon: <Hash className="h-4 w-4" />, description: 'Numeric values' },
-  { value: 'select', label: 'Select', icon: <List className="h-4 w-4" />, description: 'Single option from a list' },
+  { value: 'select', label: 'Select', icon: <Tag className="h-4 w-4" />, description: 'Single option from a list' },
   { value: 'multi_select', label: 'Multi-select', icon: <List className="h-4 w-4" />, description: 'Multiple options from a list' },
   { value: 'date', label: 'Date', icon: <Calendar className="h-4 w-4" />, description: 'Date and time' },
   { value: 'checkbox', label: 'Checkbox', icon: <CheckSquare className="h-4 w-4" />, description: 'True/false values' },

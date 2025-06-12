@@ -1,9 +1,10 @@
 
 import React from 'react';
-import { FieldType, FormulaFieldSettings, RollupFieldSettings, RelationFieldSettings, DatabaseField } from '@/types/database';
+import { FieldType, FormulaFieldSettings, RollupFieldSettings, RelationFieldSettings, SelectFieldSettings, DatabaseField } from '@/types/database';
 import { FormulaFieldConfig } from './FormulaFieldConfig';
 import { RollupFieldConfig } from './RollupFieldConfig';
 import { RelationFieldConfig } from './RelationFieldConfig';
+import { SelectFieldConfig } from './SelectFieldConfig';
 
 interface FieldConfigurationPanelProps {
   fieldType: FieldType;
@@ -47,6 +48,15 @@ export function FieldConfigurationPanel({
             settings={settings as RelationFieldSettings}
             onSettingsChange={onSettingsChange}
             workspaceId={workspaceId}
+          />
+        );
+      
+      case 'select':
+      case 'multi_select':
+        return (
+          <SelectFieldConfig
+            settings={settings as SelectFieldSettings}
+            onSettingsChange={onSettingsChange}
           />
         );
       
