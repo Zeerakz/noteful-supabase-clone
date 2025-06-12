@@ -68,6 +68,7 @@ export function DatabaseTableView({
       databaseId={databaseId}
       sortRules={sortRules}
       setSortRules={setSortRules}
+      workspaceId={workspaceId}
     />
   );
 }

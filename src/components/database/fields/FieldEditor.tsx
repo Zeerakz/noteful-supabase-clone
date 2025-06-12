@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { DatabaseField } from '@/types/database';
@@ -16,6 +16,28 @@ interface FieldEditorProps {
 }
 
 export function FieldEditor({ field, value, onChange, workspaceId, pageId }: FieldEditorProps) {
+  const [localValue, setLocalValue] = useState(value || '');
+
+  useEffect(() => {
+    setLocalValue(value || '');
+  }, [value]);
+
+  const handleBlur = () => {
+    if (localValue !== (value || '')) {
+      onChange(localValue);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      onChange(localValue);
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      setLocalValue(value || '');
+    }
+  };
+
   switch (field.type) {
     case 'text':
     case 'email':
@@ -23,9 +45,13 @@ export function FieldEditor({ field, value, onChange, workspaceId, pageId }: Fie
       return (
         <Input
           type={field.type === 'email' ? 'email' : field.type === 'phone' ? 'tel' : 'text'}
-          value={value || ''}
-          onChange={(e) => onChange(e.target.value)}
+          value={localValue}
+          onChange={(e) => setLocalValue(e.target.value)}
+          onBlur={handleBlur}
+          onKeyDown={handleKeyDown}
           placeholder={`Enter ${field.name.toLowerCase()}`}
+          className="border-none bg-transparent p-1 focus-visible:ring-1"
+          autoFocus
         />
       );
 
@@ -33,9 +59,13 @@ export function FieldEditor({ field, value, onChange, workspaceId, pageId }: Fie
       return (
         <Input
           type="number"
-          value={value || ''}
-          onChange={(e) => onChange(e.target.value)}
+          value={localValue}
+          onChange={(e) => setLocalValue(e.target.value)}
+          onBlur={handleBlur}
+          onKeyDown={handleKeyDown}
           placeholder={`Enter ${field.name.toLowerCase()}`}
+          className="border-none bg-transparent p-1 focus-visible:ring-1"
+          autoFocus
         />
       );
 
@@ -43,9 +73,13 @@ export function FieldEditor({ field, value, onChange, workspaceId, pageId }: Fie
       return (
         <Input
           type="url"
-          value={value || ''}
-          onChange={(e) => onChange(e.target.value)}
+          value={localValue}
+          onChange={(e) => setLocalValue(e.target.value)}
+          onBlur={handleBlur}
+          onKeyDown={handleKeyDown}
           placeholder="https://example.com"
+          className="border-none bg-transparent p-1 focus-visible:ring-1"
+          autoFocus
         />
       );
 
@@ -108,9 +142,13 @@ export function FieldEditor({ field, value, onChange, workspaceId, pageId }: Fie
     default:
       return (
         <Input
-          value={value || ''}
-          onChange={(e) => onChange(e.target.value)}
+          value={localValue}
+          onChange={(e) => setLocalValue(e.target.value)}
+          onBlur={handleBlur}
+          onKeyDown={handleKeyDown}
           placeholder={`Enter ${field.name.toLowerCase()}`}
+          className="border-none bg-transparent p-1 focus-visible:ring-1"
+          autoFocus
         />
       );
   }

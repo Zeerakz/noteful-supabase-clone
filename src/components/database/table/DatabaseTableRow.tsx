@@ -10,7 +10,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { EditableCell } from './EditableCell';
-import { FieldDisplay } from '../fields/FieldDisplay';
+import { FieldEditor } from '../fields/FieldEditor';
 import { DatabaseField } from '@/types/database';
 
 interface PageWithProperties {
@@ -26,6 +26,7 @@ interface DatabaseTableRowProps {
   onPropertyUpdate: (pageId: string, fieldId: string, value: string) => void;
   onDeleteRow: (pageId: string) => void;
   columnWidths?: Record<string, number>;
+  workspaceId: string;
 }
 
 export function DatabaseTableRow({
@@ -34,9 +35,11 @@ export function DatabaseTableRow({
   onTitleUpdate,
   onPropertyUpdate,
   onDeleteRow,
-  columnWidths = {}
+  columnWidths = {},
+  workspaceId
 }: DatabaseTableRowProps) {
   const [isDeleting, setIsDeleting] = useState(false);
+  const [editingField, setEditingField] = useState<string | null>(null);
 
   const handleDelete = async () => {
     if (isDeleting) return;
@@ -46,6 +49,11 @@ export function DatabaseTableRow({
     } finally {
       setIsDeleting(false);
     }
+  };
+
+  const handlePropertyChange = (fieldId: string, value: string) => {
+    onPropertyUpdate(page.id, fieldId, value);
+    setEditingField(null);
   };
 
   return (
@@ -66,14 +74,31 @@ export function DatabaseTableRow({
       {fields.map((field) => (
         <TableCell 
           key={field.id} 
-          className="min-w-[150px]"
+          className="min-w-[150px] p-1"
           style={{ width: columnWidths[field.id] ? `${columnWidths[field.id]}px` : undefined }}
         >
-          <FieldDisplay
-            field={field}
-            value={page.properties[field.id] || ''}
-            onValueChange={(value) => onPropertyUpdate(page.id, field.id, value)}
-          />
+          {editingField === field.id ? (
+            <div className="w-full">
+              <FieldEditor
+                field={field}
+                value={page.properties[field.id] || ''}
+                onChange={(value) => handlePropertyChange(field.id, value)}
+                workspaceId={workspaceId}
+                pageId={page.id}
+              />
+            </div>
+          ) : (
+            <div
+              className="min-h-[32px] px-2 py-1 cursor-text hover:bg-muted/50 rounded flex items-center"
+              onClick={() => setEditingField(field.id)}
+            >
+              {page.properties[field.id] ? (
+                <span>{page.properties[field.id]}</span>
+              ) : (
+                <span className="text-muted-foreground italic">Empty</span>
+              )}
+            </div>
+          )}
         </TableCell>
       ))}
 
