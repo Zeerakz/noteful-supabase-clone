@@ -146,10 +146,14 @@ export function useDatabaseTableView({
     enabled: pageIds.length > 0 && !pagesLoading
   });
 
-  // Load properties effect - stable dependencies
+  // Load properties effect - use a ref to track if we've already triggered loading
+  const loadingTriggeredRef = useRef<string>('');
+  const currentPageIdsKey = pageIds.join(',');
+  
   useEffect(() => {
-    if (pageIds.length > 0 && !pagesLoading) {
+    if (pageIds.length > 0 && !pagesLoading && loadingTriggeredRef.current !== currentPageIdsKey) {
       console.log('useDatabaseTableView: Loading properties for pages', { count: pageIds.length });
+      loadingTriggeredRef.current = currentPageIdsKey;
       
       const loadProperties = async () => {
         startTimer('property_load');
@@ -159,7 +163,7 @@ export function useDatabaseTableView({
       
       loadProperties();
     }
-  }, [pageIds.length, pagesLoading]); // Only depend on length and loading state
+  }, [currentPageIdsKey, pagesLoading, loadPropertiesForPages, startTimer, endTimer]);
 
   // End performance tracking when pages finish loading
   useEffect(() => {

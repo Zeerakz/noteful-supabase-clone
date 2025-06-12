@@ -13,6 +13,9 @@ export function useLazyProperties({ pageIds, fields, enabled = true }: UseLazyPr
   const [loadingProperties, setLoadingProperties] = useState<Set<string>>(new Set());
   const [propertyLoadTimes, setPropertyLoadTimes] = useState<Record<string, number>>({});
 
+  // Track which pages we've already started loading to prevent duplicates
+  const loadingTracker = useRef<Set<string>>(new Set());
+  
   // Stable references to prevent infinite loops
   const enabledRef = useRef(enabled);
   const fieldsRef = useRef(fields);
@@ -31,61 +34,56 @@ export function useLazyProperties({ pageIds, fields, enabled = true }: UseLazyPr
       return;
     }
 
-    // Check current state instead of stale closure values
-    setLoadingProperties(currentLoading => {
-      setLoadedProperties(currentLoaded => {
-        if (currentLoaded[pageId] || currentLoading.has(pageId)) {
-          console.log('useLazyProperties: Skipping load - already loaded or loading');
-          return currentLoaded;
-        }
+    // Check if already loaded or currently loading
+    if (loadedProperties[pageId] || loadingTracker.current.has(pageId)) {
+      console.log('useLazyProperties: Skipping load - already loaded or loading');
+      return;
+    }
 
-        // Start loading
-        const newLoading = new Set(currentLoading);
-        newLoading.add(pageId);
-        setLoadingProperties(newLoading);
+    // Mark as loading
+    loadingTracker.current.add(pageId);
+    setLoadingProperties(prev => new Set(prev).add(pageId));
 
-        const startTime = performance.now();
-        
-        PageService.getPageProperties(pageId)
-          .then(({ data, error }) => {
-            if (!error && data) {
-              const properties: Record<string, string> = {};
-              data.forEach((prop: any) => {
-                properties[prop.field_id] = prop.value || '';
-              });
+    const startTime = performance.now();
+    
+    try {
+      const { data, error } = await PageService.getPageProperties(pageId);
+      
+      if (!error && data) {
+        const properties: Record<string, string> = {};
+        data.forEach((prop: any) => {
+          properties[prop.field_id] = prop.value || '';
+        });
 
-              console.log('useLazyProperties: Properties loaded successfully', { pageId, propertyCount: Object.keys(properties).length });
+        console.log('useLazyProperties: Properties loaded successfully', { pageId, propertyCount: Object.keys(properties).length });
 
-              setLoadedProperties(prev => ({
-                ...prev,
-                [pageId]: properties
-              }));
+        // Update loaded properties
+        setLoadedProperties(prev => ({
+          ...prev,
+          [pageId]: properties
+        }));
 
-              const loadTime = performance.now() - startTime;
-              setPropertyLoadTimes(prev => ({
-                ...prev,
-                [pageId]: loadTime
-              }));
-            } else {
-              console.error('useLazyProperties: Error loading properties', { pageId, error });
-            }
-          })
-          .catch(err => {
-            console.error('useLazyProperties: Exception loading properties', { pageId, error: err });
-          })
-          .finally(() => {
-            setLoadingProperties(prev => {
-              const newSet = new Set(prev);
-              newSet.delete(pageId);
-              return newSet;
-            });
-          });
-
-        return currentLoaded;
+        // Record load time
+        const loadTime = performance.now() - startTime;
+        setPropertyLoadTimes(prev => ({
+          ...prev,
+          [pageId]: loadTime
+        }));
+      } else {
+        console.error('useLazyProperties: Error loading properties', { pageId, error });
+      }
+    } catch (err) {
+      console.error('useLazyProperties: Exception loading properties', { pageId, error: err });
+    } finally {
+      // Clean up loading state
+      loadingTracker.current.delete(pageId);
+      setLoadingProperties(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(pageId);
+        return newSet;
       });
-      return currentLoading;
-    });
-  }, []);
+    }
+  }, [loadedProperties]);
 
   const loadPropertiesForPages = useCallback(async (pageIds: string[]) => {
     console.log('useLazyProperties: loadPropertiesForPages called', { pageCount: pageIds.length });
