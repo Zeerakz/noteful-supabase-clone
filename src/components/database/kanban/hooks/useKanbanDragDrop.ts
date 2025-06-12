@@ -2,7 +2,7 @@
 import { useCallback } from 'react';
 import { DropResult } from 'react-beautiful-dnd';
 import { useAuth } from '@/contexts/AuthContext';
-import { PagePropertyService } from '@/services/pagePropertyService';
+import { useOptimisticPropertyUpdate } from '@/hooks/useOptimisticPropertyUpdate';
 import { toast } from '@/hooks/use-toast';
 import { DatabaseField } from '@/types/database';
 import { PageWithProperties, KanbanColumn } from '../types';
@@ -12,6 +12,7 @@ interface UseKanbanDragDropProps {
   pages: PageWithProperties[];
   columns: KanbanColumn[];
   selectField: DatabaseField | null;
+  databaseId: string;
   setColumns: (columns: KanbanColumn[]) => void;
   setPages: React.Dispatch<React.SetStateAction<PageWithProperties[]>>;
 }
@@ -21,39 +22,12 @@ export function useKanbanDragDrop({
   pages,
   columns,
   selectField,
+  databaseId,
   setColumns,
   setPages
 }: UseKanbanDragDropProps) {
   const { user } = useAuth();
-
-  const updatePositionsInColumn = useCallback(async (columnPages: PageWithProperties[], columnValue: string) => {
-    if (!user || !selectField) return;
-
-    // Update positions for all pages in the column
-    const updatePromises = columnPages.map(async (page, index) => {
-      // Update position property if it exists
-      const positionField = fields.find(f => f.name.toLowerCase() === 'position' || f.name.toLowerCase() === 'pos');
-      if (positionField) {
-        await PagePropertyService.upsertPageProperty(
-          page.pageId,
-          positionField.id,
-          index.toString(),
-          user.id
-        );
-      }
-    });
-
-    try {
-      await Promise.all(updatePromises);
-    } catch (error) {
-      console.error('Failed to update positions:', error);
-      toast({
-        title: "Error",
-        description: "Failed to update card positions",
-        variant: "destructive",
-      });
-    }
-  }, [user, selectField, fields]);
+  const propertyUpdateMutation = useOptimisticPropertyUpdate(databaseId);
 
   const handleDragEnd = useCallback(async (result: DropResult) => {
     const { destination, source, draggableId } = result;
@@ -133,50 +107,46 @@ export function useKanbanDragDrop({
         : page
     ));
 
-    try {
-      // 1. First, update the group field value
-      await PagePropertyService.upsertPageProperty(
+    // Use the optimistic mutation to update the property
+    propertyUpdateMutation.mutate(
+      {
         pageId,
-        selectField.id,
-        newStatus,
-        user.id
-      );
-
-      // 2. Then reorder positions in the destination column
-      const destColumn = updatedColumns.find(col => col.id === destColumnId);
-      if (destColumn) {
-        await updatePositionsInColumn(destColumn.pages, newStatus);
-      }
-
-      // 3. Also reorder positions in the source column if it's different
-      if (sourceColumnId !== destColumnId) {
-        const sourceColumn = updatedColumns.find(col => col.id === sourceColumnId);
-        if (sourceColumn) {
-          const sourceColumnValue = sourceColumnId === 'no-status' ? '' : 
-            columns.find(col => col.id === sourceColumnId)?.title || '';
-          await updatePositionsInColumn(sourceColumn.pages, sourceColumnValue);
+        fieldId: selectField.id,
+        value: newStatus
+      },
+      {
+        onError: () => {
+          // Revert optimistic update on error
+          setColumns(columns);
+          setPages(pages);
         }
       }
+    );
 
-      toast({
-        title: "Success",
-        description: "Card moved successfully",
-      });
-
-    } catch (error) {
-      console.error('Failed to update card position:', error);
-      
-      // Revert optimistic update on error
-      setColumns(columns);
-      setPages(pages);
-      
-      toast({
-        title: "Error",
-        description: "Failed to move card. Please try again.",
-        variant: "destructive",
-      });
+    // Handle position updates for other pages in the column if needed
+    const positionField = fields.find(f => f.name.toLowerCase() === 'position' || f.name.toLowerCase() === 'pos');
+    if (positionField) {
+      const destColumn = updatedColumns.find(col => col.id === destColumnId);
+      if (destColumn) {
+        // Update positions for all pages in destination column
+        destColumn.pages.forEach((page, index) => {
+          if (page.pageId !== pageId) { // Skip the moved page as it's already handled
+            propertyUpdateMutation.mutate({
+              pageId: page.pageId,
+              fieldId: positionField.id,
+              value: index.toString()
+            });
+          }
+        });
+      }
     }
-  }, [selectField, user, columns, pages, setColumns, setPages, updatePositionsInColumn]);
+
+    toast({
+      title: "Success",
+      description: "Card moved successfully",
+    });
+
+  }, [selectField, user, columns, pages, setColumns, setPages, propertyUpdateMutation, fields, databaseId]);
 
   return { handleDragEnd };
 }

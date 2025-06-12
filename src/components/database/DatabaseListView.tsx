@@ -5,7 +5,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Plus, Edit } from 'lucide-react';
 import { useFilteredDatabasePages } from '@/hooks/useFilteredDatabasePages';
-import { PagePropertyService } from '@/services/pagePropertyService';
+import { useOptimisticPropertyUpdate } from '@/hooks/useOptimisticPropertyUpdate';
 import { DatabaseField } from '@/types/database';
 import { FilterRule } from '@/components/database/FilterModal';
 import { SortRule } from '@/components/database/SortingModal';
@@ -33,6 +33,7 @@ export function DatabaseListView({ databaseId, workspaceId, filters = [], fields
     sortRules,
   });
   const { user } = useAuth();
+  const propertyUpdateMutation = useOptimisticPropertyUpdate(databaseId);
 
   // Transform pages data to expected format
   const pagesWithProperties: PageWithProperties[] = pages.map(page => {
@@ -48,23 +49,13 @@ export function DatabaseListView({ databaseId, workspaceId, filters = [], fields
     };
   });
 
-  const handleFieldEdit = async (pageId: string, fieldId: string, value: string) => {
-    if (!user) return;
-    
-    try {
-      const { error } = await PagePropertyService.upsertPageProperty(
-        pageId,
-        fieldId,
-        value,
-        user.id
-      );
-      
-      if (error) {
-        console.error('Failed to update property:', error);
-      }
-    } catch (err) {
-      console.error('Error updating property:', err);
-    }
+  const handleFieldEdit = (pageId: string, fieldId: string, value: string) => {
+    // Use optimistic update mutation
+    propertyUpdateMutation.mutate({
+      pageId,
+      fieldId,
+      value
+    });
   };
 
   const handleTitleEdit = async (pageId: string, title: string) => {

@@ -13,10 +13,9 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Plus, Trash2 } from 'lucide-react';
 import { useDatabasePages } from '@/hooks/useDatabasePages';
-import { usePageProperties } from '@/hooks/usePageProperties';
+import { useOptimisticPropertyUpdate } from '@/hooks/useOptimisticPropertyUpdate';
 import { DatabaseService } from '@/services/databaseService';
-import { PagePropertyService } from '@/services/pagePropertyService';
-import { DatabaseField, PageProperty } from '@/types/database';
+import { DatabaseField } from '@/types/database';
 import { Page } from '@/types/page';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -45,6 +44,8 @@ export function DatabaseTableView({ databaseId, workspaceId }: DatabaseTableView
     deletePage 
   } = useDatabasePages(databaseId, workspaceId);
 
+  const propertyUpdateMutation = useOptimisticPropertyUpdate(databaseId);
+
   // Fetch database fields
   useEffect(() => {
     const fetchFields = async () => {
@@ -69,40 +70,24 @@ export function DatabaseTableView({ databaseId, workspaceId }: DatabaseTableView
     }
   }, [databaseId, toast]);
 
-  // Fetch properties for all pages
+  // Transform pages data with properties
   useEffect(() => {
-    const fetchPageProperties = async () => {
-      if (pages.length === 0) {
-        setPagesWithProperties([]);
-        return;
+    const transformedPages = pages.map(page => {
+      const properties: Record<string, string> = {};
+      
+      if (page.page_properties) {
+        page.page_properties.forEach((prop: any) => {
+          properties[prop.field_id] = prop.value || '';
+        });
       }
 
-      try {
-        const pagesWithProps = await Promise.all(
-          pages.map(async (page) => {
-            const { data: properties } = await PagePropertyService.fetchPageProperties(page.id);
-            const propertiesMap: Record<string, string> = {};
-            
-            if (properties) {
-              properties.forEach(prop => {
-                propertiesMap[prop.field_id] = prop.value || '';
-              });
-            }
+      return {
+        ...page,
+        properties,
+      };
+    });
 
-            return {
-              ...page,
-              properties: propertiesMap,
-            };
-          })
-        );
-
-        setPagesWithProperties(pagesWithProps);
-      } catch (err) {
-        console.error('Error fetching page properties:', err);
-      }
-    };
-
-    fetchPageProperties();
+    setPagesWithProperties(transformedPages);
   }, [pages]);
 
   const handleCreateRow = async () => {
@@ -174,46 +159,13 @@ export function DatabaseTableView({ databaseId, workspaceId }: DatabaseTableView
     }
   };
 
-  const handlePropertyUpdate = async (pageId: string, fieldId: string, value: string) => {
-    if (!user) return;
-
-    try {
-      const { error } = await PagePropertyService.upsertPageProperty(
-        pageId,
-        fieldId,
-        value,
-        user.id
-      );
-      
-      if (error) {
-        toast({
-          title: "Error",
-          description: error,
-          variant: "destructive",
-        });
-      } else {
-        // Update local state optimistically
-        setPagesWithProperties(prev => 
-          prev.map(page => 
-            page.id === pageId 
-              ? { 
-                  ...page, 
-                  properties: { 
-                    ...page.properties, 
-                    [fieldId]: value 
-                  } 
-                }
-              : page
-          )
-        );
-      }
-    } catch (err) {
-      toast({
-        title: "Error",
-        description: "Failed to update property",
-        variant: "destructive",
-      });
-    }
+  const handlePropertyUpdate = (pageId: string, fieldId: string, value: string) => {
+    // Use optimistic update mutation
+    propertyUpdateMutation.mutate({
+      pageId,
+      fieldId,
+      value
+    });
   };
 
   if (fieldsLoading || pagesLoading) {
