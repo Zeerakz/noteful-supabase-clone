@@ -80,6 +80,21 @@ export function EmbedBlock({ block, onUpdate, onDelete, isEditable }: EmbedBlock
         }
       }
 
+      // Figma
+      if (hostname.includes('figma.com')) {
+        // Figma URLs typically look like: https://www.figma.com/file/FILE_ID/FILE_NAME
+        // or https://www.figma.com/proto/FILE_ID/FILE_NAME
+        const pathParts = urlObj.pathname.split('/');
+        if ((pathParts[1] === 'file' || pathParts[1] === 'proto') && pathParts[2]) {
+          const fileId = pathParts[2];
+          return {
+            type: 'figma',
+            embedUrl: `https://www.figma.com/embed?embed_host=share&url=${encodeURIComponent(inputUrl)}`,
+            title: 'Figma Design'
+          };
+        }
+      }
+
       // Generic embed - just show the URL in an iframe
       return {
         type: 'generic',
@@ -148,7 +163,7 @@ export function EmbedBlock({ block, onUpdate, onDelete, isEditable }: EmbedBlock
             <Input
               value={urlInput}
               onChange={(e) => setUrlInput(e.target.value)}
-              placeholder="Paste a YouTube, Vimeo, CodePen, or any URL..."
+              placeholder="Paste a YouTube, Vimeo, CodePen, Figma, or any URL..."
               onKeyDown={handleKeyDown}
               autoFocus
               className="flex-1"
@@ -161,7 +176,7 @@ export function EmbedBlock({ block, onUpdate, onDelete, isEditable }: EmbedBlock
             </Button>
           </div>
           <p className="text-xs text-muted-foreground mt-2">
-            Supports YouTube, Vimeo, CodePen, and other embeddable URLs
+            Supports YouTube, Vimeo, CodePen, Figma, and other embeddable URLs
           </p>
         </div>
       ) : (

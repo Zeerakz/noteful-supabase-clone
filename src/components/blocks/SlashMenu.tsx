@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -37,7 +38,7 @@ const menuItems = [
   { type: 'callout', label: 'Callout', icon: MessageSquare, description: 'Make writing stand out' },
   { type: 'toggle', label: 'Toggle list', icon: ChevronRight, description: 'Toggles can hide and show content' },
   { type: 'image', label: 'Image', icon: Image, description: 'Upload or embed with a link' },
-  { type: 'embed', label: 'Embed', icon: Globe, description: 'Embed YouTube, Vimeo, CodePen, or any URL' },
+  { type: 'embed', label: 'Embed', icon: Globe, description: 'Embed YouTube, Vimeo, CodePen, Figma, or any URL' },
   { type: 'table', label: 'Table', icon: Table, description: 'Create a simple table' },
   { type: 'divider', label: 'Divider', icon: Minus, description: 'Visually divide blocks' },
   { type: 'two_column', label: 'Columns', icon: Copy, description: 'Create a two-column layout' },
