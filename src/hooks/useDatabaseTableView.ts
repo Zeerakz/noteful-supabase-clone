@@ -5,7 +5,7 @@ import { useFilteredDatabasePages } from '@/hooks/useFilteredDatabasePages';
 import { useOptimisticPropertyUpdate } from '@/hooks/useOptimisticPropertyUpdate';
 import { PageService } from '@/services/pageService';
 import { DatabaseField } from '@/types/database';
-import { FilterRule } from '@/components/database/FilterModal';
+import { FilterGroup } from '@/types/filters';
 import { SortRule } from '@/components/database/SortingModal';
 
 interface PageWithProperties {
@@ -24,7 +24,7 @@ interface PageWithProperties {
 interface UseDatabaseTableViewProps {
   databaseId: string;
   workspaceId: string;
-  filters: FilterRule[];
+  filterGroup: FilterGroup;
   fields: DatabaseField[];
   sortRules: SortRule[];
 }
@@ -32,7 +32,7 @@ interface UseDatabaseTableViewProps {
 export function useDatabaseTableView({
   databaseId,
   workspaceId,
-  filters,
+  filterGroup,
   fields,
   sortRules
 }: UseDatabaseTableViewProps) {
@@ -46,7 +46,7 @@ export function useDatabaseTableView({
     refetch: refetchPages
   } = useFilteredDatabasePages({
     databaseId,
-    filters,
+    filterGroup,
     fields,
     sortRules
   });

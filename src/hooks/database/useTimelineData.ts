@@ -1,7 +1,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { DatabaseField } from '@/types/database';
-import { FilterRule } from '@/components/database/FilterModal';
+import { FilterGroup } from '@/types/filters';
 import { SortRule } from '@/components/database/SortingModal';
 import { TimelineItem, TimelineViewMode } from '@/components/database/timeline/types';
 import { useFilteredDatabasePages } from '@/hooks/useFilteredDatabasePages';
@@ -10,7 +10,7 @@ import { addDays, subDays, startOfMonth, endOfMonth, startOfWeek, endOfWeek } fr
 interface UseTimelineDataProps {
   databaseId: string;
   fields: DatabaseField[];
-  filters: FilterRule[];
+  filterGroup: FilterGroup;
   sortRules: SortRule[];
   startDateField: DatabaseField | null;
   endDateField: DatabaseField | null;
@@ -20,7 +20,7 @@ interface UseTimelineDataProps {
 export function useTimelineData({
   databaseId,
   fields,
-  filters,
+  filterGroup,
   sortRules,
   startDateField,
   endDateField,
@@ -28,7 +28,7 @@ export function useTimelineData({
 }: UseTimelineDataProps) {
   const { pages, loading, error, refetch } = useFilteredDatabasePages({
     databaseId,
-    filters,
+    filterGroup,
     fields,
     sortRules
   });

@@ -7,7 +7,7 @@ import { Plus, Edit } from 'lucide-react';
 import { useFilteredDatabasePages } from '@/hooks/useFilteredDatabasePages';
 import { useOptimisticPropertyUpdate } from '@/hooks/useOptimisticPropertyUpdate';
 import { DatabaseField } from '@/types/database';
-import { FilterRule } from '@/components/database/FilterModal';
+import { FilterGroup } from '@/types/filters';
 import { SortRule } from '@/components/database/SortingModal';
 import { PageService } from '@/services/pageService';
 import { useAuth } from '@/contexts/AuthContext';
@@ -17,7 +17,7 @@ interface DatabaseListViewProps {
   databaseId: string;
   workspaceId: string;
   fields: DatabaseField[];
-  filters: FilterRule[];
+  filterGroup: FilterGroup;
   sortRules: SortRule[];
 }
 
@@ -31,12 +31,12 @@ export function DatabaseListView({
   databaseId, 
   workspaceId, 
   fields, 
-  filters, 
+  filterGroup, 
   sortRules 
 }: DatabaseListViewProps) {
   const { pages, loading, error, refetch } = useFilteredDatabasePages({
     databaseId,
-    filters,
+    filterGroup,
     fields,
     sortRules,
   });

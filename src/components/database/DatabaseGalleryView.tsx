@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -7,7 +6,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Plus, RefreshCw, AlertTriangle, Images, File } from 'lucide-react';
 import { useFilteredDatabasePages } from '@/hooks/useFilteredDatabasePages';
 import { DatabaseField } from '@/types/database';
-import { FilterRule } from '@/components/database/FilterModal';
+import { FilterGroup } from '@/types/filters';
 import { SortRule } from '@/components/database/SortingModal';
 import { PageService } from '@/services/pageService';
 import { useAuth } from '@/contexts/AuthContext';
@@ -18,7 +17,7 @@ interface DatabaseGalleryViewProps {
   databaseId: string;
   workspaceId: string;
   fields: DatabaseField[];
-  filters: FilterRule[];
+  filterGroup: FilterGroup;
   sortRules: SortRule[];
 }
 
@@ -35,7 +34,7 @@ export function DatabaseGalleryView({
   databaseId,
   workspaceId,
   fields,
-  filters,
+  filterGroup,
   sortRules
 }: DatabaseGalleryViewProps) {
   const { user } = useAuth();
@@ -49,7 +48,7 @@ export function DatabaseGalleryView({
     refetch: refetchPages
   } = useFilteredDatabasePages({
     databaseId,
-    filters,
+    filterGroup,
     fields,
     sortRules
   });

@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { DatabaseField } from '@/types/database';
-import { FilterRule } from '@/components/database/FilterModal';
+import { FilterGroup } from '@/types/filters';
 import { SortRule } from '@/components/database/SortingModal';
 import { useFilteredDatabasePages } from '@/hooks/useFilteredDatabasePages';
 import { format, parseISO, isValid } from 'date-fns';
@@ -15,15 +15,15 @@ interface PageWithProperties {
 
 interface UseCalendarDataProps {
   databaseId: string;
-  filters: FilterRule[];
+  filterGroup: FilterGroup;
   fields: DatabaseField[];
   sortRules: SortRule[];
 }
 
-export function useCalendarData({ databaseId, filters, fields, sortRules }: UseCalendarDataProps) {
+export function useCalendarData({ databaseId, filterGroup, fields, sortRules }: UseCalendarDataProps) {
   const { pages, loading, error } = useFilteredDatabasePages({
     databaseId,
-    filters,
+    filterGroup,
     fields,
     sortRules,
   });
