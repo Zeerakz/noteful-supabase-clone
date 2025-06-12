@@ -12,10 +12,12 @@ interface RollupFieldConfigProps {
   workspaceId: string;
 }
 
+type AggregationType = 'sum' | 'count' | 'average' | 'min' | 'max' | 'earliest' | 'latest';
+
 export function RollupFieldConfig({ settings, onSettingsChange, availableFields, workspaceId }: RollupFieldConfigProps) {
   const [relationFieldId, setRelationFieldId] = useState(settings.relation_field_id || '');
   const [rollupProperty, setRollupProperty] = useState(settings.rollup_property || '');
-  const [aggregation, setAggregation] = useState(settings.aggregation || 'count');
+  const [aggregation, setAggregation] = useState<AggregationType>(settings.aggregation || 'count');
   const [targetDatabaseId, setTargetDatabaseId] = useState(settings.target_database_id || '');
 
   const { databases } = useDatabases(workspaceId);
@@ -27,10 +29,14 @@ export function RollupFieldConfig({ settings, onSettingsChange, availableFields,
     onSettingsChange({
       relation_field_id: relationFieldId,
       rollup_property: rollupProperty,
-      aggregation: aggregation as any,
+      aggregation: aggregation,
       target_database_id: targetDatabaseId,
     });
   }, [relationFieldId, rollupProperty, aggregation, targetDatabaseId]);
+
+  const handleAggregationChange = (value: string) => {
+    setAggregation(value as AggregationType);
+  };
 
   return (
     <div className="space-y-4">
@@ -87,7 +93,7 @@ export function RollupFieldConfig({ settings, onSettingsChange, availableFields,
 
       <div className="space-y-2">
         <Label htmlFor="aggregation">Aggregation</Label>
-        <Select value={aggregation} onValueChange={setAggregation}>
+        <Select value={aggregation} onValueChange={handleAggregationChange}>
           <SelectTrigger>
             <SelectValue placeholder="Select aggregation method" />
           </SelectTrigger>
