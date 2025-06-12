@@ -1,17 +1,15 @@
+
 import React, { useState, useEffect } from 'react';
 import {
   Table,
-  TableBody,
-  TableCell,
   TableHead,
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Plus, Trash2, RefreshCw, AlertTriangle } from 'lucide-react';
+import { RefreshCw, AlertTriangle } from 'lucide-react';
 import { useFilteredDatabasePages } from '@/hooks/useFilteredDatabasePages';
 import { useOptimisticPropertyUpdate } from '@/hooks/useOptimisticPropertyUpdate';
 import { DatabaseService } from '@/services/databaseService';
@@ -20,6 +18,9 @@ import { PageService } from '@/services/pageService';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { useRetryableQuery } from '@/hooks/useRetryableQuery';
+import { DatabaseTableHeader } from './table/DatabaseTableHeader';
+import { DatabaseTableBody } from './table/DatabaseTableBody';
+import { NoFieldsEmptyState } from './table/DatabaseTableEmptyStates';
 
 interface DatabaseTableViewProps {
   databaseId: string;
@@ -236,13 +237,7 @@ export function DatabaseTableView({ databaseId, workspaceId }: DatabaseTableView
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-medium">Database Table View</h3>
-        <Button onClick={handleCreateRow} size="sm" className="gap-2">
-          <Plus className="h-4 w-4" />
-          Add Row
-        </Button>
-      </div>
+      <DatabaseTableHeader onCreateRow={handleCreateRow} />
 
       <div className="border rounded-lg overflow-hidden">
         <Table>
@@ -260,120 +255,17 @@ export function DatabaseTableView({ databaseId, workspaceId }: DatabaseTableView
               <TableHead className="w-[50px]"></TableHead>
             </TableRow>
           </TableHeader>
-          <TableBody>
-            {pagesWithProperties.length === 0 ? (
-              <TableRow>
-                <TableCell 
-                  colSpan={fields.length + 2} 
-                  className="text-center py-8 text-muted-foreground"
-                >
-                  No rows in this database yet. Click "Add Row" to create your first entry.
-                </TableCell>
-              </TableRow>
-            ) : (
-              pagesWithProperties.map((page) => (
-                <TableRow key={page.id}>
-                  <TableCell className="font-medium">
-                    <EditableCell
-                      value={page.title}
-                      onSave={(value) => handleTitleUpdate(page.id, value)}
-                      placeholder="Enter title..."
-                    />
-                  </TableCell>
-                  {fields.map((field) => (
-                    <TableCell key={field.id}>
-                      <EditableCell
-                        value={page.properties[field.id] || ''}
-                        onSave={(value) => handlePropertyUpdate(page.id, field.id, value)}
-                        fieldType={field.type}
-                        placeholder={`Enter ${field.name.toLowerCase()}...`}
-                      />
-                    </TableCell>
-                  ))}
-                  <TableCell>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleDeleteRow(page.id)}
-                      className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
+          <DatabaseTableBody
+            pages={pagesWithProperties}
+            fields={fields}
+            onTitleUpdate={handleTitleUpdate}
+            onPropertyUpdate={handlePropertyUpdate}
+            onDeleteRow={handleDeleteRow}
+          />
         </Table>
       </div>
 
-      {fields.length === 0 && (
-        <div className="text-center py-8 text-muted-foreground">
-          <p>No fields defined for this database.</p>
-          <p className="text-sm">Add fields to start organizing your data.</p>
-        </div>
-      )}
-    </div>
-  );
-}
-
-interface EditableCellProps {
-  value: string;
-  onSave: (value: string) => void;
-  fieldType?: string;
-  placeholder?: string;
-}
-
-function EditableCell({ value, onSave, fieldType, placeholder = "Enter value..." }: EditableCellProps) {
-  const [isEditing, setIsEditing] = useState(false);
-  const [editValue, setEditValue] = useState(value);
-
-  useEffect(() => {
-    setEditValue(value);
-  }, [value]);
-
-  const handleSave = () => {
-    onSave(editValue);
-    setIsEditing(false);
-  };
-
-  const handleCancel = () => {
-    setEditValue(value);
-    setIsEditing(false);
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      handleSave();
-    } else if (e.key === 'Escape') {
-      e.preventDefault();
-      handleCancel();
-    }
-  };
-
-  if (isEditing) {
-    return (
-      <Input
-        value={editValue}
-        onChange={(e) => setEditValue(e.target.value)}
-        onBlur={handleSave}
-        onKeyDown={handleKeyDown}
-        className="border-0 bg-transparent p-0 focus-visible:ring-1"
-        placeholder={placeholder}
-        autoFocus
-      />
-    );
-  }
-
-  return (
-    <div
-      className="min-h-[20px] cursor-text hover:bg-muted/50 p-1 rounded"
-      onClick={() => setIsEditing(true)}
-    >
-      {value || (
-        <span className="text-muted-foreground italic">{placeholder}</span>
-      )}
+      {fields.length === 0 && <NoFieldsEmptyState />}
     </div>
   );
 }
