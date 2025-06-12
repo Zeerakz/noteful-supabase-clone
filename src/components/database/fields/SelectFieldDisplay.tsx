@@ -31,8 +31,13 @@ export function SelectFieldDisplay({ value, settings, multiSelect = false }: Sel
         {selectedOptions.map((option) => (
           <Badge 
             key={option!.id} 
-            variant="secondary" 
-            className="text-xs bg-muted text-muted-foreground border-border"
+            variant="outline" 
+            className="text-xs font-medium border-border/50"
+            style={{ 
+              backgroundColor: option!.color ? `${option!.color}20` : undefined,
+              borderColor: option!.color || undefined,
+              color: option!.color || undefined
+            }}
           >
             {option!.name}
           </Badge>
@@ -49,8 +54,13 @@ export function SelectFieldDisplay({ value, settings, multiSelect = false }: Sel
 
   return (
     <Badge 
-      variant="secondary" 
-      className="text-xs bg-muted text-muted-foreground border-border"
+      variant="outline" 
+      className="text-xs font-medium border-border/50"
+      style={{ 
+        backgroundColor: selectedOption.color ? `${selectedOption.color}20` : undefined,
+        borderColor: selectedOption.color || undefined,
+        color: selectedOption.color || undefined
+      }}
     >
       {selectedOption.name}
     </Badge>

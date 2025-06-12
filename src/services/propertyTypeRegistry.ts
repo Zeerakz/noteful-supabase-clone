@@ -5,6 +5,7 @@ import { numberPropertyType } from '@/components/property/types/NumberPropertyTy
 
 // Import other property types as they are created
 // import { selectPropertyType } from '@/components/property/types/SelectPropertyType';
+// import { statusPropertyType } from '@/components/property/types/StatusPropertyType';
 // ... etc
 
 export function initializePropertyRegistry() {
@@ -14,6 +15,7 @@ export function initializePropertyRegistry() {
   
   // TODO: Register other property types
   // propertyRegistry.register(selectPropertyType);
+  // propertyRegistry.register(statusPropertyType);
   // propertyRegistry.register(datePropertyType);
   // propertyRegistry.register(checkboxPropertyType);
   // propertyRegistry.register(urlPropertyType);
@@ -24,7 +26,6 @@ export function initializePropertyRegistry() {
   // propertyRegistry.register(rollupPropertyType);
   // propertyRegistry.register(fileAttachmentPropertyType);
   // propertyRegistry.register(richTextPropertyType);
-  // propertyRegistry.register(statusPropertyType);
   // propertyRegistry.register(peoplePropertyType);
   // propertyRegistry.register(ratingPropertyType);
   // propertyRegistry.register(progressPropertyType);
