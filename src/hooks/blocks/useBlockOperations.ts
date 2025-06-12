@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Block, BlockCreateParams, BlockUpdateParams, BlockOperationResult } from './types';
+import { blockCreationService } from './useBlockCreation';
 
 export function useBlockOperations(pageId?: string) {
   const [blocks, setBlocks] = useState<Block[]>([]);
@@ -49,24 +50,18 @@ export function useBlockOperations(pageId?: string) {
     const optimisticId = `temp-${Date.now()}`;
     
     try {
-      const { data: existingBlocks } = await supabase
-        .from('blocks')
-        .select('pos')
-        .eq('page_id', pageId)
-        .eq('parent_block_id', parentBlockId || null)
-        .order('pos', { ascending: false })
-        .limit(1);
-
-      const nextPos = existingBlocks && existingBlocks.length > 0 
-        ? existingBlocks[0].pos + 1 
-        : 0;
+      // Get the position for the new block
+      const nextPos = blockCreationService.getDefaultPosition(blocks, parentBlockId);
+      
+      // Get the initial content for the block type
+      const initialContent = blockCreationService.getInitialContent(type, content);
 
       const newBlock: Block = {
         id: optimisticId,
         page_id: pageId,
         parent_block_id: parentBlockId || null,
         type,
-        content,
+        content: initialContent,
         pos: nextPos,
         created_by: user.id,
         created_at: new Date().toISOString(),
@@ -82,7 +77,7 @@ export function useBlockOperations(pageId?: string) {
             page_id: pageId,
             parent_block_id: parentBlockId || null,
             type,
-            content,
+            content: initialContent,
             pos: nextPos,
             created_by: user.id,
           },
