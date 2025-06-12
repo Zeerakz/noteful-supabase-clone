@@ -18,65 +18,12 @@ export function useFilteredDatabasePages({ databaseId, filterGroup, fields, sort
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Use refs to store the actual objects and their serialized versions
-  const prevFilterGroupRef = useRef<FilterGroup>();
-  const prevFilterGroupStrRef = useRef<string>('');
-  const prevFieldsRef = useRef<DatabaseField[]>();
-  const prevFieldsStrRef = useRef<string>('');
-  const prevSortRulesRef = useRef<SortRule[]>();
-  const prevSortRulesStrRef = useRef<string>('');
-  
-  const currentFilterGroupStr = JSON.stringify(filterGroup);
-  const currentFieldsStr = JSON.stringify(fields);
-  const currentSortRulesStr = JSON.stringify(sortRules);
-  
-  // Only update when the serialized values actually change, but return the original objects
-  const stableFilterGroup = useMemo(() => {
-    console.log('useFilteredDatabasePages: Checking filterGroup stability', { 
-      currentStr: currentFilterGroupStr, 
-      prevStr: prevFilterGroupStrRef.current,
-      changed: prevFilterGroupStrRef.current !== currentFilterGroupStr 
-    });
-    
-    if (prevFilterGroupStrRef.current !== currentFilterGroupStr) {
-      prevFilterGroupStrRef.current = currentFilterGroupStr;
-      prevFilterGroupRef.current = filterGroup;
-      return filterGroup;
-    }
-    return prevFilterGroupRef.current || filterGroup;
-  }, [currentFilterGroupStr, filterGroup]);
-  
-  const stableFields = useMemo(() => {
-    console.log('useFilteredDatabasePages: Checking fields stability', { 
-      currentStr: currentFieldsStr, 
-      prevStr: prevFieldsStrRef.current,
-      changed: prevFieldsStrRef.current !== currentFieldsStr 
-    });
-    
-    if (prevFieldsStrRef.current !== currentFieldsStr) {
-      prevFieldsStrRef.current = currentFieldsStr;
-      prevFieldsRef.current = fields;
-      return fields;
-    }
-    return prevFieldsRef.current || fields;
-  }, [currentFieldsStr, fields]);
-  
-  const stableSortRules = useMemo(() => {
-    console.log('useFilteredDatabasePages: Checking sortRules stability', { 
-      currentStr: currentSortRulesStr, 
-      prevStr: prevSortRulesStrRef.current,
-      changed: prevSortRulesStrRef.current !== currentSortRulesStr 
-    });
-    
-    if (prevSortRulesStrRef.current !== currentSortRulesStr) {
-      prevSortRulesStrRef.current = currentSortRulesStr;
-      prevSortRulesRef.current = sortRules;
-      return sortRules;
-    }
-    return prevSortRulesRef.current || sortRules;
-  }, [currentSortRulesStr, sortRules]);
+  // Create stable references using JSON comparison
+  const stableFilterGroup = useMemo(() => filterGroup, [JSON.stringify(filterGroup)]);
+  const stableFields = useMemo(() => fields, [JSON.stringify(fields)]);
+  const stableSortRules = useMemo(() => sortRules, [JSON.stringify(sortRules)]);
 
-  // Create a stable query function that doesn't change on every render
+  // Create a stable query function
   const queryFunction = useCallback(() => {
     console.log('useFilteredDatabasePages: Query function called', { 
       databaseId,
@@ -92,7 +39,7 @@ export function useFilteredDatabasePages({ databaseId, filterGroup, fields, sort
     { maxRetries: 3, baseDelay: 1000 }
   );
 
-  // Memoize the fetch function to prevent unnecessary re-executions
+  // Fetch function with stable dependencies
   const fetchPages = useCallback(async () => {
     console.log('useFilteredDatabasePages: fetchPages called', { databaseId });
     
@@ -130,7 +77,7 @@ export function useFilteredDatabasePages({ databaseId, filterGroup, fields, sort
     }
   }, [databaseId, executeWithRetry, stableFilterGroup, stableSortRules]);
 
-  // Use effect with stable dependencies
+  // Effect with stable dependencies
   useEffect(() => {
     console.log('useFilteredDatabasePages: Effect triggered, calling fetchPages');
     fetchPages();

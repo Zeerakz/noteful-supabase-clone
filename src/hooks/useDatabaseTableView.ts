@@ -61,44 +61,31 @@ export function useDatabaseTableView({
     enableVirtualScrolling
   });
 
-  // Stabilize fields with a single ref approach
-  const fieldsRef = useRef<DatabaseField[]>(fields);
-  const fieldsStrRef = useRef<string>(JSON.stringify(fields));
+  // Stable fields reference
+  const stableFields = useMemo(() => fields, [JSON.stringify(fields)]);
   
-  // Only update when fields actually change
-  const currentFieldsStr = JSON.stringify(fields);
-  if (fieldsStrRef.current !== currentFieldsStr) {
-    console.log('useDatabaseTableView: Fields changed, updating refs');
-    fieldsRef.current = fields;
-    fieldsStrRef.current = currentFieldsStr;
-  }
-  
-  const stableFields = fieldsRef.current;
-  
-  // Stabilize cache configuration - create once and reuse
+  // Stable cache configuration
   const cache = useViewCache(useMemo(() => ({
     cacheKey: `table-${databaseId}`,
-    ttl: 5 * 60 * 1000 // 5 minutes
+    ttl: 5 * 60 * 1000
   }), [databaseId]));
 
-  // Track performance with stable metadata
+  // Performance tracking - only start once
   const performanceStartedRef = useRef(false);
-  const performanceMetadata = useRef({
-    databaseId, 
-    enablePagination, 
-    enableVirtualScrolling,
-    filterCount: filterGroup.rules.length,
-    sortCount: sortRules.length
-  });
-
-  // Only start performance timer once
+  
   useEffect(() => {
     if (!performanceStartedRef.current) {
       console.log('useDatabaseTableView: Starting performance timer');
-      startTimer('page_load', performanceMetadata.current);
+      startTimer('page_load', {
+        databaseId, 
+        enablePagination, 
+        enableVirtualScrolling,
+        filterCount: filterGroup.rules.length,
+        sortCount: sortRules.length
+      });
       performanceStartedRef.current = true;
     }
-  }, [startTimer]); // Only depend on startTimer
+  }, [databaseId, startTimer]); // Only depend on stable values
   
   const { 
     pages, 
@@ -129,7 +116,7 @@ export function useDatabaseTableView({
 
   const pagination = usePagination(paginationConfig);
 
-  // Get current page items - stable calculation
+  // Get current page items
   const currentPageItems = useMemo(() => {
     const items = !enablePagination ? pages : pages.slice(pagination.startIndex, pagination.endIndex);
     console.log('useDatabaseTableView: Current page items calculated', { 
@@ -142,7 +129,7 @@ export function useDatabaseTableView({
     return items;
   }, [pages, enablePagination, pagination.startIndex, pagination.endIndex]);
 
-  // Extract page IDs once and memoize
+  // Extract page IDs - stable reference
   const pageIds = useMemo(() => {
     const ids = currentPageItems.map(page => page.id);
     console.log('useDatabaseTableView: Page IDs extracted', { count: ids.length });
@@ -156,10 +143,10 @@ export function useDatabaseTableView({
   } = useLazyProperties({
     pageIds,
     fields: stableFields,
-    enabled: currentPageItems.length > 0
+    enabled: pageIds.length > 0 && !pagesLoading
   });
 
-  // Load properties effect - break the dependency chain
+  // Load properties effect - stable dependencies
   useEffect(() => {
     if (pageIds.length > 0 && !pagesLoading) {
       console.log('useDatabaseTableView: Loading properties for pages', { count: pageIds.length });
@@ -172,7 +159,7 @@ export function useDatabaseTableView({
       
       loadProperties();
     }
-  }, [pageIds.length, pagesLoading, loadPropertiesForPages, startTimer, endTimer]); // Depend on length, not the array
+  }, [pageIds.length, pagesLoading]); // Only depend on length and loading state
 
   // End performance tracking when pages finish loading
   useEffect(() => {
@@ -183,7 +170,7 @@ export function useDatabaseTableView({
     }
   }, [pagesLoading, pages.length, endTimer]);
 
-  // Transform pages data with properties - optimize caching
+  // Transform pages data with properties
   const pagesWithProperties: PageWithProperties[] = useMemo(() => {
     console.log('useDatabaseTableView: Computing pages with properties', { pageCount: currentPageItems.length });
     
@@ -217,7 +204,7 @@ export function useDatabaseTableView({
     });
   }, [currentPageItems, cache, getPropertiesForPage]);
 
-  // Stabilize action handlers
+  // Stable action handlers
   const handleCreateRow = useCallback(async () => {
     if (!user) return;
 

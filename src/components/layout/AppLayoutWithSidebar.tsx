@@ -34,7 +34,7 @@ export function AppLayoutWithSidebar({ children, breadcrumbs }: AppLayoutWithSid
               <Breadcrumb>
                 <BreadcrumbList>
                   {breadcrumbs.map((breadcrumb, index) => (
-                    <React.Fragment key={`breadcrumb-${index}`}>
+                    <React.Fragment key={index}>
                       <BreadcrumbItem className="hidden md:block">
                         {breadcrumb.href ? (
                           <BreadcrumbLink href={breadcrumb.href}>
