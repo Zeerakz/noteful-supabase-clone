@@ -123,12 +123,11 @@ export function CalloutBlock({ block, onUpdate, onDelete, isEditable }: CalloutB
         </div>
 
         {/* Content editor */}
-        <div className="flex-1">
+        <div className={`flex-1 ${currentType.textColor}`}>
           <RichTextEditor
             initialContent={block.content?.text || ''}
             onBlur={handleContentChange}
             placeholder="Enter your callout message..."
-            className={currentType.textColor}
           />
         </div>
       </div>
