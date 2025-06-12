@@ -44,12 +44,17 @@ export function DatabaseListView({
   const { toast } = useToast();
   const propertyUpdateMutation = useOptimisticPropertyUpdate(databaseId);
 
-  // Transform pages data to expected format
+  // Transform pages data to expected format - simplified
   const pagesWithProperties: PageWithProperties[] = pages.map(page => {
     const properties: Record<string, string> = {};
-    (page.page_properties || []).forEach((prop: any) => {
-      properties[prop.field_id] = prop.value || '';
-    });
+    
+    if (page.page_properties && Array.isArray(page.page_properties)) {
+      page.page_properties.forEach((prop: any) => {
+        if (prop.field_id && prop.value !== undefined) {
+          properties[prop.field_id] = prop.value || '';
+        }
+      });
+    }
     
     return {
       pageId: page.id,
@@ -59,6 +64,7 @@ export function DatabaseListView({
   });
 
   const handleFieldEdit = (pageId: string, fieldId: string, value: string) => {
+    console.log('DatabaseListView: Field edit triggered', { pageId, fieldId, value });
     propertyUpdateMutation.mutate({
       pageId,
       fieldId,

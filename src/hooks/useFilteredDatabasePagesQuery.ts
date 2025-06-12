@@ -23,30 +23,42 @@ export function useFilteredDatabasePagesQuery({
 }: UseFilteredDatabasePagesQueryProps) {
   const queryClient = useQueryClient();
 
-  // Create stable query key
+  // Simplify query key - only include essential data for caching
   const queryKey = useMemo(() => [
     'database-pages',
     databaseId,
-    JSON.stringify(filterGroup),
-    JSON.stringify(fields.map(f => ({ id: f.id, type: f.type }))),
-    JSON.stringify(sortRules)
-  ], [databaseId, filterGroup, fields, sortRules]);
+    // Only include filter/sort data if they exist
+    filterGroup.rules.length > 0 ? JSON.stringify(filterGroup) : 'no-filters',
+    sortRules.length > 0 ? JSON.stringify(sortRules) : 'no-sort'
+  ], [databaseId, filterGroup, sortRules]);
+
+  console.log('useFilteredDatabasePagesQuery: Using query key', queryKey);
 
   const query = useQuery({
     queryKey,
-    queryFn: () => DatabaseQueryService.fetchDatabasePages(
-      databaseId,
-      filterGroup,
-      fields,
-      sortRules
-    ),
+    queryFn: async () => {
+      console.log('useFilteredDatabasePagesQuery: Executing query function');
+      const result = await DatabaseQueryService.fetchDatabasePages(
+        databaseId,
+        filterGroup,
+        fields,
+        sortRules
+      );
+      console.log('useFilteredDatabasePagesQuery: Query result', { 
+        dataLength: result.data?.length || 0, 
+        error: result.error 
+      });
+      return result;
+    },
     enabled: enabled && !!databaseId,
-    staleTime: 30 * 1000, // 30 seconds
+    staleTime: 0, // Always consider data stale to allow for real-time updates
     gcTime: 5 * 60 * 1000, // 5 minutes
+    refetchOnWindowFocus: false, // Don't refetch on window focus
   });
 
   const refetch = useCallback(async () => {
     console.log('useFilteredDatabasePagesQuery: Manual refetch requested');
+    // Invalidate and refetch this specific query
     await queryClient.invalidateQueries({ 
       queryKey: ['database-pages', databaseId] 
     });

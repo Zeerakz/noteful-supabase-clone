@@ -1,16 +1,13 @@
 
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { useFilteredDatabasePagesQuery } from '@/hooks/useFilteredDatabasePagesQuery';
+import { useFilteredDatabasePages } from '@/hooks/useFilteredDatabasePages';
 import { useOptimisticPropertyUpdate } from '@/hooks/useOptimisticPropertyUpdate';
-import { useLazyProperties } from '@/hooks/useLazyProperties';
-import { useViewCache } from '@/hooks/useViewCache';
-import { usePagination } from '@/hooks/usePagination';
 import { PageService } from '@/services/pageService';
 import { DatabaseField } from '@/types/database';
 import { FilterGroup } from '@/types/filters';
 import { SortRule } from '@/components/database/SortingModal';
-import { useEffect, useMemo, useCallback, useRef } from 'react';
+import { useMemo, useCallback } from 'react';
 
 interface PageWithProperties {
   id: string;
@@ -59,26 +56,17 @@ export function useDatabaseTableView({
     enableVirtualScrolling
   });
 
-  // Stable cache configuration
-  const cacheConfig = useMemo(() => ({
-    cacheKey: `table-${databaseId}`,
-    ttl: 5 * 60 * 1000
-  }), [databaseId]);
-
-  const cache = useViewCache(cacheConfig);
-  
-  // Use React Query for data fetching
+  // Direct data fetching with React Query
   const { 
     pages, 
     loading: pagesLoading, 
     error: pagesError,
     refetch: refetchPages
-  } = useFilteredDatabasePagesQuery({
+  } = useFilteredDatabasePages({
     databaseId,
     filterGroup,
     fields,
     sortRules,
-    enabled: !!databaseId
   });
 
   console.log('useDatabaseTableView: Pages data', { 
@@ -89,81 +77,20 @@ export function useDatabaseTableView({
 
   const propertyUpdateMutation = useOptimisticPropertyUpdate(databaseId);
 
-  // Pagination with stable configuration
-  const paginationConfig = useMemo(() => ({
-    totalItems: pages.length,
-    itemsPerPage,
-    initialPage: 1
-  }), [pages.length, itemsPerPage]);
-
-  const pagination = usePagination(paginationConfig);
-
-  // Get current page items - stable reference
-  const currentPageItems = useMemo(() => {
-    const items = !enablePagination ? pages : pages.slice(pagination.startIndex, pagination.endIndex);
-    console.log('useDatabaseTableView: Current page items calculated', { 
-      totalPages: pages.length, 
-      currentItems: items.length,
-      enablePagination,
-      startIndex: pagination.startIndex,
-      endIndex: pagination.endIndex
-    });
-    return items;
-  }, [pages, enablePagination, pagination.startIndex, pagination.endIndex]);
-
-  // Extract page IDs - stable reference
-  const pageIds = useMemo(() => {
-    const ids = currentPageItems.map(page => page.id);
-    console.log('useDatabaseTableView: Page IDs extracted', { count: ids.length });
-    return ids;
-  }, [currentPageItems]);
-  
-  const {
-    loadedProperties,
-    getPropertiesForPage,
-    isPageLoading
-  } = useLazyProperties({
-    pageIds,
-    fields,
-    enabled: pageIds.length > 0 && !pagesLoading
-  });
-
-  // Use ref to track last computed value and prevent unnecessary recalculations
-  const lastComputedPagesRef = useRef<PageWithProperties[]>([]);
-  const lastPageIdsKeyRef = useRef<string>('');
-  const lastLoadedPropertiesKeyRef = useRef<string>('');
-
-  // Transform pages data with properties - minimize recalculation triggers
+  // Transform pages data - simplified and memoized properly
   const pagesWithProperties: PageWithProperties[] = useMemo(() => {
-    const pageIdsKey = pageIds.join(',');
-    const loadedPropertiesKey = JSON.stringify(loadedProperties);
+    console.log('useDatabaseTableView: Computing pages with properties', { pageCount: pages.length });
     
-    // Only recalculate if inputs actually changed
-    if (
-      lastPageIdsKeyRef.current === pageIdsKey && 
-      lastLoadedPropertiesKeyRef.current === loadedPropertiesKey &&
-      lastComputedPagesRef.current.length === currentPageItems.length
-    ) {
-      console.log('useDatabaseTableView: Using cached pages with properties');
-      return lastComputedPagesRef.current;
-    }
-
-    console.log('useDatabaseTableView: Computing pages with properties', { pageCount: currentPageItems.length });
-    
-    const result = currentPageItems.map(page => {
-      const cacheKey = `page-${page.id}`;
-      let properties = cache.get(cacheKey);
+    return pages.map(page => {
+      const properties: Record<string, string> = {};
       
-      if (!properties) {
-        // Access properties directly from loadedProperties
-        const pageProperties = loadedProperties[page.id] || {};
-        properties = pageProperties && typeof pageProperties === 'object' 
-          ? pageProperties as Record<string, string>
-          : {};
-        
-        if (Object.keys(properties).length > 0) {
-          cache.set(cacheKey, properties);
-        }
+      // Transform page_properties array to properties object
+      if (page.page_properties && Array.isArray(page.page_properties)) {
+        page.page_properties.forEach((prop: any) => {
+          if (prop.field_id && prop.value !== undefined) {
+            properties[prop.field_id] = prop.value || '';
+          }
+        });
       }
 
       return {
@@ -176,19 +103,22 @@ export function useDatabaseTableView({
         updated_at: page.updated_at,
         parent_page_id: page.parent_page_id,
         order_index: page.order_index,
-        properties: properties as Record<string, string>,
+        properties,
       };
     });
+  }, [pages]);
 
-    // Cache the result and keys
-    lastComputedPagesRef.current = result;
-    lastPageIdsKeyRef.current = pageIdsKey;
-    lastLoadedPropertiesKeyRef.current = loadedPropertiesKey;
+  // Pagination logic
+  const paginatedPages = useMemo(() => {
+    if (!enablePagination) return pagesWithProperties;
+    
+    const startIndex = 0; // For simplicity, start with first page
+    const endIndex = Math.min(startIndex + itemsPerPage, pagesWithProperties.length);
+    
+    return pagesWithProperties.slice(startIndex, endIndex);
+  }, [pagesWithProperties, enablePagination, itemsPerPage]);
 
-    return result;
-  }, [currentPageItems, loadedProperties, cache]);
-
-  // Stable action handlers
+  // Action handlers
   const handleCreateRow = useCallback(async () => {
     if (!user) return;
 
@@ -211,7 +141,6 @@ export function useDatabaseTableView({
           title: "Success",
           description: "New row created",
         });
-        cache.invalidate();
         refetchPages();
       }
     } catch (err) {
@@ -221,7 +150,7 @@ export function useDatabaseTableView({
         variant: "destructive",
       });
     }
-  }, [user, workspaceId, databaseId, toast, cache, refetchPages]);
+  }, [user, workspaceId, databaseId, toast, refetchPages]);
 
   const handleDeleteRow = useCallback(async (pageId: string) => {
     try {
@@ -238,7 +167,6 @@ export function useDatabaseTableView({
           title: "Success",
           description: "Row deleted",
         });
-        cache.invalidate(`page-${pageId}`);
         refetchPages();
       }
     } catch (err) {
@@ -248,7 +176,7 @@ export function useDatabaseTableView({
         variant: "destructive",
       });
     }
-  }, [toast, cache, refetchPages]);
+  }, [toast, refetchPages]);
 
   const handleTitleUpdate = useCallback(async (pageId: string, newTitle: string) => {
     if (!newTitle.trim()) return;
@@ -263,7 +191,6 @@ export function useDatabaseTableView({
           variant: "destructive",
         });
       } else {
-        cache.invalidate(`page-${pageId}`);
         refetchPages();
       }
     } catch (err) {
@@ -273,31 +200,29 @@ export function useDatabaseTableView({
         variant: "destructive",
       });
     }
-  }, [toast, cache, refetchPages]);
+  }, [toast, refetchPages]);
 
   const handlePropertyUpdate = useCallback((pageId: string, fieldId: string, value: string) => {
     console.log('useDatabaseTableView: Updating property', { pageId, fieldId, value });
     
-    // Clear cache to ensure fresh data
-    cache.invalidate(`page-${pageId}`);
-    
-    // Trigger optimistic update
+    // Trigger optimistic update - this should update the UI immediately
     propertyUpdateMutation.mutate({
       pageId,
       fieldId,
       value
     });
-  }, [cache, propertyUpdateMutation]);
+  }, [propertyUpdateMutation]);
 
   console.log('useDatabaseTableView: Returning data', { 
     pagesWithPropertiesCount: pagesWithProperties.length,
+    paginatedPagesCount: paginatedPages.length,
     pagesLoading,
     pagesError,
     totalPages: pages.length
   });
 
   return {
-    pagesWithProperties,
+    pagesWithProperties: paginatedPages,
     pagesLoading,
     pagesError,
     refetchPages,
@@ -305,9 +230,9 @@ export function useDatabaseTableView({
     handleDeleteRow,
     handleTitleUpdate,
     handlePropertyUpdate,
-    pagination: enablePagination ? pagination : null,
+    pagination: null, // Simplified for now
     totalPages: pages.length,
-    isPageLoading,
-    cache
+    isPageLoading: () => false, // Simplified
+    cache: null // Removed cache dependency
   };
 }

@@ -18,6 +18,8 @@ export function useOptimisticPropertyUpdate(databaseId: string) {
     mutationFn: async ({ pageId, fieldId, value }: PropertyUpdateData) => {
       if (!user) throw new Error('User not authenticated');
       
+      console.log('useOptimisticPropertyUpdate: Starting mutation', { pageId, fieldId, value });
+      
       const { data, error } = await PagePropertyService.upsertPageProperty(
         pageId,
         fieldId,
@@ -26,38 +28,45 @@ export function useOptimisticPropertyUpdate(databaseId: string) {
       );
       
       if (error) throw new Error(error);
+      console.log('useOptimisticPropertyUpdate: Mutation successful', data);
       return data;
     },
     onMutate: async ({ pageId, fieldId, value }) => {
       console.log('useOptimisticPropertyUpdate: Starting optimistic update', { pageId, fieldId, value });
       
-      // Cancel any outgoing refetches for this database
+      // Cancel outgoing refetches
       await queryClient.cancelQueries({ 
         queryKey: ['database-pages', databaseId] 
       });
 
-      // Get all queries that match this database
-      const queryKeys = queryClient.getQueryCache()
-        .findAll({ queryKey: ['database-pages', databaseId] })
-        .map(query => query.queryKey);
+      // Get all matching queries
+      const allQueries = queryClient.getQueryCache().getAll();
+      const databaseQueries = allQueries.filter(query => 
+        Array.isArray(query.queryKey) && 
+        query.queryKey[0] === 'database-pages' && 
+        query.queryKey[1] === databaseId
+      );
 
-      const previousData: Record<string, any> = {};
+      console.log('useOptimisticPropertyUpdate: Found queries to update', databaseQueries.length);
 
-      // Update all matching queries
-      queryKeys.forEach(queryKey => {
+      const previousData: Map<string, any> = new Map();
+
+      // Update each matching query
+      databaseQueries.forEach(queryCache => {
+        const queryKey = queryCache.queryKey;
         const oldData = queryClient.getQueryData(queryKey);
-        previousData[JSON.stringify(queryKey)] = oldData;
-
-        queryClient.setQueryData(queryKey, (old: any) => {
-          if (!old?.data) return old;
+        
+        if (oldData) {
+          previousData.set(JSON.stringify(queryKey), oldData);
           
-          return {
-            ...old,
-            data: old.data.map((page: any) => {
+          queryClient.setQueryData(queryKey, (old: any) => {
+            if (!old?.data) return old;
+            
+            const updatedData = old.data.map((page: any) => {
               if (page.id === pageId) {
-                const updatedProperties = page.page_properties ? [...page.page_properties] : [];
+                console.log('useOptimisticPropertyUpdate: Updating page', page.id);
                 
-                // Find existing property or create new one
+                const updatedProperties = page.page_properties ? [...page.page_properties] : [];
                 const existingIndex = updatedProperties.findIndex(
                   (prop: any) => prop.field_id === fieldId
                 );
@@ -85,23 +94,28 @@ export function useOptimisticPropertyUpdate(databaseId: string) {
                 };
               }
               return page;
-            })
-          };
-        });
+            });
+
+            return {
+              ...old,
+              data: updatedData
+            };
+          });
+        }
       });
 
-      // Return context with previous data for rollback
-      return { previousData, queryKeys };
+      return { previousData, queryKeys: databaseQueries.map(q => q.queryKey) };
     },
     onError: (err, variables, context) => {
       console.error('useOptimisticPropertyUpdate: Error occurred', err);
       
-      // Rollback all affected queries
+      // Rollback optimistic updates
       if (context?.previousData && context?.queryKeys) {
         context.queryKeys.forEach(queryKey => {
           const keyString = JSON.stringify(queryKey);
-          if (context.previousData[keyString]) {
-            queryClient.setQueryData(queryKey, context.previousData[keyString]);
+          const previousValue = context.previousData.get(keyString);
+          if (previousValue) {
+            queryClient.setQueryData(queryKey, previousValue);
           }
         });
       }
@@ -113,53 +127,16 @@ export function useOptimisticPropertyUpdate(databaseId: string) {
       });
     },
     onSuccess: (data, variables, context) => {
-      console.log('useOptimisticPropertyUpdate: Update successful', { data, variables });
+      console.log('useOptimisticPropertyUpdate: Update successful', { data });
       
-      // Update all affected queries with the actual server response
-      if (context?.queryKeys) {
-        context.queryKeys.forEach(queryKey => {
-          queryClient.setQueryData(queryKey, (old: any) => {
-            if (!old?.data) return old;
-            
-            return {
-              ...old,
-              data: old.data.map((page: any) => {
-                if (page.id === variables.pageId) {
-                  const updatedProperties = page.page_properties ? [...page.page_properties] : [];
-                  
-                  // Find and update the property with server data
-                  const existingIndex = updatedProperties.findIndex(
-                    (prop: any) => prop.field_id === variables.fieldId
-                  );
-                  
-                  if (existingIndex >= 0) {
-                    updatedProperties[existingIndex] = data;
-                  } else {
-                    updatedProperties.push(data);
-                  }
-                  
-                  return {
-                    ...page,
-                    page_properties: updatedProperties,
-                    updated_at: new Date().toISOString(),
-                  };
-                }
-                return page;
-              })
-            };
-          });
-        });
-      }
+      // Invalidate all database queries to ensure fresh data
+      queryClient.invalidateQueries({ 
+        queryKey: ['database-pages', databaseId] 
+      });
 
       toast({
         title: "Success", 
         description: "Property updated successfully",
-      });
-    },
-    onSettled: () => {
-      // Force refetch to ensure consistency
-      queryClient.invalidateQueries({ 
-        queryKey: ['database-pages', databaseId] 
       });
     },
   });

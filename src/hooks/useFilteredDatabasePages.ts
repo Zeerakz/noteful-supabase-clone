@@ -24,24 +24,12 @@ export function useFilteredDatabasePages({
     sortRulesCount: sortRules.length
   });
 
-  const { pages, loading, error, refetch } = useFilteredDatabasePagesQuery({
+  // Direct passthrough to the query hook - no intermediate state
+  return useFilteredDatabasePagesQuery({
     databaseId,
     filterGroup,
     fields,
     sortRules,
     enabled: !!databaseId
   });
-
-  console.log('useFilteredDatabasePages: Query result', { 
-    pagesCount: pages.length, 
-    loading, 
-    error 
-  });
-
-  return {
-    pages,
-    loading,
-    error,
-    refetch
-  };
 }

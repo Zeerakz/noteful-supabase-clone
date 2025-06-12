@@ -18,22 +18,33 @@ interface FieldEditorProps {
 export function FieldEditor({ field, value, onChange, workspaceId, pageId }: FieldEditorProps) {
   const [localValue, setLocalValue] = useState(value || '');
   const [isUpdating, setIsUpdating] = useState(false);
+  const [lastSavedValue, setLastSavedValue] = useState(value || '');
 
   useEffect(() => {
     setLocalValue(value || '');
+    setLastSavedValue(value || '');
   }, [value]);
 
   const handleSave = async (newValue: string) => {
-    if (newValue !== (value || '')) {
+    if (newValue !== lastSavedValue) {
       console.log('FieldEditor: Saving value', { fieldId: field.id, value: newValue });
       setIsUpdating(true);
+      
       try {
+        // Update the last saved value immediately for optimistic UI
+        setLastSavedValue(newValue);
+        
+        // Trigger the actual update
         onChange(newValue);
-        // Give a brief feedback that the update is happening
-        setTimeout(() => setIsUpdating(false), 500);
+        
+        // Show updating state briefly
+        setTimeout(() => setIsUpdating(false), 300);
       } catch (error) {
-        setIsUpdating(false);
         console.error('FieldEditor: Error saving value', error);
+        // Revert on error
+        setLastSavedValue(value || '');
+        setLocalValue(value || '');
+        setIsUpdating(false);
       }
     }
   };
@@ -48,7 +59,7 @@ export function FieldEditor({ field, value, onChange, workspaceId, pageId }: Fie
       handleSave(localValue);
     } else if (e.key === 'Escape') {
       e.preventDefault();
-      setLocalValue(value || '');
+      setLocalValue(lastSavedValue);
     }
   };
 
@@ -73,7 +84,7 @@ export function FieldEditor({ field, value, onChange, workspaceId, pageId }: Fie
 
   const inputClassName = `border-none bg-transparent p-1 focus-visible:ring-1 ${
     isUpdating ? 'opacity-60' : ''
-  }`;
+  } ${localValue !== lastSavedValue ? 'bg-yellow-50 border-yellow-200' : ''}`;
 
   switch (field.type) {
     case 'text':
@@ -126,7 +137,7 @@ export function FieldEditor({ field, value, onChange, workspaceId, pageId }: Fie
     case 'checkbox':
       return (
         <Checkbox
-          checked={value === 'true'}
+          checked={localValue === 'true'}
           onCheckedChange={handleCheckboxChange}
           disabled={isUpdating}
         />
@@ -135,7 +146,7 @@ export function FieldEditor({ field, value, onChange, workspaceId, pageId }: Fie
     case 'select':
       return (
         <SelectFieldEditor
-          value={value}
+          value={localValue}
           settings={field.settings}
           onChange={handleSelectChange}
         />
@@ -144,7 +155,7 @@ export function FieldEditor({ field, value, onChange, workspaceId, pageId }: Fie
     case 'multi_select':
       return (
         <SelectFieldEditor
-          value={value}
+          value={localValue}
           settings={field.settings}
           onChange={handleSelectChange}
           multiSelect
@@ -154,7 +165,7 @@ export function FieldEditor({ field, value, onChange, workspaceId, pageId }: Fie
     case 'date':
       return (
         <DateFieldEditor
-          value={value}
+          value={localValue}
           onChange={handleSelectChange}
         />
       );
@@ -162,7 +173,7 @@ export function FieldEditor({ field, value, onChange, workspaceId, pageId }: Fie
     case 'relation':
       return (
         <RelationFieldEditor
-          value={value}
+          value={localValue}
           settings={field.settings}
           onChange={handleSelectChange}
           workspaceId={workspaceId}
@@ -171,11 +182,10 @@ export function FieldEditor({ field, value, onChange, workspaceId, pageId }: Fie
 
     case 'formula':
     case 'rollup':
-      // Computed fields are read-only, show current value
       return (
         <div className="flex items-center space-x-2 p-2 bg-muted/50 rounded border">
           <span className="text-sm text-muted-foreground italic">
-            {value || 'Not calculated'} (Read-only)
+            {localValue || 'Not calculated'} (Read-only)
           </span>
         </div>
       );
