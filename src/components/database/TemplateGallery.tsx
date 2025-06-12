@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Template, Rocket, Users, TrendingUp, Package, Plus } from 'lucide-react';
+import { FileTemplate, Rocket, Users, TrendingUp, Package, Plus } from 'lucide-react';
 import { useDatabaseTemplates } from '@/hooks/useDatabaseTemplates';
 import { useToast } from '@/hooks/use-toast';
 import { DatabaseTemplate } from '@/types/databaseTemplate';
@@ -21,7 +21,7 @@ interface TemplateGalleryProps {
 const CATEGORY_ICONS = {
   productivity: Rocket,
   sales: TrendingUp,
-  marketing: Template,
+  marketing: FileTemplate,
   operations: Package,
   custom: Plus,
 };

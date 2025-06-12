@@ -66,7 +66,8 @@ export const DatabaseTemplateService = {
         return { data: null, error: 'Template not found' };
       }
 
-      const templateData = template.template_data;
+      // Type assertion for template_data
+      const templateData = template.template_data as DatabaseTemplate['template_data'];
       const databaseName = customName || template.name;
       const tableName = `db_${databaseName.toLowerCase().replace(/[^a-z0-9_]/g, '_')}_${Date.now()}`;
 
