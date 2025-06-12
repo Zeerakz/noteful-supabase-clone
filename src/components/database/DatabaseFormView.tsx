@@ -53,9 +53,10 @@ export function DatabaseFormView({ databaseId, fields, workspaceId }: DatabaseFo
 
     setIsSubmitting(true);
     try {
-      // Create the page first
+      // Create the page first - now passing workspaceId
       const { data: page, error: pageError } = await DatabaseService.createDatabasePage(
         databaseId,
+        workspaceId,
         user.id,
         title.trim()
       );
