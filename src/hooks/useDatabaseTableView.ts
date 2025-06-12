@@ -3,10 +3,15 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { useFilteredDatabasePages } from '@/hooks/useFilteredDatabasePages';
 import { useOptimisticPropertyUpdate } from '@/hooks/useOptimisticPropertyUpdate';
+import { useLazyProperties } from '@/hooks/useLazyProperties';
+import { useViewCache } from '@/hooks/useViewCache';
+import { usePerformanceMetrics } from '@/hooks/usePerformanceMetrics';
+import { usePagination } from '@/hooks/usePagination';
 import { PageService } from '@/services/pageService';
 import { DatabaseField } from '@/types/database';
 import { FilterGroup } from '@/types/filters';
 import { SortRule } from '@/components/database/SortingModal';
+import { useEffect, useMemo } from 'react';
 
 interface PageWithProperties {
   id: string;
@@ -27,6 +32,9 @@ interface UseDatabaseTableViewProps {
   filterGroup: FilterGroup;
   fields: DatabaseField[];
   sortRules: SortRule[];
+  enablePagination?: boolean;
+  itemsPerPage?: number;
+  enableVirtualScrolling?: boolean;
 }
 
 export function useDatabaseTableView({
@@ -34,10 +42,29 @@ export function useDatabaseTableView({
   workspaceId,
   filterGroup,
   fields,
-  sortRules
+  sortRules,
+  enablePagination = false,
+  itemsPerPage = 50,
+  enableVirtualScrolling = false
 }: UseDatabaseTableViewProps) {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { startTimer, endTimer } = usePerformanceMetrics();
+  const cache = useViewCache({ 
+    cacheKey: `table-${databaseId}`,
+    ttl: 5 * 60 * 1000 // 5 minutes
+  });
+
+  // Start performance tracking
+  useEffect(() => {
+    startTimer('page_load', { 
+      databaseId, 
+      enablePagination, 
+      enableVirtualScrolling,
+      filterCount: filterGroup.rules.length,
+      sortCount: sortRules.length
+    });
+  }, [databaseId, filterGroup, sortRules, startTimer, enablePagination, enableVirtualScrolling]);
   
   const { 
     pages, 
@@ -51,16 +78,61 @@ export function useDatabaseTableView({
     sortRules
   });
 
+  // End performance tracking when pages load
+  useEffect(() => {
+    if (!pagesLoading && pages.length > 0) {
+      endTimer('page_load');
+    }
+  }, [pagesLoading, pages.length, endTimer]);
+
   const propertyUpdateMutation = useOptimisticPropertyUpdate(databaseId);
 
+  // Pagination
+  const pagination = usePagination({
+    totalItems: pages.length,
+    itemsPerPage,
+    initialPage: 1
+  });
+
+  // Get current page items
+  const currentPageItems = useMemo(() => {
+    if (!enablePagination) return pages;
+    return pages.slice(pagination.startIndex, pagination.endIndex);
+  }, [pages, enablePagination, pagination.startIndex, pagination.endIndex]);
+
+  // Lazy load properties for visible pages
+  const pageIds = currentPageItems.map(page => page.id);
+  const {
+    getPropertiesForPage,
+    loadPropertiesForPages,
+    isPageLoading
+  } = useLazyProperties({
+    pageIds,
+    fields,
+    enabled: currentPageItems.length > 0
+  });
+
+  // Load properties for current page items
+  useEffect(() => {
+    if (pageIds.length > 0) {
+      startTimer('property_load');
+      loadPropertiesForPages(pageIds).then(() => {
+        endTimer('property_load');
+      });
+    }
+  }, [pageIds, loadPropertiesForPages, startTimer, endTimer]);
+
   // Transform pages data with properties
-  const pagesWithProperties: PageWithProperties[] = pages.map(page => {
-    const properties: Record<string, string> = {};
+  const pagesWithProperties: PageWithProperties[] = currentPageItems.map(page => {
+    const cacheKey = `page-${page.id}`;
+    let properties = cache.get(cacheKey);
     
-    const pageProperties = (page as any).page_properties || [];
-    pageProperties.forEach((prop: any) => {
-      properties[prop.field_id] = prop.value || '';
-    });
+    if (!properties) {
+      properties = getPropertiesForPage(page.id);
+      if (Object.keys(properties).length > 0) {
+        cache.set(cacheKey, properties);
+      }
+    }
 
     return {
       id: page.id,
@@ -72,7 +144,7 @@ export function useDatabaseTableView({
       updated_at: page.updated_at,
       parent_page_id: page.parent_page_id,
       order_index: page.order_index,
-      properties,
+      properties: properties || {},
     };
   });
 
@@ -80,6 +152,7 @@ export function useDatabaseTableView({
     if (!user) return;
 
     try {
+      startTimer('create_row');
       const { data, error } = await PageService.createPage(
         workspaceId,
         user.id,
@@ -97,9 +170,13 @@ export function useDatabaseTableView({
           title: "Success",
           description: "New row created",
         });
+        // Invalidate cache for this database
+        cache.invalidate();
         refetchPages();
       }
+      endTimer('create_row');
     } catch (err) {
+      endTimer('create_row');
       toast({
         title: "Error",
         description: "Failed to create row",
@@ -110,6 +187,7 @@ export function useDatabaseTableView({
 
   const handleDeleteRow = async (pageId: string) => {
     try {
+      startTimer('delete_row');
       const { error } = await PageService.deletePage(pageId);
       if (error) {
         toast({
@@ -122,9 +200,13 @@ export function useDatabaseTableView({
           title: "Success",
           description: "Row deleted",
         });
+        // Invalidate cache for this page
+        cache.invalidate(`page-${pageId}`);
         refetchPages();
       }
+      endTimer('delete_row');
     } catch (err) {
+      endTimer('delete_row');
       toast({
         title: "Error",
         description: "Failed to delete row",
@@ -137,6 +219,7 @@ export function useDatabaseTableView({
     if (!newTitle.trim()) return;
 
     try {
+      startTimer('update_title');
       const { error } = await PageService.updatePage(pageId, { title: newTitle.trim() });
       if (error) {
         toast({
@@ -145,9 +228,13 @@ export function useDatabaseTableView({
           variant: "destructive",
         });
       } else {
+        // Invalidate cache for this page
+        cache.invalidate(`page-${pageId}`);
         refetchPages();
       }
+      endTimer('update_title');
     } catch (err) {
+      endTimer('update_title');
       toast({
         title: "Error",
         description: "Failed to update title",
@@ -157,6 +244,8 @@ export function useDatabaseTableView({
   };
 
   const handlePropertyUpdate = (pageId: string, fieldId: string, value: string) => {
+    // Invalidate cache for this page
+    cache.invalidate(`page-${pageId}`);
     propertyUpdateMutation.mutate({
       pageId,
       fieldId,
@@ -173,5 +262,9 @@ export function useDatabaseTableView({
     handleDeleteRow,
     handleTitleUpdate,
     handlePropertyUpdate,
+    pagination: enablePagination ? pagination : null,
+    totalPages: pages.length,
+    isPageLoading,
+    cache
   };
 }

@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useDatabaseTableView } from '@/hooks/useDatabaseTableView';
 import { DatabaseTableViewContent } from './table/DatabaseTableViewContent';
 import { DatabaseField } from '@/types/database';
@@ -21,6 +21,9 @@ export function DatabaseTableView({
   filterGroup, 
   sortRules 
 }: DatabaseTableViewProps) {
+  const [enablePagination, setEnablePagination] = useState(false);
+  const [itemsPerPage, setItemsPerPage] = useState(50);
+
   const {
     pagesWithProperties,
     pagesLoading,
@@ -30,12 +33,17 @@ export function DatabaseTableView({
     handleDeleteRow,
     handleTitleUpdate,
     handlePropertyUpdate,
+    pagination,
+    totalPages,
   } = useDatabaseTableView({
     databaseId,
     workspaceId,
     filterGroup,
     fields,
-    sortRules
+    sortRules,
+    enablePagination,
+    itemsPerPage,
+    enableVirtualScrolling: totalPages > 100
   });
 
   return (
@@ -46,9 +54,12 @@ export function DatabaseTableView({
       pagesError={pagesError}
       onCreateRow={handleCreateRow}
       onTitleUpdate={handleTitleUpdate}
-      onPropertyUpdate={handlePropertyUpdate}
+      onPropertyUpdate={onPropertyUpdate}
       onDeleteRow={handleDeleteRow}
       onRefetch={refetchPages}
+      pagination={pagination}
+      totalPages={totalPages}
+      databaseId={databaseId}
     />
   );
 }
