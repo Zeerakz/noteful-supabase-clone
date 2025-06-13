@@ -2,6 +2,7 @@
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { ThemeProvider } from "@/contexts/ThemeContext";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
@@ -71,25 +72,27 @@ const App = () => {
       });
     }}>
       <QueryClientProvider client={queryClient}>
-        <TooltipProvider>
-          <AuthProvider>
-            <Toaster />
-            <Sonner />
-            <BrowserRouter>
-              <RouteErrorBoundary>
-                <Routes>
-                  <Route path="/" element={<Index />} />
-                  <Route path="/login" element={<Login />} />
-                  <Route path="/register" element={<Register />} />
-                  <Route path="/workspace/:workspaceId" element={<Workspace />} />
-                  <Route path="/workspace/:workspaceId/page/:pageId" element={<PageView />} />
-                  <Route path="/workspace/:workspaceId/database/:databaseId" element={<DatabasePage />} />
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </RouteErrorBoundary>
-            </BrowserRouter>
-          </AuthProvider>
-        </TooltipProvider>
+        <ThemeProvider>
+          <TooltipProvider>
+            <AuthProvider>
+              <Toaster />
+              <Sonner />
+              <BrowserRouter>
+                <RouteErrorBoundary>
+                  <Routes>
+                    <Route path="/" element={<Index />} />
+                    <Route path="/login" element={<Login />} />
+                    <Route path="/register" element={<Register />} />
+                    <Route path="/workspace/:workspaceId" element={<Workspace />} />
+                    <Route path="/workspace/:workspaceId/page/:pageId" element={<PageView />} />
+                    <Route path="/workspace/:workspaceId/database/:databaseId" element={<DatabasePage />} />
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                </RouteErrorBoundary>
+              </BrowserRouter>
+            </AuthProvider>
+          </TooltipProvider>
+        </ThemeProvider>
       </QueryClientProvider>
     </ErrorBoundary>
   );
