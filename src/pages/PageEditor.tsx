@@ -117,8 +117,8 @@ export function PageEditor() {
   ];
 
   return (
-    <PresenceProvider pageId={pageId}>
-      <AppLayoutWithSidebar breadcrumbs={breadcrumbs}>
+    <AppLayoutWithSidebar breadcrumbs={breadcrumbs}>
+      <PresenceProvider pageId={pageId}>
         <div className="h-full flex flex-col overflow-hidden">
           <div className="border-b border-border bg-background sticky top-0 z-10">
             <div className="px-4 py-3">
@@ -187,7 +187,7 @@ export function PageEditor() {
             </div>
           </div>
         </div>
-      </AppLayoutWithSidebar>
-    </PresenceProvider>
+      </PresenceProvider>
+    </AppLayoutWithSidebar>
   );
 }
