@@ -35,8 +35,8 @@ export function NewTableRow({
   return (
     <TableRow 
       className={`
-        group border-b-0 transition-all duration-200 
-        ${!isAnyColumnResizing ? 'hover:bg-accent/30' : ''}
+        group border-b-0 transition-all duration-300 ease-out
+        ${!isAnyColumnResizing ? 'hover:brightness-[1.01] hover:shadow-[0_0.5px_2px_rgba(0,0,0,0.02)]' : ''}
         bg-background/80
         ${isAnyColumnResizing ? 'pointer-events-none opacity-60' : ''}
         border-t border-border/40
@@ -67,9 +67,9 @@ export function NewTableRow({
             onClick={handleCreateRow}
             disabled={isAnyColumnResizing}
             className={`
-              w-full justify-start h-10 px-3 rounded-lg transition-all duration-200
+              w-full justify-start h-10 px-3 rounded-lg transition-all duration-300 ease-out
               ${!isAnyColumnResizing 
-                ? 'text-muted-foreground hover:text-foreground hover:bg-accent/40' 
+                ? 'text-muted-foreground hover:text-foreground hover:bg-accent/30 hover:shadow-[0_0_8px_hsl(var(--primary)/0.08)] focus-visible:ring-0 focus-visible:shadow-[0_0_12px_hsl(var(--primary)/0.15)]' 
                 : 'cursor-not-allowed text-muted-foreground/40'
               }
             `}
@@ -94,8 +94,8 @@ export function NewTableRow({
           <div className="px-4 py-3 overflow-hidden">
             <div 
               className={`
-                min-h-[32px] px-2 py-1 flex items-center rounded-sm
-                ${isAnyColumnResizing ? 'text-muted-foreground/20' : 'text-muted-foreground/40'}
+                min-h-[32px] px-2 py-1 flex items-center rounded-sm transition-all duration-300 ease-out
+                ${isAnyColumnResizing ? 'text-muted-foreground/20' : 'text-muted-foreground/40 hover:bg-muted/10'}
                 bg-background
               `}
             >

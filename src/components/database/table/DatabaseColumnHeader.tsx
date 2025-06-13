@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -70,6 +69,7 @@ export function DatabaseColumnHeader({
 }: DatabaseColumnHeaderProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [dragOver, setDragOver] = useState<'before' | 'after' | null>(null);
+  const [isHovered, setIsHovered] = useState(false);
 
   const currentSort = sortRules.find(rule => rule.fieldId === field.id);
   const sortDirection = currentSort?.direction;
@@ -184,10 +184,11 @@ export function DatabaseColumnHeader({
     <TooltipProvider>
       <div 
         className={`
-          relative flex items-center group h-full w-full
+          relative flex items-center group h-full w-full transition-all duration-300 ease-out
           ${isDragging ? 'opacity-50' : ''}
-          ${dragOver === 'before' ? 'border-l-4 border-l-primary' : ''}
-          ${dragOver === 'after' ? 'border-r-4 border-r-primary' : ''}
+          ${dragOver === 'before' ? 'border-l-4 border-l-primary shadow-[inset_4px_0_0_hsl(var(--primary))]' : ''}
+          ${dragOver === 'after' ? 'border-r-4 border-r-primary shadow-[inset_-4px_0_0_hsl(var(--primary))]' : ''}
+          ${isHovered ? 'brightness-[1.02]' : ''}
           ${className}
         `}
         draggable={canDrag}
@@ -196,6 +197,8 @@ export function DatabaseColumnHeader({
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
       >
         {/* Header Content */}
         <div className="flex items-center gap-2 flex-1 min-w-0 h-full">
@@ -203,7 +206,7 @@ export function DatabaseColumnHeader({
           {canDrag && (
             <Tooltip>
               <TooltipTrigger asChild>
-                <div className="flex-shrink-0 p-0.5 rounded-md hover:bg-muted/60 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing">
+                <div className="flex-shrink-0 p-0.5 rounded-md transition-all duration-300 ease-out hover:bg-muted/60 hover:shadow-[0_0_6px_hsl(var(--primary)/0.1)] opacity-0 group-hover:opacity-100 cursor-grab active:cursor-grabbing">
                   <GripVertical className="h-3 w-3 text-muted-foreground/60" />
                 </div>
               </TooltipTrigger>
@@ -217,7 +220,7 @@ export function DatabaseColumnHeader({
           <Button
             variant="ghost"
             onClick={handleSortClick}
-            className="flex items-center gap-2 px-1 py-0.5 h-auto text-column-header hover:bg-transparent hover:text-foreground flex-1 justify-start min-w-0 transition-colors"
+            className="flex items-center gap-2 px-1 py-0.5 h-auto text-column-header hover:bg-transparent hover:text-foreground flex-1 justify-start min-w-0 transition-all duration-300 ease-out focus-visible:ring-0 focus-visible:shadow-[0_0_8px_hsl(var(--primary)/0.15)]"
           >
             <span className="truncate">{field.name.toUpperCase()}</span>
             
@@ -225,9 +228,9 @@ export function DatabaseColumnHeader({
             {sortDirection && (
               <div className="flex-shrink-0 ml-1">
                 {sortDirection === 'asc' ? (
-                  <ArrowUp className="h-3 w-3 text-primary" />
+                  <ArrowUp className="h-3 w-3 text-primary drop-shadow-sm" />
                 ) : (
-                  <ArrowDown className="h-3 w-3 text-primary" />
+                  <ArrowDown className="h-3 w-3 text-primary drop-shadow-sm" />
                 )}
               </div>
             )}
@@ -240,9 +243,9 @@ export function DatabaseColumnHeader({
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-5 w-5 p-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex-shrink-0 hover:bg-primary/10"
+                  className="h-5 w-5 p-0 transition-all duration-300 ease-out opacity-0 group-hover:opacity-100 flex-shrink-0 hover:bg-primary/10 hover:shadow-[0_0_6px_hsl(var(--primary)/0.1)] focus-visible:ring-0 focus-visible:shadow-[0_0_8px_hsl(var(--primary)/0.15)]"
                 >
-                  <Info className="h-3 w-3 text-muted-foreground/60 hover:text-primary transition-colors" />
+                  <Info className="h-3 w-3 text-muted-foreground/60 hover:text-primary transition-colors duration-200" />
                 </Button>
               </HoverCardTrigger>
               <HoverCardContent className="w-80 p-4" side="bottom" align="start">
@@ -278,9 +281,9 @@ export function DatabaseColumnHeader({
             <Button
               variant="ghost"
               size="sm"
-              className="h-5 w-5 p-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex-shrink-0 hover:bg-primary/10"
+              className="h-5 w-5 p-0 transition-all duration-300 ease-out opacity-0 group-hover:opacity-100 flex-shrink-0 hover:bg-primary/10 hover:shadow-[0_0_6px_hsl(var(--primary)/0.1)] focus-visible:ring-0 focus-visible:shadow-[0_0_8px_hsl(var(--primary)/0.15)]"
             >
-              <Settings className="h-3 w-3 text-muted-foreground/60 hover:text-primary transition-colors" />
+              <Settings className="h-3 w-3 text-muted-foreground/60 hover:text-primary transition-colors duration-200" />
             </Button>
           </InlinePropertyEditor>
         </div>
@@ -289,21 +292,20 @@ export function DatabaseColumnHeader({
         {isResizable && onResize && (
           <div
             className={`
-              absolute right-0 top-0 bottom-0 w-2 cursor-col-resize z-10
-              opacity-0 group-hover:opacity-100 transition-opacity 
-              hover:bg-primary/20 flex items-center justify-center
-              ${isResizing ? 'opacity-100 bg-primary/30' : ''}
+              absolute right-0 top-0 bottom-0 w-2 cursor-col-resize z-10 transition-all duration-300 ease-out
+              opacity-0 group-hover:opacity-100 hover:shadow-[0_0_4px_hsl(var(--primary)/0.1)] flex items-center justify-center
+              ${isResizing ? 'opacity-100 shadow-[0_0_8px_hsl(var(--primary)/0.2)]' : ''}
             `}
             onMouseDown={handleResizeStart}
             title="Drag to resize column"
           >
-            <div className="w-0.5 h-4 bg-muted-foreground/50 rounded-full" />
+            <div className="w-0.5 h-4 bg-muted-foreground/50 rounded-full transition-all duration-200 hover:bg-primary/60" />
           </div>
         )}
 
         {/* Active resize indicator */}
         {isResizing && (
-          <div className="absolute right-0 top-0 bottom-0 w-0.5 bg-primary shadow-lg z-20" />
+          <div className="absolute right-0 top-0 bottom-0 w-0.5 bg-primary shadow-[0_0_4px_hsl(var(--primary)/0.4)] z-20 animate-pulse" />
         )}
       </div>
     </TooltipProvider>
