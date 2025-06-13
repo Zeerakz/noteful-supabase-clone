@@ -3,6 +3,7 @@ import { DatabaseField, PageProperty } from '@/types/database';
 import { DatabaseTableHeader } from './DatabaseTableHeader';
 import { DatabaseTableBody } from './DatabaseTableBody';
 import { DatabaseTableRow } from './DatabaseTableRow';
+import { ResponsiveTableWrapper } from './ResponsiveTableWrapper';
 import { Table, TableCaption } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -200,27 +201,6 @@ export function DatabaseTableViewContent({
     );
   }
 
-  const renderRows = () => {
-    return pagesWithProperties.map((page, index) => (
-      <DatabaseTableRow
-        key={page.id}
-        page={page}
-        fields={fields}
-        onTitleUpdate={onTitleUpdate}
-        onPropertyUpdate={onPropertyUpdate}
-        onDeleteRow={onDeleteRow}
-        getColumnWidth={getColumnWidth}
-        workspaceId={workspaceId}
-        isSelected={selectedRows.has(page.id)}
-        onSelect={handleRowSelect}
-        isEvenRow={index % 2 === 0}
-        resizingFields={resizingFields}
-        userProfiles={userProfiles}
-        allFields={allFields}
-      />
-    ));
-  };
-
   return (
     <div className="flex flex-col h-full bg-background overflow-hidden">
       {/* Header with improved styling - Fixed height */}
@@ -248,52 +228,19 @@ export function DatabaseTableViewContent({
         </div>
       </div>
 
-      {/* Table container with native scrolling - uses remaining height */}
-      <div className="flex-1 min-h-0 overflow-auto bg-background">
-        <div 
-          className="relative"
-          style={{ 
-            minWidth: `${totalTableWidth}px`,
-            width: 'max-content'
-          }}
-        >
-          <Table className="w-full table-fixed" style={{ width: `${totalTableWidth}px` }}>
-            {/* Sticky Header */}
-            <DatabaseTableHeader
-              fields={fields}
-              sortRules={sortRules}
-              onSort={handleSort}
-              onFieldsChange={onFieldsChange}
-              onFieldReorder={onFieldReorder}
-              getColumnWidth={getColumnWidth}
-              selectedRows={selectedRows}
-              totalRows={pagesWithProperties.length}
-              onSelectAll={handleSelectAll}
-              onColumnResize={updateColumnWidth}
-              resizingFields={resizingFields}
-              onStartResize={handleStartResize}
-              onEndResize={handleEndResize}
-              onResize={updateColumnWidth}
-            />
-            
-            {/* Table Body */}
-            <DatabaseTableBody
-              pagesWithProperties={pagesWithProperties}
-              fields={fields}
-              onTitleUpdate={onTitleUpdate}
-              onPropertyUpdate={onPropertyUpdate}
-              onDeleteRow={onDeleteRow}
-              onCreateRow={onCreateRow}
-              workspaceId={workspaceId}
-              selectedRows={selectedRows}
-              onRowSelect={handleRowSelect}
-              onSelectAll={handleSelectAll}
-              showNewRow={true}
-              getColumnWidth={getColumnWidth}
-              resizingFields={resizingFields}
-            />
-          </Table>
-        </div>
+      {/* Responsive Table/Cards Container */}
+      <div className="flex-1 min-h-0">
+        <ResponsiveTableWrapper
+          pages={pagesWithProperties}
+          fields={fields}
+          onTitleUpdate={onTitleUpdate}
+          onPropertyUpdate={onPropertyUpdate}
+          onDeleteRow={onDeleteRow}
+          sortRules={sortRules}
+          setSortRules={setSortRules}
+          workspaceId={workspaceId}
+          maxHeight="100%"
+        />
       </div>
     </div>
   );
