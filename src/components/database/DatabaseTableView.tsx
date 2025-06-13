@@ -44,7 +44,7 @@ export function DatabaseTableView({
   const [itemsPerPage, setItemsPerPage] = useState(50);
   const [showManageProperties, setShowManageProperties] = useState(false);
 
-  // Use optimistic fields hook
+  // Use optimistic fields hook with both databaseId and workspaceId
   const {
     fields: optimisticFields,
     optimisticCreateField,
@@ -52,7 +52,7 @@ export function DatabaseTableView({
     optimisticDeleteField,
     optimisticReorderFields,
     revertOptimisticChanges,
-  } = useOptimisticDatabaseFields(databaseId);
+  } = useOptimisticDatabaseFields(databaseId, workspaceId);
 
   // Enhanced field operations with optimistic updates
   const fieldOperations = useEnhancedDatabaseFieldOperations({
