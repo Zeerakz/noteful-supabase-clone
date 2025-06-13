@@ -35,16 +35,16 @@ export function NewTableRow({
   return (
     <TableRow 
       className={`
-        group border-b-0 transition-all duration-300 ease-out motion-content-drift-in
+        group transition-all duration-300 ease-out motion-content-drift-in
         hover:bg-accent/10
         bg-background/80
         ${isAnyColumnResizing ? 'pointer-events-none opacity-60' : ''}
-        border-t border-border/40
+        hairline-divider
       `}
     >
       {/* Empty checkbox cell */}
       <TableCell 
-        className="p-3 border-r border-border/20 text-center"
+        className="p-3 hairline-vertical text-center"
         style={{ width: '48px' }}
       >
         <div className="w-4 h-4" />
@@ -52,7 +52,7 @@ export function NewTableRow({
 
       {/* Title Cell with Create Button */}
       <TableCell 
-        className="p-3 border-r border-border/20"
+        className="p-3 hairline-vertical"
         style={{ width: `${getColumnWidth('title')}px` }}
       >
         <Button
@@ -76,7 +76,7 @@ export function NewTableRow({
       {fields.map((field) => (
         <TableCell 
           key={field.id} 
-          className="p-3 border-r border-border/20 last:border-r-0"
+          className="p-3 hairline-vertical last:border-r-0"
           style={{ width: `${getColumnWidth(field.id)}px` }}
         >
           <div 

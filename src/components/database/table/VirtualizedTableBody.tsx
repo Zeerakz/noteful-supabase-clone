@@ -84,10 +84,10 @@ export function VirtualizedTableBody({
     <Table className="table-fixed" style={{ width: `${totalWidth}px` }}>
       <TableBody>
         {pages.map((page, rowIndex) => (
-          <TableRow key={page.id} className="border-b hover:bg-muted/50">
+          <TableRow key={page.id} className="hairline-divider hover:bg-muted/50">
             {/* Checkbox column */}
             <TableCell 
-              className="p-2 text-center border-r border-border/20" 
+              className="p-2 text-center hairline-vertical" 
               style={{ width: `${getColumnWidth('checkbox')}px` }}
             >
               <Checkbox />
@@ -95,7 +95,7 @@ export function VirtualizedTableBody({
 
             {/* Title column */}
             <TableCell 
-              className="p-2 border-r border-border/20" 
+              className="p-2 hairline-vertical" 
               style={{ width: `${getColumnWidth('title')}px` }}
             >
               {editingTitle === page.id ? (
