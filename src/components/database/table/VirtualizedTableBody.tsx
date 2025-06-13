@@ -17,7 +17,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { DatabaseField } from '@/types/database';
-import { PropertyTableCell } from './PropertyTableCell';
+import { OptimizedPropertyTableCell } from './OptimizedPropertyTableCell';
 
 interface PageWithProperties {
   id: string;
@@ -82,7 +82,7 @@ export function VirtualizedTableBody({
   return (
     <Table className="table-fixed" style={{ width: `${totalWidth}px` }}>
       <TableBody>
-        {pages.map((page) => (
+        {pages.map((page, rowIndex) => (
           <TableRow key={page.id} className="border-b hover:bg-muted/50">
             {/* Checkbox column */}
             <TableCell 
@@ -118,9 +118,9 @@ export function VirtualizedTableBody({
               )}
             </TableCell>
 
-            {/* Property columns */}
+            {/* Property columns with optimized cells */}
             {fields.map((field) => (
-              <PropertyTableCell
+              <OptimizedPropertyTableCell
                 key={field.id}
                 field={field}
                 value={page.properties[field.id] || ''}
@@ -128,6 +128,8 @@ export function VirtualizedTableBody({
                 workspaceId={workspaceId}
                 width={getColumnWidth(field.id)}
                 onValueChange={(value) => onPropertyUpdate(page.id, field.id, value)}
+                allFields={fields}
+                rowIndex={rowIndex}
               />
             ))}
 

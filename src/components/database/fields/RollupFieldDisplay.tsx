@@ -1,7 +1,6 @@
-
 import React, { useEffect, useState } from 'react';
 import { DatabaseField } from '@/types/database';
-import { RollupCalculationService } from '@/services/rollupCalculationService';
+import { BatchedRollupService } from '@/services/batchedRollupService';
 import { Calculator, Loader2, AlertCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -27,16 +26,16 @@ export function RollupFieldDisplay({
   const [isCalculating, setIsCalculating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Recalculate when dependencies change
+  // Use the new batched service for calculations
   useEffect(() => {
     const calculateValue = async () => {
-      if (!pageId || !field.id) return;
+      if (!pageId || !field.id || computedValue) return;
 
       setIsCalculating(true);
       setError(null);
 
       try {
-        const { value: newValue, error: calcError } = await RollupCalculationService.calculateRollupValue(
+        const { value: newValue, error: calcError } = await BatchedRollupService.queueRollupCalculation(
           pageId,
           field,
           allFields
@@ -55,7 +54,7 @@ export function RollupFieldDisplay({
     };
 
     calculateValue();
-  }, [pageId, field, allFields]);
+  }, [pageId, field, allFields, computedValue]);
 
   const formatDisplayValue = (val: string | null): string => {
     if (!val) return '—';
