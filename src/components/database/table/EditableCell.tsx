@@ -156,8 +156,7 @@ export function EditableCell({
           ref={containerRef}
           className={cn(
             "w-full h-full px-2 py-1",
-            "text-sm font-normal text-foreground leading-relaxed",
-            "tracking-normal bg-transparent",
+            "text-sm text-foreground",
             className
           )}
           onBlur={handleBlur}
@@ -194,13 +193,11 @@ export function EditableCell({
           onKeyDown={handleKeyDown}
           className={cn(
             "w-full h-full outline-none resize-none px-2 py-1",
-            "text-sm font-normal text-foreground leading-relaxed",
-            "tracking-normal bg-transparent border-none",
+            "text-sm text-foreground bg-transparent border-none",
             className
           )}
           style={{ 
             minHeight: multiline ? '60px' : 'auto',
-            fontFamily: 'inherit'
           }}
         />
       </div>
@@ -211,16 +208,14 @@ export function EditableCell({
     <div
       onClick={handleClick}
       className={cn(
-        "w-full h-full cursor-text select-text px-2 py-1 rounded-sm",
-        "text-sm font-normal text-foreground leading-relaxed",
+        "w-full h-full cursor-text px-2 py-1 rounded-sm",
+        "text-sm text-foreground",
         "hover:bg-muted/30 transition-colors",
-        "border-none outline-none tracking-normal",
         // Empty state styling
         !value && "text-muted-foreground/60 italic",
         disabled && "cursor-default",
         className
       )}
-      style={{ fontFamily: 'inherit' }}
     >
       {value || placeholder}
     </div>
