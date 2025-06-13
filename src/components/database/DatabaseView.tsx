@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useDatabaseViewSelector } from '@/hooks/useDatabaseViewSelector';
@@ -189,6 +188,7 @@ export function DatabaseView() {
           currentView={currentView}
           filterGroup={filterGroup}
           sortRules={sortRules}
+          setSortRules={setSortRules}
           groupingConfig={groupingConfig}
           collapsedGroups={collapsedGroups}
           onToggleGroupCollapse={toggleGroupCollapse}

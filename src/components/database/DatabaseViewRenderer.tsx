@@ -21,6 +21,7 @@ interface DatabaseViewRendererProps {
   currentView: DatabaseViewType;
   filterGroup: FilterGroup;
   sortRules: SortRule[];
+  setSortRules: (rules: SortRule[]) => void;
   groupingConfig: GroupingConfig;
   collapsedGroups: string[];
   onToggleGroupCollapse: (groupKey: string) => void;
@@ -34,6 +35,7 @@ export function DatabaseViewRenderer({
   currentView,
   filterGroup,
   sortRules,
+  setSortRules,
   groupingConfig,
   collapsedGroups,
   onToggleGroupCollapse,
@@ -47,9 +49,14 @@ export function DatabaseViewRenderer({
     sortRules
   };
 
+  const sortableViewProps = {
+    ...commonProps,
+    setSortRules
+  };
+
   switch (currentView) {
     case 'table':
-      return <DatabaseTableView {...commonProps} />;
+      return <DatabaseTableView {...sortableViewProps} />;
     case 'list':
       return <DatabaseListView {...commonProps} />;
     case 'calendar':
@@ -57,12 +64,12 @@ export function DatabaseViewRenderer({
     case 'kanban':
       return <DatabaseKanbanView {...commonProps} />;
     case 'timeline':
-      return <DatabaseTimelineView {...commonProps} />;
+      return <DatabaseTimelineView {...sortableViewProps} />;
     case 'gallery':
       return <DatabaseGalleryView {...commonProps} />;
     case 'form':
       return <DatabaseFormView {...commonProps} />;
     default:
-      return <DatabaseTableView {...commonProps} />;
+      return <DatabaseTableView {...sortableViewProps} />;
   }
 }
