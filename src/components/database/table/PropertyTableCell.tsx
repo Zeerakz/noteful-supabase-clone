@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { TableCell } from '@/components/ui/table';
 import { DatabaseField } from '@/types/database';
-import { OptimizedPropertyTableCell } from './OptimizedPropertyTableCell';
+import { PermissionAwareTableCell } from './PermissionAwareTableCell';
 
 interface PropertyTableCellProps {
   field: DatabaseField;
@@ -27,9 +27,9 @@ export function PropertyTableCell({
   allFields = [],
   rowIndex = 0
 }: PropertyTableCellProps) {
-  // Use the optimized version which handles lazy loading for rollups
+  // Use the permission-aware version which handles access control
   return (
-    <OptimizedPropertyTableCell
+    <PermissionAwareTableCell
       field={field}
       value={value}
       pageId={pageId}

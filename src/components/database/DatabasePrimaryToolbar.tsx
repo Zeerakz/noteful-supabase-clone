@@ -1,196 +1,156 @@
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Separator } from '@/components/ui/separator';
-import { Badge } from '@/components/ui/badge';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
-import { 
-  Plus, 
-  Search, 
-  Filter, 
-  SortAsc, 
-  FileText, 
-  Image, 
-  Calendar,
-  MoreHorizontal
-} from 'lucide-react';
+import { Plus, Settings, Filter, SortAsc, Eye, Grid3x3 } from 'lucide-react';
+import { ManagePropertiesModal } from './fields/ManagePropertiesModal';
+import { FilterModal } from './FilterModal';
+import { SortingModal } from './SortingModal';
+import { DatabaseField } from '@/types/database';
+import { PropertyType } from '@/types/property';
+import { FilterGroup } from '@/types/filters';
+import { SortRule } from './SortingModal';
+import { PermissionGate } from './PermissionGate';
 
 interface DatabasePrimaryToolbarProps {
-  searchQuery: string;
-  onSearchChange: (query: string) => void;
-  hasActiveFilters: boolean;
-  hasActiveSorts: boolean;
-  onFilterClick: () => void;
-  onSortClick: () => void;
-  onNewRecord: () => void;
-  onNewTemplate?: () => void;
-  onImportData?: () => void;
+  databaseId: string;
+  workspaceId: string;
+  fields: DatabaseField[];
+  filters: FilterGroup;
+  sorts: SortRule[];
+  onFiltersChange: (filters: FilterGroup) => void;
+  onSortsChange: (sorts: SortRule[]) => void;
+  onAddRow?: () => void;
+  onFieldsReorder: (fields: DatabaseField[]) => Promise<void>;
+  onFieldUpdate: (fieldId: string, updates: Partial<DatabaseField>) => Promise<void>;
+  onFieldDuplicate: (field: DatabaseField) => Promise<void>;
+  onFieldDelete: (fieldId: string) => Promise<void>;
+  onFieldCreate: (field: { name: string; type: PropertyType; settings?: any }) => Promise<void>;
 }
 
 export function DatabasePrimaryToolbar({
-  searchQuery,
-  onSearchChange,
-  hasActiveFilters,
-  hasActiveSorts,
-  onFilterClick,
-  onSortClick,
-  onNewRecord,
-  onNewTemplate,
-  onImportData,
+  databaseId,
+  workspaceId,
+  fields,
+  filters,
+  sorts,
+  onFiltersChange,
+  onSortsChange,
+  onAddRow,
+  onFieldsReorder,
+  onFieldUpdate,
+  onFieldDuplicate,
+  onFieldDelete,
+  onFieldCreate
 }: DatabasePrimaryToolbarProps) {
-  const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [showPropertiesModal, setShowPropertiesModal] = useState(false);
+  const [showFilterModal, setShowFilterModal] = useState(false);
+  const [showSortModal, setShowSortModal] = useState(false);
+
+  // Count active filters and sorts
+  const activeFiltersCount = filters.conditions?.length || 0;
+  const activeSortsCount = sorts.length;
 
   return (
-    <TooltipProvider>
-      <div className="flex items-center gap-3 p-4 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        {/* New Button with Dropdown */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button className="gap-2 bg-primary hover:bg-primary/90">
-              <Plus className="h-4 w-4" />
-              New
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="w-48">
-            <DropdownMenuItem onClick={onNewRecord} className="gap-2">
-              <FileText className="h-4 w-4" />
-              New Record
-              <kbd className="ml-auto text-xs text-muted-foreground">⌘N</kbd>
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            {onNewTemplate && (
-              <DropdownMenuItem onClick={onNewTemplate} className="gap-2">
-                <Image className="h-4 w-4" />
-                Create Template
-              </DropdownMenuItem>
-            )}
-            {onImportData && (
-              <>
-                <DropdownMenuItem onClick={onImportData} className="gap-2">
-                  <Calendar className="h-4 w-4" />
-                  Import Data
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem className="gap-2 text-muted-foreground">
-                  <MoreHorizontal className="h-4 w-4" />
-                  More options...
-                </DropdownMenuItem>
-              </>
-            )}
-          </DropdownMenuContent>
-        </DropdownMenu>
+    <>
+      <div className="flex items-center gap-2 p-3 border-b border-border/20 bg-background">
+        {/* Add Row Button */}
+        <PermissionGate
+          workspaceId={workspaceId}
+          requiredPermission="canAddRows"
+          tooltipMessage="You need permission to add new rows"
+        >
+          <Button
+            onClick={onAddRow}
+            size="sm"
+            variant="default"
+            className="gap-2"
+          >
+            <Plus className="h-4 w-4" />
+            New
+          </Button>
+        </PermissionGate>
 
-        <Separator orientation="vertical" className="h-6" />
+        <div className="h-4 w-px bg-border/20 mx-1" />
 
-        {/* Search Input */}
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search records..."
-            value={searchQuery}
-            onChange={(e) => onSearchChange(e.target.value)}
-            onFocus={() => setIsSearchFocused(true)}
-            onBlur={() => setIsSearchFocused(false)}
-            className={`pl-10 transition-all duration-200 ${
-              isSearchFocused ? 'ring-2 ring-ring ring-offset-2' : ''
-            }`}
-          />
-          {searchQuery && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => onSearchChange('')}
-              className="absolute right-2 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0 hover:bg-muted"
-            >
-              ×
-            </Button>
+        {/* View Controls */}
+        <Button
+          onClick={() => setShowFilterModal(true)}
+          size="sm"
+          variant={activeFiltersCount > 0 ? "secondary" : "ghost"}
+          className="gap-2"
+        >
+          <Filter className="h-4 w-4" />
+          Filter
+          {activeFiltersCount > 0 && (
+            <span className="bg-primary text-primary-foreground text-xs px-1.5 py-0.5 rounded">
+              {activeFiltersCount}
+            </span>
           )}
-        </div>
+        </Button>
 
-        <Separator orientation="vertical" className="h-6" />
+        <Button
+          onClick={() => setShowSortModal(true)}
+          size="sm"
+          variant={activeSortsCount > 0 ? "secondary" : "ghost"}
+          className="gap-2"
+        >
+          <SortAsc className="h-4 w-4" />
+          Sort
+          {activeSortsCount > 0 && (
+            <span className="bg-primary text-primary-foreground text-xs px-1.5 py-0.5 rounded">
+              {activeSortsCount}
+            </span>
+          )}
+        </Button>
 
-        {/* Filter Button */}
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onFilterClick}
-              className={`gap-2 transition-colors ${
-                hasActiveFilters 
-                  ? 'border-primary/50 bg-primary/5 text-primary hover:bg-primary/10' 
-                  : 'hover:bg-muted'
-              }`}
-            >
-              <Filter className="h-4 w-4" />
-              Filter
-              {hasActiveFilters && (
-                <div className="h-2 w-2 rounded-full bg-primary" />
-              )}
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>{hasActiveFilters ? 'Filters active' : 'Add filters'}</p>
-          </TooltipContent>
-        </Tooltip>
+        <div className="h-4 w-px bg-border/20 mx-1" />
 
-        {/* Sort Button */}
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onSortClick}
-              className={`gap-2 transition-colors ${
-                hasActiveSorts 
-                  ? 'border-primary/50 bg-primary/5 text-primary hover:bg-primary/10' 
-                  : 'hover:bg-muted'
-              }`}
-            >
-              <SortAsc className="h-4 w-4" />
-              Sort
-              {hasActiveSorts && (
-                <div className="h-2 w-2 rounded-full bg-primary" />
-              )}
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>{hasActiveSorts ? 'Custom sorting applied' : 'Add sorting'}</p>
-          </TooltipContent>
-        </Tooltip>
-
-        {/* Active Filters/Sorts Summary */}
-        {(hasActiveFilters || hasActiveSorts) && (
-          <>
-            <Separator orientation="vertical" className="h-6" />
-            <div className="flex items-center gap-2">
-              {hasActiveFilters && (
-                <Badge variant="secondary" className="text-xs">
-                  Filtered
-                </Badge>
-              )}
-              {hasActiveSorts && (
-                <Badge variant="secondary" className="text-xs">
-                  Sorted
-                </Badge>
-              )}
-            </div>
-          </>
-        )}
+        {/* Properties Management */}
+        <PermissionGate
+          workspaceId={workspaceId}
+          requiredPermission="canModifySchema"
+          tooltipMessage="You need 'Full access' permission to manage properties"
+        >
+          <Button
+            onClick={() => setShowPropertiesModal(true)}
+            size="sm"
+            variant="ghost"
+            className="gap-2"
+          >
+            <Settings className="h-4 w-4" />
+            Properties
+          </Button>
+        </PermissionGate>
       </div>
-    </TooltipProvider>
+
+      {/* Modals */}
+      <ManagePropertiesModal
+        open={showPropertiesModal}
+        onOpenChange={setShowPropertiesModal}
+        fields={fields}
+        workspaceId={workspaceId}
+        onFieldsReorder={onFieldsReorder}
+        onFieldUpdate={onFieldUpdate}
+        onFieldDuplicate={onFieldDuplicate}
+        onFieldDelete={onFieldDelete}
+        onFieldCreate={onFieldCreate}
+      />
+
+      <FilterModal
+        open={showFilterModal}
+        onOpenChange={setShowFilterModal}
+        fields={fields}
+        filters={filters}
+        onFiltersChange={onFiltersChange}
+      />
+
+      <SortingModal
+        open={showSortModal}
+        onOpenChange={setShowSortModal}
+        fields={fields}
+        sorts={sorts}
+        onSortsChange={onSortsChange}
+      />
+    </>
   );
 }

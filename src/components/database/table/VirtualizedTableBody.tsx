@@ -17,7 +17,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { DatabaseField } from '@/types/database';
-import { OptimizedPropertyTableCell } from './OptimizedPropertyTableCell';
+import { PermissionAwareTableCell } from './PermissionAwareTableCell';
+import { PermissionGate } from '../PermissionGate';
 
 interface PageWithProperties {
   id: string;
@@ -107,20 +108,26 @@ export function VirtualizedTableBody({
                   autoFocus
                 />
               ) : (
-                <div
-                  className="cursor-text hover:bg-muted/50 p-1 rounded min-h-[24px] font-medium"
-                  onClick={() => handleTitleClick(page.id, page.title)}
+                <PermissionGate
+                  workspaceId={workspaceId}
+                  requiredPermission="canEditContent"
+                  showTooltip={false}
                 >
-                  {page.title || (
-                    <span className="text-muted-foreground italic font-normal">Untitled</span>
-                  )}
-                </div>
+                  <div
+                    className="cursor-text hover:bg-muted/50 p-1 rounded min-h-[24px] font-medium"
+                    onClick={() => handleTitleClick(page.id, page.title)}
+                  >
+                    {page.title || (
+                      <span className="text-muted-foreground italic font-normal">Untitled</span>
+                    )}
+                  </div>
+                </PermissionGate>
               )}
             </TableCell>
 
-            {/* Property columns with optimized cells */}
+            {/* Property columns with permission-aware cells */}
             {fields.map((field) => (
-              <OptimizedPropertyTableCell
+              <PermissionAwareTableCell
                 key={field.id}
                 field={field}
                 value={page.properties[field.id] || ''}
@@ -138,22 +145,28 @@ export function VirtualizedTableBody({
               className="p-2 text-center" 
               style={{ width: `${getColumnWidth('actions')}px` }}
             >
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
-                    <MoreHorizontal className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem
-                    onClick={() => onDeleteRow(page.id)}
-                    className="text-destructive"
-                  >
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    Delete
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <PermissionGate
+                workspaceId={workspaceId}
+                requiredPermission="canDeleteRows"
+                tooltipMessage="You need permission to delete rows"
+              >
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                      <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem
+                      onClick={() => onDeleteRow(page.id)}
+                      className="text-destructive"
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Delete
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </PermissionGate>
             </TableCell>
           </TableRow>
         ))}

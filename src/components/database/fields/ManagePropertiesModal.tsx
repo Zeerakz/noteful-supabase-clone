@@ -17,11 +17,14 @@ import { PropertyType } from '@/types/property';
 import { PropertyList } from './PropertyList';
 import { PropertyEditPanel } from './PropertyEditPanel';
 import { NewPropertyWizard } from './NewPropertyWizard';
+import { PermissionGate } from '../PermissionGate';
+import { useDatabasePermissions } from '@/hooks/useDatabasePermissions';
 
 interface ManagePropertiesModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   fields: DatabaseField[];
+  workspaceId: string;
   onFieldsReorder: (fields: DatabaseField[]) => Promise<void>;
   onFieldUpdate: (fieldId: string, updates: Partial<DatabaseField>) => Promise<void>;
   onFieldDuplicate: (field: DatabaseField) => Promise<void>;
@@ -33,6 +36,7 @@ export function ManagePropertiesModal({
   open, 
   onOpenChange, 
   fields,
+  workspaceId,
   onFieldsReorder,
   onFieldUpdate,
   onFieldDuplicate,
@@ -42,6 +46,7 @@ export function ManagePropertiesModal({
   const [editingField, setEditingField] = useState<DatabaseField | null>(null);
   const [deleteFieldId, setDeleteFieldId] = useState<string | null>(null);
   const [showPropertyWizard, setShowPropertyWizard] = useState(false);
+  const { permissions } = useDatabasePermissions(workspaceId);
 
   const handleDeleteField = async (fieldId: string) => {
     try {
@@ -69,22 +74,44 @@ export function ManagePropertiesModal({
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-4xl max-h-[80vh]">
           <DialogHeader>
-            <DialogTitle>Manage Properties</DialogTitle>
+            <DialogTitle>
+              Manage Properties
+              {!permissions.canModifySchema && (
+                <span className="text-sm font-normal text-muted-foreground ml-2">
+                  (View Only - Full access required to modify schema)
+                </span>
+              )}
+            </DialogTitle>
           </DialogHeader>
           
           <div className="flex gap-6 h-[60vh]">
-            <PropertyList
-              fields={fields}
-              editingField={editingField}
-              onEditingFieldChange={setEditingField}
-              onFieldsReorder={onFieldsReorder}
-              onFieldUpdate={onFieldUpdate}
-              onFieldDuplicate={handleDuplicateField}
-              onFieldDelete={handleDeleteConfirmation}
-              onAddProperty={() => setShowPropertyWizard(true)}
-            />
+            <PermissionGate
+              workspaceId={workspaceId}
+              requiredPermission="canModifySchema"
+              fallback={
+                <div className="flex-1 p-4 border border-dashed border-border rounded-lg bg-muted/20">
+                  <div className="text-center text-muted-foreground">
+                    <p className="font-medium">Schema Management Restricted</p>
+                    <p className="text-sm mt-1">
+                      You need 'Full access' permission to add, edit, or delete properties.
+                    </p>
+                  </div>
+                </div>
+              }
+            >
+              <PropertyList
+                fields={fields}
+                editingField={editingField}
+                onEditingFieldChange={setEditingField}
+                onFieldsReorder={onFieldsReorder}
+                onFieldUpdate={onFieldUpdate}
+                onFieldDuplicate={handleDuplicateField}
+                onFieldDelete={handleDeleteConfirmation}
+                onAddProperty={() => setShowPropertyWizard(true)}
+              />
+            </PermissionGate>
             
-            {editingField && (
+            {editingField && permissions.canModifySchema && (
               <>
                 <Separator orientation="vertical" />
                 <PropertyEditPanel
@@ -107,13 +134,15 @@ export function ManagePropertiesModal({
         </DialogContent>
       </Dialog>
 
-      {/* New Property Wizard */}
-      <NewPropertyWizard
-        open={showPropertyWizard}
-        onOpenChange={setShowPropertyWizard}
-        onPropertyCreate={onFieldCreate}
-        workspaceId=""
-      />
+      {/* New Property Wizard - only show if user has schema permissions */}
+      {permissions.canModifySchema && (
+        <NewPropertyWizard
+          open={showPropertyWizard}
+          onOpenChange={setShowPropertyWizard}
+          onPropertyCreate={onFieldCreate}
+          workspaceId={workspaceId}
+        />
+      )}
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={!!deleteFieldId} onOpenChange={() => setDeleteFieldId(null)}>
