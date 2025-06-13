@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Plus, Type, Heading1, Heading2, Heading3, List, ListOrdered, Image, Table, Minus, Quote, MessageSquare, ChevronRight, Globe, Paperclip } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -17,24 +18,6 @@ interface BlockEditorProps {
   workspaceId?: string;
 }
 
-// Optional presence context hook
-function useOptionalPresenceContext() {
-  try {
-    // Try to import and use the presence context
-    const { usePresenceContext } = require('@/components/collaboration/PresenceProvider');
-    return usePresenceContext();
-  } catch (error) {
-    // If not available, return empty state
-    console.log('Presence context not available, continuing without real-time features');
-    return {
-      activeUsers: [],
-      loading: false,
-      updateCursorPosition: async () => {},
-      sendHeartbeat: async () => {}
-    };
-  }
-}
-
 export function BlockEditor({ pageId, isEditable, workspaceId }: BlockEditorProps) {
   const { blocks, loading, createBlock, updateBlock, deleteBlock } = useBlocks(pageId);
   const { toast } = useToast();
@@ -42,9 +25,6 @@ export function BlockEditor({ pageId, isEditable, workspaceId }: BlockEditorProp
   const navigate = useNavigate();
   const editorRef = useRef<HTMLDivElement>(null);
   const [focusedBlockId, setFocusedBlockId] = useState<string | null>(null);
-
-  // Use optional presence context - won't crash if not available
-  const { activeUsers, loading: presenceLoading } = useOptionalPresenceContext();
 
   const { isOpen, position, searchTerm, openSlashMenu, closeSlashMenu, updateSearchTerm, handleSelectItem } = useSlashMenu({
     onSelectCommand: handleCreateBlock,
