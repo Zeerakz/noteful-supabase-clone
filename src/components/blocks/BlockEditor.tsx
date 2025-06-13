@@ -7,7 +7,6 @@ import { SlashMenu } from './SlashMenu';
 import { useBlocks } from '@/hooks/useBlocks';
 import { useSlashMenu } from '@/hooks/useSlashMenu';
 import { useToast } from '@/hooks/use-toast';
-import { usePresenceContext } from '@/components/collaboration/PresenceProvider';
 import { useAuth } from '@/contexts/AuthContext';
 import { PageDuplicationService } from '@/services/pageDuplicationService';
 import { useNavigate } from 'react-router-dom';
@@ -18,6 +17,24 @@ interface BlockEditorProps {
   workspaceId?: string;
 }
 
+// Optional presence context hook
+function useOptionalPresenceContext() {
+  try {
+    // Try to import and use the presence context
+    const { usePresenceContext } = require('@/components/collaboration/PresenceProvider');
+    return usePresenceContext();
+  } catch (error) {
+    // If not available, return empty state
+    console.log('Presence context not available, continuing without real-time features');
+    return {
+      activeUsers: [],
+      loading: false,
+      updateCursorPosition: async () => {},
+      sendHeartbeat: async () => {}
+    };
+  }
+}
+
 export function BlockEditor({ pageId, isEditable, workspaceId }: BlockEditorProps) {
   const { blocks, loading, createBlock, updateBlock, deleteBlock } = useBlocks(pageId);
   const { toast } = useToast();
@@ -26,8 +43,8 @@ export function BlockEditor({ pageId, isEditable, workspaceId }: BlockEditorProp
   const editorRef = useRef<HTMLDivElement>(null);
   const [focusedBlockId, setFocusedBlockId] = useState<string | null>(null);
 
-  // Use presence context instead of calling usePresence directly
-  const { activeUsers, loading: presenceLoading } = usePresenceContext();
+  // Use optional presence context - won't crash if not available
+  const { activeUsers, loading: presenceLoading } = useOptionalPresenceContext();
 
   const { isOpen, position, searchTerm, openSlashMenu, closeSlashMenu, updateSearchTerm, handleSelectItem } = useSlashMenu({
     onSelectCommand: handleCreateBlock,

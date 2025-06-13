@@ -5,6 +5,7 @@ import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { BlockEditor } from '@/components/blocks/BlockEditor';
 import { PagePropertiesSection } from '@/components/database/fields/PagePropertiesSection';
+import { PresenceProvider } from '@/components/collaboration/PresenceProvider';
 import { useDatabaseFields } from '@/hooks/useDatabaseFields';
 import { usePageData } from '@/hooks/usePageData';
 import { useStablePageProperties } from '@/hooks/useStablePageProperties';
@@ -90,68 +91,73 @@ function PageViewContent() {
   }, {} as Record<string, string>);
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="border-b border-border bg-background sticky top-0 z-10">
-        <div className="container mx-auto px-4 py-3">
-          <div className="flex items-center space-x-4">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleBack}
-            >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back
-            </Button>
-            <div>
-              <h1 className="text-xl font-semibold">{pageData.title}</h1>
-              <p className="text-sm text-muted-foreground">in {pageData.workspace.name}</p>
+    <PresenceProvider pageId={pageData.id}>
+      <div className="min-h-screen bg-background">
+        <div className="border-b border-border bg-background sticky top-0 z-10">
+          <div className="container mx-auto px-4 py-3">
+            <div className="flex items-center space-x-4">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleBack}
+              >
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back
+              </Button>
+              <div>
+                <h1 className="text-xl font-semibold">{pageData.title}</h1>
+                <p className="text-sm text-muted-foreground">in {pageData.workspace.name}</p>
+              </div>
             </div>
           </div>
         </div>
-      </div>
-      
-      <div className="container mx-auto max-w-4xl px-4 py-6 space-y-6">
-        {/* Properties Section */}
-        {showProperties && (
+        
+        <div className="container mx-auto max-w-4xl px-4 py-6 space-y-6">
+          {/* Properties Section */}
+          {showProperties && (
+            <ErrorBoundary
+              fallback={
+                <div className="p-4 border border-red-200 rounded-lg bg-red-50">
+                  <p className="text-red-600">Error loading properties</p>
+                  {propertiesError && <p className="text-sm text-red-500 mt-1">{propertiesError}</p>}
+                  <Button size="sm" onClick={retryProperties} className="mt-2">
+                    Retry Properties
+                  </Button>
+                </div>
+              }
+            >
+              <PagePropertiesSection
+                fields={fields}
+                properties={propertiesRecord}
+                pageId={pageData.id}
+                workspaceId={pageData.workspace.id}
+                onPropertyUpdate={handlePropertyUpdate}
+                isEditable={true}
+                pageData={pageData}
+                userProfiles={userProfiles}
+              />
+            </ErrorBoundary>
+          )}
+
+          {/* Page Content */}
           <ErrorBoundary
             fallback={
               <div className="p-4 border border-red-200 rounded-lg bg-red-50">
-                <p className="text-red-600">Error loading properties</p>
-                {propertiesError && <p className="text-sm text-red-500 mt-1">{propertiesError}</p>}
-                <Button size="sm" onClick={retryProperties} className="mt-2">
-                  Retry Properties
+                <p className="text-red-600">Error loading page content</p>
+                <p className="text-sm text-red-500 mt-1">
+                  There was an issue loading the page editor. This might be due to a missing context provider.
+                </p>
+                <Button size="sm" onClick={handleRetry} className="mt-2">
+                  Retry
                 </Button>
               </div>
             }
           >
-            <PagePropertiesSection
-              fields={fields}
-              properties={propertiesRecord}
-              pageId={pageData.id}
-              workspaceId={pageData.workspace.id}
-              onPropertyUpdate={handlePropertyUpdate}
-              isEditable={true}
-              pageData={pageData}
-              userProfiles={userProfiles}
-            />
+            <BlockEditor pageId={pageData.id} isEditable={true} workspaceId={pageData.workspace.id} />
           </ErrorBoundary>
-        )}
-
-        {/* Page Content */}
-        <ErrorBoundary
-          fallback={
-            <div className="p-4 border border-red-200 rounded-lg bg-red-50">
-              <p className="text-red-600">Error loading page content</p>
-              <Button size="sm" onClick={handleRetry} className="mt-2">
-                Retry
-              </Button>
-            </div>
-          }
-        >
-          <BlockEditor pageId={pageData.id} isEditable={true} workspaceId={pageData.workspace.id} />
-        </ErrorBoundary>
+        </div>
       </div>
-    </div>
+    </PresenceProvider>
   );
 }
 
