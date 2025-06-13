@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback } from 'react';
 import { DatabaseField, PageProperty } from '@/types/database';
 import { DatabaseTableHeader } from './DatabaseTableHeader';
@@ -9,6 +10,7 @@ import { Pagination } from '@/components/ui/pagination';
 import { Settings, Plus } from 'lucide-react';
 import { SortRule } from '@/components/database/SortingModal';
 import { useColumnResizing } from './hooks/useColumnResizing';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface PageWithProperties {
   id: string;
@@ -223,36 +225,49 @@ export function DatabaseTableViewContent({
         </div>
       </div>
 
-      {/* Table container with improved layout strategy */}
-      <div className="flex-1 overflow-auto bg-background">
-        <div className="w-full" style={{ minWidth: `${totalTableWidth}px` }}>
-          <Table className="table-fixed w-full" style={{ width: `${totalTableWidth}px` }}>
-            <DatabaseTableHeader
-              fields={fields}
-              sortRules={sortRules}
-              onSort={handleSort}
-              onFieldsChange={onFieldsChange}
-              onFieldReorder={onFieldReorder}
-              getColumnWidth={getColumnWidth}
-              onColumnResize={updateColumnWidth}
-              onResizeStateChange={handleResizeStateChange}
-            />
-            <DatabaseTableBody
-              pagesWithProperties={pagesWithProperties}
-              fields={fields}
-              onTitleUpdate={onTitleUpdate}
-              onPropertyUpdate={onPropertyUpdate}
-              onDeleteRow={onDeleteRow}
-              onCreateRow={onCreateRow}
-              workspaceId={workspaceId}
-              selectedRows={selectedRows}
-              onRowSelect={handleRowSelect}
-              onSelectAll={handleSelectAll}
-              showNewRow={true}
-              getColumnWidth={getColumnWidth}
-              resizingFields={resizingFields}
-            />
-          </Table>
+      {/* Table container with proper scrolling */}
+      <div className="flex-1 overflow-hidden bg-background">
+        <div className="h-full flex flex-col">
+          {/* Sticky Header */}
+          <div className="border-b-2 border-border bg-background/98 backdrop-blur-md sticky top-0 z-30 shadow-sm">
+            <div className="overflow-hidden">
+              <Table className="table-fixed" style={{ width: `${totalTableWidth}px`, minWidth: `${totalTableWidth}px` }}>
+                <DatabaseTableHeader
+                  fields={fields}
+                  sortRules={sortRules}
+                  onSort={handleSort}
+                  onFieldsChange={onFieldsChange}
+                  onFieldReorder={onFieldReorder}
+                  getColumnWidth={getColumnWidth}
+                  onColumnResize={updateColumnWidth}
+                  onResizeStateChange={handleResizeStateChange}
+                />
+              </Table>
+            </div>
+          </div>
+          
+          {/* Scrollable Body */}
+          <div className="flex-1 overflow-auto">
+            <div style={{ width: `${totalTableWidth}px`, minWidth: `${totalTableWidth}px` }}>
+              <Table className="table-fixed" style={{ width: `${totalTableWidth}px`, minWidth: `${totalTableWidth}px` }}>
+                <DatabaseTableBody
+                  pagesWithProperties={pagesWithProperties}
+                  fields={fields}
+                  onTitleUpdate={onTitleUpdate}
+                  onPropertyUpdate={onPropertyUpdate}
+                  onDeleteRow={onDeleteRow}
+                  onCreateRow={onCreateRow}
+                  workspaceId={workspaceId}
+                  selectedRows={selectedRows}
+                  onRowSelect={handleRowSelect}
+                  onSelectAll={handleSelectAll}
+                  showNewRow={true}
+                  getColumnWidth={getColumnWidth}
+                  resizingFields={resizingFields}
+                />
+              </Table>
+            </div>
+          </div>
         </div>
       </div>
     </div>
