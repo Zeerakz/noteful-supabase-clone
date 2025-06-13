@@ -12,12 +12,24 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { 
   ArrowUp, 
   ArrowDown, 
   Info, 
   GripVertical,
-  Settings
+  Settings,
+  ChevronDown,
+  Filter,
+  EyeOff,
+  SortAsc,
+  SortDesc
 } from 'lucide-react';
 import { DatabaseField } from '@/types/database';
 import { SortRule } from '@/components/database/SortingModal';
@@ -70,6 +82,7 @@ export function DatabaseColumnHeader({
   const [isDragging, setIsDragging] = useState(false);
   const [dragOver, setDragOver] = useState<'before' | 'after' | null>(null);
   const [isHovered, setIsHovered] = useState(false);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   const currentSort = sortRules.find(rule => rule.fieldId === field.id);
   const sortDirection = currentSort?.direction;
@@ -124,7 +137,6 @@ export function DatabaseColumnHeader({
     document.body.style.userSelect = 'none';
   };
 
-  // Drag and drop handlers
   const handleDragStart = (e: React.DragEvent) => {
     if (!isDraggable || !onFieldReorder) return;
     
@@ -132,7 +144,6 @@ export function DatabaseColumnHeader({
     e.dataTransfer.setData('text/plain', field.id);
     e.dataTransfer.effectAllowed = 'move';
     
-    // Create a custom drag image
     const dragImage = document.createElement('div');
     dragImage.textContent = field.name;
     dragImage.className = 'bg-background border border-border rounded-md px-3 py-2 shadow-lg text-sm font-medium';
@@ -188,7 +199,7 @@ export function DatabaseColumnHeader({
           ${isDragging ? 'opacity-50' : ''}
           ${dragOver === 'before' ? 'border-l-4 border-l-primary shadow-[inset_4px_0_0_hsl(var(--primary))]' : ''}
           ${dragOver === 'after' ? 'border-r-4 border-r-primary shadow-[inset_-4px_0_0_hsl(var(--primary))]' : ''}
-          ${isHovered ? 'brightness-[1.02]' : ''}
+          ${isHovered || isDropdownOpen ? 'brightness-[1.02] bg-accent/10' : ''}
           ${className}
         `}
         draggable={canDrag}
@@ -216,25 +227,104 @@ export function DatabaseColumnHeader({
             </Tooltip>
           )}
 
-          {/* Column Title with Sort */}
-          <Button
-            variant="ghost"
-            onClick={handleSortClick}
-            className="flex items-center gap-2 px-1 py-0.5 h-auto text-column-header hover:bg-transparent hover:text-foreground flex-1 justify-start min-w-0 transition-all duration-300 ease-out focus-visible:ring-0 focus-visible:shadow-[0_0_8px_hsl(var(--primary)/0.15)]"
-          >
-            <span className="truncate">{field.name.toUpperCase()}</span>
-            
-            {/* Sort Indicator */}
-            {sortDirection && (
-              <div className="flex-shrink-0 ml-1">
-                {sortDirection === 'asc' ? (
-                  <ArrowUp className="h-3 w-3 text-primary drop-shadow-sm" />
-                ) : (
-                  <ArrowDown className="h-3 w-3 text-primary drop-shadow-sm" />
+          {/* Main Header Content with Dropdown */}
+          <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                className={`
+                  flex items-center gap-2 px-2 py-1 h-auto text-column-header hover:bg-transparent 
+                  hover:text-foreground flex-1 justify-start min-w-0 transition-all duration-200 ease-out 
+                  focus-visible:ring-0 focus-visible:shadow-[0_0_8px_hsl(var(--primary)/0.15)]
+                  ${isHovered || isDropdownOpen ? 'text-foreground shadow-sm' : ''}
+                  group/header
+                `}
+              >
+                {/* Column Title */}
+                <span className={`
+                  truncate transition-all duration-200 ease-out
+                  ${isHovered || isDropdownOpen ? 'font-semibold tracking-wide' : ''}
+                `}>
+                  {field.name.toUpperCase()}
+                </span>
+                
+                {/* Sort Indicator */}
+                {sortDirection && (
+                  <div className="flex-shrink-0 ml-1">
+                    {sortDirection === 'asc' ? (
+                      <ArrowUp className="h-3 w-3 text-primary drop-shadow-sm" />
+                    ) : (
+                      <ArrowDown className="h-3 w-3 text-primary drop-shadow-sm" />
+                    )}
+                  </div>
                 )}
-              </div>
-            )}
-          </Button>
+
+                {/* Chevron - Subtle reveal on hover */}
+                <ChevronDown className={`
+                  h-3 w-3 flex-shrink-0 ml-auto text-muted-foreground/40 transition-all duration-200 ease-out
+                  ${isHovered || isDropdownOpen 
+                    ? 'opacity-100 text-muted-foreground rotate-0' 
+                    : 'opacity-0 -rotate-90'
+                  }
+                  ${isDropdownOpen ? 'rotate-180' : ''}
+                `} />
+              </Button>
+            </DropdownMenuTrigger>
+
+            {/* Carefully crafted dropdown menu */}
+            <DropdownMenuContent 
+              align="start" 
+              side="bottom"
+              className={`
+                w-52 bg-popover/95 backdrop-blur-sm border border-border/20 
+                shadow-xl rounded-lg p-1 animate-in fade-in-0 zoom-in-95 
+                data-[state=open]:animate-in data-[state=closed]:animate-out 
+                data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 
+                data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95
+                data-[side=bottom]:slide-in-from-top-2
+              `}
+              sideOffset={4}
+            >
+              {/* Sort Options */}
+              <DropdownMenuItem 
+                onClick={() => onSort(field.id, 'asc')}
+                className="flex items-center gap-3 px-3 py-2.5 rounded-md transition-all duration-200 hover:bg-accent/50 cursor-pointer"
+              >
+                <SortAsc className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm font-medium">Sort Ascending</span>
+                {sortDirection === 'asc' && (
+                  <div className="ml-auto w-2 h-2 bg-primary rounded-full" />
+                )}
+              </DropdownMenuItem>
+
+              <DropdownMenuItem 
+                onClick={() => onSort(field.id, 'desc')}
+                className="flex items-center gap-3 px-3 py-2.5 rounded-md transition-all duration-200 hover:bg-accent/50 cursor-pointer"
+              >
+                <SortDesc className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm font-medium">Sort Descending</span>
+                {sortDirection === 'desc' && (
+                  <div className="ml-auto w-2 h-2 bg-primary rounded-full" />
+                )}
+              </DropdownMenuItem>
+
+              <DropdownMenuSeparator className="my-1 bg-border/30" />
+
+              {/* Filter Option */}
+              <DropdownMenuItem className="flex items-center gap-3 px-3 py-2.5 rounded-md transition-all duration-200 hover:bg-accent/50 cursor-pointer">
+                <Filter className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm font-medium">Filter</span>
+              </DropdownMenuItem>
+
+              <DropdownMenuSeparator className="my-1 bg-border/30" />
+
+              {/* Hide Column */}
+              <DropdownMenuItem className="flex items-center gap-3 px-3 py-2.5 rounded-md transition-all duration-200 hover:bg-accent/50 cursor-pointer text-muted-foreground hover:text-foreground">
+                <EyeOff className="h-4 w-4" />
+                <span className="text-sm font-medium">Hide Column</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
 
           {/* Info Icon for fields with descriptions */}
           {hasDescription && (
