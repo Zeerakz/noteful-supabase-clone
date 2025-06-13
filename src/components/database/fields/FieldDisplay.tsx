@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { DatabaseField } from '@/types/database';
 import { SelectFieldDisplay } from './SelectFieldDisplay';
@@ -10,6 +9,7 @@ import { PlatformDisplay } from './PlatformDisplay';
 import { LinkDisplay } from './LinkDisplay';
 import { PeopleFieldDisplay } from '@/components/property/field-displays/PeopleFieldDisplay';
 import { FileAttachmentFieldDisplay } from '@/components/property/field-displays/FileAttachmentFieldDisplay';
+import { CheckboxFieldDisplay } from '@/components/property/field-displays/CheckboxFieldDisplay';
 import { Checkbox } from '@/components/ui/checkbox';
 
 interface FieldDisplayProps {
@@ -72,10 +72,11 @@ export function FieldDisplay({ field, value, pageId, onValueChange }: FieldDispl
 
     case 'checkbox':
       return (
-        <Checkbox
-          checked={value === 'true'}
-          disabled
-          className="pointer-events-none"
+        <CheckboxFieldDisplay
+          value={value}
+          config={field.settings}
+          field={field}
+          pageId={pageId}
         />
       );
 

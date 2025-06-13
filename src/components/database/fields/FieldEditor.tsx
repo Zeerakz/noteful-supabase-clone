@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -10,6 +9,7 @@ import { EnhancedDateFieldEditor } from './EnhancedDateFieldEditor';
 import { RelationFieldEditor } from './RelationFieldEditor';
 import { PeopleFieldEditor } from '@/components/property/field-editors/PeopleFieldEditor';
 import { FileAttachmentFieldEditor } from '@/components/property/field-editors/FileAttachmentFieldEditor';
+import { CheckboxFieldEditor } from '@/components/property/field-editors/CheckboxFieldEditor';
 
 interface FieldEditorProps {
   field: DatabaseField;
@@ -170,13 +170,14 @@ export function FieldEditor({ field, value, onChange, workspaceId, pageId }: Fie
 
     case 'checkbox':
       return (
-        <div className="flex items-center justify-center">
-          <Checkbox
-            checked={localValue === 'true'}
-            onCheckedChange={handleCheckboxChange}
-            disabled={isUpdating}
-          />
-        </div>
+        <CheckboxFieldEditor
+          value={localValue}
+          config={field.settings}
+          onChange={handleSelectChange}
+          field={field}
+          workspaceId={workspaceId}
+          pageId={pageId}
+        />
       );
 
     case 'select':

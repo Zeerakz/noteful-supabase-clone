@@ -1,73 +1,82 @@
 
 import React from 'react';
-import { CheckboxPropertyConfig } from '@/types/property';
-import { Label } from '@/components/ui/label';
+import { Control } from 'react-hook-form';
+import { FormField, FormItem, FormLabel, FormControl, FormDescription } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Textarea } from '@/components/ui/textarea';
+import { CheckboxPropertyConfig } from '@/types/property/configs/checkbox';
 
 interface CheckboxPropertyConfigEditorProps {
-  config: any;
-  onConfigChange: (config: CheckboxPropertyConfig) => void;
+  control: Control<any>;
+  config: CheckboxPropertyConfig;
 }
 
-export function CheckboxPropertyConfigEditor({ config, onConfigChange }: CheckboxPropertyConfigEditorProps) {
-  const checkboxConfig = config as CheckboxPropertyConfig;
-
-  const updateConfig = (updates: Partial<CheckboxPropertyConfig>) => {
-    onConfigChange({ ...checkboxConfig, ...updates });
-  };
-
+export function CheckboxPropertyConfigEditor({ 
+  control, 
+  config 
+}: CheckboxPropertyConfigEditorProps) {
   return (
     <div className="space-y-4">
-      <div className="space-y-2">
-        <Label htmlFor="trueLabel">Label for True/Checked State</Label>
-        <Input
-          id="trueLabel"
-          value={checkboxConfig.trueLabel || ''}
-          onChange={(e) => updateConfig({ trueLabel: e.target.value })}
-          placeholder="e.g., Yes, Done, Completed"
-        />
-      </div>
+      <FormField
+        control={control}
+        name="config.defaultValue"
+        render={({ field }) => (
+          <FormItem className="flex flex-row items-center space-x-3 space-y-0">
+            <FormControl>
+              <Checkbox
+                checked={field.value}
+                onCheckedChange={field.onChange}
+              />
+            </FormControl>
+            <div className="space-y-1 leading-none">
+              <FormLabel>Default value</FormLabel>
+              <FormDescription>
+                The default state for new entries
+              </FormDescription>
+            </div>
+          </FormItem>
+        )}
+      />
 
-      <div className="space-y-2">
-        <Label htmlFor="falseLabel">Label for False/Unchecked State</Label>
-        <Input
-          id="falseLabel"
-          value={checkboxConfig.falseLabel || ''}
-          onChange={(e) => updateConfig({ falseLabel: e.target.value })}
-          placeholder="e.g., No, To Do, Incomplete"
-        />
-      </div>
+      <FormField
+        control={control}
+        name="config.trueLabel"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>True label</FormLabel>
+            <FormControl>
+              <Input
+                {...field}
+                placeholder="Yes"
+                value={field.value || ''}
+              />
+            </FormControl>
+            <FormDescription>
+              Text displayed when checkbox is checked
+            </FormDescription>
+          </FormItem>
+        )}
+      />
 
-      <div className="flex items-center space-x-2">
-        <Checkbox
-          id="defaultValue"
-          checked={checkboxConfig.defaultValue || false}
-          onCheckedChange={(checked) => updateConfig({ defaultValue: checked as boolean })}
-        />
-        <Label htmlFor="defaultValue">Default to checked</Label>
-      </div>
-
-      <div className="flex items-center space-x-2">
-        <Checkbox
-          id="required"
-          checked={checkboxConfig.required || false}
-          onCheckedChange={(checked) => updateConfig({ required: checked as boolean })}
-        />
-        <Label htmlFor="required">Required field</Label>
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="description">Description</Label>
-        <Textarea
-          id="description"
-          value={checkboxConfig.description || ''}
-          onChange={(e) => updateConfig({ description: e.target.value })}
-          placeholder="Enter field description"
-          rows={2}
-        />
-      </div>
+      <FormField
+        control={control}
+        name="config.falseLabel"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>False label</FormLabel>
+            <FormControl>
+              <Input
+                {...field}
+                placeholder="No"
+                value={field.value || ''}
+              />
+            </FormControl>
+            <FormDescription>
+              Text displayed when checkbox is unchecked
+            </FormDescription>
+          </FormItem>
+        )}
+      />
     </div>
   );
 }

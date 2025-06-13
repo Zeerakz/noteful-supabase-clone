@@ -5,6 +5,7 @@ import { numberPropertyType } from '@/components/property/types/NumberPropertyTy
 import { statusPropertyType } from '@/components/property/types/StatusPropertyType';
 import { peoplePropertyType } from '@/components/property/types/PeoplePropertyType';
 import { fileAttachmentPropertyType } from '@/components/property/types/FileAttachmentPropertyType';
+import { checkboxPropertyType } from '@/components/property/types/CheckboxPropertyType';
 
 // Import other property types as they are created
 // import { selectPropertyType } from '@/components/property/types/SelectPropertyType';
@@ -17,11 +18,11 @@ export function initializePropertyRegistry() {
   propertyRegistry.register(statusPropertyType);
   propertyRegistry.register(peoplePropertyType);
   propertyRegistry.register(fileAttachmentPropertyType);
+  propertyRegistry.register(checkboxPropertyType);
   
   // TODO: Register other property types
   // propertyRegistry.register(selectPropertyType);
   // propertyRegistry.register(datePropertyType);
-  // propertyRegistry.register(checkboxPropertyType);
   // propertyRegistry.register(urlPropertyType);
   // propertyRegistry.register(emailPropertyType);
   // propertyRegistry.register(phonePropertyType);
