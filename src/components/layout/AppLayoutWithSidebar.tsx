@@ -4,6 +4,7 @@ import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/s
 import { PagesSidebar } from '@/components/sidebar/PagesSidebar';
 import { Separator } from '@/components/ui/separator';
 import { DarkModeToggle } from '@/components/ui/dark-mode-toggle';
+import { SkipToContent } from '@/components/accessibility/SkipToContent';
 
 interface AppLayoutWithSidebarProps {
   children: React.ReactNode;
@@ -17,6 +18,9 @@ export function AppLayoutWithSidebar({ children, breadcrumbs }: AppLayoutWithSid
   return (
     <SidebarProvider>
       <div className="min-h-screen max-h-screen flex w-full overflow-hidden">
+        {/* Skip to content link - first focusable element */}
+        <SkipToContent />
+        
         <PagesSidebar />
         <SidebarInset className="flex flex-col h-screen overflow-hidden">
           <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
@@ -26,9 +30,14 @@ export function AppLayoutWithSidebar({ children, breadcrumbs }: AppLayoutWithSid
               <DarkModeToggle />
             </div>
           </header>
-          <div className="flex-1 min-h-0 overflow-hidden">
+          <main 
+            id="main-content" 
+            className="flex-1 min-h-0 overflow-hidden"
+            role="main"
+            aria-label="Main content"
+          >
             {children}
-          </div>
+          </main>
         </SidebarInset>
       </div>
     </SidebarProvider>
