@@ -13,16 +13,15 @@ interface GentleToastProps {
   className?: string;
 }
 
-export function GentleToast(props: GentleToastProps & Omit<React.ComponentProps<typeof Toast>, keyof GentleToastProps>) {
-  const { 
-    type = 'info', 
-    title, 
-    message, 
-    suggestion,
-    onRetry,
-    className,
-    ...toastProps 
-  } = props;
+export function GentleToast({ 
+  type = 'info', 
+  title, 
+  message, 
+  suggestion,
+  onRetry,
+  className,
+  ...props 
+}: GentleToastProps & React.ComponentProps<typeof Toast>) {
   
   const getToastStyles = () => {
     switch (type) {
@@ -57,7 +56,7 @@ export function GentleToast(props: GentleToastProps & Omit<React.ComponentProps<
         getToastStyles(),
         className
       )}
-      {...toastProps}
+      {...props}
     >
       <div className="flex items-start gap-3">
         <div className="flex-shrink-0 mt-0.5">
