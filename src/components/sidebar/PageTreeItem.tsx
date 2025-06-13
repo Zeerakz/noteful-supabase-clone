@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FileText, ChevronRight, ChevronDown, MoreHorizontal, Trash2, Edit } from 'lucide-react';
+import { FileText, ChevronRight, ChevronDown, MoreHorizontal, Trash2, Edit, AlertTriangle } from 'lucide-react';
 import { Draggable, Droppable } from 'react-beautiful-dnd';
 import {
   SidebarMenuButton,
@@ -22,6 +22,12 @@ import { Page } from '@/hooks/usePages';
 import { useAuth } from '@/contexts/AuthContext';
 import { ContentType, ContentTypeUtils } from '@/types/contentTypes';
 import { ContentTypeIcon } from '@/components/content-types/ContentTypeIcon';
+import { 
+  canNestPage, 
+  getDepthIndicators, 
+  MAX_VISIBLE_LEVELS 
+} from '@/utils/navigationConstraints';
+import { cn } from '@/lib/utils';
 
 interface PageTreeItemProps {
   page: Page;
@@ -40,6 +46,10 @@ export function PageTreeItem({ page, pages, workspaceId, onDelete, level = 0, in
   const childPages = pages.filter(p => p.parent_page_id === page.id);
   const hasChildren = childPages.length > 0;
   const isOwner = page.created_by === user?.id;
+
+  // Calculate depth indicators and constraints
+  const depthInfo = getDepthIndicators(level);
+  const { canAddChildren, isMaxDepth, showDepthWarning } = depthInfo;
 
   // Determine content type for icon display
   // Only show content type icons for first-level items (level 0)
@@ -82,12 +92,28 @@ export function PageTreeItem({ page, pages, workspaceId, onDelete, level = 0, in
     return <FileText className={level === 0 ? "h-3 w-3 text-muted-foreground" : "h-3 w-3 text-muted-foreground"} />;
   };
 
+  // Check if we can add children to this page (for potential sub-page creation)
+  const canCreateSubPage = canAddChildren && isOwner;
+
   const content = (
     <>
-      <SidebarMenuButton onClick={handleNavigate} className="group">
-        <div className="flex items-center gap-2">
+      <SidebarMenuButton 
+        onClick={handleNavigate} 
+        className={cn(
+          "group",
+          showDepthWarning && "bg-yellow-50 dark:bg-yellow-950/20",
+          isMaxDepth && "bg-red-50 dark:bg-red-950/20"
+        )}
+      >
+        <div className="flex items-center gap-2 w-full">
           {getItemIcon()}
-          <span className="truncate">{page.title}</span>
+          <span className="truncate flex-1">{page.title}</span>
+          {showDepthWarning && (
+            <AlertTriangle 
+              className="h-3 w-3 text-yellow-600 dark:text-yellow-400" 
+              title={`Nesting level ${level + 1}/${MAX_VISIBLE_LEVELS}`}
+            />
+          )}
         </div>
       </SidebarMenuButton>
       {isOwner && (
@@ -103,6 +129,12 @@ export function PageTreeItem({ page, pages, workspaceId, onDelete, level = 0, in
               <Edit className="h-4 w-4 mr-2" />
               Edit
             </DropdownMenuItem>
+            {!canCreateSubPage && isMaxDepth && (
+              <DropdownMenuItem disabled className="text-muted-foreground">
+                <AlertTriangle className="h-4 w-4 mr-2" />
+                Max nesting depth reached
+              </DropdownMenuItem>
+            )}
             <DropdownMenuItem
               onClick={() => onDelete(page.id)}
               className="text-destructive"
@@ -127,7 +159,7 @@ export function PageTreeItem({ page, pages, workspaceId, onDelete, level = 0, in
             className={snapshot.isDragging ? 'opacity-50' : ''}
           >
             {content}
-            {isExpanded && hasChildren && (
+            {isExpanded && hasChildren && canAddChildren && (
               <Droppable droppableId={`sub-${page.id}`} type="page">
                 {(provided) => (
                   <SidebarMenuSub ref={provided.innerRef} {...provided.droppableProps}>
@@ -147,6 +179,21 @@ export function PageTreeItem({ page, pages, workspaceId, onDelete, level = 0, in
                 )}
               </Droppable>
             )}
+            {isExpanded && hasChildren && !canAddChildren && (
+              <SidebarMenuSub>
+                {childPages.map((childPage, childIndex) => (
+                  <PageTreeItem
+                    key={childPage.id}
+                    page={childPage}
+                    pages={pages}
+                    workspaceId={workspaceId}
+                    onDelete={onDelete}
+                    level={level + 1}
+                    index={childIndex}
+                  />
+                ))}
+              </SidebarMenuSub>
+            )}
           </SidebarMenuItem>
         )}
       </Draggable>
@@ -160,12 +207,25 @@ export function PageTreeItem({ page, pages, workspaceId, onDelete, level = 0, in
           ref={provided.innerRef}
           {...provided.draggableProps}
           {...provided.dragHandleProps}
-          className={snapshot.isDragging ? 'opacity-50' : ''}
+          className={cn(
+            snapshot.isDragging ? 'opacity-50' : '',
+            showDepthWarning && "bg-yellow-50 dark:bg-yellow-950/20",
+            isMaxDepth && "bg-red-50 dark:bg-red-950/20"
+          )}
         >
-          <SidebarMenuSubButton onClick={handleNavigate} className="group">
+          <SidebarMenuSubButton 
+            onClick={handleNavigate} 
+            className="group"
+          >
             <div className="flex items-center gap-2 w-full">
               {getItemIcon()}
               <span className="truncate flex-1">{page.title}</span>
+              {showDepthWarning && (
+                <AlertTriangle 
+                  className="h-3 w-3 text-yellow-600 dark:text-yellow-400" 
+                  title={`Nesting level ${level + 1}/${MAX_VISIBLE_LEVELS}`}
+                />
+              )}
               {isOwner && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -183,6 +243,12 @@ export function PageTreeItem({ page, pages, workspaceId, onDelete, level = 0, in
                       <Edit className="h-4 w-4 mr-2" />
                       Edit
                     </DropdownMenuItem>
+                    {!canCreateSubPage && isMaxDepth && (
+                      <DropdownMenuItem disabled className="text-muted-foreground">
+                        <AlertTriangle className="h-4 w-4 mr-2" />
+                        Max nesting depth reached
+                      </DropdownMenuItem>
+                    )}
                     <DropdownMenuItem
                       onClick={() => onDelete(page.id)}
                       className="text-destructive"
@@ -195,7 +261,7 @@ export function PageTreeItem({ page, pages, workspaceId, onDelete, level = 0, in
               )}
             </div>
           </SidebarMenuSubButton>
-          {isExpanded && hasChildren && (
+          {isExpanded && hasChildren && canAddChildren && (
             <Droppable droppableId={`sub-${page.id}`} type="page">
               {(provided) => (
                 <SidebarMenuSub ref={provided.innerRef} {...provided.droppableProps}>
@@ -214,6 +280,21 @@ export function PageTreeItem({ page, pages, workspaceId, onDelete, level = 0, in
                 </SidebarMenuSub>
               )}
             </Droppable>
+          )}
+          {isExpanded && hasChildren && !canAddChildren && (
+            <SidebarMenuSub>
+              {childPages.map((childPage, childIndex) => (
+                <PageTreeItem
+                  key={childPage.id}
+                  page={childPage}
+                  pages={pages}
+                  workspaceId={workspaceId}
+                  onDelete={onDelete}
+                  level={level + 1}
+                  index={childIndex}
+                />
+              ))}
+            </SidebarMenuSub>
           )}
         </SidebarMenuSubItem>
       )}

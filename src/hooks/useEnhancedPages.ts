@@ -4,6 +4,7 @@ import { useOptimisticPages } from '@/hooks/useOptimisticPages';
 import { useCallback } from 'react';
 import { Page } from '@/types/page';
 import { useToast } from '@/hooks/use-toast';
+import { canNestPage } from '@/utils/navigationConstraints';
 
 export function useEnhancedPages(workspaceId?: string) {
   const { pages, loading, error, createPage, updatePage, deletePage, updatePageHierarchy, fetchPages } = usePages(workspaceId);
@@ -23,6 +24,19 @@ export function useEnhancedPages(workspaceId?: string) {
 
   const enhancedCreatePage = useCallback(async (title: string, parentPageId?: string) => {
     if (!workspaceId) return { error: 'Workspace not selected' };
+
+    // Validate nesting depth before creating
+    if (parentPageId) {
+      const validation = canNestPage(optimisticPages, 'new-page', parentPageId);
+      if (!validation.canNest) {
+        toast({
+          title: "Cannot create page",
+          description: validation.reason,
+          variant: "destructive",
+        });
+        return { error: validation.reason };
+      }
+    }
 
     console.log('Creating page optimistically:', { title, parentPageId, workspaceId });
 
@@ -72,10 +86,23 @@ export function useEnhancedPages(workspaceId?: string) {
       });
       return { data: null, error: errorMessage };
     }
-  }, [workspaceId, createPage, optimisticCreatePage, clearOptimisticCreation, clearOptimisticCreationByMatch, toast]);
+  }, [workspaceId, createPage, optimisticCreatePage, clearOptimisticCreation, clearOptimisticCreationByMatch, toast, optimisticPages]);
 
   const enhancedUpdatePage = useCallback(async (id: string, updates: Partial<Pick<Page, 'title' | 'parent_page_id' | 'order_index'>>) => {
     console.log('Updating page optimistically:', { id, updates });
+
+    // Validate nesting depth if parent is being changed
+    if (updates.parent_page_id !== undefined) {
+      const validation = canNestPage(optimisticPages, id, updates.parent_page_id);
+      if (!validation.canNest) {
+        toast({
+          title: "Cannot move page",
+          description: validation.reason,
+          variant: "destructive",
+        });
+        return { data: null, error: validation.reason };
+      }
+    }
 
     // Optimistic update
     optimisticUpdatePage(id, updates);
@@ -106,7 +133,7 @@ export function useEnhancedPages(workspaceId?: string) {
       });
       return { data: null, error: errorMessage };
     }
-  }, [updatePage, optimisticUpdatePage, clearOptimisticUpdate, toast]);
+  }, [updatePage, optimisticUpdatePage, clearOptimisticUpdate, toast, optimisticPages]);
 
   const enhancedDeletePage = useCallback(async (id: string) => {
     const pageToDelete = optimisticPages.find(p => p.id === id);
@@ -151,6 +178,17 @@ export function useEnhancedPages(workspaceId?: string) {
     // Find current page for optimistic update
     const currentPage = optimisticPages.find(p => p.id === pageId);
     if (!currentPage) return { error: 'Page not found' };
+
+    // Validate nesting depth constraints
+    const validation = canNestPage(optimisticPages, pageId, newParentId);
+    if (!validation.canNest) {
+      toast({
+        title: "Cannot move page",
+        description: validation.reason,
+        variant: "destructive",
+      });
+      return { error: validation.reason };
+    }
 
     console.log('Updating page hierarchy optimistically:', { pageId, newParentId, newIndex });
 

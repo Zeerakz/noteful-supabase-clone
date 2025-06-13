@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Loader2 } from 'lucide-react';
+import { Plus, Loader2, AlertTriangle } from 'lucide-react';
 import { DragDropContext, Droppable, DropResult } from 'react-beautiful-dnd';
 import {
   SidebarGroup,
@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/button';
 import { useEnhancedPages } from '@/hooks/useEnhancedPages';
 import { useToast } from '@/hooks/use-toast';
 import { PageTreeItem } from './PageTreeItem';
+import { validateDragAndDrop } from '@/utils/navigationConstraints';
 
 interface WorkspacePagesGroupProps {
   workspaceId: string;
@@ -47,6 +48,18 @@ export function WorkspacePagesGroup({ workspaceId, workspaceName }: WorkspacePag
     }
 
     console.log('Drag and drop:', { draggableId, source, destination, newParentId });
+
+    // Validate the drag and drop operation against depth constraints
+    const validation = validateDragAndDrop(pages, draggableId, newParentId, destination.index);
+    
+    if (!validation.isValid) {
+      toast({
+        title: "Cannot move page",
+        description: validation.error,
+        variant: "destructive",
+      });
+      return;
+    }
 
     const { error } = await updatePageHierarchy(
       draggableId,
