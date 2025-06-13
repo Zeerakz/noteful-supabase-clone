@@ -7,6 +7,7 @@ import {
   SidebarMenuButton,
 } from '@/components/ui/sidebar';
 import { useNavigate, useParams } from 'react-router-dom';
+import { cn } from '@/lib/utils';
 
 export function SystemActions() {
   const navigate = useNavigate();
@@ -44,10 +45,18 @@ export function SystemActions() {
               <SidebarMenuButton
                 onClick={item.onClick}
                 disabled={item.disabled}
-                className="text-muted-foreground hover:text-foreground"
+                className={cn(
+                  "sidebar-menu-item sidebar-focus-ring",
+                  "sidebar-text-secondary hover:sidebar-text-primary",
+                  item.disabled && "opacity-50 cursor-not-allowed"
+                )}
+                aria-label={item.disabled ? `${item.title} (coming soon)` : item.title}
               >
-                <item.icon className="h-4 w-4" />
+                <item.icon className="h-4 w-4" aria-hidden="true" />
                 <span>{item.title}</span>
+                {item.disabled && (
+                  <span className="sr-only">(coming soon)</span>
+                )}
               </SidebarMenuButton>
             </SidebarMenuItem>
           </li>

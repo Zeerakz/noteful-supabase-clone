@@ -18,6 +18,7 @@ import { NewPageAction } from './NewPageAction';
 import { SystemActions } from './SystemActions';
 import { GlobalSearchModal } from '@/components/search/GlobalSearchModal';
 import { useGlobalSearch } from '@/hooks/useGlobalSearch';
+import { cn } from '@/lib/utils';
 
 export function PagesSidebar() {
   const { workspaces } = useWorkspaces();
@@ -25,16 +26,18 @@ export function PagesSidebar() {
 
   return (
     <>
-      <Sidebar>
+      <Sidebar className={cn("sidebar-accessible", "sidebar-focus-ring")}>
         <nav aria-label="Main navigation">
-          <SidebarHeader className="p-3 border-b">
-            <WorkspaceSwitcher />
+          <SidebarHeader className="p-3 border-b sidebar-accessible">
+            <div className="sidebar-focus-ring">
+              <WorkspaceSwitcher />
+            </div>
             <div className="mt-2">
               <SearchTrigger />
             </div>
           </SidebarHeader>
           
-          <SidebarContent className="px-2">
+          <SidebarContent className="px-2 sidebar-accessible">
             <ul role="tree" aria-label="Workspace navigation">
               {workspaces.map((workspace) => (
                 <WorkspacePagesGroup
@@ -46,13 +49,15 @@ export function PagesSidebar() {
             </ul>
           </SidebarContent>
 
-          <SidebarFooter className="p-3 border-t space-y-2">
-            <NewPageAction />
+          <SidebarFooter className="p-3 border-t space-y-2 sidebar-accessible">
+            <div className="sidebar-focus-ring">
+              <NewPageAction />
+            </div>
             
-            <SidebarSeparator />
+            <SidebarSeparator className="bg-sidebar-border" />
             
             <SidebarGroup>
-              <SidebarGroupLabel className="text-xs text-muted-foreground px-2 py-1">
+              <SidebarGroupLabel className="sidebar-group-label">
                 System
               </SidebarGroupLabel>
               <SidebarGroupContent>
