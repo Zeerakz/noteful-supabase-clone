@@ -137,10 +137,9 @@ export function DatabaseTableRow({
           <div className="flex-1 overflow-hidden">
             <EditableCell
               value={page.title}
-              onSave={(newTitle) => onTitleUpdate(page.id, newTitle)}
+              onChange={(newTitle) => onTitleUpdate(page.id, newTitle)}
               placeholder="Untitled"
               disabled={isAnyColumnResizing}
-              isResizing={isAnyColumnResizing}
             />
           </div>
         </div>
@@ -179,12 +178,9 @@ export function DatabaseTableRow({
                     <div className="w-full overflow-hidden">
                       <EditableCell
                         value={cellValue}
-                        onSave={(value) => handlePropertyChange(field.id, value)}
-                        fieldType={field.type}
-                        fieldConfig={field.settings}
+                        onChange={(value) => handlePropertyChange(field.id, value)}
                         placeholder={`Enter ${field.name.toLowerCase()}`}
                         disabled={isAnyColumnResizing}
-                        isResizing={isFieldResizing}
                       />
                     </div>
                   ) : (
