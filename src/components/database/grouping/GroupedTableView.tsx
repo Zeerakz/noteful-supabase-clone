@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -18,6 +17,8 @@ interface GroupedTableViewProps {
   onPropertyUpdate: (pageId: string, fieldId: string, value: string) => void;
   workspaceId: string;
   getColumnWidth: (fieldId: string) => number;
+  userProfiles?: any[];
+  allFields?: DatabaseField[];
 }
 
 export function GroupedTableView({
@@ -27,7 +28,9 @@ export function GroupedTableView({
   onTitleUpdate,
   onPropertyUpdate,
   workspaceId,
-  getColumnWidth
+  getColumnWidth,
+  userProfiles = [],
+  allFields = []
 }: GroupedTableViewProps) {
   const handleToggleGroup = (group: FlattenedGroup) => {
     const groupKey = getGroupKey(group.groupPath);

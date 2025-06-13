@@ -2,6 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { DatabaseField, PageProperty } from '@/types/database';
 import { DatabaseTableHeader } from './DatabaseTableHeader';
 import { DatabaseTableBody } from './DatabaseTableBody';
+import { DatabaseTableRow } from './DatabaseTableRow';
 import { Table, TableCaption } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
