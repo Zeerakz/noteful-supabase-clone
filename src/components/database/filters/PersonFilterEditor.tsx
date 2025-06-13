@@ -24,17 +24,26 @@ export function PersonFilterEditor({ rule, field, onUpdate }: PersonFilterEditor
   };
 
   const handleSelectChange = (value: string) => {
-    // Only proceed if the value is not empty
-    if (value && value.trim() !== '') {
-      if (value === 'me') {
-        handleMeFilterSelect();
-      } else {
-        handleValueChange('');
-      }
+    // Only proceed if the value is not empty and is a valid option
+    if (!value || value.trim() === '') {
+      console.warn('PersonFilterEditor: Attempted to select empty value');
+      return;
+    }
+    
+    if (value === 'me') {
+      handleMeFilterSelect();
+    } else if (value === 'custom') {
+      handleValueChange('');
     }
   };
 
   const isMe = isMeFilter(rule);
+
+  // Ensure we have valid select options
+  const selectOptions = [
+    { value: 'me', label: 'Me', icon: User },
+    { value: 'custom', label: 'Custom' }
+  ].filter(option => option.value && option.value.trim() !== '');
 
   return (
     <div className="flex items-center gap-2">
@@ -45,13 +54,14 @@ export function PersonFilterEditor({ rule, field, onUpdate }: PersonFilterEditor
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="me">
-                <div className="flex items-center gap-2">
-                  <User className="h-3 w-3" />
-                  Me
-                </div>
-              </SelectItem>
-              <SelectItem value="custom">Custom</SelectItem>
+              {selectOptions.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  <div className="flex items-center gap-2">
+                    <option.icon className="h-3 w-3" />
+                    {option.label}
+                  </div>
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
 
