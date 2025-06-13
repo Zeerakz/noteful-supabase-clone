@@ -9,6 +9,7 @@ import { TeamMembersDisplay } from './TeamMembersDisplay';
 import { PlatformDisplay } from './PlatformDisplay';
 import { LinkDisplay } from './LinkDisplay';
 import { PeopleFieldDisplay } from '@/components/property/field-displays/PeopleFieldDisplay';
+import { FileAttachmentFieldDisplay } from '@/components/property/field-displays/FileAttachmentFieldDisplay';
 import { Checkbox } from '@/components/ui/checkbox';
 
 interface FieldDisplayProps {

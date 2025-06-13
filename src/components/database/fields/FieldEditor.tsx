@@ -9,6 +9,7 @@ import { DateFieldEditor } from './DateFieldEditor';
 import { EnhancedDateFieldEditor } from './EnhancedDateFieldEditor';
 import { RelationFieldEditor } from './RelationFieldEditor';
 import { PeopleFieldEditor } from '@/components/property/field-editors/PeopleFieldEditor';
+import { FileAttachmentFieldEditor } from '@/components/property/field-editors/FileAttachmentFieldEditor';
 
 interface FieldEditorProps {
   field: DatabaseField;

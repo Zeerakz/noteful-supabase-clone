@@ -41,36 +41,22 @@ export function usePeopleResolver() {
     // Resolve actual users from database
     if (actualUserIds.length > 0) {
       try {
-        // Query the workspace_membership table to get user profiles with roles
-        const { data: memberships, error } = await supabase
-          .from('workspace_membership')
-          .select(`
-            user_id,
-            role_id,
-            roles:role_id (role_name),
-            profiles:user_id (
-              id,
-              email,
-              full_name,
-              avatar_url
-            )
-          `)
-          .in('user_id', actualUserIds)
-          .eq('status', 'accepted');
+        // Query the profiles table directly since the workspace_membership join has issues
+        const { data: profiles, error } = await supabase
+          .from('profiles')
+          .select('id, email, full_name, avatar_url')
+          .in('id', actualUserIds);
 
         if (error) {
           console.error('Error resolving users:', error);
-        } else {
-          const dbUsers = (memberships || [])
-            .filter(membership => membership.profiles)
-            .map(membership => ({
-              id: membership.profiles.id,
-              email: membership.profiles.email || 'Unknown user',
-              name: membership.profiles.full_name,
-              avatar_url: membership.profiles.avatar_url,
-              role: membership.roles?.role_name,
-              isGuest: false
-            }));
+        } else if (profiles) {
+          const dbUsers = profiles.map(profile => ({
+            id: profile.id,
+            email: profile.email || 'Unknown user',
+            name: profile.full_name,
+            avatar_url: profile.avatar_url,
+            isGuest: false
+          }));
           resolvedUsers.push(...dbUsers);
         }
 
