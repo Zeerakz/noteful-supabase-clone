@@ -3,9 +3,52 @@ import React from 'react';
 import { ErrorBoundary } from '@/components/error/ErrorBoundary';
 import { DatabaseTableViewContent } from './DatabaseTableViewContent';
 import { errorHandler } from '@/utils/errorHandler';
+import { DatabaseField } from '@/types/database';
+import { SortRule } from '@/components/database/SortingModal';
+
+interface PageWithProperties {
+  id: string;
+  title: string;
+  workspace_id: string;
+  database_id: string | null;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+  parent_page_id: string | null;
+  order_index: number;
+  properties: Record<string, string>;
+}
+
+interface PaginationInfo {
+  totalItems: number;
+  currentPage: number;
+  itemsPerPage: number;
+  totalPages: number;
+  nextPage: () => void;
+  prevPage: () => void;
+  goToPage: (page: number) => void;
+}
 
 interface SafeDatabaseTableViewContentProps {
-  [key: string]: any;
+  pagesWithProperties: PageWithProperties[];
+  fields: DatabaseField[];
+  pagesLoading: boolean;
+  pagesError: string | null;
+  onCreateRow: () => Promise<void>;
+  onTitleUpdate: (pageId: string, newTitle: string) => Promise<void>;
+  onPropertyUpdate: (pageId: string, fieldId: string, value: string) => void;
+  onDeleteRow: (pageId: string) => Promise<void>;
+  onRefetch: () => void;
+  onFieldsChange?: () => void;
+  onFieldReorder?: (draggedFieldId: string, targetFieldId: string, position: 'before' | 'after') => void;
+  onShowManageProperties?: () => void;
+  pagination: PaginationInfo | null;
+  totalPages: number;
+  databaseId: string;
+  sortRules: SortRule[];
+  setSortRules: (rules: SortRule[]) => void;
+  workspaceId: string;
+  onItemsPerPageChange?: (itemsPerPage: number) => void;
 }
 
 export function SafeDatabaseTableViewContent(props: SafeDatabaseTableViewContentProps) {
