@@ -7,10 +7,20 @@ import { peoplePropertyType } from '@/components/property/types/PeoplePropertyTy
 import { fileAttachmentPropertyType } from '@/components/property/types/FileAttachmentPropertyType';
 import { checkboxPropertyType } from '@/components/property/types/CheckboxPropertyType';
 import { buttonPropertyType } from '@/components/property/types/ButtonPropertyType';
+import { datePropertyType } from '@/components/property/types/DatePropertyType';
+import { selectPropertyType, multiSelectPropertyType } from '@/components/property/types/SelectPropertyType';
 
 // Import other property types as they are created
-// import { selectPropertyType } from '@/components/property/types/SelectPropertyType';
-// ... etc
+// import { urlPropertyType } from '@/components/property/types/UrlPropertyType';
+// import { emailPropertyType } from '@/components/property/types/EmailPropertyType';
+// import { phonePropertyType } from '@/components/property/types/PhonePropertyType';
+// import { relationPropertyType } from '@/components/property/types/RelationPropertyType';
+// import { formulaPropertyType } from '@/components/property/types/FormulaPropertyType';
+// import { rollupPropertyType } from '@/components/property/types/RollupPropertyType';
+// import { richTextPropertyType } from '@/components/property/types/RichTextPropertyType';
+// import { ratingPropertyType } from '@/components/property/types/RatingPropertyType';
+// import { progressPropertyType } from '@/components/property/types/ProgressPropertyType';
+// import { currencyPropertyType } from '@/components/property/types/CurrencyPropertyType';
 
 export function initializePropertyRegistry() {
   // Register all built-in property types
@@ -21,10 +31,11 @@ export function initializePropertyRegistry() {
   propertyRegistry.register(fileAttachmentPropertyType);
   propertyRegistry.register(checkboxPropertyType);
   propertyRegistry.register(buttonPropertyType);
+  propertyRegistry.register(datePropertyType);
+  propertyRegistry.register(selectPropertyType);
+  propertyRegistry.register(multiSelectPropertyType);
   
   // TODO: Register other property types
-  // propertyRegistry.register(selectPropertyType);
-  // propertyRegistry.register(datePropertyType);
   // propertyRegistry.register(urlPropertyType);
   // propertyRegistry.register(emailPropertyType);
   // propertyRegistry.register(phonePropertyType);

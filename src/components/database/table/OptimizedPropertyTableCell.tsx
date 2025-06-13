@@ -45,24 +45,38 @@ export function OptimizedPropertyTableCell({
     return 'normal';
   }, [field.type, rowIndex]);
 
+  // Check if field is editable
+  const isFieldEditable = useMemo(() => {
+    // System properties and computed fields are not editable
+    const readOnlyTypes = ['rollup', 'formula', 'created_time', 'created_by', 'last_edited_time', 'last_edited_by', 'id'];
+    return !readOnlyTypes.includes(field.type);
+  }, [field.type]);
+
   const handleStartEdit = () => {
-    if (field.type === 'rollup') return; // Rollups are not editable
+    if (!isFieldEditable) {
+      console.log(`Field ${field.name} (${field.type}) is not editable`);
+      return;
+    }
+    
+    console.log(`Starting edit for field: ${field.name} (${field.type}), current value:`, value);
     setIsEditing(true);
     setEditValue(value || '');
   };
 
   const handleSaveEdit = () => {
+    console.log(`Saving edit for field: ${field.name}, new value:`, editValue);
     onValueChange(editValue);
     setIsEditing(false);
   };
 
   const handleCancelEdit = () => {
+    console.log(`Cancelling edit for field: ${field.name}`);
     setEditValue(value || '');
     setIsEditing(false);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
+    if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSaveEdit();
     } else if (e.key === 'Escape') {
@@ -86,9 +100,9 @@ export function OptimizedPropertyTableCell({
       );
     }
 
-    if (isEditing) {
+    if (isEditing && isFieldEditable) {
       return (
-        <div onKeyDown={handleKeyDown}>
+        <div onKeyDown={handleKeyDown} className="w-full">
           <RegistryBasedFieldEditor
             field={field}
             value={editValue}
@@ -99,13 +113,13 @@ export function OptimizedPropertyTableCell({
           <div className="flex gap-1 mt-1">
             <button
               onClick={handleSaveEdit}
-              className="text-xs px-2 py-1 bg-primary text-primary-foreground rounded"
+              className="text-xs px-2 py-1 bg-primary text-primary-foreground rounded hover:bg-primary/90"
             >
               Save
             </button>
             <button
               onClick={handleCancelEdit}
-              className="text-xs px-2 py-1 bg-muted text-muted-foreground rounded"
+              className="text-xs px-2 py-1 bg-muted text-muted-foreground rounded hover:bg-muted/90"
             >
               Cancel
             </button>
@@ -116,10 +130,13 @@ export function OptimizedPropertyTableCell({
 
     return (
       <div
-        className={`cursor-text hover:bg-muted/50 p-1 rounded min-h-[24px] transition-opacity duration-150 ${
-          isResizing ? 'opacity-60' : ''
-        }`}
-        onClick={handleStartEdit}
+        className={`
+          min-h-[24px] p-1 rounded transition-all duration-150
+          ${isFieldEditable ? 'cursor-text hover:bg-muted/50' : 'cursor-default'}
+          ${isResizing ? 'opacity-60' : ''}
+        `}
+        onClick={isFieldEditable ? handleStartEdit : undefined}
+        title={isFieldEditable ? `Click to edit ${field.name}` : `${field.name} (read-only)`}
       >
         <RegistryBasedFieldDisplay
           field={field}
