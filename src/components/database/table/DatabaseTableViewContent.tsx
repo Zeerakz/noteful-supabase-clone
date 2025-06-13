@@ -82,9 +82,9 @@ export function DatabaseTableViewContent({
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
   const [resizingFields, setResizingFields] = useState<Set<string>>(new Set());
 
-  // Column resizing functionality with updated constraints
+  // Column resizing functionality with simplified width management
   const {
-    columnWidths,
+    getColumnWidth,
     updateColumnWidth,
     resetColumnWidth,
     resetAllWidths
@@ -103,8 +103,6 @@ export function DatabaseTableViewContent({
   const handleSort = (fieldId: string, direction: 'asc' | 'desc') => {
     setSortBy(fieldId);
     setSortDirection(direction);
-
-    // Update sort rules
     const newSortRules: SortRule[] = [{ fieldId, direction }];
     setSortRules(newSortRules);
   };
@@ -133,11 +131,16 @@ export function DatabaseTableViewContent({
     setResizingFields(newResizingFields);
   }, []);
 
-  // Calculate total width for the table
-  const totalTableWidth = 48 + // checkbox column
-    (columnWidths['title'] || 280) + // title column
-    fields.reduce((acc, field) => acc + (columnWidths[field.id] || 200), 0) + // field columns
-    64; // actions column
+  // Calculate total width for the table with simplified approach
+  const calculateTotalWidth = () => {
+    const checkboxWidth = 48;
+    const titleWidth = getColumnWidth('title');
+    const fieldsWidth = fields.reduce((acc, field) => acc + getColumnWidth(field.id), 0);
+    const actionsWidth = 64;
+    return checkboxWidth + titleWidth + fieldsWidth + actionsWidth;
+  };
+
+  const totalTableWidth = calculateTotalWidth();
 
   if (pagesLoading) {
     return (
@@ -221,20 +224,17 @@ export function DatabaseTableViewContent({
         </div>
       </div>
 
-      {/* Table container with fixed layout and consistent width */}
+      {/* Table container with improved layout strategy */}
       <div className="flex-1 overflow-auto bg-background">
         <div className="w-full" style={{ minWidth: `${totalTableWidth}px` }}>
-          <Table className="border-collapse" style={{ 
-            tableLayout: 'fixed',
-            width: `${totalTableWidth}px`
-          }}>
+          <Table className="table-fixed w-full" style={{ width: `${totalTableWidth}px` }}>
             <DatabaseTableHeader
               fields={fields}
               sortRules={sortRules}
               onSort={handleSort}
               onFieldsChange={onFieldsChange}
               onFieldReorder={onFieldReorder}
-              columnWidths={columnWidths}
+              getColumnWidth={getColumnWidth}
               onColumnResize={updateColumnWidth}
               onResizeStateChange={handleResizeStateChange}
             />
@@ -250,7 +250,7 @@ export function DatabaseTableViewContent({
               onRowSelect={handleRowSelect}
               onSelectAll={handleSelectAll}
               showNewRow={true}
-              columnWidths={columnWidths}
+              getColumnWidth={getColumnWidth}
               resizingFields={resizingFields}
             />
           </Table>

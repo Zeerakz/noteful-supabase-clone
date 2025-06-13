@@ -9,7 +9,7 @@ import { DatabaseField } from '@/types/database';
 interface NewTableRowProps {
   fields: DatabaseField[];
   onCreateRow: (title?: string) => void;
-  columnWidths?: Record<string, number>;
+  getColumnWidth: (fieldId: string) => number;
   isEvenRow?: boolean;
   resizingFields?: Set<string>;
 }
@@ -17,7 +17,7 @@ interface NewTableRowProps {
 export function NewTableRow({
   fields,
   onCreateRow,
-  columnWidths = {},
+  getColumnWidth,
   isEvenRow = false,
   resizingFields = new Set()
 }: NewTableRowProps) {
@@ -41,7 +41,6 @@ export function NewTableRow({
       setTitle('');
     } catch (error) {
       console.error('Failed to create row:', error);
-      // Keep the form open on error
     }
   };
 
@@ -70,34 +69,20 @@ export function NewTableRow({
         ${isAnyColumnResizing ? 'pointer-events-none opacity-60' : ''}
       `}
     >
-      {/* Empty checkbox cell - Fixed width */}
+      {/* Empty checkbox cell */}
       <TableCell 
-        className={`
-          w-12 p-3 border-r border-border/20
-          ${resizingFields.has('checkbox') ? 'resize-active' : ''}
-        `}
-        style={{ 
-          width: '48px',
-          minWidth: '48px',
-          maxWidth: '48px'
-        }}
+        className="w-12 p-3 border-r border-border/20"
+        style={{ width: '48px' }}
       >
         <div className="flex items-center justify-center">
           <div className="w-4 h-4" />
         </div>
       </TableCell>
 
-      {/* Title Cell - Respects column width */}
+      {/* Title Cell */}
       <TableCell 
-        className={`
-          p-0 border-r border-border/20
-          ${resizingFields.has('title') ? 'resize-active' : ''}
-        `}
-        style={{ 
-          width: `${columnWidths['title'] || 280}px`,
-          minWidth: `${columnWidths['title'] || 280}px`,
-          maxWidth: `${columnWidths['title'] || 280}px`
-        }}
+        className="p-0 border-r border-border/20"
+        style={{ width: `${getColumnWidth('title')}px` }}
       >
         <div className="px-4 py-3">
           {isCreating ? (
@@ -143,19 +128,12 @@ export function NewTableRow({
         </div>
       </TableCell>
 
-      {/* Empty Property Cells - Respects column widths */}
+      {/* Empty Property Cells */}
       {fields.map((field) => (
         <TableCell 
           key={field.id} 
-          className={`
-            p-0 border-r border-border/20 last:border-r-0
-            ${resizingFields.has(field.id) ? 'resize-active' : ''}
-          `}
-          style={{ 
-            width: `${columnWidths[field.id] || 200}px`,
-            minWidth: `${columnWidths[field.id] || 200}px`,
-            maxWidth: `${columnWidths[field.id] || 200}px`
-          }}
+          className="p-0 border-r border-border/20 last:border-r-0"
+          style={{ width: `${getColumnWidth(field.id)}px` }}
         >
           <div className="px-4 py-3 overflow-hidden">
             <div className="min-h-[24px] px-2 py-1 flex items-center">
@@ -167,14 +145,10 @@ export function NewTableRow({
         </TableCell>
       ))}
 
-      {/* Empty Actions Cell - Fixed width */}
+      {/* Empty Actions Cell */}
       <TableCell 
         className="w-16 p-3"
-        style={{ 
-          width: '64px',
-          minWidth: '64px',
-          maxWidth: '64px'
-        }}
+        style={{ width: '64px' }}
       >
         <div className="w-8 h-8" />
       </TableCell>

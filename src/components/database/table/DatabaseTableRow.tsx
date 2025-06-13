@@ -12,7 +12,6 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { EditableCell } from './EditableCell';
 import { FieldEditor } from '../fields/FieldEditor';
-import { FieldDisplay } from '../fields/FieldDisplay';
 import { DatabaseField } from '@/types/database';
 
 interface PageWithProperties {
@@ -27,7 +26,7 @@ interface DatabaseTableRowProps {
   onTitleUpdate: (pageId: string, newTitle: string) => void;
   onPropertyUpdate: (pageId: string, fieldId: string, value: string) => void;
   onDeleteRow: (pageId: string) => void;
-  columnWidths?: Record<string, number>;
+  getColumnWidth: (fieldId: string) => number;
   workspaceId: string;
   isSelected?: boolean;
   onSelect?: (pageId: string, selected: boolean) => void;
@@ -44,7 +43,7 @@ export function DatabaseTableRow({
   onTitleUpdate,
   onPropertyUpdate,
   onDeleteRow,
-  columnWidths = {},
+  getColumnWidth,
   workspaceId,
   isSelected = false,
   onSelect,
@@ -96,17 +95,10 @@ export function DatabaseTableRow({
         ${isAnyColumnResizing ? 'pointer-events-none' : ''}
       `}
     >
-      {/* Selection Checkbox - Fixed width */}
+      {/* Selection Checkbox */}
       <TableCell 
-        className={`
-          w-12 p-3 border-r border-border/20
-          ${resizingFields.has('checkbox') ? 'resize-active' : ''}
-        `}
-        style={{ 
-          width: '48px',
-          minWidth: '48px',
-          maxWidth: '48px'
-        }}
+        className="w-12 p-3 border-r border-border/20"
+        style={{ width: '48px' }}
       >
         <div className="flex items-center justify-center">
           <Checkbox
@@ -121,17 +113,10 @@ export function DatabaseTableRow({
         </div>
       </TableCell>
 
-      {/* Title Cell - Respects column width */}
+      {/* Title Cell */}
       <TableCell 
-        className={`
-          p-0 border-r border-border/20
-          ${resizingFields.has('title') ? 'resize-active' : ''}
-        `}
-        style={{ 
-          width: `${columnWidths['title'] || 280}px`,
-          minWidth: `${columnWidths['title'] || 280}px`,
-          maxWidth: `${columnWidths['title'] || 280}px`
-        }}
+        className="p-0 border-r border-border/20"
+        style={{ width: `${getColumnWidth('title')}px` }}
       >
         <div className="flex items-center gap-2 px-4 py-3">
           {hasSubItems && (
@@ -161,7 +146,7 @@ export function DatabaseTableRow({
         </div>
       </TableCell>
 
-      {/* Property Cells - Respects column widths */}
+      {/* Property Cells */}
       {fields.map((field) => {
         const cellValue = page.properties[field.id] || '';
         const isFieldResizing = resizingFields.has(field.id);
@@ -169,15 +154,8 @@ export function DatabaseTableRow({
         return (
           <TableCell 
             key={field.id} 
-            className={`
-              p-0 border-r border-border/20 last:border-r-0
-              ${isFieldResizing ? 'resize-active' : ''}
-            `}
-            style={{ 
-              width: `${columnWidths[field.id] || 200}px`,
-              minWidth: `${columnWidths[field.id] || 200}px`,
-              maxWidth: `${columnWidths[field.id] || 200}px`
-            }}
+            className="p-0 border-r border-border/20 last:border-r-0"
+            style={{ width: `${getColumnWidth(field.id)}px` }}
           >
             <div className="px-4 py-3 overflow-hidden">
               {editingField === field.id ? (
@@ -221,14 +199,10 @@ export function DatabaseTableRow({
         );
       })}
 
-      {/* Actions Cell - Fixed width */}
+      {/* Actions Cell */}
       <TableCell 
         className="w-16 p-3"
-        style={{ 
-          width: '64px',
-          minWidth: '64px',
-          maxWidth: '64px'
-        }}
+        style={{ width: '64px' }}
       >
         <div className="flex items-center justify-center">
           <DropdownMenu>

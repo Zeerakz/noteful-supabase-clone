@@ -69,8 +69,20 @@
   }
 }
 
-/* Enhanced styles for resize mode */
+/* Enhanced styles for table layout and column resizing */
 @layer components {
+  /* Improved table layout for better column synchronization */
+  .table-fixed {
+    table-layout: fixed !important;
+  }
+  
+  .table-fixed th,
+  .table-fixed td {
+    overflow: hidden;
+    word-wrap: break-word;
+  }
+
+  /* Resize mode improvements */
   .resize-mode {
     @apply select-none;
   }
@@ -85,22 +97,6 @@
   
   /* Disable all hover states during resize */
   .resize-mode *:hover {
-    @apply bg-transparent !important;
-  }
-  
-  .resize-mode .hover\:bg-muted\/50:hover {
-    @apply bg-transparent !important;
-  }
-  
-  .resize-mode .hover\:bg-muted:hover {
-    @apply bg-transparent !important;
-  }
-  
-  .resize-mode .hover\:bg-accent\/30:hover {
-    @apply bg-transparent !important;
-  }
-  
-  .resize-mode .hover\:bg-primary\/10:hover {
     @apply bg-transparent !important;
   }
   
@@ -137,14 +133,11 @@
     @apply bg-primary/40 shadow-lg;
   }
 
-  /* Table layout fixes for column width synchronization */
-  .table-fixed {
-    table-layout: fixed !important;
-  }
-  
-  .table-fixed th,
-  .table-fixed td {
-    overflow: hidden;
-    text-overflow: ellipsis;
+  /* Remove conflicting hover states that interfere with resizing */
+  .resize-mode .hover\:bg-muted\/50:hover,
+  .resize-mode .hover\:bg-muted:hover,
+  .resize-mode .hover\:bg-accent\/30:hover,
+  .resize-mode .hover\:bg-primary\/10:hover {
+    @apply bg-transparent !important;
   }
 }

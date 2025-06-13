@@ -12,7 +12,7 @@ interface DatabaseTableHeaderProps {
   onSort: (fieldId: string, direction: 'asc' | 'desc') => void;
   onFieldsChange?: () => void;
   onFieldReorder?: (draggedFieldId: string, targetFieldId: string, position: 'before' | 'after') => void;
-  columnWidths?: Record<string, number>;
+  getColumnWidth: (fieldId: string) => number;
   onColumnResize?: (fieldId: string, width: number) => void;
   onResizeStateChange?: (resizingFields: Set<string>) => void;
 }
@@ -23,7 +23,7 @@ export function DatabaseTableHeader({
   onSort, 
   onFieldsChange,
   onFieldReorder,
-  columnWidths = {},
+  getColumnWidth,
   onColumnResize,
   onResizeStateChange
 }: DatabaseTableHeaderProps) {
@@ -38,7 +38,6 @@ export function DatabaseTableHeader({
         newSet.delete(fieldId);
       }
       
-      // Notify parent of resize state change
       if (onResizeStateChange) {
         onResizeStateChange(newSet);
       }
@@ -53,25 +52,17 @@ export function DatabaseTableHeader({
         {/* Selection Column - Fixed width */}
         <TableHead 
           className="w-12 p-3 bg-card/95 border-r border-border/40"
-          style={{ 
-            width: '48px',
-            minWidth: '48px',
-            maxWidth: '48px'
-          }}
+          style={{ width: '48px' }}
         >
           <div className="flex items-center justify-center">
             <Checkbox className="opacity-50" />
           </div>
         </TableHead>
 
-        {/* Title Column - Respects column width */}
+        {/* Title Column */}
         <TableHead 
           className="p-0 bg-card/95 border-r border-border/40"
-          style={{ 
-            width: `${columnWidths['title'] || 280}px`,
-            minWidth: `${columnWidths['title'] || 280}px`,
-            maxWidth: `${columnWidths['title'] || 280}px`
-          }}
+          style={{ width: `${getColumnWidth('title')}px` }}
         >
           <DatabaseColumnHeader
             field={{
@@ -88,21 +79,17 @@ export function DatabaseTableHeader({
             onSort={onSort}
             onResize={onColumnResize}
             onResizeStateChange={handleResizeStateChange}
-            width={columnWidths['title'] || 280}
+            width={getColumnWidth('title')}
             className="border-b-0"
           />
         </TableHead>
 
-        {/* Field Columns - Respects column widths */}
+        {/* Field Columns */}
         {fields.map((field) => (
           <TableHead 
             key={field.id} 
             className="p-0 bg-card/95 border-r border-border/40 last:border-r-0"
-            style={{ 
-              width: `${columnWidths[field.id] || 200}px`,
-              minWidth: `${columnWidths[field.id] || 200}px`,
-              maxWidth: `${columnWidths[field.id] || 200}px`
-            }}
+            style={{ width: `${getColumnWidth(field.id)}px` }}
           >
             <DatabaseColumnHeader
               field={field}
@@ -112,7 +99,7 @@ export function DatabaseTableHeader({
               onFieldReorder={onFieldReorder}
               onResize={onColumnResize}
               onResizeStateChange={handleResizeStateChange}
-              width={columnWidths[field.id] || 200}
+              width={getColumnWidth(field.id)}
               isDraggable={true}
               className="border-b-0"
             />
@@ -122,11 +109,7 @@ export function DatabaseTableHeader({
         {/* Actions Column - Fixed width */}
         <TableHead 
           className="w-16 p-3 bg-card/95"
-          style={{ 
-            width: '64px',
-            minWidth: '64px',
-            maxWidth: '64px'
-          }}
+          style={{ width: '64px' }}
         >
           <div className="text-center text-xs font-medium text-muted-foreground">
             •••

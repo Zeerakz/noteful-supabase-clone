@@ -19,7 +19,7 @@ interface DatabaseTableBodyProps {
   onDeleteRow: (pageId: string) => void;
   onCreateRow?: () => void;
   workspaceId: string;
-  columnWidths?: Record<string, number>;
+  getColumnWidth: (fieldId: string) => number;
   selectedRows?: Set<string>;
   onRowSelect?: (pageId: string, selected: boolean) => void;
   onSelectAll?: (selected: boolean) => void;
@@ -35,7 +35,7 @@ export function DatabaseTableBody({
   onDeleteRow,
   onCreateRow,
   workspaceId,
-  columnWidths,
+  getColumnWidth,
   selectedRows = new Set(),
   onRowSelect,
   onSelectAll,
@@ -64,7 +64,7 @@ export function DatabaseTableBody({
               onPropertyUpdate={onPropertyUpdate}
               onDeleteRow={onDeleteRow}
               workspaceId={workspaceId}
-              columnWidths={columnWidths}
+              getColumnWidth={getColumnWidth}
               isSelected={selectedRows.has(page.id)}
               onSelect={onRowSelect}
               isEvenRow={index % 2 === 0}
@@ -77,7 +77,7 @@ export function DatabaseTableBody({
             <NewTableRow
               fields={fields}
               onCreateRow={onCreateRow}
-              columnWidths={columnWidths}
+              getColumnWidth={getColumnWidth}
               isEvenRow={pagesWithProperties.length % 2 === 0}
               resizingFields={resizingFields}
             />
