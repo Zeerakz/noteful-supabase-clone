@@ -60,6 +60,9 @@ export function DatabaseViewRenderer({
         <DatabaseKanbanView
           databaseId={databaseId}
           workspaceId={workspaceId}
+          fields={fields}
+          filterGroup={filterGroup}
+          sortRules={sortRules}
         />
       );
 

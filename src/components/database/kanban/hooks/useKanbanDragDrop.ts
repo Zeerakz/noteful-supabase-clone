@@ -45,12 +45,29 @@ export function useKanbanDragDrop({
     const pageId = draggableId;
     const sourceColumnId = source.droppableId;
     const destColumnId = destination.droppableId;
-    const newStatus = destColumnId === 'no-status' ? '' : 
-      columns.find(col => col.id === destColumnId)?.title || '';
+    
+    // Determine the new property value based on field type and destination column
+    let newValue = '';
+    if (destColumnId !== 'no-status') {
+      const destColumn = columns.find(col => col.id === destColumnId);
+      if (destColumn) {
+        if (selectField.type === 'status') {
+          // For status fields, use the column ID (which is the option ID)
+          newValue = destColumn.id;
+        } else {
+          // For select fields, use the column title (which is the option name)
+          newValue = destColumn.title;
+        }
+      }
+    }
 
     // Find the page being moved
     const movedPage = pages.find(page => page.pageId === pageId);
     if (!movedPage) return;
+
+    // Store original state for rollback
+    const originalColumns = [...columns];
+    const originalPages = [...pages];
 
     // Optimistic update: Update local state immediately
     const updatedColumns = columns.map(column => {
@@ -69,7 +86,7 @@ export function useKanbanDragDrop({
           ...movedPage,
           properties: {
             ...movedPage.properties,
-            [selectField.id]: newStatus,
+            [selectField.id]: newValue,
           },
           pos: destination.index,
         };
@@ -100,7 +117,7 @@ export function useKanbanDragDrop({
             ...page,
             properties: {
               ...page.properties,
-              [selectField.id]: newStatus,
+              [selectField.id]: newValue,
             },
             pos: destination.index,
           }
@@ -112,39 +129,30 @@ export function useKanbanDragDrop({
       {
         pageId,
         fieldId: selectField.id,
-        value: newStatus
+        value: newValue
       },
       {
-        onError: () => {
+        onError: (error) => {
+          console.error('Failed to update property:', error);
           // Revert optimistic update on error
-          setColumns(columns);
-          setPages(pages);
+          setColumns(originalColumns);
+          setPages(originalPages);
+          
+          toast({
+            title: "Error",
+            description: "Failed to move card. Please try again.",
+            variant: "destructive",
+          });
+        },
+        onSuccess: () => {
+          console.log('Card moved successfully');
+          toast({
+            title: "Success",
+            description: "Card moved successfully",
+          });
         }
       }
     );
-
-    // Handle position updates for other pages in the column if needed
-    const positionField = fields.find(f => f.name.toLowerCase() === 'position' || f.name.toLowerCase() === 'pos');
-    if (positionField) {
-      const destColumn = updatedColumns.find(col => col.id === destColumnId);
-      if (destColumn) {
-        // Update positions for all pages in destination column
-        destColumn.pages.forEach((page, index) => {
-          if (page.pageId !== pageId) { // Skip the moved page as it's already handled
-            propertyUpdateMutation.mutate({
-              pageId: page.pageId,
-              fieldId: positionField.id,
-              value: index.toString()
-            });
-          }
-        });
-      }
-    }
-
-    toast({
-      title: "Success",
-      description: "Card moved successfully",
-    });
 
   }, [selectField, user, columns, pages, setColumns, setPages, propertyUpdateMutation, fields, databaseId]);
 

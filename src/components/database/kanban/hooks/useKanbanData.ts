@@ -1,15 +1,25 @@
 
 import { useState, useEffect } from 'react';
 import { DatabaseService } from '@/services/databaseService';
+import { DatabaseQueryService } from '@/services/database/databaseQueryService';
 import { DatabaseField } from '@/types/database';
+import { FilterGroup } from '@/types/filters';
+import { SortRule } from '@/components/database/SortingModal';
 import { PageWithProperties, KanbanColumn } from '../types';
 
 interface UseKanbanDataProps {
   databaseId: string;
   selectedField: DatabaseField | null;
+  filterGroup?: FilterGroup;
+  sortRules?: SortRule[];
 }
 
-export function useKanbanData({ databaseId, selectedField }: UseKanbanDataProps) {
+export function useKanbanData({ 
+  databaseId, 
+  selectedField, 
+  filterGroup, 
+  sortRules 
+}: UseKanbanDataProps) {
   const [fields, setFields] = useState<DatabaseField[]>([]);
   const [pages, setPages] = useState<PageWithProperties[]>([]);
   const [columns, setColumns] = useState<KanbanColumn[]>([]);
@@ -19,6 +29,8 @@ export function useKanbanData({ databaseId, selectedField }: UseKanbanDataProps)
   // Fetch database fields
   useEffect(() => {
     const fetchFields = async () => {
+      if (!databaseId) return;
+      
       try {
         const { data, error } = await DatabaseService.fetchDatabaseFields(databaseId);
         if (error) throw new Error(error);
@@ -28,18 +40,54 @@ export function useKanbanData({ databaseId, selectedField }: UseKanbanDataProps)
       }
     };
 
-    if (databaseId) {
-      fetchFields();
-    }
+    fetchFields();
   }, [databaseId]);
 
-  // For now, we'll show a placeholder structure
-  // In a full implementation, you'd fetch pages that belong to this database
+  // Fetch pages with properties
   useEffect(() => {
-    setLoading(false);
-    // Mock data for demonstration - in real implementation, fetch from database
-    setPages([]);
-  }, [databaseId]);
+    const fetchPages = async () => {
+      if (!databaseId) return;
+      
+      setLoading(true);
+      try {
+        const { data, error } = await DatabaseQueryService.fetchDatabasePages(
+          databaseId,
+          filterGroup,
+          fields,
+          sortRules
+        );
+        
+        if (error) throw new Error(error);
+        
+        // Transform pages to include properties in the expected format
+        const transformedPages: PageWithProperties[] = (data || []).map((page: any) => {
+          const properties: Record<string, string> = {};
+          
+          // Convert page_properties array to a properties object
+          (page.page_properties || []).forEach((prop: any) => {
+            properties[prop.field_id] = prop.value || '';
+          });
+          
+          return {
+            pageId: page.id,
+            title: page.title || 'Untitled',
+            properties,
+            pos: page.order_index || 0,
+          };
+        });
+        
+        setPages(transformedPages);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to fetch pages');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (fields.length > 0) {
+      fetchPages();
+    }
+  }, [databaseId, fields, filterGroup, sortRules]);
 
   // Create columns based on selected field options
   useEffect(() => {
@@ -48,12 +96,21 @@ export function useKanbanData({ databaseId, selectedField }: UseKanbanDataProps)
       return;
     }
 
-    const options = selectedField.settings?.options || [];
+    let options: Array<{ id: string; name: string; color?: string }> = [];
+
+    // Handle different field types
+    if (selectedField.type === 'select' || selectedField.type === 'multi-select') {
+      options = selectedField.settings?.options || [];
+    } else if (selectedField.type === 'status') {
+      // For status fields, flatten options from all groups
+      const groups = selectedField.settings?.groups || [];
+      options = groups.flatMap((group: any) => group.options || []);
+    }
+
     const defaultColumns: KanbanColumn[] = options.map((option: any) => ({
-      id: typeof option === 'string' 
-        ? option.toLowerCase().replace(/\s+/g, '-')
-        : option.id || option.name?.toLowerCase().replace(/\s+/g, '-'),
-      title: typeof option === 'string' ? option : option.name || option.id,
+      id: option.id || option.name?.toLowerCase().replace(/\s+/g, '-'),
+      title: option.name || option.id,
+      color: option.color,
       pages: [],
     }));
 
@@ -73,7 +130,14 @@ export function useKanbanData({ databaseId, selectedField }: UseKanbanDataProps)
           if (column.id === 'no-status') {
             return !fieldValue || fieldValue.trim() === '';
           }
-          return fieldValue === column.title;
+          
+          // For status fields, match by option ID
+          if (selectedField.type === 'status') {
+            return fieldValue === column.id;
+          }
+          
+          // For select fields, match by option name or ID
+          return fieldValue === column.title || fieldValue === column.id;
         })
         .sort((a, b) => (a.pos || 0) - (b.pos || 0)),
     }));

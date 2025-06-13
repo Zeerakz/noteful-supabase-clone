@@ -2,6 +2,9 @@
 import React from 'react';
 import { Kanban } from 'lucide-react';
 import { DragDropContext } from 'react-beautiful-dnd';
+import { DatabaseField } from '@/types/database';
+import { FilterGroup } from '@/types/filters';
+import { SortRule } from './SortingModal';
 import { KanbanColumn } from './kanban/KanbanColumn';
 import { KanbanViewHeader } from './kanban/KanbanViewHeader';
 import { useKanbanData } from './kanban/hooks/useKanbanData';
@@ -11,47 +14,50 @@ import { useKanbanDragDrop } from './kanban/hooks/useKanbanDragDrop';
 interface DatabaseKanbanViewProps {
   databaseId: string;
   workspaceId: string;
+  fields?: DatabaseField[];
+  filterGroup?: FilterGroup;
+  sortRules?: SortRule[];
 }
 
-export function DatabaseKanbanView({ databaseId, workspaceId }: DatabaseKanbanViewProps) {
-  const {
-    fields,
-    pages,
-    columns,
-    loading,
-    error,
-    setColumns,
-    setPages
-  } = useKanbanData({ databaseId, selectedField: null });
-
+export function DatabaseKanbanView({ 
+  databaseId, 
+  workspaceId, 
+  fields = [],
+  filterGroup,
+  sortRules = []
+}: DatabaseKanbanViewProps) {
   const {
     selectedField,
     selectFields,
     handleFieldChange
   } = useKanbanFieldSelection({ fields });
 
-  // Re-fetch data when selected field changes
   const {
-    fields: updatedFields,
-    pages: updatedPages,
-    columns: updatedColumns,
-    loading: updatedLoading,
-    error: updatedError,
-    setColumns: setUpdatedColumns,
-    setPages: setUpdatedPages
-  } = useKanbanData({ databaseId, selectedField });
-
-  const { handleDragEnd } = useKanbanDragDrop({
-    fields: updatedFields,
-    pages: updatedPages,
-    columns: updatedColumns,
-    selectField: selectedField,
-    databaseId,
-    setColumns: setUpdatedColumns,
-    setPages: setUpdatedPages
+    fields: allFields,
+    pages,
+    columns,
+    loading,
+    error,
+    setColumns,
+    setPages
+  } = useKanbanData({ 
+    databaseId, 
+    selectedField,
+    filterGroup,
+    sortRules 
   });
 
-  if (updatedLoading) {
+  const { handleDragEnd } = useKanbanDragDrop({
+    fields: allFields,
+    pages,
+    columns,
+    selectField: selectedField,
+    databaseId,
+    setColumns,
+    setPages
+  });
+
+  if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
         <div className="text-center">
@@ -62,10 +68,10 @@ export function DatabaseKanbanView({ databaseId, workspaceId }: DatabaseKanbanVi
     );
   }
 
-  if (updatedError) {
+  if (error) {
     return (
       <div className="text-center h-full flex items-center justify-center">
-        <p className="text-destructive">{updatedError}</p>
+        <p className="text-destructive">{error}</p>
       </div>
     );
   }
@@ -75,12 +81,12 @@ export function DatabaseKanbanView({ databaseId, workspaceId }: DatabaseKanbanVi
       <div className="text-center h-full flex items-center justify-center">
         <div>
           <Kanban className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-          <h3 className="text-lg font-medium mb-2">No Select Field Available</h3>
+          <h3 className="text-lg font-medium mb-2">No Grouping Field Available</h3>
           <p className="text-muted-foreground mb-4">
-            Kanban view requires at least one select-type field in your database to group by.
+            Kanban view requires at least one select or status field in your database to group by.
           </p>
           <p className="text-sm text-muted-foreground">
-            Add a select field to your database to use the kanban view.
+            Add a select or status field to your database to use the kanban view.
           </p>
         </div>
       </div>
@@ -98,17 +104,17 @@ export function DatabaseKanbanView({ databaseId, workspaceId }: DatabaseKanbanVi
       <div className="flex-1 min-h-0">
         <DragDropContext onDragEnd={handleDragEnd}>
           <div className="flex gap-6 overflow-x-auto h-full pb-4">
-            {updatedColumns.map((column) => (
+            {columns.map((column) => (
               <KanbanColumn
                 key={column.id}
                 column={column}
-                fields={updatedFields}
+                fields={allFields}
               />
             ))}
           </div>
         </DragDropContext>
 
-        {updatedPages.length === 0 && (
+        {pages.length === 0 && (
           <div className="text-center h-full flex items-center justify-center">
             <div>
               <Kanban className="h-12 w-12 text-muted-foreground mx-auto mb-4" />

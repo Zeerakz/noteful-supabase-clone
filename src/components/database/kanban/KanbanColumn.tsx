@@ -16,9 +16,17 @@ export function KanbanColumn({ column, fields }: KanbanColumnProps) {
   return (
     <div className="flex flex-col w-80 flex-shrink-0">
       <div className="flex items-center justify-between mb-3">
-        <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">
-          {column.title}
-        </h4>
+        <div className="flex items-center gap-2">
+          {column.color && (
+            <div 
+              className="w-3 h-3 rounded-full flex-shrink-0" 
+              style={{ backgroundColor: column.color }}
+            />
+          )}
+          <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">
+            {column.title}
+          </h4>
+        </div>
         <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded">
           {column.pages.length}
         </span>
@@ -29,8 +37,10 @@ export function KanbanColumn({ column, fields }: KanbanColumnProps) {
           <div
             ref={provided.innerRef}
             {...provided.droppableProps}
-            className={`flex-1 space-y-3 min-h-[200px] p-2 rounded-lg transition-colors ${
-              snapshot.isDraggingOver ? 'bg-muted/50' : 'bg-muted/20'
+            className={`flex-1 space-y-3 min-h-[200px] p-3 rounded-lg transition-colors border-2 border-dashed ${
+              snapshot.isDraggingOver 
+                ? 'bg-muted/50 border-primary/50' 
+                : 'bg-muted/20 border-transparent'
             }`}
           >
             {column.pages.map((page, index) => (
