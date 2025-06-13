@@ -8,6 +8,7 @@ import { SelectFieldEditor } from './SelectFieldEditor';
 import { DateFieldEditor } from './DateFieldEditor';
 import { EnhancedDateFieldEditor } from './EnhancedDateFieldEditor';
 import { RelationFieldEditor } from './RelationFieldEditor';
+import { PeopleFieldEditor } from '@/components/property/field-editors/PeopleFieldEditor';
 
 interface FieldEditorProps {
   field: DatabaseField;
@@ -226,6 +227,18 @@ export function FieldEditor({ field, value, onChange, workspaceId, pageId }: Fie
           settings={field.settings}
           onChange={handleSelectChange}
           workspaceId={workspaceId}
+        />
+      );
+
+    case 'people':
+      return (
+        <PeopleFieldEditor
+          value={localValue}
+          config={field.settings}
+          onChange={handleSelectChange}
+          field={field}
+          workspaceId={workspaceId}
+          pageId={pageId}
         />
       );
 

@@ -8,6 +8,7 @@ import { StatusDisplay } from './StatusDisplay';
 import { TeamMembersDisplay } from './TeamMembersDisplay';
 import { PlatformDisplay } from './PlatformDisplay';
 import { LinkDisplay } from './LinkDisplay';
+import { PeopleFieldDisplay } from '@/components/property/field-displays/PeopleFieldDisplay';
 import { Checkbox } from '@/components/ui/checkbox';
 
 interface FieldDisplayProps {
@@ -102,6 +103,16 @@ export function FieldDisplay({ field, value, pageId, onValueChange }: FieldDispl
         <RelationFieldDisplay
           value={value}
           settings={field.settings}
+        />
+      );
+
+    case 'people':
+      return (
+        <PeopleFieldDisplay
+          value={value}
+          config={field.settings}
+          field={field}
+          pageId={pageId}
         />
       );
 
