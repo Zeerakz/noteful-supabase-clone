@@ -185,7 +185,7 @@ export function DatabaseColumnHeader({
         className={`
           relative flex items-center justify-between group 
           border-b-2 border-border bg-background/98 backdrop-blur-md 
-          hover:bg-muted/50 transition-colors 
+          hover:bg-muted/30 transition-colors 
           ${isDragging ? 'opacity-50' : ''}
           ${dragOver === 'before' ? 'border-l-4 border-l-primary' : ''}
           ${dragOver === 'after' ? 'border-r-4 border-r-primary' : ''}
@@ -199,14 +199,14 @@ export function DatabaseColumnHeader({
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
       >
-        {/* Header Content */}
-        <div className="flex items-center gap-2.5 px-4 py-3 flex-1 min-w-0">
+        {/* Header Content - Distinct from Data Content */}
+        <div className="flex items-center gap-2 px-3.5 py-3 flex-1 min-w-0">
           {/* Drag Handle */}
           {isDraggable && onFieldReorder && (
             <Tooltip>
               <TooltipTrigger asChild>
-                <div className="flex-shrink-0 p-1 rounded-md hover:bg-muted/60 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing">
-                  <GripVertical className="h-3.5 w-3.5 text-muted-foreground" />
+                <div className="flex-shrink-0 p-0.5 rounded-md hover:bg-muted/60 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing">
+                  <GripVertical className="h-3 w-3 text-muted-foreground/60" />
                 </div>
               </TooltipTrigger>
               <TooltipContent side="bottom">
@@ -215,21 +215,21 @@ export function DatabaseColumnHeader({
             </Tooltip>
           )}
 
-          {/* Column Title with Sort - No icon */}
+          {/* Column Title with Sort - Distinct Weight and Color */}
           <Button
             variant="ghost"
             onClick={handleSortClick}
-            className="flex items-center gap-2 px-1 py-1 h-auto font-semibold text-sm text-foreground hover:bg-transparent hover:text-primary flex-1 justify-start min-w-0 transition-colors"
+            className="flex items-center gap-2 px-1 py-0.5 h-auto font-semibold text-xs text-muted-foreground/90 hover:bg-transparent hover:text-foreground flex-1 justify-start min-w-0 transition-colors tracking-wide"
           >
-            <span className="truncate tracking-tight">{field.name}</span>
+            <span className="truncate uppercase tracking-[0.05em]">{field.name}</span>
             
             {/* Sort Indicator */}
             {sortDirection && (
               <div className="flex-shrink-0 ml-1">
                 {sortDirection === 'asc' ? (
-                  <ArrowUp className="h-3.5 w-3.5 text-primary" />
+                  <ArrowUp className="h-3 w-3 text-primary" />
                 ) : (
-                  <ArrowDown className="h-3.5 w-3.5 text-primary" />
+                  <ArrowDown className="h-3 w-3 text-primary" />
                 )}
               </div>
             )}
@@ -242,9 +242,9 @@ export function DatabaseColumnHeader({
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex-shrink-0 hover:bg-primary/10"
+                  className="h-5 w-5 p-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex-shrink-0 hover:bg-primary/10"
                 >
-                  <Info className="h-3.5 w-3.5 text-muted-foreground hover:text-primary transition-colors" />
+                  <Info className="h-3 w-3 text-muted-foreground/60 hover:text-primary transition-colors" />
                 </Button>
               </HoverCardTrigger>
               <HoverCardContent className="w-80 p-4" side="bottom" align="start">
@@ -280,9 +280,9 @@ export function DatabaseColumnHeader({
             <Button
               variant="ghost"
               size="sm"
-              className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex-shrink-0 hover:bg-primary/10"
+              className="h-5 w-5 p-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex-shrink-0 hover:bg-primary/10"
             >
-              <Settings className="h-3.5 w-3.5 text-muted-foreground hover:text-primary transition-colors" />
+              <Settings className="h-3 w-3 text-muted-foreground/60 hover:text-primary transition-colors" />
             </Button>
           </InlinePropertyEditor>
         </div>

@@ -1,134 +1,120 @@
 
-import React, { useState, useEffect } from 'react';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
+import React, { useState, useRef, useEffect } from 'react';
+import { cn } from '@/lib/utils';
 
 interface EditableCellProps {
   value: string;
-  onSave: (value: string) => void;
-  fieldType?: string;
-  fieldConfig?: any;
+  onChange: (value: string) => void;
+  className?: string;
   placeholder?: string;
   disabled?: boolean;
-  isResizing?: boolean;
+  multiline?: boolean;
+  onBlur?: () => void;
+  onFocus?: () => void;
 }
 
-export function EditableCell({ 
-  value, 
-  onSave, 
-  fieldType, 
-  fieldConfig, 
-  placeholder = "Enter value...",
+export function EditableCell({
+  value,
+  onChange,
+  className,
+  placeholder = "Empty",
   disabled = false,
-  isResizing = false
+  multiline = false,
+  onBlur,
+  onFocus
 }: EditableCellProps) {
   const [isEditing, setIsEditing] = useState(false);
-  const [editValue, setEditValue] = useState(value);
+  const [localValue, setLocalValue] = useState(value);
+  const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement>(null);
 
+  // Update local value when prop value changes
   useEffect(() => {
-    setEditValue(value);
+    setLocalValue(value);
   }, [value]);
 
-  const handleSave = () => {
-    onSave(editValue);
+  const handleClick = () => {
+    if (!disabled) {
+      setIsEditing(true);
+    }
+  };
+
+  const handleSubmit = () => {
+    onChange(localValue);
     setIsEditing(false);
+    onBlur?.();
   };
 
   const handleCancel = () => {
-    setEditValue(value);
+    setLocalValue(value);
     setIsEditing(false);
+    onBlur?.();
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !fieldConfig?.multiline) {
+    if (e.key === 'Enter' && !multiline) {
       e.preventDefault();
-      handleSave();
+      handleSubmit();
+    } else if (e.key === 'Enter' && multiline && e.metaKey) {
+      e.preventDefault();
+      handleSubmit();
     } else if (e.key === 'Escape') {
       e.preventDefault();
       handleCancel();
     }
   };
 
-  const handleClick = () => {
-    if (!disabled && !isResizing) {
-      setIsEditing(true);
+  // Focus input when editing starts
+  useEffect(() => {
+    if (isEditing && inputRef.current) {
+      inputRef.current.focus();
+      inputRef.current.select();
+      onFocus?.();
     }
-  };
+  }, [isEditing, onFocus]);
 
-  const isMultiline = fieldType === 'text' && fieldConfig?.multiline;
-  const shouldWrap = fieldType === 'text' && fieldConfig?.wrapText;
-
-  if (isEditing && !disabled && !isResizing) {
-    if (isMultiline) {
-      return (
-        <Textarea
-          value={editValue}
-          onChange={(e) => setEditValue(e.target.value)}
-          onBlur={handleSave}
-          onKeyDown={handleKeyDown}
-          className="border-0 bg-transparent p-0 focus-visible:ring-1 resize-none min-h-[60px]"
-          placeholder={placeholder}
-          autoFocus
-          rows={3}
-        />
-      );
-    }
-
+  if (isEditing) {
+    const InputComponent = multiline ? 'textarea' : 'input';
+    
     return (
-      <Input
-        value={editValue}
-        onChange={(e) => setEditValue(e.target.value)}
-        onBlur={handleSave}
+      <InputComponent
+        ref={inputRef as any}
+        value={localValue}
+        onChange={(e) => setLocalValue(e.target.value)}
+        onBlur={handleSubmit}
         onKeyDown={handleKeyDown}
-        className="border-0 bg-transparent p-0 focus-visible:ring-1"
-        placeholder={placeholder}
-        autoFocus
-      />
-    );
-  }
-
-  const displayValue = value || placeholder;
-  const isEmpty = !value;
-  const isMultilineContent = value && value.includes('\n');
-
-  if (shouldWrap || isMultilineContent) {
-    return (
-      <div
-        className={`
-          min-h-[20px] p-1 rounded transition-colors duration-150
-          ${disabled || isResizing ? 'cursor-default' : 'cursor-text'}
-          ${!disabled && !isResizing ? 'hover:bg-muted/50' : ''}
-          ${shouldWrap ? 'whitespace-pre-wrap break-words' : ''}
-        `}
-        onClick={handleClick}
-      >
-        {isEmpty ? (
-          <span className={`editable-cell-placeholder ${isResizing ? 'text-muted-foreground/40' : ''}`}>
-            {placeholder}
-          </span>
-        ) : (
-          <span className={shouldWrap ? 'whitespace-pre-wrap' : ''}>{value}</span>
+        className={cn(
+          // Typography optimized for effortless legibility
+          "w-full h-full bg-background border-none outline-none resize-none",
+          "text-sm font-normal text-foreground leading-relaxed",
+          "focus:ring-2 focus:ring-primary/20 focus:ring-offset-0",
+          "tracking-normal",
+          className
         )}
-      </div>
+        style={{ 
+          minHeight: multiline ? '60px' : 'auto',
+          fontFamily: 'inherit'
+        }}
+      />
     );
   }
 
   return (
     <div
-      className={`
-        min-h-[20px] p-1 rounded truncate transition-colors duration-150
-        ${disabled || isResizing ? 'cursor-default' : 'cursor-text'}
-        ${!disabled && !isResizing ? 'hover:bg-muted/50' : ''}
-      `}
       onClick={handleClick}
-    >
-      {isEmpty ? (
-        <span className={`editable-cell-placeholder ${isResizing ? 'text-muted-foreground/40' : ''}`}>
-          {placeholder}
-        </span>
-      ) : (
-        <span>{value}</span>
+      className={cn(
+        // Hero typography - most effortlessly legible
+        "w-full h-full cursor-text select-text",
+        "text-sm font-normal text-foreground leading-relaxed",
+        "hover:bg-muted/30 focus:bg-background transition-colors",
+        "p-0 border-none outline-none tracking-normal",
+        // Empty state styling
+        !value && "text-muted-foreground/60 italic",
+        disabled && "cursor-default",
+        className
       )}
+      style={{ fontFamily: 'inherit' }}
+    >
+      {value || placeholder}
     </div>
   );
 }

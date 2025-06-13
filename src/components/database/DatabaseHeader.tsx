@@ -49,39 +49,41 @@ export function DatabaseHeader({
 
   return (
     <>
-      {/* Main Header - Clean and Minimal */}
-      <div className="bg-background">
-        <div className="px-6 py-6">
+      {/* Main Header - Refined Typography */}
+      <div className="bg-background border-b border-border/30">
+        <div className="px-6 py-5">
           <div className="flex items-center justify-between">
-            {/* Left: Database Info */}
+            {/* Left: Database Info - Confident but Quiet Presence */}
             <div className="flex items-center gap-4">
               {database.icon && (
-                <span className="text-3xl">{database.icon}</span>
+                <span className="text-2xl">{database.icon}</span>
               )}
               <div>
-                <h1 className="text-3xl font-bold tracking-tight text-foreground">
+                <h1 className="text-2xl font-medium tracking-[-0.02em] text-foreground leading-tight">
                   {database.name}
                 </h1>
                 {database.description && (
-                  <p className="text-muted-foreground mt-2 text-base">
+                  <p className="text-sm font-normal text-muted-foreground/80 mt-1.5 leading-relaxed max-w-2xl">
                     {database.description}
                   </p>
                 )}
               </div>
             </div>
 
-            {/* Right: Actions */}
-            <div className="flex items-center gap-3">
+            {/* Right: Actions - Secondary Weight */}
+            <div className="flex items-center gap-2.5">
               {/* Breaking Changes Indicator */}
               {breakingChanges.length > 0 && (
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => setShowAuditDialog(true)}
-                  className="text-orange-600 border-orange-200 hover:bg-orange-50 gap-2"
+                  className="text-amber-700 border-amber-200 hover:bg-amber-50 gap-2 font-medium text-xs"
                 >
-                  <AlertTriangle className="h-4 w-4" />
-                  {breakingChanges.length} Breaking Change{breakingChanges.length > 1 ? 's' : ''}
+                  <AlertTriangle className="h-3.5 w-3.5" />
+                  <span className="font-medium">
+                    {breakingChanges.length} Breaking Change{breakingChanges.length > 1 ? 's' : ''}
+                  </span>
                 </Button>
               )}
 
@@ -90,36 +92,36 @@ export function DatabaseHeader({
                 variant="outline"
                 size="sm"
                 onClick={() => setShowAuditDialog(true)}
-                className="gap-2"
+                className="gap-2 font-medium text-xs text-muted-foreground hover:text-foreground"
               >
-                <History className="h-4 w-4" />
-                History
+                <History className="h-3.5 w-3.5" />
+                <span>History</span>
               </Button>
 
               {/* More Actions */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm">
-                    <MoreVertical className="h-4 w-4" />
+                  <Button variant="outline" size="sm" className="font-medium text-xs">
+                    <MoreVertical className="h-3.5 w-3.5" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48">
                   {onEdit && (
-                    <DropdownMenuItem onClick={onEdit}>
+                    <DropdownMenuItem onClick={onEdit} className="text-sm font-medium">
                       <Settings className="h-4 w-4 mr-2" />
                       Edit Database
                     </DropdownMenuItem>
                   )}
                   
                   {onDuplicate && (
-                    <DropdownMenuItem onClick={onDuplicate}>
+                    <DropdownMenuItem onClick={onDuplicate} className="text-sm font-medium">
                       <Copy className="h-4 w-4 mr-2" />
                       Duplicate
                     </DropdownMenuItem>
                   )}
                   
                   {onExport && (
-                    <DropdownMenuItem onClick={onExport}>
+                    <DropdownMenuItem onClick={onExport} className="text-sm font-medium">
                       <Download className="h-4 w-4 mr-2" />
                       Export Data
                     </DropdownMenuItem>
@@ -132,7 +134,7 @@ export function DatabaseHeader({
                   {onDelete && (
                     <DropdownMenuItem 
                       onClick={onDelete}
-                      className="text-red-600 focus:text-red-600"
+                      className="text-red-600 focus:text-red-600 text-sm font-medium"
                     >
                       <Trash2 className="h-4 w-4 mr-2" />
                       Delete Database
@@ -147,7 +149,7 @@ export function DatabaseHeader({
 
       {/* Breaking Changes Alert Bar */}
       {breakingChanges.length > 0 && (
-        <div className="px-6 py-3 border-b bg-orange-50/50">
+        <div className="px-6 py-3 border-b bg-amber-50/50">
           <BreakingChangesAlert breakingChanges={breakingChanges} />
         </div>
       )}
@@ -156,8 +158,8 @@ export function DatabaseHeader({
       <Dialog open={showAuditDialog} onOpenChange={setShowAuditDialog}>
         <DialogContent className="max-w-4xl max-h-[80vh]">
           <DialogHeader>
-            <DialogTitle>Schema History & Breaking Changes</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-lg font-semibold">Schema History & Breaking Changes</DialogTitle>
+            <DialogDescription className="text-sm font-normal text-muted-foreground">
               Track schema changes and analyze breaking changes for API consumers
             </DialogDescription>
           </DialogHeader>

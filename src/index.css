@@ -66,6 +66,12 @@
   }
   body {
     @apply bg-background text-foreground;
+    /* Rigorous typographic foundation using Inter */
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+    font-feature-settings: 'cv01', 'cv03', 'cv04', 'cv11';
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
   }
 }
 
@@ -139,5 +145,31 @@
   .resize-mode .hover\:bg-accent\/30:hover,
   .resize-mode .hover\:bg-primary\/10:hover {
     @apply bg-transparent !important;
+  }
+
+  /* Typographic system classes */
+  .text-hero {
+    /* Data content - the most effortlessly legible */
+    @apply text-sm font-normal text-foreground leading-relaxed tracking-normal;
+  }
+  
+  .text-column-header {
+    /* Column headers - distinct from content through weight and color */
+    @apply text-xs font-semibold text-muted-foreground/90 uppercase tracking-[0.05em];
+  }
+  
+  .text-view-tab {
+    /* View switcher tabs - legible but secondary */
+    @apply text-xs font-medium tracking-normal;
+  }
+  
+  .text-database-title {
+    /* Main database title - confident but quiet presence */
+    @apply text-2xl font-medium tracking-[-0.02em] text-foreground leading-tight;
+  }
+  
+  .text-action-button {
+    /* Action buttons - functional weight */
+    @apply text-xs font-semibold tracking-normal;
   }
 }

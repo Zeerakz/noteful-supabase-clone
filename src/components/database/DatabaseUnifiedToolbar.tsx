@@ -83,26 +83,32 @@ export function DatabaseUnifiedToolbar({
 
   return (
     <div className="bg-background border-b border-border/20">
-      <div className="px-6 py-4">
+      <div className="px-6 py-3.5">
         <div className="flex items-center justify-between gap-6">
-          {/* Left side: View Switcher */}
-          <div className="flex items-center gap-1 bg-muted/30 rounded-lg p-1">
+          {/* Left side: View Switcher - Legible but Secondary */}
+          <div className="flex items-center gap-0.5 bg-muted/40 rounded-lg p-0.5">
             {views.map(({ type, label, icon: Icon }) => (
               <Button
                 key={type}
                 variant={currentViewType === type ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => onViewChange(type)}
-                className="h-8 px-3 gap-2 text-sm font-medium transition-all duration-200"
+                className={`
+                  h-7 px-2.5 gap-1.5 text-xs font-medium tracking-normal transition-all duration-200
+                  ${currentViewType === type 
+                    ? 'bg-background text-foreground shadow-sm font-semibold' 
+                    : 'text-muted-foreground/90 hover:text-foreground hover:bg-muted/60 font-medium'
+                  }
+                `}
               >
-                <Icon className="h-4 w-4" />
+                <Icon className="h-3.5 w-3.5" />
                 <span className="hidden sm:inline">{label}</span>
               </Button>
             ))}
           </div>
 
-          {/* Right side: Actions */}
-          <div className="flex items-center gap-3">
+          {/* Right side: Actions - Functional Weight */}
+          <div className="flex items-center gap-2.5">
             {/* Add Row */}
             <PermissionGate
               workspaceId={workspaceId}
@@ -112,26 +118,26 @@ export function DatabaseUnifiedToolbar({
               <Button
                 onClick={onAddRow}
                 size="sm"
-                className="gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-medium"
+                className="gap-1.5 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-xs h-7 px-3"
               >
-                <Plus className="h-4 w-4" />
+                <Plus className="h-3.5 w-3.5" />
                 <span className="hidden sm:inline">New</span>
               </Button>
             </PermissionGate>
 
-            <Separator orientation="vertical" className="h-6" />
+            <Separator orientation="vertical" className="h-5" />
 
             {/* Filter */}
             <Button
               onClick={onShowFilterModal}
               size="sm"
               variant={activeFiltersCount > 0 ? "secondary" : "ghost"}
-              className="gap-2 relative"
+              className="gap-1.5 relative h-7 px-2.5 text-xs font-medium text-muted-foreground hover:text-foreground"
             >
-              <Filter className="h-4 w-4" />
-              <span className="hidden sm:inline">Filter</span>
+              <Filter className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline font-medium">Filter</span>
               {activeFiltersCount > 0 && (
-                <Badge variant="default" className="ml-1 h-5 w-5 p-0 text-xs flex items-center justify-center">
+                <Badge variant="default" className="ml-1 h-4 w-4 p-0 text-[10px] font-bold flex items-center justify-center">
                   {activeFiltersCount}
                 </Badge>
               )}
@@ -142,18 +148,18 @@ export function DatabaseUnifiedToolbar({
               onClick={onShowSortModal}
               size="sm"
               variant={activeSortsCount > 0 ? "secondary" : "ghost"}
-              className="gap-2 relative"
+              className="gap-1.5 relative h-7 px-2.5 text-xs font-medium text-muted-foreground hover:text-foreground"
             >
-              <SortAsc className="h-4 w-4" />
-              <span className="hidden sm:inline">Sort</span>
+              <SortAsc className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline font-medium">Sort</span>
               {activeSortsCount > 0 && (
-                <Badge variant="default" className="ml-1 h-5 w-5 p-0 text-xs flex items-center justify-center">
+                <Badge variant="default" className="ml-1 h-4 w-4 p-0 text-[10px] font-bold flex items-center justify-center">
                   {activeSortsCount}
                 </Badge>
               )}
             </Button>
 
-            <Separator orientation="vertical" className="h-6" />
+            <Separator orientation="vertical" className="h-5" />
 
             {/* Properties */}
             <PermissionGate
@@ -165,10 +171,10 @@ export function DatabaseUnifiedToolbar({
                 onClick={onShowPropertiesModal}
                 size="sm"
                 variant="ghost"
-                className="gap-2"
+                className="gap-1.5 h-7 px-2.5 text-xs font-medium text-muted-foreground hover:text-foreground"
               >
-                <Settings className="h-4 w-4" />
-                <span className="hidden sm:inline">Properties</span>
+                <Settings className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline font-medium">Properties</span>
               </Button>
             </PermissionGate>
           </div>
