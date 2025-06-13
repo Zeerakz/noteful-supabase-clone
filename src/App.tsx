@@ -6,37 +6,93 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import { initializePropertyRegistry } from "./services/propertyTypeRegistry";
+import { ErrorBoundary } from "./components/error/ErrorBoundary";
+import { RouteErrorBoundary } from "./components/error/RouteErrorBoundary";
+import { errorHandler } from "./utils/errorHandler";
 import Index from "./pages/Index";
 import { Login } from "./pages/Login";
 import Register from "./pages/Register";
 import Workspace from "./pages/Workspace";
 import { PageView } from "./pages/PageView";
 import { DatabasePage } from "./pages/DatabasePage";
+import NotFound from "./pages/NotFound";
 
-// Initialize property registry early
-initializePropertyRegistry();
+// Initialize property registry early with error handling
+try {
+  console.log('🚀 Initializing property registry...');
+  initializePropertyRegistry();
+  console.log('✅ Property registry initialized successfully');
+} catch (error) {
+  console.error('❌ Failed to initialize property registry:', error);
+  errorHandler.logError(error as Error, { context: 'property_registry_init' });
+}
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: (failureCount, error) => {
+        console.log(`Query retry attempt ${failureCount}:`, error);
+        return failureCount < 3;
+      },
+      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+    },
+    mutations: {
+      retry: (failureCount, error) => {
+        console.log(`Mutation retry attempt ${failureCount}:`, error);
+        return failureCount < 2;
+      },
+    },
+  },
+});
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <AuthProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/workspace/:workspaceId" element={<Workspace />} />
-            <Route path="/workspace/:workspaceId/page/:pageId" element={<PageView />} />
-            <Route path="/workspace/:workspaceId/database/:databaseId" element={<DatabasePage />} />
-          </Routes>
-        </BrowserRouter>
-      </AuthProvider>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+// Add query error logging
+queryClient.setMutationDefaults(['*'], {
+  onError: (error) => {
+    console.error('Mutation error:', error);
+    errorHandler.logError(error as Error, { context: 'react_query_mutation' });
+  },
+});
+
+queryClient.setQueryDefaults(['*'], {
+  onError: (error) => {
+    console.error('Query error:', error);
+    errorHandler.logError(error as Error, { context: 'react_query_query' });
+  },
+});
+
+const App = () => {
+  console.log('🏗️ App component rendering...');
+  
+  return (
+    <ErrorBoundary onError={(error, errorInfo) => {
+      errorHandler.logError(error, { 
+        context: 'app_root_error_boundary',
+        componentStack: errorInfo.componentStack 
+      });
+    }}>
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <AuthProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <RouteErrorBoundary>
+                <Routes>
+                  <Route path="/" element={<Index />} />
+                  <Route path="/login" element={<Login />} />
+                  <Route path="/register" element={<Register />} />
+                  <Route path="/workspace/:workspaceId" element={<Workspace />} />
+                  <Route path="/workspace/:workspaceId/page/:pageId" element={<PageView />} />
+                  <Route path="/workspace/:workspaceId/database/:databaseId" element={<DatabasePage />} />
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </RouteErrorBoundary>
+            </BrowserRouter>
+          </AuthProvider>
+        </TooltipProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
+  );
+};
 
 export default App;
