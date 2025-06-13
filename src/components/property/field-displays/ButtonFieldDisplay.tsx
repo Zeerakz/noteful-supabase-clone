@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { ButtonPropertyConfig } from '@/types/property/configs/button';
+import { ButtonPropertyConfig, CreatePageWithTemplateConfig, SetPropertyValueConfig, OpenLinkConfig } from '@/types/property/configs/button';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { ChevronDown, ExternalLink, Plus, Edit } from 'lucide-react';
@@ -33,9 +33,10 @@ export function ButtonFieldDisplay({
       switch (action.type) {
         case 'create_page_with_template':
           if (user) {
+            const templateConfig = action.config as CreatePageWithTemplateConfig;
             const { data, error } = await createPageFromTemplate(
-              action.config.templateId,
-              action.config.pageName
+              templateConfig.templateId,
+              templateConfig.pageName
             );
             if (error) {
               toast({
@@ -54,11 +55,12 @@ export function ButtonFieldDisplay({
 
         case 'set_property_value':
           if (pageId && user) {
-            const targetPageId = action.config.targetPageId || pageId;
+            const propertyConfig = action.config as SetPropertyValueConfig;
+            const targetPageId = propertyConfig.targetPageId || pageId;
             const { error } = await PagePropertyService.upsertPageProperty(
               targetPageId,
-              action.config.targetFieldId,
-              action.config.value,
+              propertyConfig.targetFieldId,
+              propertyConfig.value,
               user.id
             );
             if (error) {
@@ -77,9 +79,10 @@ export function ButtonFieldDisplay({
           break;
 
         case 'open_link':
-          const url = action.config.url;
+          const linkConfig = action.config as OpenLinkConfig;
+          const url = linkConfig.url;
           if (url) {
-            if (action.config.openInNewTab) {
+            if (linkConfig.openInNewTab) {
               window.open(url, '_blank');
             } else {
               window.location.href = url;

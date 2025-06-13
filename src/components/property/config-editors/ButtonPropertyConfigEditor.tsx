@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { ButtonPropertyConfig, ButtonAction } from '@/types/property/configs/button';
+import { ButtonPropertyConfig, ButtonAction, CreatePageWithTemplateConfig, SetPropertyValueConfig, OpenLinkConfig } from '@/types/property/configs/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -58,14 +58,15 @@ export function ButtonPropertyConfigEditor({
   const renderActionConfig = (action: ButtonAction) => {
     switch (action.type) {
       case 'create_page_with_template':
+        const templateConfig = action.config as CreatePageWithTemplateConfig;
         return (
           <div className="space-y-3">
             <div>
               <Label>Template</Label>
               <Select
-                value={action.config.templateId || ''}
+                value={templateConfig.templateId || ''}
                 onValueChange={(value) => updateAction(action.id, {
-                  config: { ...action.config, templateId: value }
+                  config: { ...templateConfig, templateId: value }
                 })}
               >
                 <SelectTrigger>
@@ -83,9 +84,9 @@ export function ButtonPropertyConfigEditor({
             <div>
               <Label>Page Name (optional)</Label>
               <Input
-                value={action.config.pageName || ''}
+                value={templateConfig.pageName || ''}
                 onChange={(e) => updateAction(action.id, {
-                  config: { ...action.config, pageName: e.target.value }
+                  config: { ...templateConfig, pageName: e.target.value }
                 })}
                 placeholder="Leave empty to use template name"
               />
@@ -94,14 +95,15 @@ export function ButtonPropertyConfigEditor({
         );
 
       case 'set_property_value':
+        const propertyConfig = action.config as SetPropertyValueConfig;
         return (
           <div className="space-y-3">
             <div>
               <Label>Target Field ID</Label>
               <Input
-                value={action.config.targetFieldId || ''}
+                value={propertyConfig.targetFieldId || ''}
                 onChange={(e) => updateAction(action.id, {
-                  config: { ...action.config, targetFieldId: e.target.value }
+                  config: { ...propertyConfig, targetFieldId: e.target.value }
                 })}
                 placeholder="Field ID to update"
               />
@@ -109,9 +111,9 @@ export function ButtonPropertyConfigEditor({
             <div>
               <Label>Value</Label>
               <Input
-                value={action.config.value || ''}
+                value={propertyConfig.value || ''}
                 onChange={(e) => updateAction(action.id, {
-                  config: { ...action.config, value: e.target.value }
+                  config: { ...propertyConfig, value: e.target.value }
                 })}
                 placeholder="Value to set"
               />
@@ -120,23 +122,24 @@ export function ButtonPropertyConfigEditor({
         );
 
       case 'open_link':
+        const linkConfig = action.config as OpenLinkConfig;
         return (
           <div className="space-y-3">
             <div>
               <Label>URL</Label>
               <Input
-                value={action.config.url || ''}
+                value={linkConfig.url || ''}
                 onChange={(e) => updateAction(action.id, {
-                  config: { ...action.config, url: e.target.value }
+                  config: { ...linkConfig, url: e.target.value }
                 })}
                 placeholder="https://example.com"
               />
             </div>
             <div className="flex items-center space-x-2">
               <Switch
-                checked={action.config.openInNewTab}
+                checked={linkConfig.openInNewTab}
                 onCheckedChange={(checked) => updateAction(action.id, {
-                  config: { ...action.config, openInNewTab: checked }
+                  config: { ...linkConfig, openInNewTab: checked }
                 })}
               />
               <Label>Open in new tab</Label>

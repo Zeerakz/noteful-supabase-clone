@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { PropertyTypeDefinition } from '@/types/propertyRegistry';
-import { ButtonPropertyConfig } from '@/types/property/configs/button';
+import { ButtonPropertyConfig, CreatePageWithTemplateConfig, SetPropertyValueConfig, OpenLinkConfig } from '@/types/property/configs/button';
 import { Button } from '@/components/ui/button';
 import { MousePointer } from 'lucide-react';
 import { ButtonPropertyConfigEditor } from '../config-editors/ButtonPropertyConfigEditor';
@@ -44,17 +44,20 @@ export const buttonPropertyType: PropertyTypeDefinition<ButtonPropertyConfig> = 
       
       switch (action.type) {
         case 'create_page_with_template':
-          if (!action.config.templateId) {
+          const templateConfig = action.config as CreatePageWithTemplateConfig;
+          if (!templateConfig.templateId) {
             errors.push(`Action ${index + 1}: Template ID is required`);
           }
           break;
         case 'set_property_value':
-          if (!action.config.targetFieldId) {
+          const propertyConfig = action.config as SetPropertyValueConfig;
+          if (!propertyConfig.targetFieldId) {
             errors.push(`Action ${index + 1}: Target field ID is required`);
           }
           break;
         case 'open_link':
-          if (!action.config.url) {
+          const linkConfig = action.config as OpenLinkConfig;
+          if (!linkConfig.url) {
             errors.push(`Action ${index + 1}: URL is required`);
           }
           break;
