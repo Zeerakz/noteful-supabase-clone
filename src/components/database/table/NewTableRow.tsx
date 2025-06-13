@@ -96,7 +96,7 @@ export function NewTableRow({
                 onChange={(e) => setTitle(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder="Enter title..."
-                className="flex-1 h-8 text-sm border-primary/50 focus:border-primary bg-background"
+                className="flex-1 h-8 text-sm border-border bg-background text-foreground placeholder:text-muted-foreground focus:border-primary"
                 autoFocus
               />
               <Button
@@ -135,7 +135,7 @@ export function NewTableRow({
         </div>
       </TableCell>
 
-      {/* Empty Property Cells with consistent widths */}
+      {/* Property Cells - Now clickable with proper styling */}
       {fields.map((field) => (
         <TableCell 
           key={field.id} 
@@ -147,9 +147,21 @@ export function NewTableRow({
           }}
         >
           <div className="px-4 py-3 overflow-hidden">
-            <div className="min-h-[32px] px-2 py-1 flex items-center">
-              <span className={`text-sm ${isAnyColumnResizing ? 'text-muted-foreground/20' : 'text-muted-foreground/30'}`}>
-                —
+            <div 
+              className={`
+                min-h-[32px] px-2 py-1 flex items-center rounded-sm transition-colors cursor-pointer
+                ${!isAnyColumnResizing ? 'hover:bg-muted/30' : 'cursor-default'}
+                bg-background border border-dashed border-border/30
+              `}
+              onClick={() => {
+                if (!isAnyColumnResizing && !isCreating) {
+                  // TODO: Allow editing individual fields in new row
+                  console.log(`Editing field ${field.name} in new row`);
+                }
+              }}
+            >
+              <span className={`text-sm ${isAnyColumnResizing ? 'text-muted-foreground/20' : 'text-muted-foreground/60'}`}>
+                Enter {field.name.toLowerCase()}
               </span>
             </div>
           </div>

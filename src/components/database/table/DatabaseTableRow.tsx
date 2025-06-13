@@ -139,7 +139,7 @@ export function DatabaseTableRow({
               onChange={(newTitle) => onTitleUpdate(page.id, newTitle)}
               placeholder="Untitled"
               disabled={isAnyColumnResizing}
-              className="text-hero font-medium"
+              className="text-sm font-medium text-foreground"
             />
           </div>
         </div>
@@ -172,12 +172,13 @@ export function DatabaseTableRow({
                     w-full min-h-[24px] rounded-sm px-2 py-1 transition-colors duration-150 flex items-center overflow-hidden
                     ${!isAnyColumnResizing && !isFieldResizing ? 'cursor-text hover:bg-muted/20' : 'cursor-default'}
                     ${isAnyColumnResizing ? 'pointer-events-none' : ''}
+                    bg-background text-foreground
                   `}
                   onClick={() => !isAnyColumnResizing && setEditingField(field.id)}
                 >
                   {cellValue ? (
                     <div className="w-full overflow-hidden">
-                      <span className="text-hero text-foreground/90">
+                      <span className="text-sm text-foreground">
                         {cellValue}
                       </span>
                     </div>

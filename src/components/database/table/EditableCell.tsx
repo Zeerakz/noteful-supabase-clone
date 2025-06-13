@@ -83,10 +83,9 @@ export function EditableCell({
         onBlur={handleSubmit}
         onKeyDown={handleKeyDown}
         className={cn(
-          // Typography optimized for effortless legibility
-          "w-full h-full bg-background border-none outline-none resize-none",
+          "w-full h-full bg-background border border-border rounded-sm outline-none resize-none px-2 py-1",
           "text-sm font-normal text-foreground leading-relaxed",
-          "focus:ring-2 focus:ring-primary/20 focus:ring-offset-0",
+          "focus:ring-2 focus:ring-primary/20 focus:ring-offset-0 focus:border-primary",
           "tracking-normal",
           className
         )}
@@ -102,11 +101,10 @@ export function EditableCell({
     <div
       onClick={handleClick}
       className={cn(
-        // Hero typography - most effortlessly legible
-        "w-full h-full cursor-text select-text",
+        "w-full h-full cursor-text select-text px-2 py-1 rounded-sm",
         "text-sm font-normal text-foreground leading-relaxed",
         "hover:bg-muted/30 focus:bg-background transition-colors",
-        "p-0 border-none outline-none tracking-normal",
+        "border-none outline-none tracking-normal",
         // Empty state styling
         !value && "text-muted-foreground/60 italic",
         disabled && "cursor-default",
