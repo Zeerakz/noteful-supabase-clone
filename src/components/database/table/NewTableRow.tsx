@@ -67,10 +67,10 @@ export function NewTableRow({
             onClick={handleCreateRow}
             disabled={isAnyColumnResizing}
             className={`
-              w-full justify-start h-10 px-3 rounded-lg transition-all duration-200 border-2 border-dashed
+              w-full justify-start h-10 px-3 rounded-lg transition-all duration-200
               ${!isAnyColumnResizing 
-                ? 'border-border/40 text-muted-foreground hover:text-foreground hover:bg-accent/40 hover:border-primary/40 group-hover:border-primary/60' 
-                : 'cursor-not-allowed text-muted-foreground/40 border-border/20'
+                ? 'text-muted-foreground hover:text-foreground hover:bg-accent/40' 
+                : 'cursor-not-allowed text-muted-foreground/40'
               }
             `}
           >
@@ -96,7 +96,7 @@ export function NewTableRow({
               className={`
                 min-h-[32px] px-2 py-1 flex items-center rounded-sm
                 ${isAnyColumnResizing ? 'text-muted-foreground/20' : 'text-muted-foreground/40'}
-                bg-background border border-dashed border-border/20
+                bg-background
               `}
             >
               <span className="text-sm">
