@@ -77,7 +77,7 @@ const TableHead = React.forwardRef<
   <th
     ref={ref}
     className={cn(
-      "text-left align-middle font-medium text-muted-foreground hairline-divider bg-background/95 backdrop-blur-sm px-4 py-3 transition-colors duration-200 ease-out",
+      "text-left align-middle font-medium text-muted-foreground bg-background/95 backdrop-blur-sm transition-colors duration-200 ease-out",
       className
     )}
     {...props}
@@ -91,7 +91,7 @@ const TableCell = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <td
     ref={ref}
-    className={cn("align-middle px-4 py-3 transition-colors duration-200 ease-out", className)}
+    className={cn("align-middle transition-colors duration-200 ease-out", className)}
     {...props}
   />
 ))

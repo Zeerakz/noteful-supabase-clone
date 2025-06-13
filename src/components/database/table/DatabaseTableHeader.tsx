@@ -47,40 +47,36 @@ export function DatabaseTableHeader({
 
   return (
     <TableHeader>
-      <TableRow className="hover:bg-transparent border-b-2 border-border">
+      <TableRow className="hover:bg-transparent hairline-divider">
         {/* Checkbox Header */}
         <TableHead 
-          className="checkbox-cell p-0 border-r border-border/10"
+          className="p-3 text-center hairline-vertical"
           style={{ width: '48px', minWidth: '48px', maxWidth: '48px' }}
         >
-          <div className="table-header-content justify-center">
-            <Checkbox
-              checked={allSelected}
-              ref={(ref) => {
-                if (ref) {
-                  const input = ref.querySelector('input');
-                  if (input) input.indeterminate = someSelected;
-                }
-              }}
-              onCheckedChange={onSelectAll}
-              className="transition-opacity duration-200"
-            />
-          </div>
+          <Checkbox
+            checked={allSelected}
+            ref={(ref) => {
+              if (ref) {
+                const input = ref.querySelector('input');
+                if (input) input.indeterminate = someSelected;
+              }
+            }}
+            onCheckedChange={onSelectAll}
+            className="transition-opacity duration-200"
+          />
         </TableHead>
 
         {/* Title Header */}
         <TableHead 
-          className="p-0 border-r border-border/10"
+          className="p-3 hairline-vertical"
           style={{ 
             width: `${getColumnWidth('title')}px`,
             minWidth: `${getColumnWidth('title')}px`,
             maxWidth: `${getColumnWidth('title')}px`
           }}
         >
-          <div className="table-header-content">
-            <div className="flex items-center gap-2 w-full">
-              <span className="text-column-header">TITLE</span>
-            </div>
+          <div className="flex items-center gap-2 w-full">
+            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">TITLE</span>
           </div>
         </TableHead>
 
@@ -91,14 +87,14 @@ export function DatabaseTableHeader({
           return (
             <TableHead
               key={field.id}
-              className={`p-0 ${!isLastField ? 'border-r border-border/10' : ''}`}
+              className={`p-0 ${!isLastField ? 'hairline-vertical' : ''}`}
               style={{ 
                 width: `${columnWidth}px`,
                 minWidth: `${columnWidth}px`,
                 maxWidth: `${columnWidth}px`
               }}
             >
-              <div className="table-header-content">
+              <div className="px-3 py-3">
                 <DatabaseColumnHeader
                   field={field}
                   sortRules={sortRules}
@@ -120,12 +116,10 @@ export function DatabaseTableHeader({
 
         {/* Actions Header */}
         <TableHead 
-          className="actions-cell p-0"
+          className="p-3 text-center"
           style={{ width: '64px', minWidth: '64px', maxWidth: '64px' }}
         >
-          <div className="table-header-content justify-center">
-            <span className="text-column-header">ACTIONS</span>
-          </div>
+          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">ACTIONS</span>
         </TableHead>
       </TableRow>
     </TableHeader>
