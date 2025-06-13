@@ -242,6 +242,20 @@ export function FieldEditor({ field, value, onChange, workspaceId, pageId }: Fie
         />
       );
 
+    case 'file_attachment':
+      return (
+        <div className="min-h-[100px]">
+          <FileAttachmentFieldEditor
+            value={localValue}
+            config={field.settings}
+            onChange={handleSelectChange}
+            field={field}
+            workspaceId={workspaceId}
+            pageId={pageId}
+          />
+        </div>
+      );
+
     case 'formula':
     case 'rollup':
       return (

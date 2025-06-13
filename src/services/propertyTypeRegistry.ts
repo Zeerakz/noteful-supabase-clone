@@ -4,6 +4,7 @@ import { textPropertyType } from '@/components/property/types/TextPropertyType';
 import { numberPropertyType } from '@/components/property/types/NumberPropertyType';
 import { statusPropertyType } from '@/components/property/types/StatusPropertyType';
 import { peoplePropertyType } from '@/components/property/types/PeoplePropertyType';
+import { fileAttachmentPropertyType } from '@/components/property/types/FileAttachmentPropertyType';
 
 // Import other property types as they are created
 // import { selectPropertyType } from '@/components/property/types/SelectPropertyType';
@@ -15,6 +16,7 @@ export function initializePropertyRegistry() {
   propertyRegistry.register(numberPropertyType);
   propertyRegistry.register(statusPropertyType);
   propertyRegistry.register(peoplePropertyType);
+  propertyRegistry.register(fileAttachmentPropertyType);
   
   // TODO: Register other property types
   // propertyRegistry.register(selectPropertyType);
@@ -26,7 +28,6 @@ export function initializePropertyRegistry() {
   // propertyRegistry.register(relationPropertyType);
   // propertyRegistry.register(formulaPropertyType);
   // propertyRegistry.register(rollupPropertyType);
-  // propertyRegistry.register(fileAttachmentPropertyType);
   // propertyRegistry.register(richTextPropertyType);
   // propertyRegistry.register(ratingPropertyType);
   // propertyRegistry.register(progressPropertyType);

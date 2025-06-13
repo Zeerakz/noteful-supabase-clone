@@ -116,6 +116,16 @@ export function FieldDisplay({ field, value, pageId, onValueChange }: FieldDispl
         />
       );
 
+    case 'file_attachment':
+      return (
+        <FileAttachmentFieldDisplay
+          value={value}
+          config={field.settings}
+          field={field}
+          pageId={pageId}
+        />
+      );
+
     case 'formula':
     case 'rollup':
       // For computed fields, show the computed value or fallback to static display
