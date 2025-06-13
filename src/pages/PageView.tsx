@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useParams, Navigate, useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
@@ -20,7 +19,7 @@ function PageViewContent() {
   const { pageData, loading: pageLoading, error: pageError, retry: retryPage } = usePageData(pageId);
   const { properties, loading: propertiesLoading, error: propertiesError, updateProperty, retry: retryProperties } = useStablePageProperties(pageId);
   const { userProfiles } = useUserProfiles(pageData?.workspace?.id);
-  const { fields } = useDatabaseFields(pageData?.database_id || '');
+  const { fields } = useDatabaseFields(pageData?.database_id || '', pageData?.workspace?.id || '');
 
   const handlePropertyUpdate = async (fieldId: string, value: string) => {
     try {
