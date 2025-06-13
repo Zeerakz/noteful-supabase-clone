@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { DatabaseHeader } from './DatabaseHeader';
 import { DatabaseViewRenderer } from './DatabaseViewRenderer';
@@ -53,7 +54,7 @@ export function DatabaseViewContainer({
   onFieldCreate,
   onFieldsChange
 }: DatabaseViewContainerProps) {
-  // Enhanced breaking changes with configuration
+  // Enhanced breaking changes with optimistic updates
   const {
     visibleBreakingChanges,
     categorizedChanges,
@@ -61,15 +62,31 @@ export function DatabaseViewContainer({
     loadingBreakingChanges,
     handleDismissBreakingChange,
     handleAcknowledgeAllBreakingChanges,
-    updateConfig
+    updateConfig,
+    refreshBreakingChanges
   } = useBreakingChanges(databaseId);
+
+  // Handle field operations that might trigger breaking changes refresh
+  const handleFieldOperationWithRefresh = async (operation: () => Promise<void>) => {
+    await operation();
+    // Refresh breaking changes after field operations to catch new changes
+    setTimeout(() => refreshBreakingChanges(), 500);
+  };
+
+  const wrappedOnFieldDelete = async (fieldId: string) => {
+    await handleFieldOperationWithRefresh(() => onFieldDelete(fieldId));
+  };
+
+  const wrappedOnFieldUpdate = async (fieldId: string, updates: Partial<DatabaseField>) => {
+    await handleFieldOperationWithRefresh(() => onFieldUpdate(fieldId, updates));
+  };
 
   return (
     <div className="flex flex-col h-full bg-background">
       {/* Database Header */}
       <DatabaseHeader database={database} />
 
-      {/* Enhanced Breaking Changes Alert */}
+      {/* Enhanced Breaking Changes Alert with optimistic updates */}
       {!loadingBreakingChanges && visibleBreakingChanges.length > 0 && (
         <div className="p-4 border-b">
           <BreakingChangesAlert
@@ -95,9 +112,9 @@ export function DatabaseViewContainer({
         databaseId={databaseId}
         workspaceId={workspaceId}
         onFieldsReorder={onFieldsReorder}
-        onFieldUpdate={onFieldUpdate}
+        onFieldUpdate={wrappedOnFieldUpdate}
         onFieldDuplicate={onFieldDuplicate}
-        onFieldDelete={onFieldDelete}
+        onFieldDelete={wrappedOnFieldDelete}
         onFieldCreate={onFieldCreate}
         onShowPropertiesModal={() => {}}
         onShowFilterModal={() => {}}

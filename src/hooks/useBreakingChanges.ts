@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { BreakingChange } from '@/types/schemaAudit';
 import { SchemaAuditService } from '@/services/schemaAuditService';
 
@@ -46,95 +46,135 @@ export function useBreakingChanges(databaseId: string | undefined) {
     }
   }, [databaseId]);
 
-  useEffect(() => {
-    const loadBreakingChanges = async () => {
-      if (!databaseId) return;
+  const loadBreakingChanges = useCallback(async () => {
+    if (!databaseId) return;
+    
+    setLoadingBreakingChanges(true);
+    try {
+      const since = new Date();
+      since.setDate(since.getDate() - 7);
       
-      setLoadingBreakingChanges(true);
-      try {
-        // Use configurable time window
-        const since = new Date();
-        since.setDate(since.getDate() - 7); // Keep 7 days as base, but filter intelligently
-        
-        const { data, error } = await SchemaAuditService.getBreakingChangesSince(databaseId, since);
-        
-        if (error) {
-          console.error('Failed to load breaking changes:', error);
-          setBreakingChanges([]);
-        } else {
-          let filteredChanges = data || [];
-
-          // Apply smart filtering based on configuration
-          if (config.enableSmartFiltering) {
-            // Auto-hide low severity changes if configured
-            if (config.autoHideLowSeverity) {
-              filteredChanges = filteredChanges.filter(change => change.severity !== 'low');
-            }
-          }
-
-          setBreakingChanges(filteredChanges);
-        }
-      } catch (err) {
-        console.error('Error loading breaking changes:', err);
+      const { data, error } = await SchemaAuditService.getBreakingChangesSince(databaseId, since);
+      
+      if (error) {
+        console.error('Failed to load breaking changes:', error);
         setBreakingChanges([]);
-      } finally {
-        setLoadingBreakingChanges(false);
-      }
-    };
+      } else {
+        let filteredChanges = data || [];
 
-    loadBreakingChanges();
+        // Apply smart filtering based on configuration
+        if (config.enableSmartFiltering) {
+          if (config.autoHideLowSeverity) {
+            filteredChanges = filteredChanges.filter(change => change.severity !== 'low');
+          }
+        }
+
+        setBreakingChanges(filteredChanges);
+      }
+    } catch (err) {
+      console.error('Error loading breaking changes:', err);
+      setBreakingChanges([]);
+    } finally {
+      setLoadingBreakingChanges(false);
+    }
   }, [databaseId, config]);
 
-  const handleDismissBreakingChange = (changeId: string, persistentDismissal: boolean = false) => {
-    const newDismissedIds = new Set([...dismissedChangeIds, changeId]);
-    setDismissedChangeIds(newDismissedIds);
+  useEffect(() => {
+    loadBreakingChanges();
+  }, [loadBreakingChanges]);
+
+  const handleDismissBreakingChange = useCallback((changeId: string, persistentDismissal: boolean = false) => {
+    // Optimistic update - immediately update UI
+    setDismissedChangeIds(prev => {
+      const newSet = new Set(prev);
+      newSet.add(changeId);
+      return newSet;
+    });
     
-    // Persist to localStorage
+    // Persist to localStorage in background
     if (databaseId) {
       const dismissalKey = persistentDismissal 
         ? `permanently_dismissed_breaking_changes_${databaseId}`
         : `dismissed_breaking_changes_${databaseId}`;
       
-      localStorage.setItem(
-        dismissalKey, 
-        JSON.stringify(Array.from(newDismissedIds))
-      );
+      // Update localStorage optimistically
+      const currentDismissed = Array.from(dismissedChangeIds);
+      currentDismissed.push(changeId);
+      
+      try {
+        localStorage.setItem(dismissalKey, JSON.stringify(currentDismissed));
+      } catch (error) {
+        console.error('Failed to persist dismissal:', error);
+        // Revert optimistic update on storage failure
+        setDismissedChangeIds(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(changeId);
+          return newSet;
+        });
+      }
     }
-  };
+  }, [databaseId, dismissedChangeIds]);
 
-  const handleAcknowledgeAllBreakingChanges = () => {
+  const handleAcknowledgeAllBreakingChanges = useCallback(() => {
     const allChangeIds = breakingChanges.map(change => change.id);
-    const newDismissedIds = new Set([...dismissedChangeIds, ...allChangeIds]);
-    setDismissedChangeIds(newDismissedIds);
     
-    // Persist to localStorage
-    if (databaseId) {
-      localStorage.setItem(
-        `dismissed_breaking_changes_${databaseId}`, 
-        JSON.stringify(Array.from(newDismissedIds))
-      );
-    }
-  };
-
-  const updateConfig = (newConfig: Partial<BreakingChangeConfig>) => {
-    const updatedConfig = { ...config, ...newConfig };
-    setConfig(updatedConfig);
+    // Optimistic update - immediately update UI
+    setDismissedChangeIds(prev => {
+      const newSet = new Set(prev);
+      allChangeIds.forEach(id => newSet.add(id));
+      return newSet;
+    });
     
-    // Persist configuration
+    // Persist to localStorage in background
     if (databaseId) {
-      localStorage.setItem(
-        `breaking_changes_config_${databaseId}`,
-        JSON.stringify(updatedConfig)
-      );
+      try {
+        const allDismissed = Array.from(new Set([...dismissedChangeIds, ...allChangeIds]));
+        localStorage.setItem(
+          `dismissed_breaking_changes_${databaseId}`, 
+          JSON.stringify(allDismissed)
+        );
+      } catch (error) {
+        console.error('Failed to persist acknowledge all:', error);
+        // Revert optimistic update on storage failure
+        setDismissedChangeIds(prev => {
+          const newSet = new Set(prev);
+          allChangeIds.forEach(id => newSet.delete(id));
+          return newSet;
+        });
+      }
     }
-  };
+  }, [databaseId, breakingChanges, dismissedChangeIds]);
 
-  // Filter out dismissed changes and apply configuration
+  const updateConfig = useCallback((newConfig: Partial<BreakingChangeConfig>) => {
+    // Optimistic update - immediately update UI
+    setConfig(prev => {
+      const updatedConfig = { ...prev, ...newConfig };
+      
+      // Persist configuration in background
+      if (databaseId) {
+        try {
+          localStorage.setItem(
+            `breaking_changes_config_${databaseId}`,
+            JSON.stringify(updatedConfig)
+          );
+        } catch (error) {
+          console.error('Failed to persist config:', error);
+        }
+      }
+      
+      return updatedConfig;
+    });
+    
+    // Immediately reload breaking changes with new config
+    loadBreakingChanges();
+  }, [databaseId, loadBreakingChanges]);
+
+  // Filter out dismissed changes and apply configuration - computed optimistically
   const visibleBreakingChanges = breakingChanges.filter(change => 
     !dismissedChangeIds.has(change.id)
   );
 
-  // Categorize changes by severity for better UX
+  // Categorize changes by severity for better UX - computed optimistically
   const categorizedChanges = {
     high: visibleBreakingChanges.filter(c => c.severity === 'high'),
     medium: visibleBreakingChanges.filter(c => c.severity === 'medium'),
@@ -149,6 +189,7 @@ export function useBreakingChanges(databaseId: string | undefined) {
     config,
     handleDismissBreakingChange,
     handleAcknowledgeAllBreakingChanges,
-    updateConfig
+    updateConfig,
+    refreshBreakingChanges: loadBreakingChanges
   };
 }
