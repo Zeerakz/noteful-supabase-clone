@@ -5,20 +5,21 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* Light mode - sophisticated warm neutrals */
+    --background: 0 0% 98.5%;
+    --foreground: 215 25% 15%;
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 215 25% 15%;
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 215 25% 15%;
     --primary: 221.2 83.2% 53.3%;
     --primary-foreground: 210 40% 98%;
     --secondary: 210 40% 96%;
-    --secondary-foreground: 222.2 84% 4.9%;
+    --secondary-foreground: 215 25% 15%;
     --muted: 210 40% 96%;
     --muted-foreground: 215.4 16.3% 46.9%;
     --accent: 210 40% 96%;
-    --accent-foreground: 222.2 84% 4.9%;
+    --accent-foreground: 215 25% 15%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
     --border: 214.3 31.8% 91.4%;
@@ -46,34 +47,35 @@
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
+    /* Deep atmospheric background with blue-slate undertones */
+    --background: 222 28% 8%;          /* Deep charcoal-blue: #101419 */
+    --foreground: 210 15% 92%;         /* Soft off-white: #E8EAED */
+    --card: 222 28% 9%;                /* Slightly lighter than background */
+    --card-foreground: 210 15% 92%;
+    --popover: 222 28% 9%;
+    --popover-foreground: 210 15% 92%;
     --primary: 217.2 91.2% 59.8%;
-    --primary-foreground: 222.2 84% 4.9%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+    --primary-foreground: 222 28% 8%;
+    --secondary: 220 25% 14%;           /* Deeper blue-slate for secondary elements */
+    --secondary-foreground: 210 15% 88%;
+    --muted: 220 25% 14%;
+    --muted-foreground: 215 15% 65%;    /* Balanced mid-tone for secondary text */
+    --accent: 220 25% 16%;              /* Subtle accent background */
+    --accent-foreground: 210 15% 92%;
     --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 224.3 76.3% 94.1%;
+    --destructive-foreground: 210 15% 92%;
+    --border: 220 25% 18%;              /* Subtle borders with blue undertone */
+    --input: 220 25% 16%;
+    --ring: 217.2 91.2% 59.8%;
     --chart-1: 220 70% 50%;
     --chart-2: 160 60% 45%;
     --chart-3: 30 80% 55%;
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
     
-    /* Dark mode hairline adjustments */
-    --hairline-color: 217.2 32.6% 12%;
-    --hairline-subtle: 217.2 32.6% 8%;
+    /* Dark mode hairline adjustments - subtle blue undertones */
+    --hairline-color: 220 25% 22%;
+    --hairline-subtle: 220 25% 12%;
   }
 }
 
