@@ -139,7 +139,7 @@ export function useStablePageProperties(pageId?: string): UseStablePagePropertie
           page_id: pageId,
           field_id: fieldId,
           value: value,
-          updated_by: user.id
+          created_by: user.id
         });
 
       if (error) throw error;
