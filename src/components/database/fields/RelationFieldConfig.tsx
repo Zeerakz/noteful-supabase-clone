@@ -54,10 +54,11 @@ export function RelationFieldConfig({
         setTargetFields(fields);
         
         // Find existing relation fields that might cause conflicts
-        const relationFields = fields.filter(field => 
-          field.type === 'relation' && 
-          field.settings?.target_database_id === currentDatabaseId
-        );
+        const relationFields = fields.filter(field => {
+          if (field.type !== 'relation') return false;
+          const fieldSettings = field.settings as RelationFieldSettings;
+          return fieldSettings?.target_database_id === currentDatabaseId;
+        });
         setExistingRelationFields(relationFields);
       } catch (err) {
         console.error('Error fetching target database fields:', err);
@@ -101,10 +102,11 @@ export function RelationFieldConfig({
   // Check for potential conflicts with existing backlink fields
   const hasConflictingBacklinks = isSelfReferencing && 
     bidirectional && 
-    existingRelationFields.some(field => 
-      field.settings?.related_property_name === relatedPropertyName ||
-      field.name === relatedPropertyName
-    );
+    existingRelationFields.some(field => {
+      const fieldSettings = field.settings as RelationFieldSettings;
+      return fieldSettings?.related_property_name === relatedPropertyName ||
+             field.name === relatedPropertyName;
+    });
 
   return (
     <div className="space-y-6">
@@ -247,11 +249,14 @@ export function RelationFieldConfig({
                 <div className="text-xs text-muted-foreground bg-muted/50 p-2 rounded">
                   <p className="font-medium mb-1">Existing relation fields:</p>
                   <ul className="list-disc list-inside space-y-1">
-                    {existingRelationFields.map((field) => (
-                      <li key={field.id}>
-                        {field.name} → {field.settings?.related_property_name || 'unnamed backlink'}
-                      </li>
-                    ))}
+                    {existingRelationFields.map((field) => {
+                      const fieldSettings = field.settings as RelationFieldSettings;
+                      return (
+                        <li key={field.id}>
+                          {field.name} → {fieldSettings?.related_property_name || 'unnamed backlink'}
+                        </li>
+                      );
+                    })}
                   </ul>
                 </div>
               )}
