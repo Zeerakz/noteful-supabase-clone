@@ -130,7 +130,9 @@ export function DatabaseColumnHeader({
 
     const handleMouseMove = (moveEvent: MouseEvent) => {
       const deltaX = moveEvent.clientX - resizeStartX;
-      const newWidth = Math.max(120, resizeStartWidth + deltaX);
+      // Only allow extending to the right (positive deltaX)
+      // Minimum width is the starting width, maximum can grow
+      const newWidth = Math.max(resizeStartWidth, resizeStartWidth + deltaX);
       onResize(field.id, newWidth);
     };
 
@@ -319,16 +321,17 @@ export function DatabaseColumnHeader({
           </InlinePropertyEditor>
         </div>
 
-        {/* Resize Handle */}
+        {/* Resize Handle - Modified to show right-only resize cursor */}
         {isResizable && onResize && (
           <div
             className={`
-              absolute right-0 top-0 bottom-0 w-2 cursor-col-resize 
+              absolute right-0 top-0 bottom-0 w-2 cursor-e-resize 
               opacity-0 group-hover:opacity-100 transition-opacity 
               hover:bg-primary/20 flex items-center justify-center
               ${isResizing ? 'opacity-100 bg-primary/30' : ''}
             `}
             onMouseDown={handleResizeStart}
+            title="Drag to extend column width"
           >
             <div className="w-0.5 h-4 bg-muted-foreground/50 rounded-full" />
           </div>
