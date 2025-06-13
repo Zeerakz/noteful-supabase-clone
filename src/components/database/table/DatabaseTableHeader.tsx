@@ -29,7 +29,10 @@ export function DatabaseTableHeader({
     <TableHeader className="sticky top-0 z-20 bg-card/95 backdrop-blur-sm border-b-2 border-border">
       <TableRow className="hover:bg-transparent border-none">
         {/* Selection Column */}
-        <TableHead className="w-12 p-3 bg-card/95 border-r border-border/40">
+        <TableHead 
+          className="w-12 p-3 bg-card/95 border-r border-border/40"
+          style={{ width: '48px', minWidth: '48px', maxWidth: '48px' }}
+        >
           <div className="flex items-center justify-center">
             <Checkbox className="opacity-50" />
           </div>
@@ -38,7 +41,10 @@ export function DatabaseTableHeader({
         {/* Title Column */}
         <TableHead 
           className="p-0 bg-card/95 border-r border-border/40"
-          style={{ width: columnWidths['title'] ? `${columnWidths['title']}px` : '280px' }}
+          style={{ 
+            width: columnWidths['title'] ? `${columnWidths['title']}px` : '280px',
+            minWidth: '150px'
+          }}
         >
           <DatabaseColumnHeader
             field={{
@@ -64,7 +70,10 @@ export function DatabaseTableHeader({
           <TableHead 
             key={field.id} 
             className="p-0 bg-card/95 border-r border-border/40 last:border-r-0"
-            style={{ width: columnWidths[field.id] ? `${columnWidths[field.id]}px` : '200px' }}
+            style={{ 
+              width: columnWidths[field.id] ? `${columnWidths[field.id]}px` : '200px',
+              minWidth: '150px'
+            }}
           >
             <DatabaseColumnHeader
               field={field}
@@ -81,7 +90,10 @@ export function DatabaseTableHeader({
         ))}
 
         {/* Actions Column */}
-        <TableHead className="w-16 p-3 bg-card/95">
+        <TableHead 
+          className="w-16 p-3 bg-card/95"
+          style={{ width: '64px', minWidth: '64px', maxWidth: '64px' }}
+        >
           <div className="text-center text-xs font-medium text-muted-foreground">
             •••
           </div>

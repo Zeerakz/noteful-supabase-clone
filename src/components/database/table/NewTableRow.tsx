@@ -64,7 +64,10 @@ export function NewTableRow({
       `}
     >
       {/* Empty checkbox cell */}
-      <TableCell className="w-12 p-3 border-r border-border/20">
+      <TableCell 
+        className="w-12 p-3 border-r border-border/20"
+        style={{ width: '48px', minWidth: '48px', maxWidth: '48px' }}
+      >
         <div className="flex items-center justify-center">
           <div className="w-4 h-4" />
         </div>
@@ -73,7 +76,10 @@ export function NewTableRow({
       {/* Title Cell */}
       <TableCell 
         className="p-0 border-r border-border/20"
-        style={{ width: columnWidths['title'] ? `${columnWidths['title']}px` : '280px' }}
+        style={{ 
+          width: columnWidths['title'] ? `${columnWidths['title']}px` : '280px',
+          minWidth: '150px'
+        }}
       >
         <div className="px-4 py-3">
           {isCreating ? (
@@ -120,7 +126,10 @@ export function NewTableRow({
         <TableCell 
           key={field.id} 
           className="p-0 border-r border-border/20 last:border-r-0"
-          style={{ width: columnWidths[field.id] ? `${columnWidths[field.id]}px` : '200px' }}
+          style={{ 
+            width: columnWidths[field.id] ? `${columnWidths[field.id]}px` : '200px',
+            minWidth: '150px'
+          }}
         >
           <div className="px-4 py-3">
             <div className="min-h-[24px] px-2 py-1 flex items-center">
@@ -131,7 +140,10 @@ export function NewTableRow({
       ))}
 
       {/* Empty Actions Cell */}
-      <TableCell className="w-16 p-3">
+      <TableCell 
+        className="w-16 p-3"
+        style={{ width: '64px', minWidth: '64px', maxWidth: '64px' }}
+      >
         <div className="w-8 h-8" />
       </TableCell>
     </TableRow>

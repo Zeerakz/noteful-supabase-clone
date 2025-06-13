@@ -92,7 +92,10 @@ export function DatabaseTableRow({
       `}
     >
       {/* Selection Checkbox */}
-      <TableCell className="w-12 p-3 border-r border-border/20">
+      <TableCell 
+        className="w-12 p-3 border-r border-border/20"
+        style={{ width: '48px', minWidth: '48px', maxWidth: '48px' }}
+      >
         <div className="flex items-center justify-center">
           <Checkbox
             checked={isSelected}
@@ -108,7 +111,10 @@ export function DatabaseTableRow({
       {/* Title Cell */}
       <TableCell 
         className="p-0 border-r border-border/20"
-        style={{ width: columnWidths['title'] ? `${columnWidths['title']}px` : '280px' }}
+        style={{ 
+          width: columnWidths['title'] ? `${columnWidths['title']}px` : '280px',
+          minWidth: '150px'
+        }}
       >
         <div className="flex items-center gap-2 px-4 py-3">
           {hasSubItems && (
@@ -144,7 +150,10 @@ export function DatabaseTableRow({
           <TableCell 
             key={field.id} 
             className="p-0 border-r border-border/20 last:border-r-0"
-            style={{ width: columnWidths[field.id] ? `${columnWidths[field.id]}px` : '200px' }}
+            style={{ 
+              width: columnWidths[field.id] ? `${columnWidths[field.id]}px` : '200px',
+              minWidth: '150px'
+            }}
           >
             <div className="px-4 py-3">
               {editingField === field.id ? (
@@ -181,7 +190,10 @@ export function DatabaseTableRow({
       })}
 
       {/* Actions Cell */}
-      <TableCell className="w-16 p-3">
+      <TableCell 
+        className="w-16 p-3"
+        style={{ width: '64px', minWidth: '64px', maxWidth: '64px' }}
+      >
         <div className="flex items-center justify-center">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
