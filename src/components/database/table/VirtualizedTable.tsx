@@ -57,7 +57,7 @@ export function VirtualizedTable({
     overscan: 5
   });
 
-  const { columnWidths, updateColumnWidth } = useColumnResizing({
+  const { getColumnWidth, updateColumnWidth } = useColumnResizing({
     defaultWidths: {
       title: 200,
       ...fields.reduce((acc, field) => ({ ...acc, [field.id]: 150 }), {})
@@ -83,7 +83,7 @@ export function VirtualizedTable({
               sortRules={sortRules}
               onSort={handleSort}
               onColumnResize={updateColumnWidth}
-              columnWidths={columnWidths}
+              columnWidths={{}}
               stickyHeader={false}
             />
           </Table>
@@ -113,7 +113,7 @@ export function VirtualizedTable({
                 onPropertyUpdate={onPropertyUpdate}
                 onDeleteRow={onDeleteRow}
                 isLoading={isLoading}
-                columnWidths={columnWidths}
+                getColumnWidth={getColumnWidth}
                 workspaceId={workspaceId}
               />
             </div>
@@ -138,7 +138,7 @@ export function VirtualizedTable({
             sortRules={sortRules}
             onSort={handleSort}
             onColumnResize={updateColumnWidth}
-            columnWidths={columnWidths}
+            columnWidths={{}}
             stickyHeader={false}
           />
         </Table>
@@ -153,7 +153,7 @@ export function VirtualizedTable({
           onPropertyUpdate={onPropertyUpdate}
           onDeleteRow={onDeleteRow}
           isLoading={isLoading}
-          columnWidths={columnWidths}
+          getColumnWidth={getColumnWidth}
           workspaceId={workspaceId}
         />
       </ScrollArea>
