@@ -11,20 +11,26 @@ interface NewTableRowProps {
   onCreateRow: (title?: string) => void;
   columnWidths?: Record<string, number>;
   isEvenRow?: boolean;
+  resizingFields?: Set<string>;
 }
 
 export function NewTableRow({
   fields,
   onCreateRow,
   columnWidths = {},
-  isEvenRow = false
+  isEvenRow = false,
+  resizingFields = new Set()
 }: NewTableRowProps) {
   const [isCreating, setIsCreating] = useState(false);
   const [title, setTitle] = useState('');
 
+  const isAnyColumnResizing = resizingFields.size > 0;
+
   const handleStartCreating = () => {
-    setIsCreating(true);
-    setTitle('');
+    if (!isAnyColumnResizing) {
+      setIsCreating(true);
+      setTitle('');
+    }
   };
 
   const handleSave = async () => {
@@ -58,9 +64,10 @@ export function NewTableRow({
     <TableRow 
       className={`
         group border-b border-border/20 transition-colors duration-150
-        hover:bg-accent/20 
+        ${!isAnyColumnResizing && !isCreating ? 'hover:bg-accent/20' : ''}
         ${isEvenRow ? 'bg-muted/10' : 'bg-background'}
         ${isCreating ? 'bg-accent/10 border-accent/30' : ''}
+        ${isAnyColumnResizing ? 'pointer-events-none opacity-60' : ''}
       `}
     >
       {/* Empty checkbox cell */}
@@ -75,7 +82,10 @@ export function NewTableRow({
 
       {/* Title Cell */}
       <TableCell 
-        className="p-0 border-r border-border/20"
+        className={`
+          p-0 border-r border-border/20
+          ${resizingFields.has('title') ? 'resize-active' : ''}
+        `}
         style={{ 
           width: columnWidths['title'] ? `${columnWidths['title']}px` : '280px',
           minWidth: '150px'
@@ -112,7 +122,11 @@ export function NewTableRow({
             <Button
               variant="ghost"
               onClick={handleStartCreating}
-              className="w-full justify-start text-muted-foreground hover:text-foreground hover:bg-accent/30 h-8 px-2 rounded-md transition-all duration-200"
+              disabled={isAnyColumnResizing}
+              className={`
+                w-full justify-start text-muted-foreground h-8 px-2 rounded-md transition-all duration-200
+                ${!isAnyColumnResizing ? 'hover:text-foreground hover:bg-accent/30' : 'cursor-not-allowed'}
+              `}
             >
               <Plus className="h-4 w-4 mr-2" />
               New
@@ -125,7 +139,10 @@ export function NewTableRow({
       {fields.map((field) => (
         <TableCell 
           key={field.id} 
-          className="p-0 border-r border-border/20 last:border-r-0"
+          className={`
+            p-0 border-r border-border/20 last:border-r-0
+            ${resizingFields.has(field.id) ? 'resize-active' : ''}
+          `}
           style={{ 
             width: columnWidths[field.id] ? `${columnWidths[field.id]}px` : '200px',
             minWidth: '150px'

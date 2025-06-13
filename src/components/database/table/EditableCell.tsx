@@ -9,6 +9,7 @@ interface EditableCellProps {
   fieldType?: string;
   fieldConfig?: any;
   placeholder?: string;
+  disabled?: boolean;
 }
 
 export function EditableCell({ 
@@ -16,7 +17,8 @@ export function EditableCell({
   onSave, 
   fieldType, 
   fieldConfig, 
-  placeholder = "Enter value..." 
+  placeholder = "Enter value...",
+  disabled = false
 }: EditableCellProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(value);
@@ -45,10 +47,16 @@ export function EditableCell({
     }
   };
 
+  const handleClick = () => {
+    if (!disabled) {
+      setIsEditing(true);
+    }
+  };
+
   const isMultiline = fieldType === 'text' && fieldConfig?.multiline;
   const shouldWrap = fieldType === 'text' && fieldConfig?.wrapText;
 
-  if (isEditing) {
+  if (isEditing && !disabled) {
     if (isMultiline) {
       return (
         <Textarea
@@ -84,10 +92,12 @@ export function EditableCell({
   if (shouldWrap || isMultilineContent) {
     return (
       <div
-        className={`min-h-[20px] cursor-text hover:bg-muted/50 p-1 rounded ${
-          shouldWrap ? 'whitespace-pre-wrap break-words' : ''
-        }`}
-        onClick={() => setIsEditing(true)}
+        className={`
+          min-h-[20px] p-1 rounded 
+          ${disabled ? 'cursor-default' : 'cursor-text hover:bg-muted/50'}
+          ${shouldWrap ? 'whitespace-pre-wrap break-words' : ''}
+        `}
+        onClick={handleClick}
       >
         {isEmpty ? (
           <span className="text-muted-foreground italic">{placeholder}</span>
@@ -100,8 +110,11 @@ export function EditableCell({
 
   return (
     <div
-      className="min-h-[20px] cursor-text hover:bg-muted/50 p-1 rounded truncate"
-      onClick={() => setIsEditing(true)}
+      className={`
+        min-h-[20px] p-1 rounded truncate
+        ${disabled ? 'cursor-default' : 'cursor-text hover:bg-muted/50'}
+      `}
+      onClick={handleClick}
     >
       {isEmpty ? (
         <span className="text-muted-foreground italic">{placeholder}</span>

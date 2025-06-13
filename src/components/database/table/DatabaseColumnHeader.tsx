@@ -46,6 +46,7 @@ interface DatabaseColumnHeaderProps {
   onResize?: (fieldId: string, width: number) => void;
   onFieldsChange?: () => void;
   onFieldReorder?: (draggedFieldId: string, targetFieldId: string, position: 'before' | 'after') => void;
+  onResizeStateChange?: (fieldId: string, isResizing: boolean) => void;
   className?: string;
   width?: number;
   isResizable?: boolean;
@@ -89,6 +90,7 @@ export function DatabaseColumnHeader({
   onResize,
   onFieldsChange,
   onFieldReorder,
+  onResizeStateChange,
   className = '',
   width,
   isResizable = true,
@@ -128,6 +130,11 @@ export function DatabaseColumnHeader({
     setResizeStartX(e.clientX);
     setResizeStartWidth(width || 150);
 
+    // Notify parent of resize state change
+    if (onResizeStateChange) {
+      onResizeStateChange(field.id, true);
+    }
+
     const handleMouseMove = (moveEvent: MouseEvent) => {
       const deltaX = moveEvent.clientX - resizeStartX;
       // Only allow extending to the right (positive deltaX)
@@ -138,6 +145,12 @@ export function DatabaseColumnHeader({
 
     const handleMouseUp = () => {
       setIsResizing(false);
+      
+      // Notify parent of resize state change
+      if (onResizeStateChange) {
+        onResizeStateChange(field.id, false);
+      }
+      
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
     };

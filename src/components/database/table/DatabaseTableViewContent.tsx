@@ -79,6 +79,7 @@ export function DatabaseTableViewContent({
   const [sortBy, setSortBy] = useState<string | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
+  const [resizingFields, setResizingFields] = useState<Set<string>>(new Set());
 
   // Column resizing functionality with updated default widths
   const {
@@ -126,6 +127,10 @@ export function DatabaseTableViewContent({
       setSelectedRows(new Set());
     }
   }, [pagesWithProperties]);
+
+  const handleResizeStateChange = useCallback((newResizingFields: Set<string>) => {
+    setResizingFields(newResizingFields);
+  }, []);
 
   if (pagesLoading) {
     return (
@@ -175,7 +180,7 @@ export function DatabaseTableViewContent({
   }
 
   return (
-    <div className="flex flex-col h-full bg-background">
+    <div className={`flex flex-col h-full bg-background ${resizingFields.size > 0 ? 'resize-mode' : ''}`}>
       {/* Header with improved styling */}
       <div className="flex items-center justify-between px-6 py-4 border-b bg-card/50 backdrop-blur-sm">
         <div className="flex items-center gap-3">
@@ -221,6 +226,7 @@ export function DatabaseTableViewContent({
               onFieldReorder={onFieldReorder}
               columnWidths={columnWidths}
               onColumnResize={updateColumnWidth}
+              onResizeStateChange={handleResizeStateChange}
             />
             <DatabaseTableBody
               pagesWithProperties={pagesWithProperties}
@@ -235,6 +241,7 @@ export function DatabaseTableViewContent({
               onSelectAll={handleSelectAll}
               showNewRow={true}
               columnWidths={columnWidths}
+              resizingFields={resizingFields}
             />
           </Table>
         </div>

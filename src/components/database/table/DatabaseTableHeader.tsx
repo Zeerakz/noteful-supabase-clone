@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { DatabaseColumnHeader } from './DatabaseColumnHeader';
 import { DatabaseField } from '@/types/database';
 import { SortRule } from '@/components/database/SortingModal';
@@ -14,6 +14,7 @@ interface DatabaseTableHeaderProps {
   onFieldReorder?: (draggedFieldId: string, targetFieldId: string, position: 'before' | 'after') => void;
   columnWidths?: Record<string, number>;
   onColumnResize?: (fieldId: string, width: number) => void;
+  onResizeStateChange?: (resizingFields: Set<string>) => void;
 }
 
 export function DatabaseTableHeader({ 
@@ -23,8 +24,29 @@ export function DatabaseTableHeader({
   onFieldsChange,
   onFieldReorder,
   columnWidths = {},
-  onColumnResize
+  onColumnResize,
+  onResizeStateChange
 }: DatabaseTableHeaderProps) {
+  const [resizingFields, setResizingFields] = useState<Set<string>>(new Set());
+
+  const handleResizeStateChange = (fieldId: string, isResizing: boolean) => {
+    setResizingFields(prev => {
+      const newSet = new Set(prev);
+      if (isResizing) {
+        newSet.add(fieldId);
+      } else {
+        newSet.delete(fieldId);
+      }
+      
+      // Notify parent of resize state change
+      if (onResizeStateChange) {
+        onResizeStateChange(newSet);
+      }
+      
+      return newSet;
+    });
+  };
+
   return (
     <TableHeader className="sticky top-0 z-20 bg-card/95 backdrop-blur-sm border-b-2 border-border">
       <TableRow className="hover:bg-transparent border-none">
@@ -60,6 +82,7 @@ export function DatabaseTableHeader({
             sortRules={sortRules}
             onSort={onSort}
             onResize={onColumnResize}
+            onResizeStateChange={handleResizeStateChange}
             width={columnWidths['title'] || 280}
             className="border-b-0"
           />
@@ -82,6 +105,7 @@ export function DatabaseTableHeader({
               onFieldsChange={onFieldsChange}
               onFieldReorder={onFieldReorder}
               onResize={onColumnResize}
+              onResizeStateChange={handleResizeStateChange}
               width={columnWidths[field.id] || 200}
               isDraggable={true}
               className="border-b-0"
