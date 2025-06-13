@@ -47,10 +47,10 @@ export function DatabaseTableHeader({
 
   return (
     <TableHeader>
-      <TableRow className="hover:bg-transparent hairline-divider">
+      <TableRow className="hover:bg-transparent border-b-2 border-border">
         {/* Checkbox Header */}
         <TableHead 
-          className="checkbox-cell p-0 hairline-vertical"
+          className="checkbox-cell p-0 border-r border-border/10"
           style={{ width: '48px', minWidth: '48px', maxWidth: '48px' }}
         >
           <div className="table-header-content justify-center">
@@ -70,7 +70,7 @@ export function DatabaseTableHeader({
 
         {/* Title Header */}
         <TableHead 
-          className="p-0 hairline-vertical"
+          className="p-0 border-r border-border/10"
           style={{ 
             width: `${getColumnWidth('title')}px`,
             minWidth: `${getColumnWidth('title')}px`,
@@ -91,7 +91,7 @@ export function DatabaseTableHeader({
           return (
             <TableHead
               key={field.id}
-              className={`p-0 ${!isLastField ? 'hairline-vertical' : ''}`}
+              className={`p-0 ${!isLastField ? 'border-r border-border/10' : ''}`}
               style={{ 
                 width: `${columnWidth}px`,
                 minWidth: `${columnWidth}px`,
