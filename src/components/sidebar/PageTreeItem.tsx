@@ -37,9 +37,23 @@ interface PageTreeItemProps {
   onDelete: (pageId: string) => void;
   level?: number;
   index: number;
+  // Keyboard navigation props
+  focusedItemId?: string | null;
+  onKeyDown?: (event: React.KeyboardEvent, itemId: string) => void;
+  onToggleExpanded?: (itemId: string) => void;
 }
 
-export function PageTreeItem({ page, pages, workspaceId, onDelete, level = 0, index }: PageTreeItemProps) {
+export function PageTreeItem({ 
+  page, 
+  pages, 
+  workspaceId, 
+  onDelete, 
+  level = 0, 
+  index,
+  focusedItemId,
+  onKeyDown,
+  onToggleExpanded
+}: PageTreeItemProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -47,6 +61,7 @@ export function PageTreeItem({ page, pages, workspaceId, onDelete, level = 0, in
   const childPages = pages.filter(p => p.parent_page_id === page.id);
   const hasChildren = childPages.length > 0;
   const isOwner = page.created_by === user?.id;
+  const isFocused = focusedItemId === page.id;
 
   // Calculate depth indicators and constraints
   const depthInfo = getDepthIndicators(level);
@@ -63,6 +78,19 @@ export function PageTreeItem({ page, pages, workspaceId, onDelete, level = 0, in
     navigate(`/workspace/${workspaceId}/page/${page.id}`);
   };
 
+  const handleToggleExpanded = (e?: React.MouseEvent) => {
+    if (e) {
+      e.stopPropagation();
+    }
+    const newExpanded = !isExpanded;
+    setIsExpanded(newExpanded);
+    onToggleExpanded?.(page.id);
+  };
+
+  const handleKeyDown = (event: React.KeyboardEvent) => {
+    onKeyDown?.(event, page.id);
+  };
+
   // Choose appropriate icon based on hierarchy level and content
   const getItemIcon = () => {
     if (shouldShowContentTypeIcon && contentType) {
@@ -74,12 +102,10 @@ export function PageTreeItem({ page, pages, workspaceId, onDelete, level = 0, in
         <Button
           variant="ghost"
           size="sm"
-          onClick={(e) => {
-            e.stopPropagation();
-            setIsExpanded(!isExpanded);
-          }}
+          onClick={handleToggleExpanded}
           className={level === 0 ? "h-4 w-4 p-0" : "h-3 w-3 p-0"}
           aria-label={isExpanded ? "Collapse" : "Expand"}
+          tabIndex={-1}
         >
           {isExpanded ? (
             <ChevronDown className={level === 0 ? "h-3 w-3" : "h-2 w-2"} />
@@ -101,10 +127,14 @@ export function PageTreeItem({ page, pages, workspaceId, onDelete, level = 0, in
     <>
       <SidebarMenuButton 
         onClick={handleNavigate} 
+        onKeyDown={handleKeyDown}
+        tabIndex={isFocused ? 0 : -1}
+        data-tree-item-id={page.id}
         className={cn(
           "group",
           showDepthWarning && "bg-yellow-50 dark:bg-yellow-950/20",
-          isMaxDepth && "bg-red-50 dark:bg-red-950/20"
+          isMaxDepth && "bg-red-50 dark:bg-red-950/20",
+          isFocused && "ring-2 ring-ring ring-offset-2"
         )}
       >
         <div className="flex items-center gap-2 w-full">
@@ -182,6 +212,9 @@ export function PageTreeItem({ page, pages, workspaceId, onDelete, level = 0, in
                             onDelete={onDelete}
                             level={level + 1}
                             index={childIndex}
+                            focusedItemId={focusedItemId}
+                            onKeyDown={onKeyDown}
+                            onToggleExpanded={onToggleExpanded}
                           />
                         ))}
                         {provided.placeholder}
@@ -202,6 +235,9 @@ export function PageTreeItem({ page, pages, workspaceId, onDelete, level = 0, in
                         onDelete={onDelete}
                         level={level + 1}
                         index={childIndex}
+                        focusedItemId={focusedItemId}
+                        onKeyDown={onKeyDown}
+                        onToggleExpanded={onToggleExpanded}
                       />
                     ))}
                   </SidebarMenuSub>
@@ -229,8 +265,14 @@ export function PageTreeItem({ page, pages, workspaceId, onDelete, level = 0, in
             )}
           >
             <SidebarMenuSubButton 
-              onClick={handleNavigate} 
-              className="group"
+              onClick={handleNavigate}
+              onKeyDown={handleKeyDown}
+              tabIndex={isFocused ? 0 : -1}
+              data-tree-item-id={page.id}
+              className={cn(
+                "group",
+                isFocused && "ring-2 ring-ring ring-offset-2"
+              )}
             >
               <div className="flex items-center gap-2 w-full">
                 {getItemIcon()}
@@ -255,6 +297,7 @@ export function PageTreeItem({ page, pages, workspaceId, onDelete, level = 0, in
                         size="sm"
                         className="h-4 w-4 p-0 opacity-0 group-hover:opacity-100"
                         onClick={(e) => e.stopPropagation()}
+                        tabIndex={-1}
                       >
                         <MoreHorizontal className="h-3 w-3" />
                       </Button>
@@ -296,6 +339,9 @@ export function PageTreeItem({ page, pages, workspaceId, onDelete, level = 0, in
                           onDelete={onDelete}
                           level={level + 1}
                           index={childIndex}
+                          focusedItemId={focusedItemId}
+                          onKeyDown={onKeyDown}
+                          onToggleExpanded={onToggleExpanded}
                         />
                       ))}
                       {provided.placeholder}
@@ -316,6 +362,9 @@ export function PageTreeItem({ page, pages, workspaceId, onDelete, level = 0, in
                       onDelete={onDelete}
                       level={level + 1}
                       index={childIndex}
+                      focusedItemId={focusedItemId}
+                      onKeyDown={onKeyDown}
+                      onToggleExpanded={onToggleExpanded}
                     />
                   ))}
                 </SidebarMenuSub>

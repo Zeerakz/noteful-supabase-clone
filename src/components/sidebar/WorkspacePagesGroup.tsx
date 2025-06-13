@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import { DragDropContext, Droppable, DropResult } from 'react-beautiful-dnd';
@@ -13,8 +13,10 @@ import {
 } from '@/components/ui/sidebar';
 import { useEnhancedPages } from '@/hooks/useEnhancedPages';
 import { useToast } from '@/hooks/use-toast';
+import { useTreeViewKeyboardNavigation } from '@/hooks/useTreeViewKeyboardNavigation';
 import { PageTreeItem } from './PageTreeItem';
 import { validateDragAndDrop } from '@/utils/navigationConstraints';
+import { Page } from '@/hooks/usePages';
 
 interface WorkspacePagesGroupProps {
   workspaceId: string;
@@ -24,8 +26,60 @@ interface WorkspacePagesGroupProps {
 export function WorkspacePagesGroup({ workspaceId, workspaceName }: WorkspacePagesGroupProps) {
   const { pages, updatePageHierarchy, deletePage, hasOptimisticChanges, loading } = useEnhancedPages(workspaceId);
   const { toast } = useToast();
+  const navigate = useNavigate();
+  const [expandedPages, setExpandedPages] = useState<Set<string>>(new Set());
 
   const topLevelPages = pages.filter(page => !page.parent_page_id);
+
+  // Convert pages to tree items for keyboard navigation
+  const treeItems = useMemo(() => {
+    const calculateLevel = (page: Page): number => {
+      if (!page.parent_page_id) return 0;
+      const parent = pages.find(p => p.id === page.parent_page_id);
+      return parent ? calculateLevel(parent) + 1 : 0;
+    };
+
+    return pages.map(page => ({
+      id: page.id,
+      parentId: page.parent_page_id,
+      hasChildren: pages.some(p => p.parent_page_id === page.id),
+      isExpanded: expandedPages.has(page.id),
+      level: calculateLevel(page),
+    }));
+  }, [pages, expandedPages]);
+
+  // Keyboard navigation handlers
+  const handleNavigate = (pageId: string) => {
+    navigate(`/workspace/${workspaceId}/page/${pageId}`);
+  };
+
+  const handleToggleExpanded = (pageId: string) => {
+    setExpandedPages(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(pageId)) {
+        newSet.delete(pageId);
+      } else {
+        newSet.add(pageId);
+      }
+      return newSet;
+    });
+  };
+
+  const handleActivate = (pageId: string) => {
+    navigate(`/workspace/${workspaceId}/page/${pageId}`);
+  };
+
+  const {
+    focusedItemId,
+    containerRef,
+    handleKeyDown,
+    focusItem,
+  } = useTreeViewKeyboardNavigation({
+    items: treeItems,
+    onNavigate: handleNavigate,
+    onToggleExpanded: handleToggleExpanded,
+    onActivate: handleActivate,
+  });
 
   const handleDragEnd = async (result: DropResult) => {
     if (!result.destination) return;
@@ -128,29 +182,34 @@ export function WorkspacePagesGroup({ workspaceId, workspaceName }: WorkspacePag
           <DragDropContext onDragEnd={handleDragEnd}>
             <Droppable droppableId={`workspace-${workspaceId}`} type="page">
               {(provided) => (
-                <ul role="group" aria-label={`${workspaceName} pages`}>
-                  <SidebarMenu ref={provided.innerRef} {...provided.droppableProps}>
-                    {topLevelPages.length === 0 ? (
-                      <SidebarMenuItem>
-                        <SidebarMenuButton className="text-muted-foreground" disabled>
-                          <span>No pages yet</span>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                    ) : (
-                      topLevelPages.map((page, index) => (
-                        <PageTreeItem
-                          key={page.id}
-                          page={page}
-                          pages={pages}
-                          workspaceId={workspaceId}
-                          onDelete={handleDeletePage}
-                          index={index}
-                        />
-                      ))
-                    )}
-                    {provided.placeholder}
-                  </SidebarMenu>
-                </ul>
+                <nav aria-label={`${workspaceName} pages navigation`} ref={containerRef}>
+                  <ul role="group" aria-label={`${workspaceName} pages`}>
+                    <SidebarMenu ref={provided.innerRef} {...provided.droppableProps}>
+                      {topLevelPages.length === 0 ? (
+                        <SidebarMenuItem>
+                          <SidebarMenuButton className="text-muted-foreground" disabled>
+                            <span>No pages yet</span>
+                          </SidebarMenuButton>
+                        </SidebarMenuItem>
+                      ) : (
+                        topLevelPages.map((page, index) => (
+                          <PageTreeItem
+                            key={page.id}
+                            page={page}
+                            pages={pages}
+                            workspaceId={workspaceId}
+                            onDelete={handleDeletePage}
+                            index={index}
+                            focusedItemId={focusedItemId}
+                            onKeyDown={handleKeyDown}
+                            onToggleExpanded={handleToggleExpanded}
+                          />
+                        ))
+                      )}
+                      {provided.placeholder}
+                    </SidebarMenu>
+                  </ul>
+                </nav>
               )}
             </Droppable>
           </DragDropContext>
