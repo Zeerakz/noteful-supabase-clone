@@ -18,6 +18,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Page } from '@/hooks/usePages';
 import { useAuth } from '@/contexts/AuthContext';
 import { ContentType, ContentTypeUtils } from '@/types/contentTypes';
@@ -109,10 +110,16 @@ export function PageTreeItem({ page, pages, workspaceId, onDelete, level = 0, in
           {getItemIcon()}
           <span className="truncate flex-1">{page.title}</span>
           {showDepthWarning && (
-            <AlertTriangle 
-              className="h-3 w-3 text-yellow-600 dark:text-yellow-400" 
-              title={`Nesting level ${level + 1}/${MAX_VISIBLE_LEVELS}`}
-            />
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <AlertTriangle className="h-3 w-3 text-yellow-600 dark:text-yellow-400" />
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Nesting level {level + 1}/{MAX_VISIBLE_LEVELS}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           )}
         </div>
       </SidebarMenuButton>
@@ -221,10 +228,16 @@ export function PageTreeItem({ page, pages, workspaceId, onDelete, level = 0, in
               {getItemIcon()}
               <span className="truncate flex-1">{page.title}</span>
               {showDepthWarning && (
-                <AlertTriangle 
-                  className="h-3 w-3 text-yellow-600 dark:text-yellow-400" 
-                  title={`Nesting level ${level + 1}/${MAX_VISIBLE_LEVELS}`}
-                />
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <AlertTriangle className="h-3 w-3 text-yellow-600 dark:text-yellow-400" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Nesting level {level + 1}/{MAX_VISIBLE_LEVELS}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               )}
               {isOwner && (
                 <DropdownMenu>
