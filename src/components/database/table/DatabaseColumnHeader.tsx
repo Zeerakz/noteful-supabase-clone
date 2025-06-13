@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -33,10 +32,13 @@ interface DatabaseColumnHeaderProps {
   onFieldsChange?: () => void;
   onFieldReorder?: (draggedFieldId: string, targetFieldId: string, position: 'before' | 'after') => void;
   onResizeStateChange?: (fieldId: string, isResizing: boolean) => void;
+  onStartResize?: (fieldId: string) => void;
+  onEndResize?: () => void;
   className?: string;
   width?: number;
   isResizable?: boolean;
   isDraggable?: boolean;
+  isResizing?: boolean;
 }
 
 const fieldDescriptions = {
@@ -59,16 +61,18 @@ export function DatabaseColumnHeader({
   onFieldsChange,
   onFieldReorder,
   onResizeStateChange,
+  onStartResize,
+  onEndResize,
   className = '',
   width,
   isResizable = true,
-  isDraggable = true
+  isDraggable = true,
+  isResizing = false
 }: DatabaseColumnHeaderProps) {
-  const [isResizing, setIsResizing] = useState(false);
-  const [resizeStartX, setResizeStartX] = useState(0);
-  const [resizeStartWidth, setResizeStartWidth] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [dragOver, setDragOver] = useState<'before' | 'after' | null>(null);
+  const [resizeStartX, setResizeStartX] = useState(0);
+  const [resizeStartWidth, setResizeStartWidth] = useState(0);
 
   const currentSort = sortRules.find(rule => rule.fieldId === field.id);
   const sortDirection = currentSort?.direction;
@@ -92,13 +96,15 @@ export function DatabaseColumnHeader({
     
     e.preventDefault();
     e.stopPropagation();
-    setIsResizing(true);
     setResizeStartX(e.clientX);
     setResizeStartWidth(width || 150);
 
     // Notify parent of resize state change
     if (onResizeStateChange) {
       onResizeStateChange(field.id, true);
+    }
+    if (onStartResize) {
+      onStartResize(field.id);
     }
 
     const handleMouseMove = (moveEvent: MouseEvent) => {
@@ -110,11 +116,12 @@ export function DatabaseColumnHeader({
     };
 
     const handleMouseUp = () => {
-      setIsResizing(false);
-      
       // Notify parent of resize state change
       if (onResizeStateChange) {
         onResizeStateChange(field.id, false);
+      }
+      if (onEndResize) {
+        onEndResize();
       }
       
       document.removeEventListener('mousemove', handleMouseMove);
