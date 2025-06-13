@@ -23,6 +23,7 @@ export function PageView() {
   const navigate = useNavigate();
   const { workspaces, loading: workspacesLoading } = useWorkspaces();
   const [pageWithWorkspace, setPageWithWorkspace] = useState<PageWithWorkspace | null>(null);
+  const [userProfiles, setUserProfiles] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Get database fields and properties if this page belongs to a database
@@ -66,6 +67,29 @@ export function PageView() {
 
     fetchPageWithWorkspace();
   }, [pageId, workspacesLoading]);
+
+  useEffect(() => {
+    const fetchUserProfiles = async () => {
+      if (!pageWithWorkspace?.workspace.id) return;
+
+      try {
+        // Fetch user profiles for the workspace
+        const { data: profiles, error } = await supabase
+          .from('profiles')
+          .select('*');
+
+        if (error) {
+          console.error('Error fetching user profiles:', error);
+        } else {
+          setUserProfiles(profiles || []);
+        }
+      } catch (err) {
+        console.error('Error fetching user profiles:', err);
+      }
+    };
+
+    fetchUserProfiles();
+  }, [pageWithWorkspace?.workspace.id]);
 
   const handlePropertyUpdate = async (fieldId: string, value: string) => {
     const result = await updateProperty(fieldId, value);
@@ -126,6 +150,8 @@ export function PageView() {
             workspaceId={workspace.id}
             onPropertyUpdate={handlePropertyUpdate}
             isEditable={true}
+            pageData={page}
+            userProfiles={userProfiles}
           />
         )}
 

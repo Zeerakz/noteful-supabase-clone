@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { DatabaseField } from '@/types/database';
 import { SelectFieldDisplay } from './SelectFieldDisplay';
@@ -10,17 +11,41 @@ import { LinkDisplay } from './LinkDisplay';
 import { PeopleFieldDisplay } from '@/components/property/field-displays/PeopleFieldDisplay';
 import { FileAttachmentFieldDisplay } from '@/components/property/field-displays/FileAttachmentFieldDisplay';
 import { CheckboxFieldDisplay } from '@/components/property/field-displays/CheckboxFieldDisplay';
+import { SystemPropertyDisplay } from '@/components/property/field-displays/SystemPropertyDisplay';
+import { isSystemProperty } from '@/types/systemProperties';
 import { Checkbox } from '@/components/ui/checkbox';
 
 interface FieldDisplayProps {
   field: DatabaseField;
   value: string | null;
   pageId?: string;
+  pageData?: any;
+  userProfiles?: any[];
   onValueChange?: (value: string) => void;
 }
 
-export function FieldDisplay({ field, value, pageId, onValueChange }: FieldDisplayProps) {
-  // Handle empty values consistently
+export function FieldDisplay({ 
+  field, 
+  value, 
+  pageId, 
+  pageData,
+  userProfiles,
+  onValueChange 
+}: FieldDisplayProps) {
+  // Handle system properties first
+  if (isSystemProperty(field.type)) {
+    return (
+      <SystemPropertyDisplay
+        field={field}
+        value={value}
+        pageId={pageId}
+        pageData={pageData}
+        userProfiles={userProfiles}
+      />
+    );
+  }
+
+  // Handle empty values consistently for non-system properties
   if (!value || value.trim() === '') {
     return <span className="text-muted-foreground">—</span>;
   }

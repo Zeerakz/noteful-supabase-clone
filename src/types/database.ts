@@ -1,3 +1,4 @@
+
 export interface Database {
   id: string;
   workspace_id: string;
@@ -106,7 +107,12 @@ export type FieldType =
   | 'formula'
   | 'rollup'
   | 'file_attachment'
-  | 'image';
+  | 'image'
+  | 'created_time'
+  | 'created_by'
+  | 'last_edited_time'
+  | 'last_edited_by'
+  | 'id';
 
 // Settings types for complex fields
 export interface FormulaFieldSettings {
