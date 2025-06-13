@@ -35,6 +35,18 @@ export class SchemaAuditService {
     }
   }
 
+  // Helper function to normalize field names for comparison
+  private static normalizeFieldName(name: string): string {
+    return name.toLowerCase().replace(/[^a-z0-9]/g, '_');
+  }
+
+  // Helper function to check if a name change is just cosmetic
+  private static isCosmeticNameChange(oldName: string, newName: string): boolean {
+    const normalizedOld = this.normalizeFieldName(oldName);
+    const normalizedNew = this.normalizeFieldName(newName);
+    return normalizedOld === normalizedNew;
+  }
+
   static analyzeBreakingChanges(auditLogs: SchemaAuditLog[]): BreakingChange[] {
     const breakingChanges: BreakingChange[] = [];
 
@@ -50,15 +62,21 @@ export class SchemaAuditService {
           created_at: log.created_at
         });
       } else if (log.change_type === 'field_renamed') {
-        breakingChanges.push({
-          id: log.id,
-          type: 'field_renamed',
-          severity: 'high',
-          description: `Field renamed from "${log.old_values?.name}" to "${log.new_values?.name}"`,
-          impact: 'API consumers using the old field name will receive errors.',
-          migration_guide: `Update all references from "${log.old_values?.name}" to "${log.new_values?.name}" in your API calls and data models.`,
-          created_at: log.created_at
-        });
+        const oldName = log.old_values?.name;
+        const newName = log.new_values?.name;
+        
+        // Only treat as breaking change if it's not just a cosmetic change
+        if (oldName && newName && !this.isCosmeticNameChange(oldName, newName)) {
+          breakingChanges.push({
+            id: log.id,
+            type: 'field_renamed',
+            severity: 'high',
+            description: `Field renamed from "${oldName}" to "${newName}"`,
+            impact: 'API consumers using the old field name will receive errors.',
+            migration_guide: `Update all references from "${oldName}" to "${newName}" in your API calls and data models.`,
+            created_at: log.created_at
+          });
+        }
       } else if (log.change_type === 'field_updated' && log.old_values?.type !== log.new_values?.type) {
         breakingChanges.push({
           id: log.id,
