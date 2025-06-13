@@ -9,6 +9,7 @@ import { useEnhancedDatabaseFieldOperations } from '@/hooks/useEnhancedDatabaseF
 import { useMultiLevelGrouping } from '@/hooks/useMultiLevelGrouping';
 import { createMultiLevelGroups } from '@/utils/multiLevelGrouping';
 import { useColumnResizing } from './table/hooks/useColumnResizing';
+import { useUserProfiles } from '@/hooks/useUserProfiles';
 import { DatabaseField } from '@/types/database';
 import { FilterGroup } from '@/types/filters';
 import { SortRule } from '@/components/database/SortingModal';
@@ -43,6 +44,9 @@ export function DatabaseTableView({
   const [enablePagination, setEnablePagination] = useState(false);
   const [itemsPerPage, setItemsPerPage] = useState(50);
   const [showManageProperties, setShowManageProperties] = useState(false);
+
+  // Get user profiles for people field resolution
+  const { userProfiles } = useUserProfiles(workspaceId);
 
   // Use optimistic fields hook with both databaseId and workspaceId
   const {
@@ -168,6 +172,8 @@ export function DatabaseTableView({
           onPropertyUpdate={handlePropertyUpdate}
           workspaceId={workspaceId}
           getColumnWidth={getColumnWidth}
+          userProfiles={userProfiles}
+          allFields={fieldsWithDatabaseId}
         />
 
         <ManagePropertiesModal
@@ -213,6 +219,8 @@ export function DatabaseTableView({
         workspaceId={workspaceId}
         onItemsPerPageChange={handleItemsPerPageChange}
         onShowManageProperties={() => setShowManageProperties(true)}
+        userProfiles={userProfiles}
+        allFields={fieldsWithDatabaseId}
       />
 
       <ManagePropertiesModal

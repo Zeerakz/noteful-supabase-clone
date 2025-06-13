@@ -1,6 +1,8 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { cn } from '@/lib/utils';
+import { DatabaseField } from '@/types/database';
+import { FieldEditor } from '../fields/FieldEditor';
 
 interface EditableCellProps {
   value: string;
@@ -11,6 +13,14 @@ interface EditableCellProps {
   multiline?: boolean;
   onBlur?: () => void;
   onFocus?: () => void;
+  // New props for field type support
+  field?: DatabaseField;
+  workspaceId?: string;
+  pageId?: string;
+  pageData?: any;
+  userProfiles?: any[];
+  allFields?: DatabaseField[];
+  computedValue?: string;
 }
 
 export function EditableCell({
@@ -21,7 +31,14 @@ export function EditableCell({
   disabled = false,
   multiline = false,
   onBlur,
-  onFocus
+  onFocus,
+  field,
+  workspaceId,
+  pageId,
+  pageData,
+  userProfiles,
+  allFields = [],
+  computedValue
 }: EditableCellProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [localValue, setLocalValue] = useState(value);
@@ -111,6 +128,11 @@ export function EditableCell({
     onFocus?.();
   };
 
+  // For field editors, handle their change events
+  const handleFieldChange = (newValue: string) => {
+    setLocalValue(newValue);
+  };
+
   // Focus input when editing starts
   useEffect(() => {
     if (isEditing && inputRef.current) {
@@ -120,6 +142,38 @@ export function EditableCell({
   }, [isEditing]);
 
   if (isEditing) {
+    // If it's a field with specific type, use FieldEditor in controlled mode
+    if (field && workspaceId && pageId) {
+      return (
+        <div
+          className={cn(
+            "w-full h-full bg-background border border-border rounded-sm outline-none px-2 py-1",
+            "text-sm font-normal text-foreground leading-relaxed",
+            "focus-within:ring-2 focus-within:ring-primary/20 focus-within:ring-offset-0 focus-within:border-primary",
+            "tracking-normal",
+            className
+          )}
+          onBlur={handleBlur}
+          onFocus={handleFocus}
+          onKeyDown={handleKeyDown}
+          tabIndex={-1}
+        >
+          <FieldEditor
+            field={field}
+            value={localValue}
+            onChange={handleFieldChange}
+            workspaceId={workspaceId}
+            pageId={pageId}
+            pageData={pageData}
+            userProfiles={userProfiles}
+            allFields={allFields}
+            computedValue={computedValue}
+          />
+        </div>
+      );
+    }
+
+    // For simple text/title fields, use input/textarea
     const InputComponent = multiline ? 'textarea' : 'input';
     
     return (

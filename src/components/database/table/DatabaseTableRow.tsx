@@ -11,7 +11,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { EditableCell } from './EditableCell';
-import { FieldEditor } from '../fields/FieldEditor';
 import { DatabaseField } from '@/types/database';
 
 interface PageWithProperties {
@@ -35,6 +34,8 @@ interface DatabaseTableRowProps {
   isExpanded?: boolean;
   onToggleExpand?: (pageId: string) => void;
   resizingFields?: Set<string>;
+  userProfiles?: any[];
+  allFields?: DatabaseField[];
 }
 
 export function DatabaseTableRow({
@@ -51,10 +52,11 @@ export function DatabaseTableRow({
   hasSubItems = false,
   isExpanded = false,
   onToggleExpand,
-  resizingFields = new Set()
+  resizingFields = new Set(),
+  userProfiles = [],
+  allFields = []
 }: DatabaseTableRowProps) {
   const [isDeleting, setIsDeleting] = useState(false);
-  const [editingField, setEditingField] = useState<string | null>(null);
 
   const isAnyColumnResizing = resizingFields.size > 0;
 
@@ -66,11 +68,6 @@ export function DatabaseTableRow({
     } finally {
       setIsDeleting(false);
     }
-  };
-
-  const handlePropertyChange = (fieldId: string, value: string) => {
-    onPropertyUpdate(page.id, fieldId, value);
-    setEditingField(null);
   };
 
   const handleSelect = (checked: boolean) => {
@@ -158,37 +155,18 @@ export function DatabaseTableRow({
             style={{ width: `${getColumnWidth(field.id)}px` }}
           >
             <div className="table-cell-content">
-              {editingField === field.id ? (
-                <FieldEditor
-                  field={field}
-                  value={cellValue}
-                  onChange={(value) => handlePropertyChange(field.id, value)}
-                  workspaceId={workspaceId}
-                  pageId={page.id}
-                />
-              ) : (
-                <div
-                  className={`
-                    w-full min-h-[24px] rounded-sm px-2 py-1 transition-colors duration-150 flex items-center overflow-hidden
-                    ${!isAnyColumnResizing && !isFieldResizing ? 'cursor-text hover:bg-muted/20' : 'cursor-default'}
-                    ${isAnyColumnResizing ? 'pointer-events-none' : ''}
-                    bg-background text-foreground
-                  `}
-                  onClick={() => !isAnyColumnResizing && setEditingField(field.id)}
-                >
-                  {cellValue ? (
-                    <div className="w-full overflow-hidden">
-                      <span className="text-sm text-foreground">
-                        {cellValue}
-                      </span>
-                    </div>
-                  ) : (
-                    <span className={`text-muted-foreground/50 text-sm ${isAnyColumnResizing ? 'text-muted-foreground/30' : ''}`}>
-                      Enter {field.name.toLowerCase()}
-                    </span>
-                  )}
-                </div>
-              )}
+              <EditableCell
+                value={cellValue}
+                onChange={(value) => onPropertyUpdate(page.id, field.id, value)}
+                placeholder={`Enter ${field.name.toLowerCase()}`}
+                disabled={isAnyColumnResizing || isFieldResizing}
+                field={field}
+                workspaceId={workspaceId}
+                pageId={page.id}
+                userProfiles={userProfiles}
+                allFields={allFields}
+                className="w-full min-h-[24px] rounded-sm px-2 py-1 transition-colors duration-150 flex items-center overflow-hidden bg-background text-foreground"
+              />
             </div>
           </TableCell>
         );

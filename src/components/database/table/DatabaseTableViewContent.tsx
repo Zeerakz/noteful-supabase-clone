@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback } from 'react';
 import { DatabaseField, PageProperty } from '@/types/database';
 import { DatabaseTableHeader } from './DatabaseTableHeader';
@@ -75,8 +74,13 @@ export function DatabaseTableViewContent({
   sortRules,
   setSortRules,
   workspaceId,
-  onItemsPerPageChange
-}: DatabaseTableViewContentProps) {
+  onItemsPerPageChange,
+  userProfiles = [],
+  allFields = []
+}: DatabaseTableViewContentProps & {
+  userProfiles?: any[];
+  allFields?: DatabaseField[];
+}) {
   const [sortBy, setSortBy] = useState<string | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
@@ -194,6 +198,27 @@ export function DatabaseTableViewContent({
       </div>
     );
   }
+
+  const renderRows = () => {
+    return pagesWithProperties.map((page, index) => (
+      <DatabaseTableRow
+        key={page.id}
+        page={page}
+        fields={fields}
+        onTitleUpdate={onTitleUpdate}
+        onPropertyUpdate={onPropertyUpdate}
+        onDeleteRow={onDeleteRow}
+        getColumnWidth={getColumnWidth}
+        workspaceId={workspaceId}
+        isSelected={selectedRows.has(page.id)}
+        onSelect={handleRowSelect}
+        isEvenRow={index % 2 === 0}
+        resizingFields={resizingFields}
+        userProfiles={userProfiles}
+        allFields={allFields}
+      />
+    ));
+  };
 
   return (
     <div className="flex flex-col h-full bg-background overflow-hidden">
