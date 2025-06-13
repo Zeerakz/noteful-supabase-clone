@@ -54,13 +54,19 @@ export function EditableCell({
     if (e.key === 'Enter' && !multiline) {
       e.preventDefault();
       handleSubmit();
-    } else if (e.key === 'Enter' && multiline && e.metaKey) {
+    } else if (e.key === 'Enter' && multiline && (e.metaKey || e.ctrlKey)) {
       e.preventDefault();
       handleSubmit();
     } else if (e.key === 'Escape') {
       e.preventDefault();
       handleCancel();
     }
+  };
+
+  const handleBlur = (e: React.FocusEvent) => {
+    // Only submit if the blur wasn't caused by clicking outside the table or similar
+    // We'll submit on blur to ensure changes are saved when user clicks elsewhere
+    handleSubmit();
   };
 
   // Focus input when editing starts
@@ -80,7 +86,7 @@ export function EditableCell({
         ref={inputRef as any}
         value={localValue}
         onChange={(e) => setLocalValue(e.target.value)}
-        onBlur={handleSubmit}
+        onBlur={handleBlur}
         onKeyDown={handleKeyDown}
         className={cn(
           "w-full h-full bg-background border border-border rounded-sm outline-none resize-none px-2 py-1",
