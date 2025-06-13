@@ -174,6 +174,7 @@ export function DatabaseTableView({
           open={showManageProperties}
           onOpenChange={setShowManageProperties}
           fields={fieldsWithDatabaseId}
+          workspaceId={workspaceId}
           onFieldsReorder={fieldOperations.reorderFields}
           onFieldUpdate={fieldOperations.updateField}
           onFieldDuplicate={fieldOperations.duplicateField}
@@ -218,6 +219,7 @@ export function DatabaseTableView({
         open={showManageProperties}
         onOpenChange={setShowManageProperties}
         fields={fieldsWithDatabaseId}
+        workspaceId={workspaceId}
         onFieldsReorder={fieldOperations.reorderFields}
         onFieldUpdate={fieldOperations.updateField}
         onFieldDuplicate={fieldOperations.duplicateField}

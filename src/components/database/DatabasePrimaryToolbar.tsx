@@ -46,8 +46,8 @@ export function DatabasePrimaryToolbar({
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [showSortModal, setShowSortModal] = useState(false);
 
-  // Count active filters and sorts
-  const activeFiltersCount = filters.conditions?.length || 0;
+  // Count active filters and sorts - FilterGroup has rules array, not conditions
+  const activeFiltersCount = filters.rules?.length || 0;
   const activeSortsCount = sorts.length;
 
   return (
@@ -148,8 +148,8 @@ export function DatabasePrimaryToolbar({
         open={showSortModal}
         onOpenChange={setShowSortModal}
         fields={fields}
-        sorts={sorts}
-        onSortsChange={onSortsChange}
+        sortRules={sorts}
+        onSortRulesChange={onSortsChange}
       />
     </>
   );

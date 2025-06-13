@@ -11,11 +11,12 @@ import { DatabaseField } from '@/types/database';
 import { FilterGroup } from '@/types/filters';
 import { SortRule } from './SortingModal';
 import { GroupingConfig } from '@/types/grouping';
+import { PropertyType } from '@/types/property';
 
 interface DatabaseViewControlsProps {
   fields: DatabaseField[];
-  currentViewType: DatabaseViewType; // Fixed: changed from string to DatabaseViewType
-  onViewChange: (view: DatabaseViewType) => void; // Fixed: changed parameter type
+  currentViewType: DatabaseViewType;
+  onViewChange: (view: DatabaseViewType) => void;
   groupingFieldId?: string;
   onGroupingChange: (fieldId?: string) => void;
   filterGroup: FilterGroup;
@@ -32,6 +33,14 @@ interface DatabaseViewControlsProps {
   setShowSortModal: (show: boolean) => void;
   groupingConfig?: GroupingConfig;
   onGroupingConfigChange?: (config: GroupingConfig) => void;
+  databaseId: string;
+  workspaceId: string;
+  onAddRow?: () => void;
+  onFieldsReorder: (fields: DatabaseField[]) => Promise<void>;
+  onFieldUpdate: (fieldId: string, updates: Partial<DatabaseField>) => Promise<void>;
+  onFieldDuplicate: (field: DatabaseField) => Promise<void>;
+  onFieldDelete: (fieldId: string) => Promise<void>;
+  onFieldCreate: (field: { name: string; type: PropertyType; settings?: any }) => Promise<void>;
 }
 
 export function DatabaseViewControls({
@@ -53,7 +62,15 @@ export function DatabaseViewControls({
   showSortModal,
   setShowSortModal,
   groupingConfig,
-  onGroupingConfigChange
+  onGroupingConfigChange,
+  databaseId,
+  workspaceId,
+  onAddRow,
+  onFieldsReorder,
+  onFieldUpdate,
+  onFieldDuplicate,
+  onFieldDelete,
+  onFieldCreate
 }: DatabaseViewControlsProps) {
   const hasMultiLevelGrouping = groupingConfig && groupingConfig.levels.length > 0;
   const hasSimpleGrouping = groupingFieldId && !hasMultiLevelGrouping;
@@ -66,15 +83,21 @@ export function DatabaseViewControls({
         onViewChange={onViewChange}
       />
 
-      {/* Primary Toolbar with Filters and Sorts - Fixed: removed props that don't exist in DatabasePrimaryToolbar */}
+      {/* Primary Toolbar with Filters and Sorts */}
       <DatabasePrimaryToolbar
-        searchQuery=""
-        onSearchChange={() => {}}
-        hasActiveFilters={hasActiveFilters}
-        hasActiveSorts={hasActiveSorts}
-        onFilterClick={() => setShowFilterModal(true)}
-        onSortClick={() => setShowSortModal(true)}
-        onNewRecord={() => {}}
+        databaseId={databaseId}
+        workspaceId={workspaceId}
+        fields={fields}
+        filters={filterGroup}
+        sorts={sortRules}
+        onFiltersChange={setFilterGroup}
+        onSortsChange={setSortRules}
+        onAddRow={onAddRow}
+        onFieldsReorder={onFieldsReorder}
+        onFieldUpdate={onFieldUpdate}
+        onFieldDuplicate={onFieldDuplicate}
+        onFieldDelete={onFieldDelete}
+        onFieldCreate={onFieldCreate}
       />
 
       {/* Grouping Controls */}

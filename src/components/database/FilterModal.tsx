@@ -25,8 +25,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { useForm } from 'react-hook-form';
-import { Plus } from 'lucide-react';
+import { Plus, X } from 'lucide-react';
 import { DatabaseField } from '@/types/database';
+import { FilterGroup, FilterRule } from '@/types/filters';
 
 export interface FilterRule {
   id: string;
@@ -39,8 +40,8 @@ interface FilterModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   fields: DatabaseField[];
-  filters: FilterRule[];
-  onFiltersChange: (filters: FilterRule[]) => void;
+  filters: FilterGroup;
+  onFiltersChange: (filters: FilterGroup) => void;
 }
 
 const OPERATORS = [
@@ -73,20 +74,33 @@ export function FilterModal({
     const newFilter: FilterRule = {
       id: crypto.randomUUID(),
       fieldId: data.fieldId,
-      operator: data.operator,
+      operator: data.operator as any,
       value: data.value,
     };
 
-    onFiltersChange([...filters, newFilter]);
+    const updatedFilters: FilterGroup = {
+      ...filters,
+      rules: [...filters.rules, newFilter]
+    };
+
+    onFiltersChange(updatedFilters);
     form.reset();
   };
 
   const removeFilter = (filterId: string) => {
-    onFiltersChange(filters.filter(f => f.id !== filterId));
+    const updatedFilters: FilterGroup = {
+      ...filters,
+      rules: filters.rules.filter(f => f.id !== filterId)
+    };
+    onFiltersChange(updatedFilters);
   };
 
   const clearAllFilters = () => {
-    onFiltersChange([]);
+    const updatedFilters: FilterGroup = {
+      ...filters,
+      rules: []
+    };
+    onFiltersChange(updatedFilters);
   };
 
   const getFieldName = (fieldId: string) => {
@@ -110,7 +124,7 @@ export function FilterModal({
 
         <div className="space-y-6">
           {/* Existing Filters */}
-          {filters.length > 0 && (
+          {filters.rules.length > 0 && (
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <h4 className="text-sm font-medium">Active Filters</h4>
@@ -124,7 +138,7 @@ export function FilterModal({
                 </Button>
               </div>
               <div className="space-y-2">
-                {filters.map((filter) => (
+                {filters.rules.map((filter) => (
                   <div key={filter.id} className="flex items-center gap-2">
                     <div className="flex-1">
                       <Badge variant="secondary" className="flex items-center gap-2 px-3 py-1 w-full">
@@ -133,6 +147,14 @@ export function FilterModal({
                         {needsValue(filter.operator) && (
                           <span className="font-medium">"{filter.value}"</span>
                         )}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeFilter(filter.id)}
+                          className="h-auto p-0 ml-auto"
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
                       </Badge>
                     </div>
                   </div>
