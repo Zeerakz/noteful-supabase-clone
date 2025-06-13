@@ -1,6 +1,6 @@
 
 import { useState, useMemo } from 'react';
-import { FilterRule } from '@/components/database/FilterModal';
+import { FilterRule } from '@/types/filters';
 
 export function useFilters() {
   const [filters, setFilters] = useState<FilterRule[]>([]);
