@@ -131,6 +131,9 @@ export interface RollupFieldSettings {
 export interface RelationFieldSettings {
   target_database_id: string;
   display_property?: string;
+  allow_multiple?: boolean;
+  bidirectional?: boolean;
+  related_property_name?: string;
 }
 
 export interface SelectFieldSettings {

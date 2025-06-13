@@ -94,12 +94,28 @@ export function FieldEditor({
       );
 
     case 'relation':
+      const handleRelationChange = (newValue: string | string[] | null) => {
+        if (newValue === null) {
+          onChange('');
+        } else if (Array.isArray(newValue)) {
+          onChange(newValue.join(','));
+        } else {
+          onChange(newValue);
+        }
+      };
+
+      const relationValue = value ? (
+        field.settings?.allowMultiple ? value.split(',').filter(Boolean) : value
+      ) : null;
+
       return (
         <RelationFieldEditor
-          value={value}
-          onChange={onChange}
+          value={relationValue}
+          onChange={handleRelationChange}
           settings={field.settings}
           workspaceId={workspaceId}
+          isMultiple={field.settings?.allowMultiple || false}
+          showBacklink={field.settings?.bidirectional || false}
         />
       );
 

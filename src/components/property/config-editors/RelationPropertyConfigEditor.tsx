@@ -6,7 +6,9 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useDatabases } from '@/hooks/useDatabases';
+import { Link, ArrowLeftRight, Search, Zap } from 'lucide-react';
 
 interface RelationPropertyConfigEditorProps {
   config: any;
@@ -23,86 +25,153 @@ export function RelationPropertyConfigEditor({ config, onConfigChange, workspace
   };
 
   return (
-    <div className="space-y-4">
-      <div className="space-y-2">
-        <Label htmlFor="targetDatabase">Target Database</Label>
-        <Select value={relationConfig.targetDatabaseId || ''} onValueChange={(value) => updateConfig({ targetDatabaseId: value })}>
-          <SelectTrigger>
-            <SelectValue placeholder="Select a database" />
-          </SelectTrigger>
-          <SelectContent>
-            {databases?.map((database) => (
-              <SelectItem key={database.id} value={database.id}>
-                {database.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+    <div className="space-y-6">
+      {/* Target Database Selection */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm flex items-center gap-2">
+            <Link className="h-4 w-4" />
+            Target Database
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="targetDatabase">Database to link to</Label>
+            <Select 
+              value={relationConfig.targetDatabaseId || ''} 
+              onValueChange={(value) => updateConfig({ targetDatabaseId: value })}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select a database to link to" />
+              </SelectTrigger>
+              <SelectContent>
+                {databases?.map((database) => (
+                  <SelectItem key={database.id} value={database.id}>
+                    {database.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {databases?.length === 0 && (
+              <p className="text-xs text-muted-foreground">
+                No databases available. Create a database first to enable relations.
+              </p>
+            )}
+          </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="displayProperty">Display Property</Label>
-        <Input
-          id="displayProperty"
-          value={relationConfig.displayProperty || ''}
-          onChange={(e) => updateConfig({ displayProperty: e.target.value })}
-          placeholder="title"
-        />
-        <p className="text-xs text-muted-foreground">
-          Which property from the target database to display (default: title)
-        </p>
-      </div>
+          <div className="space-y-2">
+            <Label htmlFor="displayProperty">Display Property</Label>
+            <Input
+              id="displayProperty"
+              value={relationConfig.displayProperty || ''}
+              onChange={(e) => updateConfig({ displayProperty: e.target.value })}
+              placeholder="title"
+            />
+            <p className="text-xs text-muted-foreground">
+              Which property from the target database to display (default: title)
+            </p>
+          </div>
+        </CardContent>
+      </Card>
 
-      <div className="space-y-2">
-        <Label htmlFor="relatedPropertyName">Related Property Name</Label>
-        <Input
-          id="relatedPropertyName"
-          value={relationConfig.relatedPropertyName || ''}
-          onChange={(e) => updateConfig({ relatedPropertyName: e.target.value })}
-          placeholder="Related items"
-        />
-        <p className="text-xs text-muted-foreground">
-          Name for the reverse relationship property (if bidirectional)
-        </p>
-      </div>
+      {/* Relationship Behavior */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm flex items-center gap-2">
+            <ArrowLeftRight className="h-4 w-4" />
+            Relationship Behavior
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center space-x-3">
+            <Checkbox
+              id="allowMultiple"
+              checked={relationConfig.allowMultiple || false}
+              onCheckedChange={(checked) => updateConfig({ allowMultiple: checked as boolean })}
+            />
+            <div className="grid gap-1.5 leading-none">
+              <Label htmlFor="allowMultiple" className="font-medium">
+                Allow multiple relations
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                Enable users to select multiple items from the target database
+              </p>
+            </div>
+          </div>
 
-      <div className="flex items-center space-x-2">
-        <Checkbox
-          id="allowMultiple"
-          checked={relationConfig.allowMultiple || false}
-          onCheckedChange={(checked) => updateConfig({ allowMultiple: checked as boolean })}
-        />
-        <Label htmlFor="allowMultiple">Allow multiple relations</Label>
-      </div>
+          <div className="flex items-center space-x-3">
+            <Checkbox
+              id="bidirectional"
+              checked={relationConfig.bidirectional || false}
+              onCheckedChange={(checked) => updateConfig({ bidirectional: checked as boolean })}
+            />
+            <div className="grid gap-1.5 leading-none">
+              <Label htmlFor="bidirectional" className="font-medium">
+                Create bidirectional relationship
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                Show backlinks in the target database pointing back to this database
+              </p>
+            </div>
+          </div>
 
-      <div className="flex items-center space-x-2">
-        <Checkbox
-          id="bidirectional"
-          checked={relationConfig.bidirectional || false}
-          onCheckedChange={(checked) => updateConfig({ bidirectional: checked as boolean })}
-        />
-        <Label htmlFor="bidirectional">Create bidirectional relationship</Label>
-      </div>
+          {relationConfig.bidirectional && (
+            <div className="ml-6 space-y-2">
+              <Label htmlFor="relatedPropertyName">Backlink Property Name</Label>
+              <Input
+                id="relatedPropertyName"
+                value={relationConfig.relatedPropertyName || ''}
+                onChange={(e) => updateConfig({ relatedPropertyName: e.target.value })}
+                placeholder="Related items"
+              />
+              <p className="text-xs text-muted-foreground">
+                Name for the reverse relationship property in the target database
+              </p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
-      <div className="flex items-center space-x-2">
-        <Checkbox
-          id="required"
-          checked={relationConfig.required || false}
-          onCheckedChange={(checked) => updateConfig({ required: checked as boolean })}
-        />
-        <Label htmlFor="required">Required field</Label>
-      </div>
+      {/* Field Settings */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm flex items-center gap-2">
+            <Zap className="h-4 w-4" />
+            Field Settings
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center space-x-3">
+            <Checkbox
+              id="required"
+              checked={relationConfig.required || false}
+              onCheckedChange={(checked) => updateConfig({ required: checked as boolean })}
+            />
+            <div className="grid gap-1.5 leading-none">
+              <Label htmlFor="required" className="font-medium">
+                Required field
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                Users must select at least one item
+              </p>
+            </div>
+          </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="description">Description</Label>
-        <Textarea
-          id="description"
-          value={relationConfig.description || ''}
-          onChange={(e) => updateConfig({ description: e.target.value })}
-          placeholder="Enter field description"
-          rows={2}
-        />
-      </div>
+          <div className="space-y-2">
+            <Label htmlFor="description">Field Description</Label>
+            <Textarea
+              id="description"
+              value={relationConfig.description || ''}
+              onChange={(e) => updateConfig({ description: e.target.value })}
+              placeholder="Describe what this relation represents..."
+              rows={2}
+            />
+            <p className="text-xs text-muted-foreground">
+              Help text shown to users when editing this field
+            </p>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
