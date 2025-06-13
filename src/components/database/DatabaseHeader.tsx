@@ -26,7 +26,6 @@ import {
 } from 'lucide-react';
 import { Database } from '@/types/database';
 import { useSchemaAudit } from '@/hooks/useSchemaAudit';
-import { BreakingChangesAlert } from './BreakingChangesAlert';
 import { SchemaAuditPanel } from './SchemaAuditPanel';
 
 interface DatabaseHeaderProps {
@@ -147,13 +146,6 @@ export function DatabaseHeader({
         </div>
       </div>
 
-      {/* Breaking Changes Alert Bar */}
-      {breakingChanges.length > 0 && (
-        <div className="px-6 py-3 border-b bg-amber-50/50">
-          <BreakingChangesAlert breakingChanges={breakingChanges} />
-        </div>
-      )}
-
       {/* Schema Audit Dialog */}
       <Dialog open={showAuditDialog} onOpenChange={setShowAuditDialog}>
         <DialogContent className="max-w-4xl max-h-[80vh]">
@@ -165,10 +157,6 @@ export function DatabaseHeader({
           </DialogHeader>
           
           <div className="space-y-6">
-            {breakingChanges.length > 0 && (
-              <BreakingChangesAlert breakingChanges={breakingChanges} />
-            )}
-            
             <SchemaAuditPanel auditLogs={auditLogs} loading={loading} />
           </div>
         </DialogContent>
