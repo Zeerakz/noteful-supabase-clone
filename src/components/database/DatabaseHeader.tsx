@@ -1,206 +1,166 @@
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Edit2, Check, X } from 'lucide-react';
-import { EmojiPicker } from './EmojiPicker';
+import { Badge } from '@/components/ui/badge';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { 
+  MoreVertical, 
+  Settings, 
+  Copy, 
+  Trash2, 
+  Download,
+  History,
+  AlertTriangle
+} from 'lucide-react';
+import { Database } from '@/types/database';
+import { useSchemaAudit } from '@/hooks/useSchemaAudit';
+import { BreakingChangesAlert } from './BreakingChangesAlert';
+import { SchemaAuditPanel } from './SchemaAuditPanel';
 
 interface DatabaseHeaderProps {
-  title: string;
-  description?: string;
-  icon?: string;
-  onTitleChange?: (title: string) => void;
-  onDescriptionChange?: (description: string) => void;
-  onIconChange?: (icon: string) => void;
-  breadcrumbs?: {
-    label: string;
-    href?: string;
-  }[];
+  database: Database;
+  onEdit?: () => void;
+  onDuplicate?: () => void;
+  onDelete?: () => void;
+  onExport?: () => void;
 }
 
 export function DatabaseHeader({
-  title,
-  description,
-  icon = '📊',
-  onTitleChange,
-  onDescriptionChange,
-  onIconChange,
-  breadcrumbs = []
+  database,
+  onEdit,
+  onDuplicate,
+  onDelete,
+  onExport
 }: DatabaseHeaderProps) {
-  const [isEditingTitle, setIsEditingTitle] = useState(false);
-  const [isEditingDescription, setIsEditingDescription] = useState(false);
-  const [titleValue, setTitleValue] = useState(title);
-  const [descriptionValue, setDescriptionValue] = useState(description || '');
-
-  const handleTitleSave = () => {
-    onTitleChange?.(titleValue);
-    setIsEditingTitle(false);
-  };
-
-  const handleTitleCancel = () => {
-    setTitleValue(title);
-    setIsEditingTitle(false);
-  };
-
-  const handleDescriptionSave = () => {
-    onDescriptionChange?.(descriptionValue);
-    setIsEditingDescription(false);
-  };
-
-  const handleDescriptionCancel = () => {
-    setDescriptionValue(description || '');
-    setIsEditingDescription(false);
-  };
-
-  const handleIconSelect = (emoji: string) => {
-    onIconChange?.(emoji);
-  };
+  const [showAuditDialog, setShowAuditDialog] = useState(false);
+  const { auditLogs, breakingChanges, loading } = useSchemaAudit(database.id);
 
   return (
-    <div className="space-y-4">
-      {/* Breadcrumbs */}
-      {breadcrumbs.length > 0 && (
-        <nav className="flex items-center space-x-1 text-sm text-muted-foreground">
-          {breadcrumbs.map((breadcrumb, index) => (
-            <React.Fragment key={index}>
-              {breadcrumb.href ? (
-                <a 
-                  href={breadcrumb.href}
-                  className="hover:text-foreground transition-colors"
-                >
-                  {breadcrumb.label}
-                </a>
-              ) : (
-                <span className="text-foreground">{breadcrumb.label}</span>
+    <>
+      <div className="flex items-center justify-between p-6 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
+            {database.icon && (
+              <span className="text-2xl">{database.icon}</span>
+            )}
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight">{database.name}</h1>
+              {database.description && (
+                <p className="text-muted-foreground mt-1">{database.description}</p>
               )}
-              {index < breadcrumbs.length - 1 && (
-                <span className="text-muted-foreground/50">/</span>
-              )}
-            </React.Fragment>
-          ))}
-        </nav>
-      )}
-
-      {/* Main Title */}
-      <div className="flex items-start gap-3">
-        {/* Icon/Emoji Picker */}
-        <Popover>
-          <PopoverTrigger asChild>
+            </div>
+          </div>
+          
+          {/* Breaking Changes Alert */}
+          {breakingChanges.length > 0 && (
             <Button
-              variant="ghost"
+              variant="outline"
               size="sm"
-              className="h-auto p-1 text-2xl hover:bg-muted/50 rounded-md"
+              onClick={() => setShowAuditDialog(true)}
+              className="text-orange-600 border-orange-200 hover:bg-orange-50"
             >
-              {icon}
+              <AlertTriangle className="h-4 w-4 mr-2" />
+              {breakingChanges.length} Breaking Change{breakingChanges.length > 1 ? 's' : ''}
             </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="start">
-            <EmojiPicker onEmojiSelect={handleIconSelect} />
-          </PopoverContent>
-        </Popover>
-
-        {/* Title */}
-        <div className="flex-1 min-w-0">
-          {isEditingTitle ? (
-            <div className="flex items-center gap-2">
-              <Input
-                value={titleValue}
-                onChange={(e) => setTitleValue(e.target.value)}
-                className="text-2xl font-bold border-none shadow-none p-0 h-auto bg-transparent"
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') handleTitleSave();
-                  if (e.key === 'Escape') handleTitleCancel();
-                }}
-                autoFocus
-              />
-              <div className="flex items-center gap-1">
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={handleTitleSave}
-                  className="h-6 w-6 p-0"
-                >
-                  <Check className="h-3 w-3" />
-                </Button>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={handleTitleCancel}
-                  className="h-6 w-6 p-0"
-                >
-                  <X className="h-3 w-3" />
-                </Button>
-              </div>
-            </div>
-          ) : (
-            <div 
-              className="group flex items-center gap-2 cursor-pointer rounded px-1 py-0.5 hover:bg-muted/50"
-              onClick={() => setIsEditingTitle(true)}
-            >
-              <h1 className="text-2xl font-bold text-foreground">{title}</h1>
-              <Edit2 className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-            </div>
           )}
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowAuditDialog(true)}
+            className="gap-2"
+          >
+            <History className="h-4 w-4" />
+            Schema History
+          </Button>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm">
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {onEdit && (
+                <DropdownMenuItem onClick={onEdit}>
+                  <Settings className="h-4 w-4 mr-2" />
+                  Edit Database
+                </DropdownMenuItem>
+              )}
+              
+              {onDuplicate && (
+                <DropdownMenuItem onClick={onDuplicate}>
+                  <Copy className="h-4 w-4 mr-2" />
+                  Duplicate
+                </DropdownMenuItem>
+              )}
+              
+              {onExport && (
+                <DropdownMenuItem onClick={onExport}>
+                  <Download className="h-4 w-4 mr-2" />
+                  Export Data
+                </DropdownMenuItem>
+              )}
+              
+              {(onEdit || onDuplicate || onExport) && onDelete && (
+                <DropdownMenuSeparator />
+              )}
+              
+              {onDelete && (
+                <DropdownMenuItem 
+                  onClick={onDelete}
+                  className="text-red-600 focus:text-red-600"
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete Database
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
-      {/* Description */}
-      <div className="space-y-2">
-        {isEditingDescription ? (
-          <div className="space-y-2">
-            <Textarea
-              value={descriptionValue}
-              onChange={(e) => setDescriptionValue(e.target.value)}
-              placeholder="Add a description..."
-              className="min-h-[60px] resize-none border-none shadow-none p-2 bg-muted/50"
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && e.metaKey) handleDescriptionSave();
-                if (e.key === 'Escape') handleDescriptionCancel();
-              }}
-              autoFocus
-            />
-            <div className="flex items-center gap-2">
-              <Button
-                size="sm"
-                onClick={handleDescriptionSave}
-                className="h-7"
-              >
-                Save
-              </Button>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={handleDescriptionCancel}
-                className="h-7"
-              >
-                Cancel
-              </Button>
-              <span className="text-xs text-muted-foreground">
-                Press ⌘Enter to save
-              </span>
-            </div>
-          </div>
-        ) : (
-          <div 
-            className="group cursor-pointer rounded p-2 hover:bg-muted/50 transition-colors"
-            onClick={() => setIsEditingDescription(true)}
-          >
-            {description ? (
-              <div className="flex items-start gap-2">
-                <p className="text-muted-foreground">{description}</p>
-                <Edit2 className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity mt-0.5 flex-shrink-0" />
-              </div>
-            ) : (
-              <div className="flex items-center gap-2">
-                <span className="text-muted-foreground/70">Add a description...</span>
-                <Edit2 className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-              </div>
+      {/* Breaking Changes Alert Bar */}
+      {breakingChanges.length > 0 && (
+        <div className="px-6 py-3 border-b">
+          <BreakingChangesAlert breakingChanges={breakingChanges} />
+        </div>
+      )}
+
+      {/* Schema Audit Dialog */}
+      <Dialog open={showAuditDialog} onOpenChange={setShowAuditDialog}>
+        <DialogContent className="max-w-4xl max-h-[80vh]">
+          <DialogHeader>
+            <DialogTitle>Schema History & Breaking Changes</DialogTitle>
+            <DialogDescription>
+              Track schema changes and analyze breaking changes for API consumers
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-6">
+            {breakingChanges.length > 0 && (
+              <BreakingChangesAlert breakingChanges={breakingChanges} />
             )}
+            
+            <SchemaAuditPanel auditLogs={auditLogs} loading={loading} />
           </div>
-        )}
-      </div>
-    </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

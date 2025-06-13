@@ -18,7 +18,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, AlertTriangle, CheckCircle, XCircle } from 'lucide-react';
+import { Loader2, AlertTriangle, CheckCircle, XCircle, ExternalLink } from 'lucide-react';
 import { DatabaseField } from '@/types/database';
 import { PropertyType } from '@/types/property';
 import { PropertyMigrationPreview } from '@/types/propertyMigration';
@@ -98,7 +98,7 @@ export function PropertyMigrationDialog({
       if (result.success) {
         toast({
           title: "Migration Complete",
-          description: `Successfully migrated ${field.name} from ${field.type} to ${selectedType}`,
+          description: `Successfully migrated ${field.name} from ${field.type} to ${selectedType}. Change logged for API consumers.`,
         });
         onMigrationComplete();
         onOpenChange(false);
@@ -123,6 +123,9 @@ export function PropertyMigrationDialog({
     onOpenChange(false);
   };
 
+  const isBreakingChange = selectedType && 
+    (selectedType !== field.type || (preview && preview.result.lostValues > 0));
+
   return (
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="max-w-2xl">
@@ -130,7 +133,7 @@ export function PropertyMigrationDialog({
           <DialogTitle>Migrate Property Type</DialogTitle>
           <DialogDescription>
             Change the type of "{field.name}" from {field.type} to another type.
-            This will convert existing values where possible.
+            This will convert existing values where possible and log the change for API consumers.
           </DialogDescription>
         </DialogHeader>
 
@@ -156,6 +159,27 @@ export function PropertyMigrationDialog({
               <AlertTriangle className="h-4 w-4" />
               <AlertDescription>
                 No migration paths are available for this property type.
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {/* Breaking Change Warning */}
+          {isBreakingChange && (
+            <Alert className="border-orange-200 bg-orange-50">
+              <AlertTriangle className="h-4 w-4 text-orange-600" />
+              <AlertDescription className="text-orange-800">
+                <div className="font-medium mb-1">⚠️ Breaking Change Alert</div>
+                <p className="text-sm">
+                  This migration will be logged as a potentially breaking change for API consumers. 
+                  {preview && preview.result.lostValues > 0 && (
+                    <span className="font-medium"> {preview.result.lostValues} values will be lost.</span>
+                  )}
+                </p>
+                <div className="mt-2 text-xs">
+                  <p>• All integrations using this field should be notified</p>
+                  <p>• Consider versioning your API if this affects external consumers</p>
+                  <p>• Update documentation and provide migration guides</p>
+                </div>
               </AlertDescription>
             </Alert>
           )}
@@ -253,9 +277,10 @@ export function PropertyMigrationDialog({
             onClick={executeMigration}
             disabled={!preview?.canMigrate || isExecuting}
             className="gap-2"
+            variant={isBreakingChange ? "destructive" : "default"}
           >
             {isExecuting && <Loader2 className="h-4 w-4 animate-spin" />}
-            {isExecuting ? 'Migrating...' : 'Execute Migration'}
+            {isExecuting ? 'Migrating...' : (isBreakingChange ? 'Execute Breaking Migration' : 'Execute Migration')}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -719,6 +719,60 @@ export type Database = {
           },
         ]
       }
+      schema_audit_log: {
+        Row: {
+          change_type: string
+          changed_by: string
+          created_at: string | null
+          database_id: string
+          field_id: string | null
+          id: string
+          metadata: Json | null
+          new_values: Json | null
+          old_values: Json | null
+          workspace_id: string
+        }
+        Insert: {
+          change_type: string
+          changed_by: string
+          created_at?: string | null
+          database_id: string
+          field_id?: string | null
+          id?: string
+          metadata?: Json | null
+          new_values?: Json | null
+          old_values?: Json | null
+          workspace_id: string
+        }
+        Update: {
+          change_type?: string
+          changed_by?: string
+          created_at?: string | null
+          database_id?: string
+          field_id?: string | null
+          id?: string
+          metadata?: Json | null
+          new_values?: Json | null
+          old_values?: Json | null
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "schema_audit_log_database_id_fkey"
+            columns: ["database_id"]
+            isOneToOne: false
+            referencedRelation: "databases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "schema_audit_log_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       templates: {
         Row: {
           content: Json
