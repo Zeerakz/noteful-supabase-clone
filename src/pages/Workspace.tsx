@@ -14,7 +14,7 @@ export function Workspace() {
     );
   }
 
-  return <WorkspaceView workspaceId={workspaceId} />;
+  return <WorkspaceView />;
 }
 
 export default Workspace;

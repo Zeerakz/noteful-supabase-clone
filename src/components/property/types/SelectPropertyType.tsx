@@ -69,8 +69,8 @@ export const selectPropertyType: PropertyTypeDefinition<SelectPropertyConfig> = 
   },
 
   ConfigEditor: SelectPropertyConfigEditor,
-  FieldDisplay: (props) => <SelectFieldDisplay {...props} config={props.config} />,
-  FieldEditor: (props) => <SelectFieldEditor {...props} config={props.config} />,
+  FieldDisplay: (props) => <SelectFieldDisplay {...props} settings={{ options: props.config.options || [] }} />,
+  FieldEditor: (props) => <SelectFieldEditor {...props} settings={{ options: props.config.options || [] }} />,
 
   isComputed: false,
   supportsFiltering: true,
@@ -118,6 +118,6 @@ export const multiSelectPropertyType: PropertyTypeDefinition<SelectPropertyConfi
     }).join(', ');
   },
 
-  FieldEditor: (props) => <SelectFieldEditor {...props} config={props.config} multiSelect />,
-  FieldDisplay: (props) => <SelectFieldDisplay {...props} config={props.config} multiSelect />,
+  FieldEditor: (props) => <SelectFieldEditor {...props} settings={{ options: props.config.options || [] }} multiSelect />,
+  FieldDisplay: (props) => <SelectFieldDisplay {...props} settings={{ options: props.config.options || [] }} multiSelect />,
 };
