@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { DatabaseColumnHeader } from './DatabaseColumnHeader';
 import { DatabaseField } from '@/types/database';
 import { SortRule } from '@/components/database/SortingModal';
@@ -14,6 +14,7 @@ interface DatabaseTableHeaderProps {
   onFieldReorder?: (draggedFieldId: string, targetFieldId: string, position: 'before' | 'after') => void;
   getColumnWidth: (fieldId: string) => number;
   onColumnResize?: (fieldId: string, width: number) => void;
+  onResizeStateChange?: (resizingFields: Set<string>) => void;
 }
 
 export function DatabaseTableHeader({ 
@@ -23,23 +24,49 @@ export function DatabaseTableHeader({
   onFieldsChange,
   onFieldReorder,
   getColumnWidth,
-  onColumnResize
+  onColumnResize,
+  onResizeStateChange
 }: DatabaseTableHeaderProps) {
+  const [resizingFields, setResizingFields] = useState<Set<string>>(new Set());
+
+  const handleResizeStateChange = (fieldId: string, isResizing: boolean) => {
+    setResizingFields(prev => {
+      const newSet = new Set(prev);
+      if (isResizing) {
+        newSet.add(fieldId);
+      } else {
+        newSet.delete(fieldId);
+      }
+      
+      if (onResizeStateChange) {
+        onResizeStateChange(newSet);
+      }
+      
+      return newSet;
+    });
+  };
+
   return (
-    <TableHeader className="sticky top-0 z-20 bg-card/95 backdrop-blur-sm">
-      <TableRow className="hover:bg-transparent border-b-2 border-border">
-        {/* Selection Column */}
+    <TableHeader className="sticky top-0 z-20 bg-card/95 backdrop-blur-sm border-b-2 border-border">
+      <TableRow className="hover:bg-transparent border-none">
+        {/* Selection Column - Fixed width with consistent padding */}
         <TableHead 
-          className="p-3 bg-card/95 border-r border-border/40 text-center"
-          style={{ width: `${getColumnWidth('checkbox')}px` }}
+          className="p-3 bg-card/95 border-r border-border/40"
+          style={{ width: '48px', minWidth: '48px', maxWidth: '48px' }}
         >
-          <Checkbox className="opacity-50" />
+          <div className="flex items-center justify-center">
+            <Checkbox className="opacity-50" />
+          </div>
         </TableHead>
 
-        {/* Title Column */}
+        {/* Title Column with consistent width */}
         <TableHead 
           className="p-0 bg-card/95 border-r border-border/40"
-          style={{ width: `${getColumnWidth('title')}px` }}
+          style={{ 
+            width: `${getColumnWidth('title')}px`, 
+            minWidth: `${getColumnWidth('title')}px`, 
+            maxWidth: `${getColumnWidth('title')}px` 
+          }}
         >
           <DatabaseColumnHeader
             field={{
@@ -55,17 +82,22 @@ export function DatabaseTableHeader({
             sortRules={sortRules}
             onSort={onSort}
             onResize={onColumnResize}
+            onResizeStateChange={handleResizeStateChange}
             width={getColumnWidth('title')}
             className="border-b-0"
           />
         </TableHead>
 
-        {/* Field Columns */}
+        {/* Field Columns with consistent widths */}
         {fields.map((field) => (
           <TableHead 
             key={field.id} 
             className="p-0 bg-card/95 border-r border-border/40 last:border-r-0"
-            style={{ width: `${getColumnWidth(field.id)}px` }}
+            style={{ 
+              width: `${getColumnWidth(field.id)}px`, 
+              minWidth: `${getColumnWidth(field.id)}px`, 
+              maxWidth: `${getColumnWidth(field.id)}px` 
+            }}
           >
             <DatabaseColumnHeader
               field={field}
@@ -74,6 +106,7 @@ export function DatabaseTableHeader({
               onFieldsChange={onFieldsChange}
               onFieldReorder={onFieldReorder}
               onResize={onColumnResize}
+              onResizeStateChange={handleResizeStateChange}
               width={getColumnWidth(field.id)}
               isDraggable={true}
               className="border-b-0"
@@ -81,12 +114,12 @@ export function DatabaseTableHeader({
           </TableHead>
         ))}
 
-        {/* Actions Column */}
+        {/* Actions Column - Fixed width with consistent padding */}
         <TableHead 
-          className="p-3 bg-card/95 text-center"
-          style={{ width: `${getColumnWidth('actions')}px` }}
+          className="p-3 bg-card/95"
+          style={{ width: '64px', minWidth: '64px', maxWidth: '64px' }}
         >
-          <div className="text-xs font-medium text-muted-foreground">
+          <div className="text-center text-xs font-medium text-muted-foreground">
             •••
           </div>
         </TableHead>
