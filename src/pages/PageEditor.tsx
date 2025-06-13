@@ -8,7 +8,6 @@ import { BlockEditor } from '@/components/blocks/BlockEditor';
 import { PresenceProvider } from '@/components/collaboration/PresenceProvider';
 import { ActiveUsers } from '@/components/collaboration/ActiveUsers';
 import { SaveAsTemplateDialog } from '@/components/templates/SaveAsTemplateDialog';
-import { AppLayoutWithSidebar } from '@/components/layout/AppLayoutWithSidebar';
 import { usePages } from '@/hooks/usePages';
 import { useWorkspaces } from '@/hooks/useWorkspaces';
 import { usePresence } from '@/hooks/usePresence';
@@ -111,83 +110,74 @@ export function PageEditor() {
     }
   };
 
-  const breadcrumbs = [
-    { label: workspace.name, href: `/workspace/${workspaceId}` },
-    { label: page.title }
-  ];
-
   return (
-    <AppLayoutWithSidebar breadcrumbs={breadcrumbs}>
-      <PresenceProvider pageId={pageId}>
-        <div className="h-full flex flex-col overflow-hidden">
-          <div className="border-b border-border bg-background sticky top-0 z-10">
-            <div className="px-4 py-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-4">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleBack}
-                  >
-                    <ArrowLeft className="h-4 w-4 mr-2" />
-                    Back
-                  </Button>
-                  <div className="flex-1">
-                    {isEditingTitle ? (
-                      <div className="flex items-center gap-2">
-                        <Input
-                          ref={titleInputRef}
-                          value={titleValue}
-                          onChange={(e) => setTitleValue(e.target.value)}
-                          onBlur={handleTitleSave}
-                          onKeyDown={handleTitleKeyDown}
-                          className="text-xl font-semibold border-none bg-transparent p-0 focus-visible:ring-1"
-                          placeholder="Page title"
-                        />
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2 group">
-                        <h1 className="text-xl font-semibold">{page.title}</h1>
-                        {isEditable && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={startEditingTitle}
-                            className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0"
-                          >
-                            <Edit2 className="h-3 w-3" />
-                          </Button>
-                        )}
-                      </div>
-                    )}
-                    <p className="text-sm text-muted-foreground">in {workspace.name}</p>
-                  </div>
-                </div>
-                
-                <div className="flex items-center gap-3">
-                  {/* Save as Template button */}
-                  {blocks.length > 0 && (
-                    <SaveAsTemplateDialog
-                      pageId={page.id}
-                      workspaceId={workspaceId!}
-                      blocks={blocks}
-                    />
+    <PresenceProvider pageId={pageId}>
+      <div className="min-h-screen bg-background">
+        <div className="border-b border-border bg-background sticky top-0 z-10">
+          <div className="container mx-auto px-4 py-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleBack}
+                >
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Back
+                </Button>
+                <div className="flex-1">
+                  {isEditingTitle ? (
+                    <div className="flex items-center gap-2">
+                      <Input
+                        ref={titleInputRef}
+                        value={titleValue}
+                        onChange={(e) => setTitleValue(e.target.value)}
+                        onBlur={handleTitleSave}
+                        onKeyDown={handleTitleKeyDown}
+                        className="text-xl font-semibold border-none bg-transparent p-0 focus-visible:ring-1"
+                        placeholder="Page title"
+                      />
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2 group">
+                      <h1 className="text-xl font-semibold">{page.title}</h1>
+                      {isEditable && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={startEditingTitle}
+                          className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0"
+                        >
+                          <Edit2 className="h-3 w-3" />
+                        </Button>
+                      )}
+                    </div>
                   )}
-                  
-                  {/* Show active users */}
-                  <ActiveUsers activeUsers={activeUsers} loading={presenceLoading} />
+                  <p className="text-sm text-muted-foreground">in {workspace.name}</p>
                 </div>
+              </div>
+              
+              <div className="flex items-center gap-3">
+                {/* Save as Template button */}
+                {blocks.length > 0 && (
+                  <SaveAsTemplateDialog
+                    pageId={page.id}
+                    workspaceId={workspaceId!}
+                    blocks={blocks}
+                  />
+                )}
+                
+                {/* Show active users */}
+                <ActiveUsers activeUsers={activeUsers} loading={presenceLoading} />
               </div>
             </div>
           </div>
-          
-          <div className="flex-1 overflow-auto">
-            <div className="container mx-auto max-w-4xl">
-              <BlockEditor pageId={page.id} isEditable={isEditable} workspaceId={workspaceId} />
-            </div>
-          </div>
         </div>
-      </PresenceProvider>
-    </AppLayoutWithSidebar>
+        
+        <div className="container mx-auto max-w-4xl">
+          <BlockEditor pageId={page.id} isEditable={isEditable} workspaceId={workspaceId} />
+        </div>
+      </div>
+    </PresenceProvider>
   );
 }
