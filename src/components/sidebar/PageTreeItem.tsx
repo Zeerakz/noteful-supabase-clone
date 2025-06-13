@@ -1,15 +1,13 @@
 
-import React, { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { FileText, ChevronRight, ChevronDown, MoreHorizontal, Trash2, Edit, AlertTriangle } from 'lucide-react';
+import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Draggable, Droppable } from 'react-beautiful-dnd';
+import { FileText, ChevronRight, ChevronDown, MoreHorizontal, Trash2 } from 'lucide-react';
 import {
+  SidebarMenuItem,
   SidebarMenuButton,
   SidebarMenuAction,
-  SidebarMenuItem,
-  SidebarMenuSub,
-  SidebarMenuSubItem,
-  SidebarMenuSubButton,
+  SidebarMenu,
 } from '@/components/ui/sidebar';
 import {
   DropdownMenu,
@@ -18,16 +16,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Page } from '@/hooks/usePages';
-import { useAuth } from '@/contexts/AuthContext';
-import { ContentType, ContentTypeUtils } from '@/types/contentTypes';
-import { ContentTypeIcon } from '@/components/content-types/ContentTypeIcon';
-import { 
-  canNestPage, 
-  getDepthIndicators, 
-  MAX_VISIBLE_LEVELS 
-} from '@/utils/navigationConstraints';
 import { cn } from '@/lib/utils';
 
 interface PageTreeItemProps {
@@ -35,371 +24,150 @@ interface PageTreeItemProps {
   pages: Page[];
   workspaceId: string;
   onDelete: (pageId: string) => void;
-  level?: number;
   index: number;
-  // Keyboard navigation props
-  focusedItemId?: string | null;
-  onKeyDown?: (event: React.KeyboardEvent, itemId: string) => void;
-  onToggleExpanded?: (itemId: string) => void;
-  // Expansion state from parent
+  focusedItemId?: string;
+  onKeyDown?: (e: React.KeyboardEvent, itemId: string) => void;
+  onToggleExpanded?: (pageId: string) => void;
   isExpanded?: boolean;
+  level?: number;
+  onNavigationItemSelect?: () => void;
 }
 
-export function PageTreeItem({ 
-  page, 
-  pages, 
-  workspaceId, 
-  onDelete, 
-  level = 0, 
+export function PageTreeItem({
+  page,
+  pages,
+  workspaceId,
+  onDelete,
   index,
   focusedItemId,
   onKeyDown,
   onToggleExpanded,
-  isExpanded: parentIsExpanded = false
+  isExpanded = false,
+  level = 0,
+  onNavigationItemSelect,
 }: PageTreeItemProps) {
-  const [isExpanded, setIsExpanded] = useState(parentIsExpanded);
   const navigate = useNavigate();
-  const location = useLocation();
-  const { user } = useAuth();
-  
-  const childPages = pages.filter(p => p.parent_page_id === page.id);
-  const hasChildren = childPages.length > 0;
-  const isOwner = page.created_by === user?.id;
+  const subPages = pages.filter(p => p.parent_page_id === page.id);
+  const hasChildren = subPages.length > 0;
   const isFocused = focusedItemId === page.id;
-
-  // Check if this page is currently active
-  const currentPagePath = `/workspace/${workspaceId}/page/${page.id}`;
-  const isCurrentPage = location.pathname === currentPagePath;
-
-  // Calculate depth indicators and constraints
-  const depthInfo = getDepthIndicators(level);
-  const { canAddChildren, isMaxDepth, showDepthWarning } = depthInfo;
-
-  // Determine content type for icon display
-  // Only show content type icons for first-level items (level 0)
-  const shouldShowContentTypeIcon = level === 0;
-  const contentType = shouldShowContentTypeIcon 
-    ? (page.database_id ? ContentType.DATABASE : ContentType.PAGE)
-    : null;
 
   const handleNavigate = () => {
     navigate(`/workspace/${workspaceId}/page/${page.id}`);
+    onNavigationItemSelect?.();
   };
 
-  const handleToggleExpanded = (e?: React.MouseEvent) => {
-    if (e) {
-      e.stopPropagation();
-    }
-    const newExpanded = !isExpanded;
-    setIsExpanded(newExpanded);
-    onToggleExpanded?.(page.id);
-  };
-
-  const handleKeyDown = (event: React.KeyboardEvent) => {
-    onKeyDown?.(event, page.id);
-  };
-
-  // Choose appropriate icon based on hierarchy level and content
-  const getItemIcon = () => {
-    if (shouldShowContentTypeIcon && contentType) {
-      return <ContentTypeIcon contentType={contentType} size="sm" showTooltip={false} />;
-    }
-    
+  const handleToggle = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
     if (hasChildren) {
-      return (
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={handleToggleExpanded}
-          className={level === 0 ? "h-4 w-4 p-0" : "h-3 w-3 p-0"}
-          aria-label={isExpanded ? "Collapse" : "Expand"}
-          tabIndex={-1}
-        >
-          {isExpanded ? (
-            <ChevronDown className={level === 0 ? "h-3 w-3" : "h-2 w-2"} />
-          ) : (
-            <ChevronRight className={level === 0 ? "h-3 w-3" : "h-2 w-2"} />
-          )}
-        </Button>
-      );
+      onToggleExpanded?.(page.id);
     }
-    
-    // For child items without children, use a simple file icon
-    return <FileText className={level === 0 ? "h-3 w-3 text-muted-foreground" : "h-3 w-3 text-muted-foreground"} />;
   };
 
-  // Check if we can add children to this page (for potential sub-page creation)
-  const canCreateSubPage = canAddChildren && isOwner;
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    onKeyDown?.(e, page.id);
+  };
 
-  const content = (
-    <>
-      <SidebarMenuButton 
-        onClick={handleNavigate} 
-        onKeyDown={handleKeyDown}
-        tabIndex={isFocused ? 0 : -1}
-        data-tree-item-id={page.id}
-        aria-current={isCurrentPage ? "page" : undefined}
-        className={cn(
-          "group",
-          showDepthWarning && "bg-yellow-50 dark:bg-yellow-950/20",
-          isMaxDepth && "bg-red-50 dark:bg-red-950/20",
-          isFocused && "ring-2 ring-ring ring-offset-2",
-          isCurrentPage && "bg-sidebar-accent text-sidebar-accent-foreground"
-        )}
-      >
-        <div className="flex items-center gap-2 w-full">
-          {getItemIcon()}
-          <span className="truncate flex-1">{page.title}</span>
-          {showDepthWarning && (
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <AlertTriangle className="h-3 w-3 text-yellow-600 dark:text-yellow-400" />
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Nesting level {level + 1}/{MAX_VISIBLE_LEVELS}</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          )}
-        </div>
-      </SidebarMenuButton>
-      {isOwner && (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <SidebarMenuAction showOnHover>
-              <MoreHorizontal />
-              <span className="sr-only">More</span>
-            </SidebarMenuAction>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent side="right" align="start">
-            <DropdownMenuItem onClick={handleNavigate}>
-              <Edit className="h-4 w-4 mr-2" />
-              Edit
-            </DropdownMenuItem>
-            {!canCreateSubPage && isMaxDepth && (
-              <DropdownMenuItem disabled className="text-muted-foreground">
-                <AlertTriangle className="h-4 w-4 mr-2" />
-                Max nesting depth reached
-              </DropdownMenuItem>
-            )}
-            <DropdownMenuItem
-              onClick={() => onDelete(page.id)}
-              className="text-destructive"
-            >
-              <Trash2 className="h-4 w-4 mr-2" />
-              Delete
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      )}
-    </>
-  );
-
-  if (level === 0) {
-    return (
-      <Draggable draggableId={page.id} index={index}>
-        {(provided, snapshot) => (
-          <li 
-            role="treeitem" 
-            aria-expanded={hasChildren ? isExpanded : undefined}
-            aria-level={level + 1}
-            aria-setsize={pages.filter(p => p.parent_page_id === page.parent_page_id).length}
-            aria-posinset={index + 1}
-          >
-            <SidebarMenuItem
-              ref={provided.innerRef}
-              {...provided.draggableProps}
-              {...provided.dragHandleProps}
-              className={snapshot.isDragging ? 'opacity-50' : ''}
-            >
-              {content}
-              {isExpanded && hasChildren && canAddChildren && (
-                <Droppable droppableId={`sub-${page.id}`} type="page">
-                  {(provided) => (
-                    <ul role="group" aria-label={`${page.title} sub-pages`}>
-                      <SidebarMenuSub ref={provided.innerRef} {...provided.droppableProps}>
-                        {childPages.map((childPage, childIndex) => (
-                          <PageTreeItem
-                            key={childPage.id}
-                            page={childPage}
-                            pages={pages}
-                            workspaceId={workspaceId}
-                            onDelete={onDelete}
-                            level={level + 1}
-                            index={childIndex}
-                            focusedItemId={focusedItemId}
-                            onKeyDown={onKeyDown}
-                            onToggleExpanded={onToggleExpanded}
-                            isExpanded={false}
-                          />
-                        ))}
-                        {provided.placeholder}
-                      </SidebarMenuSub>
-                    </ul>
-                  )}
-                </Droppable>
-              )}
-              {isExpanded && hasChildren && !canAddChildren && (
-                <ul role="group" aria-label={`${page.title} sub-pages`}>
-                  <SidebarMenuSub>
-                    {childPages.map((childPage, childIndex) => (
-                      <PageTreeItem
-                        key={childPage.id}
-                        page={childPage}
-                        pages={pages}
-                        workspaceId={workspaceId}
-                        onDelete={onDelete}
-                        level={level + 1}
-                        index={childIndex}
-                        focusedItemId={focusedItemId}
-                        onKeyDown={onKeyDown}
-                        onToggleExpanded={onToggleExpanded}
-                        isExpanded={false}
-                      />
-                    ))}
-                  </SidebarMenuSub>
-                </ul>
-              )}
-            </SidebarMenuItem>
-          </li>
-        )}
-      </Draggable>
-    );
-  }
+  const handleDelete = () => {
+    onDelete(page.id);
+  };
 
   return (
     <Draggable draggableId={page.id} index={index}>
       {(provided, snapshot) => (
-        <li 
-          role="treeitem" 
-          aria-expanded={hasChildren ? isExpanded : undefined}
-          aria-level={level + 1}
-          aria-setsize={pages.filter(p => p.parent_page_id === page.parent_page_id).length}
-          aria-posinset={index + 1}
+        <div
+          ref={provided.innerRef}
+          {...provided.draggableProps}
+          className={cn(
+            "relative",
+            snapshot.isDragging && "z-50"
+          )}
         >
-          <SidebarMenuSubItem
-            ref={provided.innerRef}
-            {...provided.draggableProps}
-            {...provided.dragHandleProps}
+          <SidebarMenuItem
+            role="treeitem"
+            aria-expanded={hasChildren ? isExpanded : undefined}
+            aria-level={level + 1}
             className={cn(
-              snapshot.isDragging ? 'opacity-50' : '',
-              showDepthWarning && "bg-yellow-50 dark:bg-yellow-950/20",
-              isMaxDepth && "bg-red-50 dark:bg-red-950/20"
+              "group relative",
+              isFocused && "ring-2 ring-ring ring-offset-2 rounded-md"
             )}
+            style={{ paddingLeft: `${level * 16}px` }}
           >
-            <SidebarMenuSubButton 
+            <SidebarMenuButton
               onClick={handleNavigate}
               onKeyDown={handleKeyDown}
+              className="w-full justify-start text-left pr-8"
+              data-active={window.location.pathname === `/workspace/${workspaceId}/page/${page.id}`}
               tabIndex={isFocused ? 0 : -1}
-              data-tree-item-id={page.id}
-              aria-current={isCurrentPage ? "page" : undefined}
-              className={cn(
-                "group",
-                isFocused && "ring-2 ring-ring ring-offset-2",
-                isCurrentPage && "bg-sidebar-accent text-sidebar-accent-foreground"
-              )}
             >
-              <div className="flex items-center gap-2 w-full">
-                {getItemIcon()}
-                <span className="truncate flex-1">{page.title}</span>
-                {showDepthWarning && (
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <AlertTriangle className="h-3 w-3 text-yellow-600 dark:text-yellow-400" />
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Nesting level {level + 1}/{MAX_VISIBLE_LEVELS}</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
+              <div {...provided.dragHandleProps} className="flex items-center gap-1 min-w-0 flex-1">
+                {hasChildren ? (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleToggle}
+                    className="h-4 w-4 p-0 hover:bg-transparent"
+                    aria-label={isExpanded ? "Collapse" : "Expand"}
+                  >
+                    {isExpanded ? (
+                      <ChevronDown className="h-3 w-3" />
+                    ) : (
+                      <ChevronRight className="h-3 w-3" />
+                    )}
+                  </Button>
+                ) : (
+                  <div className="w-4" />
                 )}
-                {isOwner && (
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-4 w-4 p-0 opacity-0 group-hover:opacity-100"
-                        onClick={(e) => e.stopPropagation()}
-                        tabIndex={-1}
-                      >
-                        <MoreHorizontal className="h-3 w-3" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent side="right" align="start">
-                      <DropdownMenuItem onClick={handleNavigate}>
-                        <Edit className="h-4 w-4 mr-2" />
-                        Edit
-                      </DropdownMenuItem>
-                      {!canCreateSubPage && isMaxDepth && (
-                        <DropdownMenuItem disabled className="text-muted-foreground">
-                          <AlertTriangle className="h-4 w-4 mr-2" />
-                          Max nesting depth reached
-                        </DropdownMenuItem>
-                      )}
-                      <DropdownMenuItem
-                        onClick={() => onDelete(page.id)}
-                        className="text-destructive"
-                      >
-                        <Trash2 className="h-4 w-4 mr-2" />
-                        Delete
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                )}
+                <FileText className="h-4 w-4 flex-shrink-0" />
+                <span className="truncate">{page.title}</span>
               </div>
-            </SidebarMenuSubButton>
-            {isExpanded && hasChildren && canAddChildren && (
-              <Droppable droppableId={`sub-${page.id}`} type="page">
-                {(provided) => (
-                  <ul role="group" aria-label={`${page.title} sub-pages`}>
-                    <SidebarMenuSub ref={provided.innerRef} {...provided.droppableProps}>
-                      {childPages.map((childPage, childIndex) => (
-                        <PageTreeItem
-                          key={childPage.id}
-                          page={childPage}
-                          pages={pages}
-                          workspaceId={workspaceId}
-                          onDelete={onDelete}
-                          level={level + 1}
-                          index={childIndex}
-                          focusedItemId={focusedItemId}
-                          onKeyDown={onKeyDown}
-                          onToggleExpanded={onToggleExpanded}
-                          isExpanded={false}
-                        />
-                      ))}
-                      {provided.placeholder}
-                    </SidebarMenuSub>
-                  </ul>
-                )}
-              </Droppable>
-            )}
-            {isExpanded && hasChildren && !canAddChildren && (
-              <ul role="group" aria-label={`${page.title} sub-pages`}>
-                <SidebarMenuSub>
-                  {childPages.map((childPage, childIndex) => (
+            </SidebarMenuButton>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <SidebarMenuAction className="data-[state=open]:bg-sidebar-accent">
+                  <MoreHorizontal className="h-4 w-4" />
+                  <span className="sr-only">Page options</span>
+                </SidebarMenuAction>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem
+                  onClick={handleDelete}
+                  className="text-destructive focus:text-destructive"
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </SidebarMenuItem>
+
+          {hasChildren && isExpanded && (
+            <Droppable droppableId={`sub-${page.id}`} type="page">
+              {(provided) => (
+                <SidebarMenu ref={provided.innerRef} {...provided.droppableProps}>
+                  {subPages.map((subPage, subIndex) => (
                     <PageTreeItem
-                      key={childPage.id}
-                      page={childPage}
+                      key={subPage.id}
+                      page={subPage}
                       pages={pages}
                       workspaceId={workspaceId}
                       onDelete={onDelete}
-                      level={level + 1}
-                      index={childIndex}
+                      index={subIndex}
                       focusedItemId={focusedItemId}
                       onKeyDown={onKeyDown}
                       onToggleExpanded={onToggleExpanded}
-                      isExpanded={false}
+                      isExpanded={isExpanded}
+                      level={level + 1}
+                      onNavigationItemSelect={onNavigationItemSelect}
                     />
                   ))}
-                </SidebarMenuSub>
-              </ul>
-            )}
-          </SidebarMenuSubItem>
-        </li>
+                  {provided.placeholder}
+                </SidebarMenu>
+              )}
+            </Droppable>
+          )}
+        </div>
       )}
     </Draggable>
   );

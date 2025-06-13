@@ -1,83 +1,53 @@
 
-import React, { useState } from 'react';
-import { ChevronDown, Plus, Building2 } from 'lucide-react';
+import React from 'react';
+import { useWorkspaces } from '@/hooks/useWorkspaces';
+import { Button } from '@/components/ui/button';
+import { ChevronDown } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Button } from '@/components/ui/button';
-import { useWorkspaces } from '@/hooks/useWorkspaces';
-import { useParams, useNavigate } from 'react-router-dom';
-import { cn } from '@/lib/utils';
 
-export function WorkspaceSwitcher() {
-  const { workspaces } = useWorkspaces();
-  const { workspaceId } = useParams<{ workspaceId: string }>();
-  const navigate = useNavigate();
-  const [isCreating, setIsCreating] = useState(false);
+interface WorkspaceSwitcherProps {
+  onSelect?: () => void;
+}
 
-  const currentWorkspace = workspaces.find(w => w.id === workspaceId);
+export function WorkspaceSwitcher({ onSelect }: WorkspaceSwitcherProps) {
+  const { workspaces, currentWorkspace, switchWorkspace } = useWorkspaces();
 
-  const handleWorkspaceChange = (newWorkspaceId: string) => {
-    navigate(`/workspace/${newWorkspaceId}`);
-  };
-
-  const handleCreateWorkspace = async () => {
-    setIsCreating(true);
-    // This would typically open a modal or navigate to a creation flow
-    // For now, we'll just log it
-    console.log('Create new workspace');
-    setIsCreating(false);
+  const handleWorkspaceSwitch = (workspaceId: string) => {
+    switchWorkspace(workspaceId);
+    onSelect?.();
   };
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button
-          variant="ghost"
-          className={cn(
-            "w-full justify-between h-12 px-3 text-left font-normal",
-            "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-          )}
+        <Button 
+          variant="ghost" 
+          className="w-full justify-between p-2 h-auto text-left sidebar-focus-ring"
+          aria-label={`Current workspace: ${currentWorkspace?.name || 'Select workspace'}`}
         >
-          <div className="flex items-center gap-2 min-w-0">
-            <Building2 className="h-4 w-4 flex-shrink-0" />
-            <span className="truncate text-sm">
+          <div className="flex flex-col items-start min-w-0 flex-1">
+            <span className="text-sm font-medium truncate w-full">
               {currentWorkspace?.name || 'Select Workspace'}
             </span>
           </div>
-          <ChevronDown className="h-4 w-4 flex-shrink-0 opacity-50" />
+          <ChevronDown className="h-4 w-4 flex-shrink-0 ml-2" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-64" align="start">
-        <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
-          Workspaces
-        </div>
+      <DropdownMenuContent className="w-56" align="start">
         {workspaces.map((workspace) => (
           <DropdownMenuItem
             key={workspace.id}
-            onClick={() => handleWorkspaceChange(workspace.id)}
-            className={cn(
-              "flex items-center gap-2 cursor-pointer",
-              workspace.id === workspaceId && "bg-accent"
-            )}
+            onClick={() => handleWorkspaceSwitch(workspace.id)}
+            className={workspace.id === currentWorkspace?.id ? 'bg-accent' : ''}
           >
-            <Building2 className="h-4 w-4" />
-            <span className="truncate">{workspace.name}</span>
+            {workspace.name}
           </DropdownMenuItem>
         ))}
-        <DropdownMenuSeparator />
-        <DropdownMenuItem
-          onClick={handleCreateWorkspace}
-          disabled={isCreating}
-          className="flex items-center gap-2 cursor-pointer"
-        >
-          <Plus className="h-4 w-4" />
-          <span>Create Workspace</span>
-        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );

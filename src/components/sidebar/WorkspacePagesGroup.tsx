@@ -21,9 +21,10 @@ import { Page } from '@/hooks/usePages';
 interface WorkspacePagesGroupProps {
   workspaceId: string;
   workspaceName: string;
+  onNavigationItemSelect?: () => void;
 }
 
-export function WorkspacePagesGroup({ workspaceId, workspaceName }: WorkspacePagesGroupProps) {
+export function WorkspacePagesGroup({ workspaceId, workspaceName, onNavigationItemSelect }: WorkspacePagesGroupProps) {
   const { pages, updatePageHierarchy, deletePage, hasOptimisticChanges, loading } = useEnhancedPages(workspaceId);
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -51,6 +52,7 @@ export function WorkspacePagesGroup({ workspaceId, workspaceName }: WorkspacePag
   // Keyboard navigation handlers
   const handleNavigate = (pageId: string) => {
     navigate(`/workspace/${workspaceId}/page/${pageId}`);
+    onNavigationItemSelect?.();
   };
 
   const handleToggleExpanded = (pageId: string) => {
@@ -67,6 +69,7 @@ export function WorkspacePagesGroup({ workspaceId, workspaceName }: WorkspacePag
 
   const handleActivate = (pageId: string) => {
     navigate(`/workspace/${workspaceId}/page/${pageId}`);
+    onNavigationItemSelect?.();
   };
 
   const {
@@ -204,6 +207,7 @@ export function WorkspacePagesGroup({ workspaceId, workspaceName }: WorkspacePag
                             onKeyDown={handleKeyDown}
                             onToggleExpanded={handleToggleExpanded}
                             isExpanded={expandedPages.has(page.id)}
+                            onNavigationItemSelect={onNavigationItemSelect}
                           />
                         ))
                       )}

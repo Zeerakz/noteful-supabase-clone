@@ -1,67 +1,57 @@
 
 import React from 'react';
-import { Trash2, Settings } from 'lucide-react';
-import {
-  SidebarMenu,
-  SidebarMenuItem,
-  SidebarMenuButton,
-} from '@/components/ui/sidebar';
-import { useNavigate, useParams } from 'react-router-dom';
-import { cn } from '@/lib/utils';
+import { Settings, HelpCircle, LogOut } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { useAuth } from '@/contexts/AuthContext';
 
-export function SystemActions() {
-  const navigate = useNavigate();
-  const { workspaceId } = useParams<{ workspaceId: string }>();
+interface SystemActionsProps {
+  onNavigationItemSelect?: () => void;
+}
 
-  const systemItems = [
-    {
-      title: "Trash",
-      icon: Trash2,
-      onClick: () => {
-        // Navigate to trash view - this would be implemented later
-        console.log('Navigate to trash');
-      },
-      disabled: true, // Disable until trash functionality is implemented
-    },
-    {
-      title: "Settings",
-      icon: Settings,
-      onClick: () => {
-        // Navigate to workspace settings
-        if (workspaceId) {
-          navigate(`/workspace/${workspaceId}/settings`);
-        }
-      },
-      disabled: false,
-    },
-  ];
+export function SystemActions({ onNavigationItemSelect }: SystemActionsProps) {
+  const { signOut } = useAuth();
+
+  const handleSignOut = async () => {
+    await signOut();
+    onNavigationItemSelect?.();
+  };
+
+  const handleAction = (action: () => void) => {
+    action();
+    onNavigationItemSelect?.();
+  };
 
   return (
-    <ul role="group" aria-label="System actions">
-      <SidebarMenu>
-        {systemItems.map((item) => (
-          <li key={item.title} role="treeitem">
-            <SidebarMenuItem>
-              <SidebarMenuButton
-                onClick={item.onClick}
-                disabled={item.disabled}
-                className={cn(
-                  "sidebar-menu-item sidebar-focus-ring",
-                  "sidebar-text-secondary hover:sidebar-text-primary",
-                  item.disabled && "opacity-50 cursor-not-allowed"
-                )}
-                aria-label={item.disabled ? `${item.title} (coming soon)` : item.title}
-              >
-                <item.icon className="h-4 w-4" aria-hidden="true" />
-                <span>{item.title}</span>
-                {item.disabled && (
-                  <span className="sr-only">(coming soon)</span>
-                )}
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          </li>
-        ))}
-      </SidebarMenu>
-    </ul>
+    <div className="space-y-1">
+      <Button
+        variant="ghost"
+        onClick={() => handleAction(() => console.log('Settings clicked'))}
+        className="w-full justify-start gap-2 px-2 py-1.5 h-auto text-sm sidebar-focus-ring"
+        aria-label="Settings"
+      >
+        <Settings className="h-4 w-4" />
+        <span>Settings</span>
+      </Button>
+      
+      <Button
+        variant="ghost"
+        onClick={() => handleAction(() => console.log('Help clicked'))}
+        className="w-full justify-start gap-2 px-2 py-1.5 h-auto text-sm sidebar-focus-ring"
+        aria-label="Help"
+      >
+        <HelpCircle className="h-4 w-4" />
+        <span>Help</span>
+      </Button>
+      
+      <Button
+        variant="ghost"
+        onClick={handleSignOut}
+        className="w-full justify-start gap-2 px-2 py-1.5 h-auto text-sm text-destructive hover:text-destructive sidebar-focus-ring"
+        aria-label="Sign out"
+      >
+        <LogOut className="h-4 w-4" />
+        <span>Sign Out</span>
+      </Button>
+    </div>
   );
 }
