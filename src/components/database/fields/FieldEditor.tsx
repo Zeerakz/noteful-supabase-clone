@@ -6,6 +6,7 @@ import { DateFieldEditor } from './DateFieldEditor';
 import { RelationFieldEditor } from './RelationFieldEditor';
 import { RollupFieldDisplay } from './RollupFieldDisplay';
 import { SystemPropertyEditor } from '@/components/property/field-editors/SystemPropertyEditor';
+import { ButtonFieldEditor } from '@/components/property/field-editors/ButtonFieldEditor';
 import { isSystemProperty } from '@/types/systemProperties';
 
 interface FieldEditorProps {
@@ -65,6 +66,20 @@ export function FieldEditor({
       <div className="text-sm text-muted-foreground italic">
         {computedValue || 'Formula not calculated'}
       </div>
+    );
+  }
+
+  // Handle button fields
+  if (field.type === 'button') {
+    return (
+      <ButtonFieldEditor
+        value={value}
+        config={field.settings || {}}
+        onChange={onChange}
+        field={field}
+        workspaceId={workspaceId}
+        pageId={pageId}
+      />
     );
   }
 

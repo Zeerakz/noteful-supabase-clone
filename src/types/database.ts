@@ -1,4 +1,3 @@
-
 export interface Database {
   id: string;
   workspace_id: string;
@@ -112,7 +111,8 @@ export type FieldType =
   | 'created_by'
   | 'last_edited_time'
   | 'last_edited_by'
-  | 'id';
+  | 'id'
+  | 'button';
 
 // Settings types for complex fields
 export interface FormulaFieldSettings {

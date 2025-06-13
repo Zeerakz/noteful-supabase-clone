@@ -1,4 +1,3 @@
-
 import { BaseProperty, PropertyType } from './base';
 import type { TextPropertyConfig } from './configs/text';
 import type { NumberPropertyConfig } from './configs/number';
@@ -18,6 +17,7 @@ import type { PeoplePropertyConfig } from './configs/people';
 import type { RatingPropertyConfig } from './configs/rating';
 import type { ProgressPropertyConfig } from './configs/progress';
 import type { CurrencyPropertyConfig } from './configs/currency';
+import type { ButtonPropertyConfig } from './configs/button';
 
 // Typed property interfaces for each type
 export interface TextProperty extends BaseProperty {
@@ -120,6 +120,11 @@ export interface CurrencyProperty extends BaseProperty {
   config: CurrencyPropertyConfig;
 }
 
+export interface ButtonProperty extends BaseProperty {
+  type: 'button';
+  config: ButtonPropertyConfig;
+}
+
 // Union type for all specific property types
 export type Property = 
   | TextProperty
@@ -141,4 +146,5 @@ export type Property =
   | PeopleProperty
   | RatingProperty
   | ProgressProperty
-  | CurrencyProperty;
+  | CurrencyProperty
+  | ButtonProperty;

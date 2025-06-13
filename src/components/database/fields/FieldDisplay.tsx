@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { DatabaseField } from '@/types/database';
 import { SelectFieldDisplay } from './SelectFieldDisplay';
@@ -14,6 +13,7 @@ import { CheckboxFieldDisplay } from '@/components/property/field-displays/Check
 import { SystemPropertyDisplay } from '@/components/property/field-displays/SystemPropertyDisplay';
 import { isSystemProperty } from '@/types/systemProperties';
 import { Checkbox } from '@/components/ui/checkbox';
+import { ButtonFieldDisplay } from '@/components/property/field-displays/ButtonFieldDisplay';
 
 interface FieldDisplayProps {
   field: DatabaseField;
@@ -45,7 +45,19 @@ export function FieldDisplay({
     );
   }
 
-  // Handle empty values consistently for non-system properties
+  // Handle button fields
+  if (field.type === 'button') {
+    return (
+      <ButtonFieldDisplay
+        value={value}
+        config={field.settings || {}}
+        field={field}
+        pageId={pageId}
+      />
+    );
+  }
+
+  // Handle empty values consistently for non-system and non-button properties
   if (!value || value.trim() === '') {
     return <span className="text-muted-foreground">—</span>;
   }

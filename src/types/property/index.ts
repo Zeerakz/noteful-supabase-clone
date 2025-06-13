@@ -24,3 +24,4 @@ export * from './configs/people';
 export * from './configs/rating';
 export * from './configs/progress';
 export * from './configs/currency';
+export * from './configs/button';

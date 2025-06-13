@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Property, PropertyType, PropertyConfig, getDefaultConfigForType } from '@/types/property';
 import { propertyRegistry } from '@/types/propertyRegistry';
@@ -206,6 +205,13 @@ export function PropertyConfigEditor({
             config={safeConfig}
             onConfigChange={onConfigChange}
           />
+        );
+      
+      case 'button':
+        return (
+          <div className="text-sm text-muted-foreground">
+            Button properties are configured using the new property registry system.
+          </div>
         );
       
       default:

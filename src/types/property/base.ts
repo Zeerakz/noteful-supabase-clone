@@ -28,7 +28,8 @@ export type PropertyType =
   | 'people'
   | 'rating'
   | 'progress'
-  | 'currency';
+  | 'currency'
+  | 'button';
 
 // Base config interface that all property configs extend
 export interface BasePropertyConfig {
@@ -56,7 +57,8 @@ export type PropertyConfig =
   | PeoplePropertyConfig
   | RatingPropertyConfig
   | ProgressPropertyConfig
-  | CurrencyPropertyConfig;
+  | CurrencyPropertyConfig
+  | ButtonPropertyConfig;
 
 // Forward declare all config interfaces (will be imported from specific files)
 import type { TextPropertyConfig } from './configs/text';
@@ -77,3 +79,4 @@ import type { PeoplePropertyConfig } from './configs/people';
 import type { RatingPropertyConfig } from './configs/rating';
 import type { ProgressPropertyConfig } from './configs/progress';
 import type { CurrencyPropertyConfig } from './configs/currency';
+import type { ButtonPropertyConfig } from './configs/button';
