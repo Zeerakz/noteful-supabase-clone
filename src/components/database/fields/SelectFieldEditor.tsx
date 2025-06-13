@@ -20,11 +20,14 @@ export function SelectFieldEditor({ value, settings, onChange, multiSelect = fal
   const selectedValues = multiSelect && value ? value.split(',') : [];
   
   const handleSingleSelect = (newValue: string) => {
-    onChange(newValue);
+    // Only proceed if the value is not empty
+    if (newValue && newValue.trim() !== '') {
+      onChange(newValue);
+    }
   };
 
   const handleMultiSelect = (optionId: string) => {
-    if (!multiSelect) return;
+    if (!multiSelect || !optionId || optionId.trim() === '') return;
     
     const currentValues = value ? value.split(',') : [];
     const isSelected = currentValues.includes(optionId);

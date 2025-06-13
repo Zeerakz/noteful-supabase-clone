@@ -23,13 +23,27 @@ export function StatusPropertyConfigEditor({ config, onConfigChange }: StatusPro
   const allOptions = statusConfig.groups?.flatMap(group => group.options || []) || [];
   const validOptions = allOptions.filter(option => option.id && option.id.trim() !== '');
 
+  const handleDefaultStatusChange = (value: string) => {
+    // Only proceed if the value is not empty
+    if (value && value.trim() !== '') {
+      updateConfig({ defaultStatus: value });
+    }
+  };
+
+  const handleDisplayAsChange = (value: string) => {
+    // Only proceed if the value is not empty
+    if (value && value.trim() !== '') {
+      updateConfig({ displayAs: value as 'dropdown' | 'buttons' | 'progress' });
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="space-y-2">
         <Label htmlFor="displayAs">Display As</Label>
         <Select 
           value={statusConfig.displayAs || 'dropdown'} 
-          onValueChange={(value) => updateConfig({ displayAs: value as 'dropdown' | 'buttons' | 'progress' })}
+          onValueChange={handleDisplayAsChange}
         >
           <SelectTrigger>
             <SelectValue />
@@ -51,7 +65,7 @@ export function StatusPropertyConfigEditor({ config, onConfigChange }: StatusPro
         <Label htmlFor="defaultStatus">Default Status</Label>
         <Select 
           value={statusConfig.defaultStatus || ''} 
-          onValueChange={(value) => updateConfig({ defaultStatus: value })}
+          onValueChange={handleDefaultStatusChange}
         >
           <SelectTrigger>
             <SelectValue placeholder="Select default status" />

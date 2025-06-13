@@ -21,8 +21,15 @@ export function StatusFieldEditor({ value, config, onChange }: StatusFieldEditor
   
   const selectedOption = validOptions.find(opt => opt.id === value);
 
+  const handleChange = (newValue: string) => {
+    // Only proceed if the value is not empty
+    if (newValue && newValue.trim() !== '') {
+      onChange(newValue);
+    }
+  };
+
   return (
-    <Select value={value || ''} onValueChange={onChange}>
+    <Select value={value || ''} onValueChange={handleChange}>
       <SelectTrigger className="w-full">
         <SelectValue placeholder="Select status">
           {selectedOption && (

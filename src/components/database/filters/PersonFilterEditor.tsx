@@ -23,19 +23,24 @@ export function PersonFilterEditor({ rule, field, onUpdate }: PersonFilterEditor
     onUpdate({ ...rule, value: ME_FILTER_VALUE });
   };
 
+  const handleSelectChange = (value: string) => {
+    // Only proceed if the value is not empty
+    if (value && value.trim() !== '') {
+      if (value === 'me') {
+        handleMeFilterSelect();
+      } else {
+        handleValueChange('');
+      }
+    }
+  };
+
   const isMe = isMeFilter(rule);
 
   return (
     <div className="flex items-center gap-2">
       {rule.operator !== 'is_empty' && rule.operator !== 'is_not_empty' && (
         <>
-          <Select value={isMe ? 'me' : 'custom'} onValueChange={(value) => {
-            if (value === 'me') {
-              handleMeFilterSelect();
-            } else {
-              handleValueChange('');
-            }
-          }}>
+          <Select value={isMe ? 'me' : 'custom'} onValueChange={handleSelectChange}>
             <SelectTrigger className="w-32">
               <SelectValue />
             </SelectTrigger>
