@@ -98,7 +98,10 @@ export function DatabaseTableRow({
     >
       {/* Selection Checkbox */}
       <TableCell 
-        className="w-12 p-3 border-r border-border/20"
+        className={`
+          w-12 p-3 border-r border-border/20
+          ${resizingFields.has('checkbox') ? 'resize-active' : ''}
+        `}
         style={{ width: '48px', minWidth: '48px', maxWidth: '48px' }}
       >
         <div className="flex items-center justify-center">
@@ -147,6 +150,7 @@ export function DatabaseTableRow({
               onSave={(newTitle) => onTitleUpdate(page.id, newTitle)}
               placeholder="Untitled"
               disabled={isAnyColumnResizing}
+              isResizing={isAnyColumnResizing}
             />
           </div>
         </div>
@@ -181,8 +185,8 @@ export function DatabaseTableRow({
               ) : (
                 <div
                   className={`
-                    min-h-[24px] cursor-text rounded px-2 py-1 transition-colors duration-150 flex items-center
-                    ${!isAnyColumnResizing ? 'hover:bg-muted/30' : ''}
+                    min-h-[24px] rounded px-2 py-1 transition-colors duration-150 flex items-center
+                    ${!isAnyColumnResizing && !isFieldResizing ? 'cursor-text hover:bg-muted/30' : 'cursor-default'}
                     ${isAnyColumnResizing ? 'pointer-events-none' : ''}
                   `}
                   onClick={() => !isAnyColumnResizing && setEditingField(field.id)}
@@ -195,9 +199,10 @@ export function DatabaseTableRow({
                       fieldConfig={field.settings}
                       placeholder={`Enter ${field.name.toLowerCase()}`}
                       disabled={isAnyColumnResizing}
+                      isResizing={isFieldResizing}
                     />
                   ) : (
-                    <span className="text-muted-foreground text-sm">
+                    <span className={`text-muted-foreground text-sm editable-cell-placeholder ${isAnyColumnResizing ? 'text-muted-foreground/40' : ''}`}>
                       Enter {field.name.toLowerCase()}
                     </span>
                   )}

@@ -10,6 +10,7 @@ interface EditableCellProps {
   fieldConfig?: any;
   placeholder?: string;
   disabled?: boolean;
+  isResizing?: boolean;
 }
 
 export function EditableCell({ 
@@ -18,7 +19,8 @@ export function EditableCell({
   fieldType, 
   fieldConfig, 
   placeholder = "Enter value...",
-  disabled = false
+  disabled = false,
+  isResizing = false
 }: EditableCellProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(value);
@@ -48,7 +50,7 @@ export function EditableCell({
   };
 
   const handleClick = () => {
-    if (!disabled) {
+    if (!disabled && !isResizing) {
       setIsEditing(true);
     }
   };
@@ -56,7 +58,7 @@ export function EditableCell({
   const isMultiline = fieldType === 'text' && fieldConfig?.multiline;
   const shouldWrap = fieldType === 'text' && fieldConfig?.wrapText;
 
-  if (isEditing && !disabled) {
+  if (isEditing && !disabled && !isResizing) {
     if (isMultiline) {
       return (
         <Textarea
@@ -93,14 +95,17 @@ export function EditableCell({
     return (
       <div
         className={`
-          min-h-[20px] p-1 rounded 
-          ${disabled ? 'cursor-default' : 'cursor-text hover:bg-muted/50'}
+          min-h-[20px] p-1 rounded transition-colors duration-150
+          ${disabled || isResizing ? 'cursor-default' : 'cursor-text'}
+          ${!disabled && !isResizing ? 'hover:bg-muted/50' : ''}
           ${shouldWrap ? 'whitespace-pre-wrap break-words' : ''}
         `}
         onClick={handleClick}
       >
         {isEmpty ? (
-          <span className="text-muted-foreground italic">{placeholder}</span>
+          <span className={`editable-cell-placeholder ${isResizing ? 'text-muted-foreground/40' : ''}`}>
+            {placeholder}
+          </span>
         ) : (
           <span className={shouldWrap ? 'whitespace-pre-wrap' : ''}>{value}</span>
         )}
@@ -111,13 +116,16 @@ export function EditableCell({
   return (
     <div
       className={`
-        min-h-[20px] p-1 rounded truncate
-        ${disabled ? 'cursor-default' : 'cursor-text hover:bg-muted/50'}
+        min-h-[20px] p-1 rounded truncate transition-colors duration-150
+        ${disabled || isResizing ? 'cursor-default' : 'cursor-text'}
+        ${!disabled && !isResizing ? 'hover:bg-muted/50' : ''}
       `}
       onClick={handleClick}
     >
       {isEmpty ? (
-        <span className="text-muted-foreground italic">{placeholder}</span>
+        <span className={`editable-cell-placeholder ${isResizing ? 'text-muted-foreground/40' : ''}`}>
+          {placeholder}
+        </span>
       ) : (
         <span>{value}</span>
       )}

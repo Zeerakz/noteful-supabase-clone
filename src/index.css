@@ -69,10 +69,14 @@
   }
 }
 
-/* Custom styles for resize mode */
+/* Enhanced styles for resize mode */
 @layer components {
+  .resize-mode {
+    @apply select-none;
+  }
+  
   .resize-mode .resize-active {
-    @apply bg-accent/10 pointer-events-none;
+    @apply bg-accent/10 pointer-events-none opacity-70;
   }
   
   .resize-mode .resize-active * {
@@ -81,6 +85,55 @@
   
   /* Disable all hover states during resize */
   .resize-mode *:hover {
-    @apply bg-transparent;
+    @apply bg-transparent !important;
+  }
+  
+  .resize-mode .hover\:bg-muted\/50:hover {
+    @apply bg-transparent !important;
+  }
+  
+  .resize-mode .hover\:bg-muted:hover {
+    @apply bg-transparent !important;
+  }
+  
+  .resize-mode .hover\:bg-accent\/30:hover {
+    @apply bg-transparent !important;
+  }
+  
+  .resize-mode .hover\:bg-primary\/10:hover {
+    @apply bg-transparent !important;
+  }
+  
+  /* Disable cursor changes during resize */
+  .resize-mode .cursor-text {
+    @apply cursor-default !important;
+  }
+  
+  .resize-mode .cursor-pointer {
+    @apply cursor-default !important;
+  }
+  
+  /* Visual feedback for resize operation */
+  .resize-mode::before {
+    content: '';
+    @apply fixed inset-0 bg-black/5 pointer-events-none z-10;
+  }
+  
+  /* Placeholder text styling improvements */
+  .editable-cell-placeholder {
+    @apply text-muted-foreground/60 italic text-sm;
+  }
+  
+  .resize-mode .editable-cell-placeholder {
+    @apply text-muted-foreground/40;
+  }
+  
+  /* Improved visual feedback for resizing columns */
+  .column-resizing {
+    @apply border-primary/50 bg-primary/5;
+  }
+  
+  .resize-handle-active {
+    @apply bg-primary/40 shadow-lg;
   }
 }

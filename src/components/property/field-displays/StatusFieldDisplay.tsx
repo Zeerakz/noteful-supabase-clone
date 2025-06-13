@@ -8,11 +8,16 @@ interface StatusFieldDisplayProps {
   config: StatusPropertyConfig;
   field?: any;
   pageId?: string;
+  isResizing?: boolean;
 }
 
-export function StatusFieldDisplay({ value, config }: StatusFieldDisplayProps) {
+export function StatusFieldDisplay({ value, config, isResizing = false }: StatusFieldDisplayProps) {
   if (!value || value.trim() === '') {
-    return <span className="text-muted-foreground">—</span>;
+    return (
+      <span className={`text-muted-foreground ${isResizing ? 'text-muted-foreground/40' : ''}`}>
+        —
+      </span>
+    );
   }
 
   // Find the option across all groups
@@ -20,7 +25,11 @@ export function StatusFieldDisplay({ value, config }: StatusFieldDisplayProps) {
   const option = allOptions.find(opt => opt.id === value);
   
   if (!option) {
-    return <span className="text-muted-foreground">{value}</span>;
+    return (
+      <span className={`text-muted-foreground ${isResizing ? 'text-muted-foreground/40' : ''}`}>
+        {value}
+      </span>
+    );
   }
 
   // Find the group for styling context
@@ -29,7 +38,10 @@ export function StatusFieldDisplay({ value, config }: StatusFieldDisplayProps) {
   return (
     <Badge 
       variant="outline" 
-      className="text-xs font-medium border-border/50"
+      className={`
+        text-xs font-medium border-border/50 transition-opacity duration-150
+        ${isResizing ? 'opacity-60' : ''}
+      `}
       style={{ 
         backgroundColor: option.color ? `${option.color}20` : undefined,
         borderColor: option.color || undefined,

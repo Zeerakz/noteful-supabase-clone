@@ -72,7 +72,10 @@ export function NewTableRow({
     >
       {/* Empty checkbox cell */}
       <TableCell 
-        className="w-12 p-3 border-r border-border/20"
+        className={`
+          w-12 p-3 border-r border-border/20
+          ${resizingFields.has('checkbox') ? 'resize-active' : ''}
+        `}
         style={{ width: '48px', minWidth: '48px', maxWidth: '48px' }}
       >
         <div className="flex items-center justify-center">
@@ -124,8 +127,8 @@ export function NewTableRow({
               onClick={handleStartCreating}
               disabled={isAnyColumnResizing}
               className={`
-                w-full justify-start text-muted-foreground h-8 px-2 rounded-md transition-all duration-200
-                ${!isAnyColumnResizing ? 'hover:text-foreground hover:bg-accent/30' : 'cursor-not-allowed'}
+                w-full justify-start h-8 px-2 rounded-md transition-all duration-200
+                ${!isAnyColumnResizing ? 'text-muted-foreground hover:text-foreground hover:bg-accent/30' : 'cursor-not-allowed text-muted-foreground/40'}
               `}
             >
               <Plus className="h-4 w-4 mr-2" />
@@ -150,7 +153,9 @@ export function NewTableRow({
         >
           <div className="px-4 py-3">
             <div className="min-h-[24px] px-2 py-1 flex items-center">
-              <span className="text-muted-foreground/40 text-sm">—</span>
+              <span className={`text-sm editable-cell-placeholder ${isAnyColumnResizing ? 'text-muted-foreground/30' : 'text-muted-foreground/40'}`}>
+                —
+              </span>
             </div>
           </div>
         </TableCell>
