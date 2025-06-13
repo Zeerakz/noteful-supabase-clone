@@ -32,7 +32,12 @@ export function DatabaseView() {
     fields, 
     loading: fieldsLoading, 
     error: fieldsError,
-    refetch: refetchFields
+    refetch: refetchFields,
+    createField,
+    updateField,
+    deleteField,
+    duplicateField,
+    reorderFields
   } = useDatabaseFields(databaseId!, workspaceId!);
 
   // Get database views
@@ -165,6 +170,11 @@ export function DatabaseView() {
         onSortsChange={setSortRules}
         databaseId={databaseId}
         workspaceId={workspaceId}
+        onFieldsReorder={reorderFields}
+        onFieldUpdate={updateField}
+        onFieldDuplicate={duplicateField}
+        onFieldDelete={deleteField}
+        onFieldCreate={createField}
         onShowPropertiesModal={() => {}}
         onShowFilterModal={() => {}}
         onShowSortModal={() => {}}

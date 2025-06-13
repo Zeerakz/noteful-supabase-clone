@@ -12,6 +12,16 @@ export class DatabaseService {
     return DatabaseCoreService.fetchDatabases(workspaceId);
   }
 
+  static async getDatabase(databaseId: string) {
+    const { data, error } = await supabase
+      .from('databases')
+      .select('*')
+      .eq('id', databaseId)
+      .single();
+
+    return { data, error: error?.message };
+  }
+
   static async createDatabase(workspaceId: string, userId: string, request: DatabaseCreateRequest) {
     return DatabaseCoreService.createDatabase(workspaceId, userId, request);
   }

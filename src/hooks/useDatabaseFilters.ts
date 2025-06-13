@@ -5,8 +5,9 @@ import { FilterGroup } from '@/types/filters';
 export function useDatabaseFilters() {
   const [filterGroup, setFilterGroup] = useState<FilterGroup>({
     id: 'root',
-    operator: 'and',
-    rules: []
+    operator: 'AND',
+    rules: [],
+    groups: []
   });
 
   const updateFilterGroup = (newFilterGroup: FilterGroup) => {
