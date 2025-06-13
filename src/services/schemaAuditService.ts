@@ -95,6 +95,7 @@ export class SchemaAuditService {
 
   static async getBreakingChangesSince(databaseId: string, since: Date): Promise<{ data: BreakingChange[] | null; error: string | null }> {
     try {
+      // Limit to last 200 logs for performance and focus on recent changes
       const { data: auditLogs, error } = await this.getAuditLogs(databaseId, 200);
       
       if (error || !auditLogs) {

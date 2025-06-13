@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { BreakingChange } from '@/types/schemaAudit';
 import { SchemaAuditService } from '@/services/schemaAuditService';
@@ -7,15 +8,30 @@ export function useBreakingChanges(databaseId: string | undefined) {
   const [loadingBreakingChanges, setLoadingBreakingChanges] = useState(true);
   const [dismissedChangeIds, setDismissedChangeIds] = useState<Set<string>>(new Set());
 
+  // Load dismissed changes from localStorage
+  useEffect(() => {
+    if (databaseId) {
+      const savedDismissals = localStorage.getItem(`dismissed_breaking_changes_${databaseId}`);
+      if (savedDismissals) {
+        try {
+          const parsedDismissals = JSON.parse(savedDismissals);
+          setDismissedChangeIds(new Set(parsedDismissals));
+        } catch (error) {
+          console.error('Failed to parse dismissed breaking changes:', error);
+        }
+      }
+    }
+  }, [databaseId]);
+
   useEffect(() => {
     const loadBreakingChanges = async () => {
       if (!databaseId) return;
       
       setLoadingBreakingChanges(true);
       try {
-        // Get breaking changes from the last 30 days to ensure we catch all relevant changes
+        // Get breaking changes from the last 7 days only (reduced from 30 days)
         const since = new Date();
-        since.setDate(since.getDate() - 30);
+        since.setDate(since.getDate() - 7);
         
         const { data, error } = await SchemaAuditService.getBreakingChangesSince(databaseId, since);
         
@@ -23,15 +39,7 @@ export function useBreakingChanges(databaseId: string | undefined) {
           console.error('Failed to load breaking changes:', error);
           setBreakingChanges([]);
         } else {
-          // Filter out changes older than 7 days for display, but keep 30 days for analysis
-          const sevenDaysAgo = new Date();
-          sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-          
-          const recentBreakingChanges = (data || []).filter(change => 
-            new Date(change.created_at) >= sevenDaysAgo
-          );
-          
-          setBreakingChanges(recentBreakingChanges);
+          setBreakingChanges(data || []);
         }
       } catch (err) {
         console.error('Error loading breaking changes:', err);
@@ -45,12 +53,30 @@ export function useBreakingChanges(databaseId: string | undefined) {
   }, [databaseId]);
 
   const handleDismissBreakingChange = (changeId: string) => {
-    setDismissedChangeIds(prev => new Set([...prev, changeId]));
+    const newDismissedIds = new Set([...dismissedChangeIds, changeId]);
+    setDismissedChangeIds(newDismissedIds);
+    
+    // Persist to localStorage
+    if (databaseId) {
+      localStorage.setItem(
+        `dismissed_breaking_changes_${databaseId}`, 
+        JSON.stringify(Array.from(newDismissedIds))
+      );
+    }
   };
 
   const handleAcknowledgeAllBreakingChanges = () => {
     const allChangeIds = breakingChanges.map(change => change.id);
-    setDismissedChangeIds(new Set(allChangeIds));
+    const newDismissedIds = new Set([...dismissedChangeIds, ...allChangeIds]);
+    setDismissedChangeIds(newDismissedIds);
+    
+    // Persist to localStorage
+    if (databaseId) {
+      localStorage.setItem(
+        `dismissed_breaking_changes_${databaseId}`, 
+        JSON.stringify(Array.from(newDismissedIds))
+      );
+    }
   };
 
   // Filter out dismissed changes
