@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { TableCell, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
@@ -70,7 +71,10 @@ export function NewTableRow({
       </TableCell>
 
       {/* Title Cell */}
-      <TableCell className="w-[280px] p-0 border-r border-border/20">
+      <TableCell 
+        className="p-0 border-r border-border/20"
+        style={{ width: columnWidths['title'] ? `${columnWidths['title']}px` : '280px' }}
+      >
         <div className="px-4 py-3">
           {isCreating ? (
             <div className="flex items-center gap-2">
@@ -115,7 +119,8 @@ export function NewTableRow({
       {fields.map((field) => (
         <TableCell 
           key={field.id} 
-          className="min-w-[200px] p-0 border-r border-border/20 last:border-r-0"
+          className="p-0 border-r border-border/20 last:border-r-0"
+          style={{ width: columnWidths[field.id] ? `${columnWidths[field.id]}px` : '200px' }}
         >
           <div className="px-4 py-3">
             <div className="min-h-[24px] px-2 py-1 flex items-center">

@@ -12,6 +12,8 @@ interface DatabaseTableHeaderProps {
   onSort: (fieldId: string, direction: 'asc' | 'desc') => void;
   onFieldsChange?: () => void;
   onFieldReorder?: (draggedFieldId: string, targetFieldId: string, position: 'before' | 'after') => void;
+  columnWidths?: Record<string, number>;
+  onColumnResize?: (fieldId: string, width: number) => void;
 }
 
 export function DatabaseTableHeader({ 
@@ -19,7 +21,9 @@ export function DatabaseTableHeader({
   sortRules, 
   onSort, 
   onFieldsChange,
-  onFieldReorder 
+  onFieldReorder,
+  columnWidths = {},
+  onColumnResize
 }: DatabaseTableHeaderProps) {
   return (
     <TableHeader className="sticky top-0 z-20 bg-card/95 backdrop-blur-sm border-b-2 border-border">
@@ -32,25 +36,46 @@ export function DatabaseTableHeader({
         </TableHead>
 
         {/* Title Column */}
-        <TableHead className="w-[280px] p-0 bg-card/95 border-r border-border/40">
-          <div className="px-4 py-3 font-semibold text-foreground">
-            <div className="flex items-center gap-2">
-              <span className="text-muted-foreground">📝</span>
-              Title
-            </div>
-          </div>
+        <TableHead 
+          className="p-0 bg-card/95 border-r border-border/40"
+          style={{ width: columnWidths['title'] ? `${columnWidths['title']}px` : '280px' }}
+        >
+          <DatabaseColumnHeader
+            field={{
+              id: 'title',
+              name: 'Title',
+              type: 'text',
+              database_id: '',
+              pos: 0,
+              created_by: '',
+              created_at: '',
+              updated_at: ''
+            }}
+            sortRules={sortRules}
+            onSort={onSort}
+            onResize={onColumnResize}
+            width={columnWidths['title'] || 280}
+            className="border-b-0"
+          />
         </TableHead>
 
         {/* Field Columns */}
         {fields.map((field) => (
-          <TableHead key={field.id} className="min-w-[200px] p-0 bg-card/95 border-r border-border/40 last:border-r-0">
+          <TableHead 
+            key={field.id} 
+            className="p-0 bg-card/95 border-r border-border/40 last:border-r-0"
+            style={{ width: columnWidths[field.id] ? `${columnWidths[field.id]}px` : '200px' }}
+          >
             <DatabaseColumnHeader
               field={field}
               sortRules={sortRules}
               onSort={onSort}
               onFieldsChange={onFieldsChange}
               onFieldReorder={onFieldReorder}
+              onResize={onColumnResize}
+              width={columnWidths[field.id] || 200}
               isDraggable={true}
+              className="border-b-0"
             />
           </TableHead>
         ))}

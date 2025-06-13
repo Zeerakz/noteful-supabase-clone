@@ -9,6 +9,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Pagination } from '@/components/ui/pagination';
 import { Settings, Plus } from 'lucide-react';
 import { SortRule } from '@/components/database/SortingModal';
+import { useColumnResizing } from './hooks/useColumnResizing';
 
 interface PageWithProperties {
   id: string;
@@ -79,6 +80,24 @@ export function DatabaseTableViewContent({
   const [sortBy, setSortBy] = useState<string | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
+
+  // Column resizing functionality
+  const {
+    columnWidths,
+    updateColumnWidth,
+    resetColumnWidth,
+    resetAllWidths
+  } = useColumnResizing({
+    defaultWidths: {
+      title: 280,
+      ...fields.reduce((acc, field) => ({
+        ...acc,
+        [field.id]: 200
+      }), {})
+    },
+    minWidth: 120,
+    maxWidth: 600
+  });
 
   const handleSort = (fieldId: string, direction: 'asc' | 'desc') => {
     setSortBy(fieldId);
@@ -201,6 +220,8 @@ export function DatabaseTableViewContent({
               onSort={handleSort}
               onFieldsChange={onFieldsChange}
               onFieldReorder={onFieldReorder}
+              columnWidths={columnWidths}
+              onColumnResize={updateColumnWidth}
             />
             <DatabaseTableBody
               pagesWithProperties={pagesWithProperties}
@@ -214,6 +235,7 @@ export function DatabaseTableViewContent({
               onRowSelect={handleRowSelect}
               onSelectAll={handleSelectAll}
               showNewRow={true}
+              columnWidths={columnWidths}
             />
           </Table>
         </div>

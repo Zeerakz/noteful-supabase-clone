@@ -106,7 +106,10 @@ export function DatabaseTableRow({
       </TableCell>
 
       {/* Title Cell */}
-      <TableCell className="w-[280px] p-0 border-r border-border/20">
+      <TableCell 
+        className="p-0 border-r border-border/20"
+        style={{ width: columnWidths['title'] ? `${columnWidths['title']}px` : '280px' }}
+      >
         <div className="flex items-center gap-2 px-4 py-3">
           {hasSubItems && (
             <Button
@@ -140,7 +143,8 @@ export function DatabaseTableRow({
         return (
           <TableCell 
             key={field.id} 
-            className="min-w-[200px] p-0 border-r border-border/20 last:border-r-0"
+            className="p-0 border-r border-border/20 last:border-r-0"
+            style={{ width: columnWidths[field.id] ? `${columnWidths[field.id]}px` : '200px' }}
           >
             <div className="px-4 py-3">
               {editingField === field.id ? (
