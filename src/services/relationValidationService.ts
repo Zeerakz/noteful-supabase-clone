@@ -2,6 +2,14 @@
 import { DatabaseField, RelationFieldSettings } from '@/types/database';
 import { DatabaseFieldService } from '@/services/database/databaseFieldService';
 
+// Type guard to check if settings is a valid RelationFieldSettings object
+function isRelationFieldSettings(settings: any): settings is RelationFieldSettings {
+  return settings && 
+         typeof settings === 'object' && 
+         !Array.isArray(settings) &&
+         typeof settings.target_database_id === 'string';
+}
+
 export class RelationValidationService {
   /**
    * Validates that a bidirectional relation won't create conflicts
@@ -45,14 +53,19 @@ export class RelationValidationService {
             return false;
           }
           
-          const settings = field.settings as RelationFieldSettings | null;
-          return settings?.bidirectional && settings?.target_database_id === sourceDatabaseId;
+          if (!isRelationFieldSettings(field.settings)) {
+            return false;
+          }
+          
+          return field.settings.bidirectional && field.settings.target_database_id === sourceDatabaseId;
         });
 
         // Check if any existing relation field has the same backlink name
         const backlinkConflict = existingRelationFields.find(field => {
-          const settings = field.settings as RelationFieldSettings | null;
-          return settings?.related_property_name === relatedPropertyName;
+          if (!isRelationFieldSettings(field.settings)) {
+            return false;
+          }
+          return field.settings.related_property_name === relatedPropertyName;
         });
 
         if (backlinkConflict) {
@@ -65,8 +78,10 @@ export class RelationValidationService {
 
         // Check for potential circular references
         const potentialCircular = existingRelationFields.find(field => {
-          const settings = field.settings as RelationFieldSettings | null;
-          const fieldBacklinkName = settings?.related_property_name;
+          if (!isRelationFieldSettings(field.settings)) {
+            return false;
+          }
+          const fieldBacklinkName = field.settings.related_property_name;
           return fieldBacklinkName && 
                  targetFields.some(f => f.name === fieldBacklinkName && f.type === 'relation');
         });
@@ -103,10 +118,10 @@ export class RelationValidationService {
       const existingNames = new Set(fields.map(field => field.name.toLowerCase()));
       const existingBacklinkNames = new Set(
         fields
-          .filter(field => field.type === 'relation')
+          .filter(field => field.type === 'relation' && isRelationFieldSettings(field.settings))
           .map(field => {
-            const settings = field.settings as RelationFieldSettings | null;
-            return settings?.related_property_name?.toLowerCase();
+            const settings = field.settings as RelationFieldSettings;
+            return settings.related_property_name?.toLowerCase();
           })
           .filter(Boolean) as string[]
       );
@@ -161,10 +176,11 @@ export class RelationValidationService {
 
     // Self-referencing is allowed, but warn about potential complexity
     const bidirectionalCount = existingRelations.filter(field => {
-      if (field.type !== 'relation') return false;
+      if (field.type !== 'relation' || !isRelationFieldSettings(field.settings)) {
+        return false;
+      }
       
-      const settings = field.settings as RelationFieldSettings | null;
-      return settings?.bidirectional && settings?.target_database_id === sourceDatabaseId;
+      return field.settings.bidirectional && field.settings.target_database_id === sourceDatabaseId;
     }).length;
 
     // Allow up to 3 self-referencing bidirectional relations before warning
