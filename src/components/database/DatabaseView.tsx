@@ -141,7 +141,6 @@ export function DatabaseView() {
       {/* Database Header */}
       <DatabaseHeader
         database={database}
-        workspaceId={workspaceId}
       />
 
       {/* Breaking Changes Alert */}
@@ -157,21 +156,18 @@ export function DatabaseView() {
 
       {/* Unified Toolbar */}
       <DatabaseUnifiedToolbar
+        currentViewType={currentView}
+        onViewChange={setCurrentView}
+        fields={fields}
+        filters={filterGroup}
+        sorts={sortRules}
+        onFiltersChange={updateFilterGroup}
+        onSortsChange={setSortRules}
         databaseId={databaseId}
         workspaceId={workspaceId}
-        fields={fields}
-        currentView={currentView}
-        onViewChange={setCurrentView}
-        filterGroup={filterGroup}
-        onFilterChange={updateFilterGroup}
-        sortRules={sortRules}
-        onSortChange={setSortRules}
-        groupingConfig={groupingConfig}
-        onGroupingChange={setGroupingConfig}
-        views={views}
-        onCreateView={createView}
-        onUpdateView={updateView}
-        onDeleteView={deleteView}
+        onShowPropertiesModal={() => {}}
+        onShowFilterModal={() => {}}
+        onShowSortModal={() => {}}
       />
 
       {/* Main Content */}
