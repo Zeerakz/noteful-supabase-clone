@@ -12,7 +12,7 @@ interface EnhancedTableHeaderProps {
   sortRules: SortRule[];
   onSort: (fieldId: string, direction: 'asc' | 'desc') => void;
   onColumnResize?: (fieldId: string, width: number) => void;
-  columnWidths?: Record<string, number>;
+  getColumnWidth: (fieldId: string) => number;
   stickyHeader?: boolean;
   selectedCount?: number;
   totalCount?: number;
@@ -24,7 +24,7 @@ export function EnhancedTableHeader({
   sortRules,
   onSort,
   onColumnResize,
-  columnWidths = {},
+  getColumnWidth,
   stickyHeader = false,
   selectedCount = 0,
   totalCount = 0,
@@ -49,7 +49,10 @@ export function EnhancedTableHeader({
     >
       <TableRow className="hover:bg-transparent border-none">
         {/* Selection Column */}
-        <TableHead className="w-[48px] p-2 sticky left-0 z-40 bg-background/95 backdrop-blur-md border-r border-border/60 shadow-[2px_0_4px_rgba(0,0,0,0.05)] dark:shadow-[2px_0_4px_rgba(255,255,255,0.05)]">
+        <TableHead 
+          className="w-[48px] p-2 sticky left-0 z-40 bg-background/95 backdrop-blur-md border-r border-border/60 shadow-[2px_0_4px_rgba(0,0,0,0.05)] dark:shadow-[2px_0_4px_rgba(255,255,255,0.05)]"
+          style={{ width: '48px' }}
+        >
           <div className="flex items-center justify-center">
             <Checkbox
               checked={isPartiallySelected ? 'indeterminate' : isAllSelected}
@@ -60,7 +63,10 @@ export function EnhancedTableHeader({
         </TableHead>
 
         {/* Title Column */}
-        <TableHead className="w-[250px] sticky left-[48px] z-40 bg-background/95 backdrop-blur-md border-r border-border/60 p-0 shadow-[2px_0_4px_rgba(0,0,0,0.05)] dark:shadow-[2px_0_4px_rgba(255,255,255,0.05)]">
+        <TableHead 
+          className="sticky left-[48px] z-40 bg-background/95 backdrop-blur-md border-r border-border/60 p-0 shadow-[2px_0_4px_rgba(0,0,0,0.05)] dark:shadow-[2px_0_4px_rgba(255,255,255,0.05)]"
+          style={{ width: `${getColumnWidth('title')}px` }}
+        >
           <DatabaseColumnHeader
             field={{
               id: 'title',
@@ -75,7 +81,7 @@ export function EnhancedTableHeader({
             sortRules={sortRules}
             onSort={onSort}
             onResize={onColumnResize}
-            width={columnWidths['title'] || 250}
+            width={getColumnWidth('title')}
             className="border-b-0 bg-background/95"
           />
         </TableHead>
@@ -85,21 +91,24 @@ export function EnhancedTableHeader({
           <TableHead 
             key={field.id} 
             className="min-w-[160px] relative p-0 bg-background/95 backdrop-blur-md"
-            style={{ width: columnWidths[field.id] ? `${columnWidths[field.id]}px` : '160px' }}
+            style={{ width: `${getColumnWidth(field.id)}px` }}
           >
             <DatabaseColumnHeader
               field={field}
               sortRules={sortRules}
               onSort={onSort}
               onResize={onColumnResize}
-              width={columnWidths[field.id] || 160}
+              width={getColumnWidth(field.id)}
               className="border-b-0 bg-background/95"
             />
           </TableHead>
         ))}
 
         {/* Actions Column */}
-        <TableHead className="w-[60px] p-0 bg-background/95 backdrop-blur-md">
+        <TableHead 
+          className="w-[60px] p-0 bg-background/95 backdrop-blur-md"
+          style={{ width: '64px' }}
+        >
           <div className="flex items-center justify-center px-3 py-3 text-xs font-semibold text-muted-foreground bg-background/95 backdrop-blur-md border-b-2 border-border">
             <MoreHorizontal className="h-4 w-4" />
           </div>

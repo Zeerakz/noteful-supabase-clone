@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback } from 'react';
 import { DatabaseField, PageProperty } from '@/types/database';
 import { DatabaseTableHeader } from './DatabaseTableHeader';
@@ -82,7 +81,7 @@ export function DatabaseTableViewContent({
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
   const [resizingFields, setResizingFields] = useState<Set<string>>(new Set());
 
-  // Column resizing functionality with simplified width management
+  // Column resizing functionality with consistent width management
   const {
     getColumnWidth,
     updateColumnWidth,
@@ -131,7 +130,7 @@ export function DatabaseTableViewContent({
     setResizingFields(newResizingFields);
   }, []);
 
-  // Calculate total width for the table with simplified approach
+  // Calculate total width for the table with consistent approach
   const calculateTotalWidth = () => {
     const checkboxWidth = 48;
     const titleWidth = getColumnWidth('title');

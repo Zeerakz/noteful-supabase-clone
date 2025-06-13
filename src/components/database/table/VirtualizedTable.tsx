@@ -59,8 +59,8 @@ export function VirtualizedTable({
 
   const { getColumnWidth, updateColumnWidth } = useColumnResizing({
     defaultWidths: {
-      title: 200,
-      ...fields.reduce((acc, field) => ({ ...acc, [field.id]: 150 }), {})
+      title: 280,
+      ...fields.reduce((acc, field) => ({ ...acc, [field.id]: 200 }), {})
     }
   });
 
@@ -83,7 +83,7 @@ export function VirtualizedTable({
               sortRules={sortRules}
               onSort={handleSort}
               onColumnResize={updateColumnWidth}
-              columnWidths={{}}
+              getColumnWidth={getColumnWidth}
               stickyHeader={false}
             />
           </Table>
@@ -138,7 +138,7 @@ export function VirtualizedTable({
             sortRules={sortRules}
             onSort={handleSort}
             onColumnResize={updateColumnWidth}
-            columnWidths={{}}
+            getColumnWidth={getColumnWidth}
             stickyHeader={false}
           />
         </Table>
