@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -298,6 +299,11 @@
     /* Action buttons - functional weight */
     @apply text-xs font-semibold tracking-normal;
     line-height: calc(var(--grid-4x) * 1);
+  }
+
+  /* Custom override to remove blue line from active sidebar navigation items */
+  .sidebar [data-sidebar="menu-button"][data-active="true"]::after {
+    display: none !important;
   }
 
   /* High contrast mode support with enhanced visibility */
