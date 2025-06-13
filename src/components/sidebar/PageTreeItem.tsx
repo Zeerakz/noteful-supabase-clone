@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { FileText, ChevronRight, ChevronDown, MoreHorizontal, Trash2, Edit, AlertTriangle } from 'lucide-react';
 import { Draggable, Droppable } from 'react-beautiful-dnd';
 import {
@@ -41,6 +41,8 @@ interface PageTreeItemProps {
   focusedItemId?: string | null;
   onKeyDown?: (event: React.KeyboardEvent, itemId: string) => void;
   onToggleExpanded?: (itemId: string) => void;
+  // Expansion state from parent
+  isExpanded?: boolean;
 }
 
 export function PageTreeItem({ 
@@ -52,16 +54,22 @@ export function PageTreeItem({
   index,
   focusedItemId,
   onKeyDown,
-  onToggleExpanded
+  onToggleExpanded,
+  isExpanded: parentIsExpanded = false
 }: PageTreeItemProps) {
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(parentIsExpanded);
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
   
   const childPages = pages.filter(p => p.parent_page_id === page.id);
   const hasChildren = childPages.length > 0;
   const isOwner = page.created_by === user?.id;
   const isFocused = focusedItemId === page.id;
+
+  // Check if this page is currently active
+  const currentPagePath = `/workspace/${workspaceId}/page/${page.id}`;
+  const isCurrentPage = location.pathname === currentPagePath;
 
   // Calculate depth indicators and constraints
   const depthInfo = getDepthIndicators(level);
@@ -130,11 +138,13 @@ export function PageTreeItem({
         onKeyDown={handleKeyDown}
         tabIndex={isFocused ? 0 : -1}
         data-tree-item-id={page.id}
+        aria-current={isCurrentPage ? "page" : undefined}
         className={cn(
           "group",
           showDepthWarning && "bg-yellow-50 dark:bg-yellow-950/20",
           isMaxDepth && "bg-red-50 dark:bg-red-950/20",
-          isFocused && "ring-2 ring-ring ring-offset-2"
+          isFocused && "ring-2 ring-ring ring-offset-2",
+          isCurrentPage && "bg-sidebar-accent text-sidebar-accent-foreground"
         )}
       >
         <div className="flex items-center gap-2 w-full">
@@ -190,7 +200,13 @@ export function PageTreeItem({
     return (
       <Draggable draggableId={page.id} index={index}>
         {(provided, snapshot) => (
-          <li role="treeitem" aria-expanded={hasChildren ? isExpanded : undefined}>
+          <li 
+            role="treeitem" 
+            aria-expanded={hasChildren ? isExpanded : undefined}
+            aria-level={level + 1}
+            aria-setsize={pages.filter(p => p.parent_page_id === page.parent_page_id).length}
+            aria-posinset={index + 1}
+          >
             <SidebarMenuItem
               ref={provided.innerRef}
               {...provided.draggableProps}
@@ -215,6 +231,7 @@ export function PageTreeItem({
                             focusedItemId={focusedItemId}
                             onKeyDown={onKeyDown}
                             onToggleExpanded={onToggleExpanded}
+                            isExpanded={false}
                           />
                         ))}
                         {provided.placeholder}
@@ -238,6 +255,7 @@ export function PageTreeItem({
                         focusedItemId={focusedItemId}
                         onKeyDown={onKeyDown}
                         onToggleExpanded={onToggleExpanded}
+                        isExpanded={false}
                       />
                     ))}
                   </SidebarMenuSub>
@@ -253,7 +271,13 @@ export function PageTreeItem({
   return (
     <Draggable draggableId={page.id} index={index}>
       {(provided, snapshot) => (
-        <li role="treeitem" aria-expanded={hasChildren ? isExpanded : undefined}>
+        <li 
+          role="treeitem" 
+          aria-expanded={hasChildren ? isExpanded : undefined}
+          aria-level={level + 1}
+          aria-setsize={pages.filter(p => p.parent_page_id === page.parent_page_id).length}
+          aria-posinset={index + 1}
+        >
           <SidebarMenuSubItem
             ref={provided.innerRef}
             {...provided.draggableProps}
@@ -269,9 +293,11 @@ export function PageTreeItem({
               onKeyDown={handleKeyDown}
               tabIndex={isFocused ? 0 : -1}
               data-tree-item-id={page.id}
+              aria-current={isCurrentPage ? "page" : undefined}
               className={cn(
                 "group",
-                isFocused && "ring-2 ring-ring ring-offset-2"
+                isFocused && "ring-2 ring-ring ring-offset-2",
+                isCurrentPage && "bg-sidebar-accent text-sidebar-accent-foreground"
               )}
             >
               <div className="flex items-center gap-2 w-full">
@@ -342,6 +368,7 @@ export function PageTreeItem({
                           focusedItemId={focusedItemId}
                           onKeyDown={onKeyDown}
                           onToggleExpanded={onToggleExpanded}
+                          isExpanded={false}
                         />
                       ))}
                       {provided.placeholder}
@@ -365,6 +392,7 @@ export function PageTreeItem({
                       focusedItemId={focusedItemId}
                       onKeyDown={onKeyDown}
                       onToggleExpanded={onToggleExpanded}
+                      isExpanded={false}
                     />
                   ))}
                 </SidebarMenuSub>

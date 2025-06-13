@@ -70,16 +70,22 @@ export function useTreeViewKeyboardNavigation({
     return items.find(item => item.id === child.parentId) || null;
   }, [items]);
 
-  // Focus an item by ID
+  // Focus an item by ID and ensure proper ARIA state management
   const focusItem = useCallback((itemId: string) => {
     setFocusedItemId(itemId);
     const element = containerRef.current?.querySelector(`[data-tree-item-id="${itemId}"]`) as HTMLElement;
     if (element) {
+      // Update tabindex for roving tabindex pattern
+      const allTreeItems = containerRef.current?.querySelectorAll('[data-tree-item-id]') as NodeListOf<HTMLElement>;
+      allTreeItems?.forEach(item => {
+        item.tabIndex = item === element ? 0 : -1;
+      });
+      
       element.focus();
     }
   }, []);
 
-  // Handle keyboard events
+  // Handle keyboard events with proper ARIA state management
   const handleKeyDown = useCallback((event: React.KeyboardEvent, currentItemId: string) => {
     const currentItem = items.find(item => item.id === currentItemId);
     if (!currentItem) return;
@@ -107,7 +113,7 @@ export function useTreeViewKeyboardNavigation({
         event.preventDefault();
         if (currentItem.hasChildren) {
           if (!currentItem.isExpanded) {
-            // Expand the node
+            // Expand the node - this will update aria-expanded
             onToggleExpanded(currentItemId);
           } else {
             // Move to first child
@@ -123,7 +129,7 @@ export function useTreeViewKeyboardNavigation({
       case 'ArrowLeft': {
         event.preventDefault();
         if (currentItem.hasChildren && currentItem.isExpanded) {
-          // Collapse the node
+          // Collapse the node - this will update aria-expanded
           onToggleExpanded(currentItemId);
         } else {
           // Move to parent
@@ -138,6 +144,7 @@ export function useTreeViewKeyboardNavigation({
       case 'Enter':
       case ' ': {
         event.preventDefault();
+        // Activate the item (navigate to it) - this may update aria-current
         onActivate(currentItemId);
         break;
       }
@@ -171,6 +178,18 @@ export function useTreeViewKeyboardNavigation({
       }
     }
   }, [items, focusedItemId]);
+
+  // Update tabindex when focused item changes
+  useEffect(() => {
+    if (focusedItemId && containerRef.current) {
+      const allTreeItems = containerRef.current.querySelectorAll('[data-tree-item-id]') as NodeListOf<HTMLElement>;
+      const focusedElement = containerRef.current.querySelector(`[data-tree-item-id="${focusedItemId}"]`) as HTMLElement;
+      
+      allTreeItems.forEach(item => {
+        item.tabIndex = item === focusedElement ? 0 : -1;
+      });
+    }
+  }, [focusedItemId]);
 
   return {
     focusedItemId,

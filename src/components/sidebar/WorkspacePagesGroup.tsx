@@ -203,6 +203,7 @@ export function WorkspacePagesGroup({ workspaceId, workspaceName }: WorkspacePag
                             focusedItemId={focusedItemId}
                             onKeyDown={handleKeyDown}
                             onToggleExpanded={handleToggleExpanded}
+                            isExpanded={expandedPages.has(page.id)}
                           />
                         ))
                       )}
