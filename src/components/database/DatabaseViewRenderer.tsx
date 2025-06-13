@@ -19,6 +19,7 @@ interface DatabaseViewRendererProps {
   fields: DatabaseField[];
   filterGroup: FilterGroup;
   sortRules: SortRule[];
+  setSortRules: (rules: SortRule[]) => void;
 }
 
 export function DatabaseViewRenderer({
@@ -27,7 +28,8 @@ export function DatabaseViewRenderer({
   viewType,
   fields,
   filterGroup,
-  sortRules
+  sortRules,
+  setSortRules
 }: DatabaseViewRendererProps) {
   const commonProps = {
     databaseId,
@@ -37,9 +39,14 @@ export function DatabaseViewRenderer({
     sortRules
   };
 
+  const timelineProps = {
+    ...commonProps,
+    setSortRules
+  };
+
   switch (viewType) {
     case 'table':
-      return <DatabaseTableView {...commonProps} />;
+      return <DatabaseTableView {...timelineProps} />;
     case 'list':
       return <DatabaseListView {...commonProps} />;
     case 'calendar':
@@ -47,12 +54,12 @@ export function DatabaseViewRenderer({
     case 'kanban':
       return <DatabaseKanbanView {...commonProps} />;
     case 'timeline':
-      return <DatabaseTimelineView {...commonProps} />;
+      return <DatabaseTimelineView {...timelineProps} />;
     case 'gallery':
       return <DatabaseGalleryView {...commonProps} />;
     case 'form':
       return <DatabaseFormView {...commonProps} />;
     default:
-      return <DatabaseTableView {...commonProps} />;
+      return <DatabaseTableView {...timelineProps} />;
   }
 }

@@ -84,6 +84,7 @@ export function DatabaseView({ databaseId, workspaceId }: DatabaseViewProps) {
           fields={fields}
           filterGroup={filterGroup}
           sortRules={sortRules}
+          setSortRules={setSortRules}
         />
       </div>
 
