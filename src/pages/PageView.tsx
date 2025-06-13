@@ -5,25 +5,22 @@ import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { BlockEditor } from '@/components/blocks/BlockEditor';
 import { PagePropertiesSection } from '@/components/database/fields/PagePropertiesSection';
-import { useWorkspaces } from '@/hooks/useWorkspaces';
 import { useDatabaseFields } from '@/hooks/useDatabaseFields';
-import { usePageProperties } from '@/hooks/usePageProperties';
-import { usePageWithWorkspace } from '@/hooks/usePageWithWorkspace';
+import { usePageData } from '@/hooks/usePageData';
+import { useStablePageProperties } from '@/hooks/useStablePageProperties';
 import { useUserProfiles } from '@/hooks/useUserProfiles';
 import { errorHandler } from '@/utils/errorHandler';
+import { ErrorBoundary } from '@/components/error/ErrorBoundary';
 
-export function PageView() {
+function PageViewContent() {
   const { pageId } = useParams<{ pageId: string }>();
   const navigate = useNavigate();
-  const { workspaces, loading: workspacesLoading } = useWorkspaces();
   
-  // Use the new custom hooks
-  const { pageWithWorkspace, loading: pageLoading, error: pageError } = usePageWithWorkspace(pageId, workspacesLoading);
-  const { userProfiles } = useUserProfiles(pageWithWorkspace?.workspace?.id);
-  
-  // Get database fields and properties if this page belongs to a database
-  const { fields } = useDatabaseFields(pageWithWorkspace?.database_id || '');
-  const { properties, updateProperty } = usePageProperties(pageId);
+  // Use the new stable hooks
+  const { pageData, loading: pageLoading, error: pageError, retry: retryPage } = usePageData(pageId);
+  const { properties, loading: propertiesLoading, error: propertiesError, updateProperty, retry: retryProperties } = useStablePageProperties(pageId);
+  const { userProfiles } = useUserProfiles(pageData?.workspace?.id);
+  const { fields } = useDatabaseFields(pageData?.database_id || '');
 
   const handlePropertyUpdate = async (fieldId: string, value: string) => {
     try {
@@ -41,18 +38,23 @@ export function PageView() {
   };
 
   const handleBack = () => {
-    if (pageWithWorkspace?.workspace) {
-      navigate(`/workspace/${pageWithWorkspace.workspace.id}`);
+    if (pageData?.workspace) {
+      navigate(`/workspace/${pageData.workspace.id}`);
     } else {
       navigate('/');
     }
   };
 
+  const handleRetry = () => {
+    retryPage();
+    retryProperties();
+  };
+
   // Loading state
-  if (workspacesLoading || pageLoading) {
+  if (pageLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="text-lg">Loading...</div>
+        <div className="text-lg">Loading page...</div>
       </div>
     );
   }
@@ -61,23 +63,25 @@ export function PageView() {
   if (pageError) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="text-lg text-red-600 mb-4">Error loading page</div>
-          <Button onClick={handleBack}>Go Back</Button>
+        <div className="text-center space-y-4">
+          <div className="text-lg text-red-600">Error loading page</div>
+          <p className="text-muted-foreground">{pageError}</p>
+          <div className="space-x-2">
+            <Button onClick={handleRetry}>Try Again</Button>
+            <Button variant="outline" onClick={handleBack}>Go Back</Button>
+          </div>
         </div>
       </div>
     );
   }
 
   // Page not found
-  if (!pageWithWorkspace) {
+  if (!pageData) {
     return <Navigate to="/" replace />;
   }
 
-  const { workspace, ...page } = pageWithWorkspace;
-
   // Show properties section if this page belongs to a database
-  const showProperties = page.database_id && fields.length > 0;
+  const showProperties = pageData.database_id && fields.length > 0;
 
   // Convert properties array to Record<string, string> format
   const propertiesRecord = properties.reduce((acc, property) => {
@@ -99,8 +103,8 @@ export function PageView() {
               Back
             </Button>
             <div>
-              <h1 className="text-xl font-semibold">{page.title}</h1>
-              <p className="text-sm text-muted-foreground">in {workspace.name}</p>
+              <h1 className="text-xl font-semibold">{pageData.title}</h1>
+              <p className="text-sm text-muted-foreground">in {pageData.workspace.name}</p>
             </div>
           </div>
         </div>
@@ -109,21 +113,72 @@ export function PageView() {
       <div className="container mx-auto max-w-4xl px-4 py-6 space-y-6">
         {/* Properties Section */}
         {showProperties && (
-          <PagePropertiesSection
-            fields={fields}
-            properties={propertiesRecord}
-            pageId={page.id}
-            workspaceId={workspace.id}
-            onPropertyUpdate={handlePropertyUpdate}
-            isEditable={true}
-            pageData={page}
-            userProfiles={userProfiles}
-          />
+          <ErrorBoundary
+            fallback={
+              <div className="p-4 border border-red-200 rounded-lg bg-red-50">
+                <p className="text-red-600">Error loading properties</p>
+                {propertiesError && <p className="text-sm text-red-500 mt-1">{propertiesError}</p>}
+                <Button size="sm" onClick={retryProperties} className="mt-2">
+                  Retry Properties
+                </Button>
+              </div>
+            }
+          >
+            <PagePropertiesSection
+              fields={fields}
+              properties={propertiesRecord}
+              pageId={pageData.id}
+              workspaceId={pageData.workspace.id}
+              onPropertyUpdate={handlePropertyUpdate}
+              isEditable={true}
+              pageData={pageData}
+              userProfiles={userProfiles}
+            />
+          </ErrorBoundary>
         )}
 
         {/* Page Content */}
-        <BlockEditor pageId={page.id} isEditable={true} workspaceId={workspace.id} />
+        <ErrorBoundary
+          fallback={
+            <div className="p-4 border border-red-200 rounded-lg bg-red-50">
+              <p className="text-red-600">Error loading page content</p>
+              <Button size="sm" onClick={handleRetry} className="mt-2">
+                Retry
+              </Button>
+            </div>
+          }
+        >
+          <BlockEditor pageId={pageData.id} isEditable={true} workspaceId={pageData.workspace.id} />
+        </ErrorBoundary>
       </div>
     </div>
+  );
+}
+
+export function PageView() {
+  return (
+    <ErrorBoundary
+      onError={(error, errorInfo) => {
+        errorHandler.logError(error, {
+          context: 'page_view_root',
+          componentStack: errorInfo.componentStack
+        });
+      }}
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-background">
+          <div className="text-center space-y-4">
+            <h3 className="text-lg font-medium text-foreground">Page Error</h3>
+            <p className="text-muted-foreground">
+              There was an error loading this page. Please try refreshing or navigating elsewhere.
+            </p>
+            <Button onClick={() => window.location.reload()}>
+              Refresh Page
+            </Button>
+          </div>
+        </div>
+      }
+    >
+      <PageViewContent />
+    </ErrorBoundary>
   );
 }
