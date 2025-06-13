@@ -85,15 +85,16 @@ export function DatabaseTableRow({
   return (
     <TableRow 
       className={`
-        group transition-all duration-200 ease-out border-b border-border/5
+        group transition-all duration-200 ease-out
         hover:bg-accent/20
         ${isSelected ? 'bg-accent/30' : ''}
         ${isAnyColumnResizing ? 'pointer-events-none opacity-75' : ''}
+        hairline-divider
       `}
     >
       {/* Selection Checkbox */}
       <TableCell 
-        className="p-3 border-r border-border/5 text-center"
+        className="p-3 text-center hairline-vertical"
         style={{ width: '48px' }}
       >
         <Checkbox
@@ -109,7 +110,7 @@ export function DatabaseTableRow({
 
       {/* Title Cell */}
       <TableCell 
-        className="p-3 border-r border-border/5"
+        className="p-3 hairline-vertical"
         style={{ width: `${getColumnWidth('title')}px` }}
       >
         <div className="flex items-center gap-2">
@@ -153,7 +154,7 @@ export function DatabaseTableRow({
         return (
           <TableCell 
             key={field.id} 
-            className={`p-3 ${!isLastField ? 'border-r border-border/5' : ''}`}
+            className={`p-3 ${!isLastField ? 'hairline-vertical' : ''}`}
             style={{ width: `${getColumnWidth(field.id)}px` }}
           >
             <EditableCell
