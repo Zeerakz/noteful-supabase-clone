@@ -119,6 +119,12 @@ export function PageView() {
   // Show properties section if this page belongs to a database
   const showProperties = page.database_id && fields.length > 0;
 
+  // Convert properties array to Record<string, string> format
+  const propertiesRecord = properties.reduce((acc, property) => {
+    acc[property.field_id] = property.value || '';
+    return acc;
+  }, {} as Record<string, string>);
+
   return (
     <div className="min-h-screen bg-background">
       <div className="border-b border-border bg-background sticky top-0 z-10">
@@ -145,7 +151,7 @@ export function PageView() {
         {showProperties && (
           <PagePropertiesSection
             fields={fields}
-            properties={properties}
+            properties={propertiesRecord}
             pageId={page.id}
             workspaceId={workspace.id}
             onPropertyUpdate={handlePropertyUpdate}

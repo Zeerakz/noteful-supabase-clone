@@ -72,7 +72,6 @@ export function FieldEditor({
           value={value}
           onChange={onChange}
           settings={field.settings}
-          workspaceId={workspaceId}
         />
       );
 
@@ -82,7 +81,6 @@ export function FieldEditor({
           value={value}
           onChange={onChange}
           settings={field.settings}
-          workspaceId={workspaceId}
           multiSelect
         />
       );

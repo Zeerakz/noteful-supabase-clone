@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -154,9 +155,10 @@ export function DatabaseFormView({ databaseId, fields, workspaceId }: DatabaseFo
               <label className="text-sm font-medium">{field.name}</label>
               <FieldEditor
                 field={field}
-                value={formData[field.id] || null}
+                value={formData[field.id] || ''}
                 onChange={(value) => handleFieldChange(field.id, value)}
                 workspaceId={workspaceId}
+                pageId=""
               />
             </div>
           ))}
