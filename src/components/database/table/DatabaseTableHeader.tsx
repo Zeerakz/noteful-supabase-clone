@@ -50,22 +50,21 @@ export function DatabaseTableHeader({
   return (
     <TableHeader className="sticky top-0 z-20 bg-card/95 backdrop-blur-sm border-b-2 border-border">
       <TableRow className="hover:bg-transparent border-none">
-        {/* Selection Column */}
+        {/* Selection Column - Fixed width */}
         <TableHead 
           className="w-12 p-3 bg-card/95 border-r border-border/40"
-          style={{ width: '48px', minWidth: '48px', maxWidth: '48px' }}
+          style={{ width: '48px' }}
         >
           <div className="flex items-center justify-center">
             <Checkbox className="opacity-50" />
           </div>
         </TableHead>
 
-        {/* Title Column */}
+        {/* Title Column - Respects column width */}
         <TableHead 
           className="p-0 bg-card/95 border-r border-border/40"
           style={{ 
-            width: columnWidths['title'] ? `${columnWidths['title']}px` : '280px',
-            minWidth: '150px'
+            width: columnWidths['title'] ? `${columnWidths['title']}px` : '280px'
           }}
         >
           <DatabaseColumnHeader
@@ -88,14 +87,13 @@ export function DatabaseTableHeader({
           />
         </TableHead>
 
-        {/* Field Columns */}
+        {/* Field Columns - Respects column widths */}
         {fields.map((field) => (
           <TableHead 
             key={field.id} 
             className="p-0 bg-card/95 border-r border-border/40 last:border-r-0"
             style={{ 
-              width: columnWidths[field.id] ? `${columnWidths[field.id]}px` : '200px',
-              minWidth: '150px'
+              width: columnWidths[field.id] ? `${columnWidths[field.id]}px` : '200px'
             }}
           >
             <DatabaseColumnHeader
@@ -113,10 +111,10 @@ export function DatabaseTableHeader({
           </TableHead>
         ))}
 
-        {/* Actions Column */}
+        {/* Actions Column - Fixed width */}
         <TableHead 
           className="w-16 p-3 bg-card/95"
-          style={{ width: '64px', minWidth: '64px', maxWidth: '64px' }}
+          style={{ width: '64px' }}
         >
           <div className="text-center text-xs font-medium text-muted-foreground">
             •••

@@ -136,4 +136,15 @@
   .resize-handle-active {
     @apply bg-primary/40 shadow-lg;
   }
+
+  /* Table layout fixes for column width synchronization */
+  .table-fixed {
+    table-layout: fixed !important;
+  }
+  
+  .table-fixed th,
+  .table-fixed td {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
 }

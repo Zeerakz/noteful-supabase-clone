@@ -96,13 +96,13 @@ export function DatabaseTableRow({
         ${isAnyColumnResizing ? 'pointer-events-none' : ''}
       `}
     >
-      {/* Selection Checkbox */}
+      {/* Selection Checkbox - Fixed width */}
       <TableCell 
         className={`
           w-12 p-3 border-r border-border/20
           ${resizingFields.has('checkbox') ? 'resize-active' : ''}
         `}
-        style={{ width: '48px', minWidth: '48px', maxWidth: '48px' }}
+        style={{ width: '48px' }}
       >
         <div className="flex items-center justify-center">
           <Checkbox
@@ -117,15 +117,14 @@ export function DatabaseTableRow({
         </div>
       </TableCell>
 
-      {/* Title Cell */}
+      {/* Title Cell - Respects column width */}
       <TableCell 
         className={`
           p-0 border-r border-border/20
           ${resizingFields.has('title') ? 'resize-active' : ''}
         `}
         style={{ 
-          width: columnWidths['title'] ? `${columnWidths['title']}px` : '280px',
-          minWidth: '150px'
+          width: columnWidths['title'] ? `${columnWidths['title']}px` : '280px'
         }}
       >
         <div className="flex items-center gap-2 px-4 py-3">
@@ -144,7 +143,7 @@ export function DatabaseTableRow({
             </Button>
           )}
           
-          <div className="flex-1">
+          <div className="flex-1 overflow-hidden">
             <EditableCell
               value={page.title}
               onSave={(newTitle) => onTitleUpdate(page.id, newTitle)}
@@ -156,7 +155,7 @@ export function DatabaseTableRow({
         </div>
       </TableCell>
 
-      {/* Property Cells */}
+      {/* Property Cells - Respects column widths */}
       {fields.map((field) => {
         const cellValue = page.properties[field.id] || '';
         const isFieldResizing = resizingFields.has(field.id);
@@ -169,11 +168,10 @@ export function DatabaseTableRow({
               ${isFieldResizing ? 'resize-active' : ''}
             `}
             style={{ 
-              width: columnWidths[field.id] ? `${columnWidths[field.id]}px` : '200px',
-              minWidth: '150px'
+              width: columnWidths[field.id] ? `${columnWidths[field.id]}px` : '200px'
             }}
           >
-            <div className="px-4 py-3">
+            <div className="px-4 py-3 overflow-hidden">
               {editingField === field.id ? (
                 <FieldEditor
                   field={field}
@@ -185,22 +183,24 @@ export function DatabaseTableRow({
               ) : (
                 <div
                   className={`
-                    min-h-[24px] rounded px-2 py-1 transition-colors duration-150 flex items-center
+                    min-h-[24px] rounded px-2 py-1 transition-colors duration-150 flex items-center overflow-hidden
                     ${!isAnyColumnResizing && !isFieldResizing ? 'cursor-text hover:bg-muted/30' : 'cursor-default'}
                     ${isAnyColumnResizing ? 'pointer-events-none' : ''}
                   `}
                   onClick={() => !isAnyColumnResizing && setEditingField(field.id)}
                 >
                   {cellValue ? (
-                    <EditableCell
-                      value={cellValue}
-                      onSave={(value) => handlePropertyChange(field.id, value)}
-                      fieldType={field.type}
-                      fieldConfig={field.settings}
-                      placeholder={`Enter ${field.name.toLowerCase()}`}
-                      disabled={isAnyColumnResizing}
-                      isResizing={isFieldResizing}
-                    />
+                    <div className="w-full overflow-hidden">
+                      <EditableCell
+                        value={cellValue}
+                        onSave={(value) => handlePropertyChange(field.id, value)}
+                        fieldType={field.type}
+                        fieldConfig={field.settings}
+                        placeholder={`Enter ${field.name.toLowerCase()}`}
+                        disabled={isAnyColumnResizing}
+                        isResizing={isFieldResizing}
+                      />
+                    </div>
                   ) : (
                     <span className={`text-muted-foreground text-sm editable-cell-placeholder ${isAnyColumnResizing ? 'text-muted-foreground/40' : ''}`}>
                       Enter {field.name.toLowerCase()}
@@ -213,10 +213,10 @@ export function DatabaseTableRow({
         );
       })}
 
-      {/* Actions Cell */}
+      {/* Actions Cell - Fixed width */}
       <TableCell 
         className="w-16 p-3"
-        style={{ width: '64px', minWidth: '64px', maxWidth: '64px' }}
+        style={{ width: '64px' }}
       >
         <div className="flex items-center justify-center">
           <DropdownMenu>

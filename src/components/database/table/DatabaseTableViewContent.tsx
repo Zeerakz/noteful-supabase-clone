@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback } from 'react';
 import { DatabaseField, PageProperty } from '@/types/database';
 import { DatabaseTableHeader } from './DatabaseTableHeader';
@@ -81,7 +82,7 @@ export function DatabaseTableViewContent({
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
   const [resizingFields, setResizingFields] = useState<Set<string>>(new Set());
 
-  // Column resizing functionality with updated default widths
+  // Column resizing functionality with updated constraints
   const {
     columnWidths,
     updateColumnWidth,
@@ -95,7 +96,7 @@ export function DatabaseTableViewContent({
         [field.id]: 200
       }), {})
     },
-    minWidth: 150,
+    minWidth: 120, // Reduced minimum width for better flexibility
     maxWidth: 600
   });
 
@@ -214,10 +215,10 @@ export function DatabaseTableViewContent({
         </div>
       </div>
 
-      {/* Table container with improved width management */}
+      {/* Table container with fixed layout */}
       <div className="flex-1 overflow-auto bg-background">
-        <div className="w-full" style={{ minWidth: '800px' }}>
-          <Table className="border-collapse border-spacing-0">
+        <div className="w-full">
+          <Table className="table-fixed border-collapse w-full" style={{ minWidth: '800px' }}>
             <DatabaseTableHeader
               fields={fields}
               sortRules={sortRules}

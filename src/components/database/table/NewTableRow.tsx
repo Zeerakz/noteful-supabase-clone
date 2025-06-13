@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { TableCell, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
@@ -70,28 +69,27 @@ export function NewTableRow({
         ${isAnyColumnResizing ? 'pointer-events-none opacity-60' : ''}
       `}
     >
-      {/* Empty checkbox cell */}
+      {/* Empty checkbox cell - Fixed width */}
       <TableCell 
         className={`
           w-12 p-3 border-r border-border/20
           ${resizingFields.has('checkbox') ? 'resize-active' : ''}
         `}
-        style={{ width: '48px', minWidth: '48px', maxWidth: '48px' }}
+        style={{ width: '48px' }}
       >
         <div className="flex items-center justify-center">
           <div className="w-4 h-4" />
         </div>
       </TableCell>
 
-      {/* Title Cell */}
+      {/* Title Cell - Respects column width */}
       <TableCell 
         className={`
           p-0 border-r border-border/20
           ${resizingFields.has('title') ? 'resize-active' : ''}
         `}
         style={{ 
-          width: columnWidths['title'] ? `${columnWidths['title']}px` : '280px',
-          minWidth: '150px'
+          width: columnWidths['title'] ? `${columnWidths['title']}px` : '280px'
         }}
       >
         <div className="px-4 py-3">
@@ -138,7 +136,7 @@ export function NewTableRow({
         </div>
       </TableCell>
 
-      {/* Empty Property Cells */}
+      {/* Empty Property Cells - Respects column widths */}
       {fields.map((field) => (
         <TableCell 
           key={field.id} 
@@ -147,11 +145,10 @@ export function NewTableRow({
             ${resizingFields.has(field.id) ? 'resize-active' : ''}
           `}
           style={{ 
-            width: columnWidths[field.id] ? `${columnWidths[field.id]}px` : '200px',
-            minWidth: '150px'
+            width: columnWidths[field.id] ? `${columnWidths[field.id]}px` : '200px'
           }}
         >
-          <div className="px-4 py-3">
+          <div className="px-4 py-3 overflow-hidden">
             <div className="min-h-[24px] px-2 py-1 flex items-center">
               <span className={`text-sm editable-cell-placeholder ${isAnyColumnResizing ? 'text-muted-foreground/30' : 'text-muted-foreground/40'}`}>
                 —
@@ -161,10 +158,10 @@ export function NewTableRow({
         </TableCell>
       ))}
 
-      {/* Empty Actions Cell */}
+      {/* Empty Actions Cell - Fixed width */}
       <TableCell 
         className="w-16 p-3"
-        style={{ width: '64px', minWidth: '64px', maxWidth: '64px' }}
+        style={{ width: '64px' }}
       >
         <div className="w-8 h-8" />
       </TableCell>

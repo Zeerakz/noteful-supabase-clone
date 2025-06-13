@@ -9,8 +9,8 @@ interface UseColumnResizingProps {
 
 export function useColumnResizing({
   defaultWidths = {},
-  minWidth = 100,
-  maxWidth = 500
+  minWidth = 120,
+  maxWidth = 600
 }: UseColumnResizingProps = {}) {
   const [columnWidths, setColumnWidths] = useState<Record<string, number>>(defaultWidths);
 
