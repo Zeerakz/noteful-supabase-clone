@@ -2,6 +2,11 @@
 import React, { useRef, useMemo } from 'react';
 import {
   Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
 } from '@/components/ui/table';
 import { VirtualizedTableBody } from './VirtualizedTableBody';
 import { EnhancedTableHeader } from './EnhancedTableHeader';
@@ -85,20 +90,18 @@ export function VirtualizedTable({
   if (enableVirtualScrolling && pages.length > 50) {
     return (
       <div className="flex flex-col h-full overflow-hidden bg-background border-2 border-border rounded-lg shadow-sm">
-        {/* Fixed sticky header */}
-        <div className="shrink-0 border-b-2 border-border bg-background/98 backdrop-blur-md sticky top-0 z-30 shadow-sm">
-          <div style={{ minWidth: `${totalTableWidth}px`, width: 'max-content' }}>
-            <Table className="table-fixed" style={{ width: `${totalTableWidth}px` }}>
-              <EnhancedTableHeader
-                fields={fields}
-                sortRules={sortRules}
-                onSort={handleSort}
-                onColumnResize={updateColumnWidth}
-                getColumnWidth={getColumnWidth}
-                stickyHeader={false}
-              />
-            </Table>
-          </div>
+        {/* Fixed sticky header - Use proper table structure */}
+        <div className="shrink-0 border-b-2 border-border bg-background/98 backdrop-blur-md sticky top-0 z-30 shadow-sm overflow-hidden">
+          <Table className="table-fixed" style={{ width: `${totalTableWidth}px` }}>
+            <EnhancedTableHeader
+              fields={fields}
+              sortRules={sortRules}
+              onSort={handleSort}
+              onColumnResize={updateColumnWidth}
+              getColumnWidth={getColumnWidth}
+              stickyHeader={false}
+            />
+          </Table>
         </div>
         
         {/* Virtualized scrollable body */}
@@ -149,36 +152,32 @@ export function VirtualizedTable({
 
   return (
     <div className="flex flex-col h-full overflow-hidden bg-background border-2 border-border rounded-lg shadow-sm">
-      {/* Fixed sticky header */}
-      <div className="shrink-0 border-b-2 border-border bg-background/98 backdrop-blur-md sticky top-0 z-30 shadow-sm">
-        <div style={{ minWidth: `${totalTableWidth}px`, width: 'max-content' }}>
-          <Table className="table-fixed" style={{ width: `${totalTableWidth}px` }}>
-            <EnhancedTableHeader
-              fields={fields}
-              sortRules={sortRules}
-              onSort={handleSort}
-              onColumnResize={updateColumnWidth}
-              getColumnWidth={getColumnWidth}
-              stickyHeader={false}
-            />
-          </Table>
-        </div>
+      {/* Fixed sticky header - Use proper table structure */}
+      <div className="shrink-0 border-b-2 border-border bg-background/98 backdrop-blur-md sticky top-0 z-30 shadow-sm overflow-hidden">
+        <Table className="table-fixed" style={{ width: `${totalTableWidth}px` }}>
+          <EnhancedTableHeader
+            fields={fields}
+            sortRules={sortRules}
+            onSort={handleSort}
+            onColumnResize={updateColumnWidth}
+            getColumnWidth={getColumnWidth}
+            stickyHeader={false}
+          />
+        </Table>
       </div>
       
       {/* Scrollable body with native scrolling */}
       <div className="flex-1 min-h-0 overflow-auto" style={{ height: maxHeight }}>
-        <div style={{ minWidth: `${totalTableWidth}px`, width: 'max-content' }}>
-          <VirtualizedTableBody
-            pages={displayPages}
-            fields={fields}
-            onTitleUpdate={onTitleUpdate}
-            onPropertyUpdate={onPropertyUpdate}
-            onDeleteRow={onDeleteRow}
-            isLoading={isLoading}
-            getColumnWidth={getColumnWidth}
-            workspaceId={workspaceId}
-          />
-        </div>
+        <VirtualizedTableBody
+          pages={displayPages}
+          fields={fields}
+          onTitleUpdate={onTitleUpdate}
+          onPropertyUpdate={onPropertyUpdate}
+          onDeleteRow={onDeleteRow}
+          isLoading={isLoading}
+          getColumnWidth={getColumnWidth}
+          workspaceId={workspaceId}
+        />
       </div>
     </div>
   );

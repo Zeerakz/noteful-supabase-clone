@@ -90,7 +90,9 @@ export function DatabaseTableViewContent({
     resetAllWidths
   } = useColumnResizing({
     defaultWidths: {
+      checkbox: 48,
       title: 280,
+      actions: 64,
       ...fields.reduce((acc, field) => ({
         ...acc,
         [field.id]: 200
@@ -133,10 +135,10 @@ export function DatabaseTableViewContent({
 
   // Calculate total width for the table with consistent approach
   const calculateTotalWidth = () => {
-    const checkboxWidth = 48;
+    const checkboxWidth = getColumnWidth('checkbox');
     const titleWidth = getColumnWidth('title');
     const fieldsWidth = fields.reduce((acc, field) => acc + getColumnWidth(field.id), 0);
-    const actionsWidth = 64;
+    const actionsWidth = getColumnWidth('actions');
     return checkboxWidth + titleWidth + fieldsWidth + actionsWidth;
   };
 
@@ -235,18 +237,16 @@ export function DatabaseTableViewContent({
         >
           <Table className="w-full table-fixed" style={{ width: `${totalTableWidth}px` }}>
             {/* Sticky Header */}
-            <div className="sticky top-0 z-30 bg-background/95 backdrop-blur-md border-b-2 border-border shadow-sm">
-              <DatabaseTableHeader
-                fields={fields}
-                sortRules={sortRules}
-                onSort={handleSort}
-                onFieldsChange={onFieldsChange}
-                onFieldReorder={onFieldReorder}
-                getColumnWidth={getColumnWidth}
-                onColumnResize={updateColumnWidth}
-                onResizeStateChange={handleResizeStateChange}
-              />
-            </div>
+            <DatabaseTableHeader
+              fields={fields}
+              sortRules={sortRules}
+              onSort={handleSort}
+              onFieldsChange={onFieldsChange}
+              onFieldReorder={onFieldReorder}
+              getColumnWidth={getColumnWidth}
+              onColumnResize={updateColumnWidth}
+              onResizeStateChange={handleResizeStateChange}
+            />
             
             {/* Table Body */}
             <DatabaseTableBody

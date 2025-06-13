@@ -1,11 +1,23 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Table,
   TableBody,
+  TableRow,
+  TableCell,
 } from '@/components/ui/table';
-import { DatabaseTableRow } from './DatabaseTableRow';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { MoreHorizontal, Trash2 } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { DatabaseField } from '@/types/database';
+import { PropertyTableCell } from './PropertyTableCell';
 
 interface PageWithProperties {
   id: string;
@@ -34,59 +46,114 @@ export function VirtualizedTableBody({
   getColumnWidth,
   workspaceId
 }: VirtualizedTableBodyProps) {
-  // Calculate total table width for consistent layout
-  const calculateTableWidth = () => {
-    const checkboxWidth = 48;
-    const titleWidth = getColumnWidth('title');
-    const fieldsWidth = fields.reduce((sum, field) => sum + getColumnWidth(field.id), 0);
-    const actionsWidth = 64;
-    return checkboxWidth + titleWidth + fieldsWidth + actionsWidth;
+  const [editingTitle, setEditingTitle] = useState<string | null>(null);
+  const [titleValue, setTitleValue] = useState<string>('');
+
+  const handleTitleClick = (pageId: string, title: string) => {
+    setEditingTitle(pageId);
+    setTitleValue(title || '');
   };
 
-  const totalTableWidth = calculateTableWidth();
+  const handleTitleSave = (pageId: string) => {
+    onTitleUpdate(pageId, titleValue);
+    setEditingTitle(null);
+    setTitleValue('');
+  };
 
-  if (isLoading) {
-    return (
-      <Table className="table-fixed" style={{ width: `${totalTableWidth}px` }}>
-        <TableBody>
-          {Array.from({ length: 5 }).map((_, index) => (
-            <tr key={index} className="border-b">
-              <td className="p-3" style={{ width: '48px' }}>
-                <div className="h-4 bg-muted rounded animate-pulse" />
-              </td>
-              <td className="p-3" style={{ width: `${getColumnWidth('title')}px` }}>
-                <div className="h-4 bg-muted rounded animate-pulse" />
-              </td>
-              {fields.map((field) => (
-                <td key={field.id} className="p-3" style={{ width: `${getColumnWidth(field.id)}px` }}>
-                  <div className="h-4 bg-muted rounded animate-pulse" />
-                </td>
-              ))}
-              <td className="p-3" style={{ width: '64px' }}>
-                <div className="h-4 bg-muted rounded animate-pulse" />
-              </td>
-            </tr>
-          ))}
-        </TableBody>
-      </Table>
-    );
-  }
+  const handleTitleCancel = () => {
+    setEditingTitle(null);
+    setTitleValue('');
+  };
+
+  const handleTitleKeyDown = (e: React.KeyboardEvent, pageId: string) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleTitleSave(pageId);
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      handleTitleCancel();
+    }
+  };
+
+  const totalWidth = getColumnWidth('checkbox') + getColumnWidth('title') + 
+    fields.reduce((sum, field) => sum + getColumnWidth(field.id), 0) + 
+    getColumnWidth('actions');
 
   return (
-    <Table className="table-fixed" style={{ width: `${totalTableWidth}px` }}>
+    <Table className="table-fixed" style={{ width: `${totalWidth}px` }}>
       <TableBody>
-        {pages.map((page, index) => (
-          <DatabaseTableRow
-            key={page.id}
-            page={page}
-            fields={fields}
-            onTitleUpdate={onTitleUpdate}
-            onPropertyUpdate={onPropertyUpdate}
-            onDeleteRow={onDeleteRow}
-            getColumnWidth={getColumnWidth}
-            workspaceId={workspaceId}
-            isEvenRow={index % 2 === 0}
-          />
+        {pages.map((page) => (
+          <TableRow key={page.id} className="border-b hover:bg-muted/50">
+            {/* Checkbox column */}
+            <TableCell 
+              className="p-2 text-center border-r border-border/20" 
+              style={{ width: `${getColumnWidth('checkbox')}px` }}
+            >
+              <Checkbox />
+            </TableCell>
+
+            {/* Title column */}
+            <TableCell 
+              className="p-2 border-r border-border/20" 
+              style={{ width: `${getColumnWidth('title')}px` }}
+            >
+              {editingTitle === page.id ? (
+                <Input
+                  value={titleValue}
+                  onChange={(e) => setTitleValue(e.target.value)}
+                  onBlur={() => handleTitleSave(page.id)}
+                  onKeyDown={(e) => handleTitleKeyDown(e, page.id)}
+                  className="w-full"
+                  autoFocus
+                />
+              ) : (
+                <div
+                  className="cursor-text hover:bg-muted/50 p-1 rounded min-h-[24px] font-medium"
+                  onClick={() => handleTitleClick(page.id, page.title)}
+                >
+                  {page.title || (
+                    <span className="text-muted-foreground italic font-normal">Untitled</span>
+                  )}
+                </div>
+              )}
+            </TableCell>
+
+            {/* Property columns */}
+            {fields.map((field) => (
+              <PropertyTableCell
+                key={field.id}
+                field={field}
+                value={page.properties[field.id] || ''}
+                pageId={page.id}
+                workspaceId={workspaceId}
+                width={getColumnWidth(field.id)}
+                onValueChange={(value) => onPropertyUpdate(page.id, field.id, value)}
+              />
+            ))}
+
+            {/* Actions column */}
+            <TableCell 
+              className="p-2 text-center" 
+              style={{ width: `${getColumnWidth('actions')}px` }}
+            >
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                    <MoreHorizontal className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem
+                    onClick={() => onDeleteRow(page.id)}
+                    className="text-destructive"
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </TableCell>
+          </TableRow>
         ))}
       </TableBody>
     </Table>
