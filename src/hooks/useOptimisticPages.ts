@@ -27,21 +27,29 @@ export function useOptimisticPages({ pages, onServerUpdate }: UseOptimisticPages
     })
     .concat(optimisticCreations.filter(optimisticPage => {
       // Only include optimistic creations that haven't been replaced by real pages
-      return !pages.some(realPage => realPage.title === optimisticPage.title && 
-        realPage.workspace_id === optimisticPage.workspace_id &&
-        realPage.parent_page_id === optimisticPage.parent_page_id);
+      // Use more specific matching to prevent false positives
+      return !pages.some(realPage => 
+        realPage.id === optimisticPage.id || // Direct ID match (for when server returns same ID)
+        (
+          realPage.title === optimisticPage.title && 
+          realPage.workspace_id === optimisticPage.workspace_id &&
+          realPage.parent_page_id === optimisticPage.parent_page_id &&
+          Math.abs(new Date(realPage.created_at).getTime() - new Date(optimisticPage.created_at).getTime()) < 5000 // Within 5 seconds
+        )
+      );
     }))
     .sort((a, b) => a.order_index - b.order_index);
 
   const optimisticCreatePage = useCallback((pageData: Partial<Page>) => {
     const tempId = `temp-${Date.now()}-${Math.random()}`;
+    const now = new Date().toISOString();
     const optimisticPage: Page = {
       id: tempId,
       title: pageData.title || 'Untitled',
       workspace_id: pageData.workspace_id || '',
       created_by: pageData.created_by || '',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
+      created_at: now,
+      updated_at: now,
       parent_page_id: pageData.parent_page_id || null,
       order_index: pageData.order_index || Date.now(),
       database_id: pageData.database_id || null,
@@ -49,6 +57,14 @@ export function useOptimisticPages({ pages, onServerUpdate }: UseOptimisticPages
     };
 
     setOptimisticCreations(prev => [...prev, optimisticPage]);
+    
+    // Auto-cleanup after 10 seconds to prevent orphaned optimistic pages
+    setTimeout(() => {
+      setOptimisticCreations(current => 
+        current.filter(page => page.id !== tempId)
+      );
+    }, 10000);
+    
     return tempId;
   }, []);
 
@@ -57,15 +73,36 @@ export function useOptimisticPages({ pages, onServerUpdate }: UseOptimisticPages
       const newMap = new Map(prev);
       newMap.set(pageId, {
         id: pageId,
-        updates,
+        updates: { ...updates, updated_at: new Date().toISOString() },
         timestamp: Date.now(),
       });
       return newMap;
     });
+
+    // Auto-cleanup update after 30 seconds
+    setTimeout(() => {
+      setOptimisticUpdates(current => {
+        const newMap = new Map(current);
+        const update = newMap.get(pageId);
+        if (update && Date.now() - update.timestamp > 30000) {
+          newMap.delete(pageId);
+        }
+        return newMap;
+      });
+    }, 30000);
   }, []);
 
   const optimisticDeletePage = useCallback((pageId: string) => {
     setOptimisticDeletions(prev => new Set(prev).add(pageId));
+    
+    // Auto-cleanup deletion after 30 seconds
+    setTimeout(() => {
+      setOptimisticDeletions(current => {
+        const newSet = new Set(current);
+        newSet.delete(pageId);
+        return newSet;
+      });
+    }, 30000);
   }, []);
 
   const clearOptimisticUpdate = useCallback((pageId: string) => {
@@ -91,9 +128,13 @@ export function useOptimisticPages({ pages, onServerUpdate }: UseOptimisticPages
   const clearOptimisticCreationByMatch = useCallback((realPage: Page) => {
     setOptimisticCreations(prev => prev.filter(optimisticPage => {
       // Remove optimistic pages that match the real page
-      return !(optimisticPage.title === realPage.title && 
+      // Use the same matching logic as in optimisticPages calculation
+      return !(
+        optimisticPage.title === realPage.title && 
         optimisticPage.workspace_id === realPage.workspace_id &&
-        optimisticPage.parent_page_id === realPage.parent_page_id);
+        optimisticPage.parent_page_id === realPage.parent_page_id &&
+        Math.abs(new Date(realPage.created_at).getTime() - new Date(optimisticPage.created_at).getTime()) < 5000
+      );
     }));
   }, []);
 

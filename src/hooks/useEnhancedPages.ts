@@ -24,6 +24,8 @@ export function useEnhancedPages(workspaceId?: string) {
   const enhancedCreatePage = useCallback(async (title: string, parentPageId?: string) => {
     if (!workspaceId) return { error: 'Workspace not selected' };
 
+    console.log('Creating page optimistically:', { title, parentPageId, workspaceId });
+
     // Optimistic update
     const tempId = optimisticCreatePage({
       title,
@@ -31,20 +33,27 @@ export function useEnhancedPages(workspaceId?: string) {
       workspace_id: workspaceId,
     });
 
+    console.log('Created optimistic page with tempId:', tempId);
+
     try {
       const { data, error } = await createPage(title, parentPageId);
       
       if (error) {
+        console.error('Server page creation failed:', error);
         // Revert optimistic update on error
         clearOptimisticCreation(tempId);
         throw new Error(error);
       }
 
+      console.log('Server page creation successful:', data);
+
       // Clear optimistic update on success using the real page data
       if (data) {
         clearOptimisticCreationByMatch(data);
+        console.log('Cleared optimistic page by match');
       } else {
         clearOptimisticCreation(tempId);
+        console.log('Cleared optimistic page by tempId');
       }
       
       toast({
@@ -55,6 +64,7 @@ export function useEnhancedPages(workspaceId?: string) {
       return { data, error: null };
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to create page';
+      console.error('Page creation error:', err);
       toast({
         title: "Error",
         description: errorMessage,
@@ -65,6 +75,8 @@ export function useEnhancedPages(workspaceId?: string) {
   }, [workspaceId, createPage, optimisticCreatePage, clearOptimisticCreation, clearOptimisticCreationByMatch, toast]);
 
   const enhancedUpdatePage = useCallback(async (id: string, updates: Partial<Pick<Page, 'title' | 'parent_page_id' | 'order_index'>>) => {
+    console.log('Updating page optimistically:', { id, updates });
+
     // Optimistic update
     optimisticUpdatePage(id, updates);
 
@@ -72,10 +84,13 @@ export function useEnhancedPages(workspaceId?: string) {
       const { data, error } = await updatePage(id, updates);
       
       if (error) {
+        console.error('Server page update failed:', error);
         // Revert optimistic update on error
         clearOptimisticUpdate(id);
         throw new Error(error);
       }
+
+      console.log('Server page update successful:', data);
 
       // Clear optimistic update on success
       clearOptimisticUpdate(id);
@@ -83,6 +98,7 @@ export function useEnhancedPages(workspaceId?: string) {
       return { data, error: null };
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to update page';
+      console.error('Page update error:', err);
       toast({
         title: "Error",
         description: errorMessage,
@@ -96,6 +112,8 @@ export function useEnhancedPages(workspaceId?: string) {
     const pageToDelete = optimisticPages.find(p => p.id === id);
     if (!pageToDelete) return { error: 'Page not found' };
 
+    console.log('Deleting page optimistically:', { id, title: pageToDelete.title });
+
     // Optimistic update
     optimisticDeletePage(id);
 
@@ -103,10 +121,13 @@ export function useEnhancedPages(workspaceId?: string) {
       const { error } = await deletePage(id);
       
       if (error) {
+        console.error('Server page deletion failed:', error);
         // Revert optimistic update on error
         revertAllOptimisticChanges();
         throw new Error(error);
       }
+
+      console.log('Server page deletion successful');
 
       toast({
         title: "Success",
@@ -116,6 +137,7 @@ export function useEnhancedPages(workspaceId?: string) {
       return { error: null };
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to delete page';
+      console.error('Page deletion error:', err);
       toast({
         title: "Error",
         description: errorMessage,
@@ -130,6 +152,8 @@ export function useEnhancedPages(workspaceId?: string) {
     const currentPage = optimisticPages.find(p => p.id === pageId);
     if (!currentPage) return { error: 'Page not found' };
 
+    console.log('Updating page hierarchy optimistically:', { pageId, newParentId, newIndex });
+
     // Optimistic update
     optimisticUpdatePage(pageId, {
       parent_page_id: newParentId,
@@ -140,10 +164,13 @@ export function useEnhancedPages(workspaceId?: string) {
       const { error } = await updatePageHierarchy(pageId, newParentId, newIndex);
       
       if (error) {
+        console.error('Server page hierarchy update failed:', error);
         // Revert optimistic update on error
         clearOptimisticUpdate(pageId);
         throw new Error(error);
       }
+
+      console.log('Server page hierarchy update successful');
 
       // Clear optimistic update on success
       clearOptimisticUpdate(pageId);
@@ -151,6 +178,7 @@ export function useEnhancedPages(workspaceId?: string) {
       return { error: null };
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to update page hierarchy';
+      console.error('Page hierarchy update error:', err);
       toast({
         title: "Error",
         description: errorMessage,

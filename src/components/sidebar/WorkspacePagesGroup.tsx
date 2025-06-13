@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus } from 'lucide-react';
+import { Plus, Loader2 } from 'lucide-react';
 import { DragDropContext, Droppable, DropResult } from 'react-beautiful-dnd';
 import {
   SidebarGroup,
@@ -22,9 +22,10 @@ interface WorkspacePagesGroupProps {
 }
 
 export function WorkspacePagesGroup({ workspaceId, workspaceName }: WorkspacePagesGroupProps) {
-  const { pages, createPage, updatePageHierarchy, deletePage, hasOptimisticChanges } = useEnhancedPages(workspaceId);
+  const { pages, createPage, updatePageHierarchy, deletePage, hasOptimisticChanges, loading } = useEnhancedPages(workspaceId);
   const { toast } = useToast();
   const navigate = useNavigate();
+  const [isCreating, setIsCreating] = React.useState(false);
 
   const topLevelPages = pages.filter(page => !page.parent_page_id);
 
@@ -44,6 +45,8 @@ export function WorkspacePagesGroup({ workspaceId, workspaceName }: WorkspacePag
     ) {
       return;
     }
+
+    console.log('Drag and drop:', { draggableId, source, destination, newParentId });
 
     const { error } = await updatePageHierarchy(
       draggableId,
@@ -77,13 +80,49 @@ export function WorkspacePagesGroup({ workspaceId, workspaceName }: WorkspacePag
   };
 
   const handleCreatePage = async () => {
-    const { data, error } = await createPage('Untitled Page');
+    if (isCreating) return;
     
-    if (!error && data) {
-      // Navigate to the new page
-      navigate(`/workspace/${workspaceId}/page/${data.id}`);
+    setIsCreating(true);
+    console.log('Creating new page...');
+    
+    try {
+      const { data, error } = await createPage('Untitled Page');
+      
+      if (!error && data) {
+        console.log('Page created successfully, navigating to:', data.id);
+        // Navigate to the new page
+        navigate(`/workspace/${workspaceId}/page/${data.id}`);
+      } else if (error) {
+        console.error('Failed to create page:', error);
+      }
+    } catch (err) {
+      console.error('Error creating page:', err);
+    } finally {
+      setIsCreating(false);
     }
   };
+
+  if (loading) {
+    return (
+      <SidebarGroup>
+        <SidebarGroupLabel className="flex items-center justify-between">
+          <span className="truncate flex items-center gap-2">
+            {workspaceName}
+            <Loader2 className="h-3 w-3 animate-spin" />
+          </span>
+        </SidebarGroupLabel>
+        <SidebarGroupContent>
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton disabled className="text-muted-foreground">
+                Loading pages...
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarGroupContent>
+      </SidebarGroup>
+    );
+  }
 
   return (
     <SidebarGroup>
@@ -98,10 +137,15 @@ export function WorkspacePagesGroup({ workspaceId, workspaceName }: WorkspacePag
           variant="ghost"
           size="sm"
           onClick={handleCreatePage}
+          disabled={isCreating}
           className="h-4 w-4 p-0 opacity-70 hover:opacity-100"
           title="New Page"
         >
-          <Plus className="h-3 w-3" />
+          {isCreating ? (
+            <Loader2 className="h-3 w-3 animate-spin" />
+          ) : (
+            <Plus className="h-3 w-3" />
+          )}
         </Button>
       </SidebarGroupLabel>
       <SidebarGroupContent>
@@ -111,9 +155,22 @@ export function WorkspacePagesGroup({ workspaceId, workspaceName }: WorkspacePag
               <SidebarMenu ref={provided.innerRef} {...provided.droppableProps}>
                 {topLevelPages.length === 0 ? (
                   <SidebarMenuItem>
-                    <SidebarMenuButton onClick={handleCreatePage} className="text-muted-foreground">
-                      <Plus className="h-4 w-4" />
-                      <span>Create first page</span>
+                    <SidebarMenuButton 
+                      onClick={handleCreatePage} 
+                      disabled={isCreating}
+                      className="text-muted-foreground"
+                    >
+                      {isCreating ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          <span>Creating...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Plus className="h-4 w-4" />
+                          <span>Create first page</span>
+                        </>
+                      )}
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 ) : (

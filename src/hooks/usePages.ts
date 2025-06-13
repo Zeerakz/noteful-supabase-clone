@@ -70,10 +70,10 @@ export function usePages(workspaceId?: string) {
     if (channelRef.current) {
       try {
         console.log('Cleaning up pages channel subscription');
+        // Use unsubscribe instead of removeChannel for better compatibility
         channelRef.current.unsubscribe();
-        supabase.removeChannel(channelRef.current);
       } catch (error) {
-        console.warn('Error removing pages channel:', error);
+        console.warn('Error unsubscribing from pages channel:', error);
       }
       channelRef.current = null;
     }
@@ -94,52 +94,66 @@ export function usePages(workspaceId?: string) {
     // Cleanup existing subscription
     cleanup();
 
-    // Create unique channel name
+    // Create a unique channel name with timestamp to avoid conflicts
     const timestamp = Date.now();
     const channelName = `pages_${workspaceId}_${user.id}_${timestamp}`;
     console.log('Creating pages channel:', channelName);
     
-    const channel = supabase.channel(channelName);
+    try {
+      const channel = supabase.channel(channelName, {
+        config: {
+          presence: {
+            key: user.id,
+          },
+        },
+      });
 
-    channel.on(
-      'postgres_changes',
-      {
-        event: '*',
-        schema: 'public',
-        table: 'pages',
-        filter: `workspace_id=eq.${workspaceId}`
-      },
-      (payload) => {
-        if (!mountedRef.current) return;
-        
-        console.log('Realtime pages update:', payload);
-        
-        if (payload.eventType === 'INSERT') {
-          const newPage = payload.new as Page;
-          setPages(prev => {
-            if (prev.some(page => page.id === newPage.id)) {
-              return prev;
-            }
-            return [...prev, newPage].sort((a, b) => a.order_index - b.order_index);
-          });
-        } else if (payload.eventType === 'UPDATE') {
-          const updatedPage = payload.new as Page;
-          setPages(prev => prev.map(page => 
-            page.id === updatedPage.id ? updatedPage : page
-          ).sort((a, b) => a.order_index - b.order_index));
-        } else if (payload.eventType === 'DELETE') {
-          const deletedPage = payload.old as Page;
-          setPages(prev => prev.filter(page => page.id !== deletedPage.id));
+      channel.on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'pages',
+          filter: `workspace_id=eq.${workspaceId}`
+        },
+        (payload) => {
+          if (!mountedRef.current) return;
+          
+          console.log('Realtime pages update:', payload);
+          
+          if (payload.eventType === 'INSERT') {
+            const newPage = payload.new as Page;
+            setPages(prev => {
+              // Prevent duplicates
+              if (prev.some(page => page.id === newPage.id)) {
+                return prev;
+              }
+              return [...prev, newPage].sort((a, b) => a.order_index - b.order_index);
+            });
+          } else if (payload.eventType === 'UPDATE') {
+            const updatedPage = payload.new as Page;
+            setPages(prev => prev.map(page => 
+              page.id === updatedPage.id ? updatedPage : page
+            ).sort((a, b) => a.order_index - b.order_index));
+          } else if (payload.eventType === 'DELETE') {
+            const deletedPage = payload.old as Page;
+            setPages(prev => prev.filter(page => page.id !== deletedPage.id));
+          }
         }
-      }
-    );
+      );
 
-    // Subscribe and track status
-    channel.subscribe((status) => {
-      console.log('Pages subscription status:', status);
-    });
+      // Subscribe with proper error handling
+      channel.subscribe((status, err) => {
+        console.log('Pages subscription status:', status);
+        if (err) {
+          console.error('Pages subscription error:', err);
+        }
+      });
 
-    channelRef.current = channel;
+      channelRef.current = channel;
+    } catch (error) {
+      console.error('Error setting up pages channel:', error);
+    }
 
     return () => {
       mountedRef.current = false;

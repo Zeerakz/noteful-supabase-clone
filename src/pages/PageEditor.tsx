@@ -18,20 +18,25 @@ import { useToast } from '@/hooks/use-toast';
 export function PageEditor() {
   const { workspaceId, pageId } = useParams<{ workspaceId: string; pageId: string }>();
   const navigate = useNavigate();
-  
+  const { toast } = useToast();
+
+  // Initialize all hooks at the top
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [titleValue, setTitleValue] = useState('');
+  const titleInputRef = useRef<HTMLInputElement>(null);
+
   // Call ALL hooks before any conditional logic
   const { pageData, loading: pageLoading, error: pageError } = usePageData(pageId);
   const { workspaces, loading: workspacesLoading } = useWorkspaces();
   const { activeUsers, loading: presenceLoading } = usePresence(pageId);
   const { blocks, hasOptimisticChanges: hasBlockChanges } = useEnhancedBlocks(pageId!);
   const { updatePage, hasOptimisticChanges: hasPageChanges } = useEnhancedPages(workspaceId);
-  const { toast } = useToast();
 
-  const [isEditingTitle, setIsEditingTitle] = useState(false);
-  const [titleValue, setTitleValue] = useState('');
-  const titleInputRef = useRef<HTMLInputElement>(null);
+  // Now handle conditional rendering after all hooks are called
+  if (!workspaceId || !pageId) {
+    return <Navigate to="/" replace />;
+  }
 
-  // Now handle loading states and conditional rendering
   if (pageLoading || workspacesLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">

@@ -6,6 +6,11 @@ import { PropertyInheritanceService } from '@/services/propertyInheritanceServic
 export class PageService {
   static async fetchPages(workspaceId: string): Promise<{ data: Page[] | null; error: string | null }> {
     try {
+      // Validate workspaceId
+      if (!workspaceId || workspaceId === 'null' || workspaceId === 'undefined') {
+        throw new Error('Invalid workspace ID');
+      }
+
       const { data, error } = await supabase
         .from('pages')
         .select('*')
@@ -24,6 +29,11 @@ export class PageService {
 
   static async fetchDatabasePages(databaseId: string): Promise<{ data: Page[] | null; error: string | null }> {
     try {
+      // Validate databaseId
+      if (!databaseId || databaseId === 'null' || databaseId === 'undefined') {
+        throw new Error('Invalid database ID');
+      }
+
       const { data, error } = await supabase
         .from('pages')
         .select('*')
@@ -42,6 +52,11 @@ export class PageService {
 
   static async getPageProperties(pageId: string): Promise<{ data: any[] | null; error: string | null }> {
     try {
+      // Validate pageId
+      if (!pageId || pageId === 'null' || pageId === 'undefined') {
+        throw new Error('Invalid page ID');
+      }
+
       const { data, error } = await supabase
         .from('page_properties')
         .select('*')
@@ -63,6 +78,25 @@ export class PageService {
     { title, parentPageId, databaseId }: PageCreateRequest
   ): Promise<{ data: Page | null; error: string | null }> {
     try {
+      // Validate required parameters
+      if (!workspaceId || workspaceId === 'null' || workspaceId === 'undefined') {
+        throw new Error('Invalid workspace ID');
+      }
+      if (!userId || userId === 'null' || userId === 'undefined') {
+        throw new Error('Invalid user ID');
+      }
+      if (!title || title.trim() === '') {
+        throw new Error('Title is required');
+      }
+
+      // Validate optional UUIDs
+      if (parentPageId && (parentPageId === 'null' || parentPageId === 'undefined')) {
+        parentPageId = undefined;
+      }
+      if (databaseId && (databaseId === 'null' || databaseId === 'undefined')) {
+        databaseId = undefined;
+      }
+
       // Get the next order index for this parent or database
       let nextOrderIndex = 0;
       
@@ -94,22 +128,29 @@ export class PageService {
           : 0;
       }
 
+      const insertData = {
+        workspace_id: workspaceId,
+        parent_page_id: parentPageId || null,
+        database_id: databaseId || null,
+        title: title.trim(),
+        created_by: userId,
+        order_index: nextOrderIndex,
+      };
+
+      console.log('Inserting page with data:', insertData);
+
       const { data, error } = await supabase
         .from('pages')
-        .insert([
-          {
-            workspace_id: workspaceId,
-            parent_page_id: parentPageId || null,
-            database_id: databaseId || null,
-            title,
-            created_by: userId,
-            order_index: nextOrderIndex,
-          },
-        ])
+        .insert([insertData])
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase insert error:', error);
+        throw error;
+      }
+
+      console.log('Page created successfully:', data);
 
       // If page is created in a database, apply property inheritance
       if (data && databaseId) {
@@ -127,6 +168,7 @@ export class PageService {
 
       return { data, error: null };
     } catch (err) {
+      console.error('Page creation error:', err);
       return { 
         data: null, 
         error: err instanceof Error ? err.message : 'Failed to create page' 
@@ -139,6 +181,19 @@ export class PageService {
     updates: PageUpdateRequest
   ): Promise<{ data: Page | null; error: string | null }> {
     try {
+      // Validate pageId
+      if (!pageId || pageId === 'null' || pageId === 'undefined') {
+        throw new Error('Invalid page ID');
+      }
+
+      // Clean up null values in updates
+      const cleanUpdates = { ...updates };
+      Object.keys(cleanUpdates).forEach(key => {
+        if (cleanUpdates[key as keyof PageUpdateRequest] === 'null' || cleanUpdates[key as keyof PageUpdateRequest] === 'undefined') {
+          cleanUpdates[key as keyof PageUpdateRequest] = null as any;
+        }
+      });
+
       // Get the current page data to check for database changes
       const { data: currentPage, error: fetchError } = await supabase
         .from('pages')
@@ -150,7 +205,7 @@ export class PageService {
 
       const { data, error } = await supabase
         .from('pages')
-        .update({ ...updates, updated_at: new Date().toISOString() })
+        .update({ ...cleanUpdates, updated_at: new Date().toISOString() })
         .eq('id', pageId)
         .select()
         .single();
@@ -158,9 +213,9 @@ export class PageService {
       if (error) throw error;
 
       // Handle database inheritance when database_id changes
-      if (updates.database_id !== undefined && currentPage) {
+      if (cleanUpdates.database_id !== undefined && currentPage) {
         const oldDatabaseId = currentPage.database_id;
-        const newDatabaseId = updates.database_id;
+        const newDatabaseId = cleanUpdates.database_id;
 
         // If moving from standalone to database
         if (!oldDatabaseId && newDatabaseId) {
@@ -214,6 +269,11 @@ export class PageService {
 
   static async deletePage(pageId: string): Promise<{ error: string | null }> {
     try {
+      // Validate pageId
+      if (!pageId || pageId === 'null' || pageId === 'undefined') {
+        throw new Error('Invalid page ID');
+      }
+
       const { error } = await supabase
         .from('pages')
         .delete()
