@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus } from 'lucide-react';
+import { Plus, FileText } from 'lucide-react';
 import { DragDropContext, Droppable, DropResult } from 'react-beautiful-dnd';
 import {
   SidebarGroup,
@@ -22,11 +22,18 @@ interface WorkspacePagesGroupProps {
 }
 
 export function WorkspacePagesGroup({ workspaceId, workspaceName }: WorkspacePagesGroupProps) {
-  const { pages, deletePage, createPage, updatePageHierarchy } = usePages(workspaceId);
+  const { pages, deletePage, createPage, updatePageHierarchy, loading } = usePages(workspaceId);
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  const topLevelPages = pages.filter(page => !page.parent_page_id);
+  console.log('WorkspacePagesGroup render:', { 
+    workspaceId, 
+    workspaceName, 
+    pagesCount: pages?.length,
+    loading 
+  });
+
+  const topLevelPages = pages?.filter(page => !page.parent_page_id) || [];
 
   const handleDragEnd = async (result: DropResult) => {
     if (!result.destination) return;
@@ -66,7 +73,7 @@ export function WorkspacePagesGroup({ workspaceId, workspaceName }: WorkspacePag
   };
 
   const handleDeletePage = async (pageId: string) => {
-    const page = pages.find(p => p.id === pageId);
+    const page = pages?.find(p => p.id === pageId);
     if (!page) return;
 
     if (!confirm(`Are you sure you want to delete "${page.title}"? This action cannot be undone.`)) {
@@ -111,6 +118,17 @@ export function WorkspacePagesGroup({ workspaceId, workspaceName }: WorkspacePag
     }
   };
 
+  if (loading) {
+    return (
+      <SidebarGroup>
+        <SidebarGroupLabel>{workspaceName}</SidebarGroupLabel>
+        <SidebarGroupContent>
+          <div className="px-2 py-1 text-xs text-muted-foreground">Loading pages...</div>
+        </SidebarGroupContent>
+      </SidebarGroup>
+    );
+  }
+
   return (
     <SidebarGroup>
       <SidebarGroupLabel className="flex items-center justify-between">
@@ -142,7 +160,7 @@ export function WorkspacePagesGroup({ workspaceId, workspaceName }: WorkspacePag
                     <PageTreeItem
                       key={page.id}
                       page={page}
-                      pages={pages}
+                      pages={pages || []}
                       workspaceId={workspaceId}
                       onDelete={handleDeletePage}
                       index={index}
