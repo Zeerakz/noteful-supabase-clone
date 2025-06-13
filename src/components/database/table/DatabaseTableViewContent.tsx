@@ -146,8 +146,8 @@ export function DatabaseTableViewContent({
 
   if (pagesLoading) {
     return (
-      <div className="flex flex-col h-full">
-        <div className="flex items-center justify-between p-6 border-b bg-card shrink-0">
+      <div className="flex flex-col h-full bg-background">
+        <div className="flex items-center justify-between p-6 border-b bg-card">
           <div className="flex items-center gap-3">
             <Skeleton className="h-7 w-28" />
             <Skeleton className="h-5 w-20" />
@@ -155,7 +155,7 @@ export function DatabaseTableViewContent({
           <Skeleton className="h-10 w-36" />
         </div>
         
-        <div className="flex-1 min-h-0">
+        <div className="flex-1 overflow-hidden">
           <div className="bg-card border-b">
             <div className="flex">
               <Skeleton className="h-12 w-[250px] border-r" />
@@ -179,7 +179,7 @@ export function DatabaseTableViewContent({
 
   if (pagesError) {
     return (
-      <div className="flex items-center justify-center py-12 h-full">
+      <div className="flex items-center justify-center h-full bg-background">
         <div className="text-center space-y-2">
           <p className="text-lg font-medium text-foreground">Something went wrong</p>
           <p className="text-muted-foreground">{pagesError}</p>
@@ -192,9 +192,9 @@ export function DatabaseTableViewContent({
   }
 
   return (
-    <div className="flex flex-col h-full">
-      {/* Fixed header that doesn't scroll */}
-      <div className="flex items-center justify-between px-6 py-4 border-b bg-card/95 backdrop-blur-sm shrink-0 sticky top-0 z-10">
+    <div className="flex flex-col h-full bg-background overflow-hidden">
+      {/* Header with improved styling - Fixed height */}
+      <div className="flex items-center justify-between px-6 py-4 border-b bg-card/50 backdrop-blur-sm shrink-0">
         <div className="flex items-center gap-3">
           <h3 className="text-xl font-semibold text-foreground">Table View</h3>
           <div className="px-2 py-1 bg-muted rounded-md">
@@ -226,17 +226,17 @@ export function DatabaseTableViewContent({
         </div>
       </div>
 
-      {/* Scrollable table content */}
-      <div className="flex-1 min-h-0 overflow-auto">
+      {/* Table container with native scrolling - uses remaining height */}
+      <div className="flex-1 min-h-0 overflow-auto bg-background">
         <div 
-          className="relative bg-background"
+          className="relative"
           style={{ 
             minWidth: `${totalTableWidth}px`,
             width: 'max-content'
           }}
         >
           <Table className="w-full table-fixed" style={{ width: `${totalTableWidth}px` }}>
-            {/* Sticky table header within the scrollable area */}
+            {/* Sticky Header */}
             <DatabaseTableHeader
               fields={fields}
               sortRules={sortRules}

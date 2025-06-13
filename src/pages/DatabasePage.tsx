@@ -121,8 +121,7 @@ export function DatabasePage() {
 
   return (
     <AppLayoutWithSidebar breadcrumbs={breadcrumbs}>
-      <div className="h-full flex flex-col">
-        {/* Fixed header */}
+      <div className="h-full flex flex-col overflow-hidden">
         <div className="shrink-0">
           <DatabaseHeader
             title={database.name}
@@ -135,8 +134,7 @@ export function DatabasePage() {
           />
         </div>
 
-        {/* Scrollable database view */}
-        <div className="flex-1 min-h-0">
+        <div className="flex-1 min-h-0 overflow-hidden">
           <DatabaseView 
             databaseId={database.id} 
             workspaceId={workspaceId!}

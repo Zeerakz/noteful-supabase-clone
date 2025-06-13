@@ -44,7 +44,7 @@ export function VirtualizedTable({
   onPropertyUpdate,
   onDeleteRow,
   isLoading = false,
-  maxHeight = "none",
+  maxHeight = "600px",
   enableVirtualScrolling = false,
   rowHeight = 60,
   sortRules,
@@ -52,7 +52,7 @@ export function VirtualizedTable({
   workspaceId
 }: VirtualizedTableProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const containerHeight = maxHeight === "none" ? window.innerHeight : parseInt(maxHeight) || 600;
+  const containerHeight = parseInt(maxHeight) || 600;
 
   const virtualScrolling = useVirtualScrolling({
     items: pages,
@@ -87,10 +87,73 @@ export function VirtualizedTable({
 
   const totalTableWidth = calculateTableWidth();
 
+  if (enableVirtualScrolling && pages.length > 50) {
+    return (
+      <div className="flex flex-col h-full overflow-hidden bg-background border-2 border-border rounded-lg shadow-sm">
+        {/* Fixed sticky header - Use proper table structure */}
+        <div className="shrink-0 border-b-2 border-border bg-background/98 backdrop-blur-md sticky top-0 z-30 shadow-sm overflow-hidden">
+          <Table className="table-fixed" style={{ width: `${totalTableWidth}px` }}>
+            <EnhancedTableHeader
+              fields={fields}
+              sortRules={sortRules}
+              onSort={handleSort}
+              onColumnResize={updateColumnWidth}
+              getColumnWidth={getColumnWidth}
+              stickyHeader={false}
+            />
+          </Table>
+        </div>
+        
+        {/* Virtualized scrollable body */}
+        <div 
+          ref={containerRef}
+          className="flex-1 min-h-0 overflow-auto"
+          style={{ height: maxHeight }}
+          onScroll={virtualScrolling.handleScroll}
+        >
+          <div 
+            style={{ 
+              height: virtualScrolling.totalHeight, 
+              position: 'relative',
+              minWidth: `${totalTableWidth}px`,
+              width: 'max-content'
+            }}
+          >
+            <div 
+              style={{ 
+                transform: `translateY(${virtualScrolling.offsetY}px)`,
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: `${totalTableWidth}px`
+              }}
+            >
+              <VirtualizedTableBody
+                pages={displayPages}
+                fields={fields}
+                onTitleUpdate={onTitleUpdate}
+                onPropertyUpdate={onPropertyUpdate}
+                onDeleteRow={onDeleteRow}
+                isLoading={isLoading}
+                getColumnWidth={getColumnWidth}
+                workspaceId={workspaceId}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Virtual scrolling info footer */}
+        <div className="shrink-0 p-2 border-t-2 border-border bg-background/98 backdrop-blur-md text-xs text-muted-foreground shadow-[0_-2px_4px_rgba(0,0,0,0.05)]">
+          Showing {virtualScrolling.startIndex + 1}-{virtualScrolling.endIndex + 1} of {pages.length} rows
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex flex-col bg-background border-2 border-border rounded-lg shadow-sm">
-      {/* Fixed sticky header */}
-      <div className="shrink-0 border-b-2 border-border bg-background/98 backdrop-blur-md sticky top-16 z-20 shadow-sm">
+    <div className="flex flex-col h-full overflow-hidden bg-background border-2 border-border rounded-lg shadow-sm">
+      {/* Fixed sticky header - Use proper table structure */}
+      <div className="shrink-0 border-b-2 border-border bg-background/98 backdrop-blur-md sticky top-0 z-30 shadow-sm overflow-hidden">
         <Table className="table-fixed" style={{ width: `${totalTableWidth}px` }}>
           <EnhancedTableHeader
             fields={fields}
@@ -103,8 +166,8 @@ export function VirtualizedTable({
         </Table>
       </div>
       
-      {/* Table body without internal scrolling - uses page scroll */}
-      <div className="flex-1">
+      {/* Scrollable body with native scrolling */}
+      <div className="flex-1 min-h-0 overflow-auto" style={{ height: maxHeight }}>
         <VirtualizedTableBody
           pages={displayPages}
           fields={fields}
@@ -116,13 +179,6 @@ export function VirtualizedTable({
           workspaceId={workspaceId}
         />
       </div>
-
-      {/* Virtual scrolling info footer if enabled */}
-      {enableVirtualScrolling && pages.length > 50 && (
-        <div className="shrink-0 p-2 border-t-2 border-border bg-background/98 backdrop-blur-md text-xs text-muted-foreground shadow-[0_-2px_4px_rgba(0,0,0,0.05)] sticky bottom-0 z-20">
-          Showing {virtualScrolling.startIndex + 1}-{virtualScrolling.endIndex + 1} of {pages.length} rows
-        </div>
-      )}
     </div>
   );
 }
