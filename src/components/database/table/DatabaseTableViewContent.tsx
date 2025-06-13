@@ -89,10 +89,10 @@ export function DatabaseTableViewContent({
     resetAllWidths
   } = useColumnResizing({
     defaultWidths: {
-      title: 280,
+      title: 250,
       ...fields.reduce((acc, field) => ({
         ...acc,
-        [field.id]: 200
+        [field.id]: 180
       }), {})
     },
     minWidth: 120,
@@ -213,7 +213,7 @@ export function DatabaseTableViewContent({
       {/* Table container with improved styling */}
       <div className="flex-1 overflow-auto bg-background">
         <div className="min-w-full">
-          <Table className="border-none">
+          <Table className="table-fixed border-collapse">
             <DatabaseTableHeader
               fields={fields}
               sortRules={sortRules}

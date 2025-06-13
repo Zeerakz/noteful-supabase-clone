@@ -85,15 +85,15 @@ export function DatabaseTableRow({
   return (
     <TableRow 
       className={`
-        group transition-all duration-200 border-b border-border/30
-        hover:bg-muted/40 hover:shadow-sm
-        ${isSelected ? 'bg-accent/30 border-accent/50' : ''}
-        ${isEvenRow ? 'bg-muted/10' : 'bg-background'}
+        group transition-colors duration-150 border-b border-border
+        hover:bg-muted/30
+        ${isSelected ? 'bg-accent/20 border-accent/40' : ''}
+        ${isEvenRow ? 'bg-muted/5' : 'bg-background'}
       `}
     >
       {/* Selection Checkbox */}
-      <TableCell className="w-12 p-3 border-r border-border/20">
-        <div className="flex items-center justify-center">
+      <TableCell className="w-[50px] p-0 border-r border-border/50">
+        <div className="flex items-center justify-center h-12 px-3">
           <Checkbox
             checked={isSelected}
             onCheckedChange={handleSelect}
@@ -107,10 +107,10 @@ export function DatabaseTableRow({
 
       {/* Title Cell */}
       <TableCell 
-        className="p-0 border-r border-border/20"
-        style={{ width: columnWidths['title'] ? `${columnWidths['title']}px` : '280px' }}
+        className="p-0 border-r border-border/50 align-top"
+        style={{ width: columnWidths['title'] ? `${columnWidths['title']}px` : '250px' }}
       >
-        <div className="flex items-center gap-2 px-4 py-3">
+        <div className="flex items-center gap-2 h-12 px-3">
           {hasSubItems && (
             <Button
               variant="ghost"
@@ -126,7 +126,7 @@ export function DatabaseTableRow({
             </Button>
           )}
           
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             <EditableCell
               value={page.title}
               onSave={(newTitle) => onTitleUpdate(page.id, newTitle)}
@@ -137,16 +137,16 @@ export function DatabaseTableRow({
       </TableCell>
 
       {/* Property Cells */}
-      {fields.map((field) => {
+      {fields.map((field, index) => {
         const cellValue = page.properties[field.id] || '';
         
         return (
           <TableCell 
             key={field.id} 
-            className="p-0 border-r border-border/20 last:border-r-0"
-            style={{ width: columnWidths[field.id] ? `${columnWidths[field.id]}px` : '200px' }}
+            className={`p-0 align-top ${index < fields.length - 1 ? 'border-r border-border/50' : ''}`}
+            style={{ width: columnWidths[field.id] ? `${columnWidths[field.id]}px` : '180px' }}
           >
-            <div className="px-4 py-3">
+            <div className="h-12 px-3 flex items-center">
               {editingField === field.id ? (
                 <FieldEditor
                   field={field}
@@ -157,7 +157,7 @@ export function DatabaseTableRow({
                 />
               ) : (
                 <div
-                  className="min-h-[24px] cursor-text hover:bg-muted/30 rounded px-2 py-1 transition-colors duration-150 flex items-center"
+                  className="w-full min-h-[24px] cursor-text hover:bg-muted/30 rounded px-2 py-1 transition-colors duration-150 flex items-center"
                   onClick={() => setEditingField(field.id)}
                 >
                   {cellValue ? (
@@ -181,8 +181,8 @@ export function DatabaseTableRow({
       })}
 
       {/* Actions Cell */}
-      <TableCell className="w-16 p-3">
-        <div className="flex items-center justify-center">
+      <TableCell className="w-[60px] p-0">
+        <div className="flex items-center justify-center h-12 px-3">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button

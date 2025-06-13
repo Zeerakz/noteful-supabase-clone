@@ -26,19 +26,19 @@ export function DatabaseTableHeader({
   onColumnResize
 }: DatabaseTableHeaderProps) {
   return (
-    <TableHeader className="sticky top-0 z-20 bg-card/95 backdrop-blur-sm border-b-2 border-border">
-      <TableRow className="hover:bg-transparent border-none">
+    <TableHeader className="sticky top-0 z-20 bg-background border-b">
+      <TableRow className="hover:bg-transparent border-b border-border">
         {/* Selection Column */}
-        <TableHead className="w-12 p-3 bg-card/95 border-r border-border/40">
-          <div className="flex items-center justify-center">
+        <TableHead className="w-[50px] p-0 bg-background border-r border-border/50">
+          <div className="flex items-center justify-center h-12 px-3">
             <Checkbox className="opacity-50" />
           </div>
         </TableHead>
 
         {/* Title Column */}
         <TableHead 
-          className="p-0 bg-card/95 border-r border-border/40"
-          style={{ width: columnWidths['title'] ? `${columnWidths['title']}px` : '280px' }}
+          className="min-w-[250px] p-0 bg-background border-r border-border/50"
+          style={{ width: columnWidths['title'] ? `${columnWidths['title']}px` : '250px' }}
         >
           <DatabaseColumnHeader
             field={{
@@ -54,17 +54,17 @@ export function DatabaseTableHeader({
             sortRules={sortRules}
             onSort={onSort}
             onResize={onColumnResize}
-            width={columnWidths['title'] || 280}
-            className="border-b-0"
+            width={columnWidths['title'] || 250}
+            className="h-12"
           />
         </TableHead>
 
         {/* Field Columns */}
-        {fields.map((field) => (
+        {fields.map((field, index) => (
           <TableHead 
             key={field.id} 
-            className="p-0 bg-card/95 border-r border-border/40 last:border-r-0"
-            style={{ width: columnWidths[field.id] ? `${columnWidths[field.id]}px` : '200px' }}
+            className={`min-w-[180px] p-0 bg-background ${index < fields.length - 1 ? 'border-r border-border/50' : ''}`}
+            style={{ width: columnWidths[field.id] ? `${columnWidths[field.id]}px` : '180px' }}
           >
             <DatabaseColumnHeader
               field={field}
@@ -73,17 +73,19 @@ export function DatabaseTableHeader({
               onFieldsChange={onFieldsChange}
               onFieldReorder={onFieldReorder}
               onResize={onColumnResize}
-              width={columnWidths[field.id] || 200}
+              width={columnWidths[field.id] || 180}
               isDraggable={true}
-              className="border-b-0"
+              className="h-12"
             />
           </TableHead>
         ))}
 
         {/* Actions Column */}
-        <TableHead className="w-16 p-3 bg-card/95">
-          <div className="text-center text-xs font-medium text-muted-foreground">
-            •••
+        <TableHead className="w-[60px] p-0 bg-background">
+          <div className="flex items-center justify-center h-12 px-3">
+            <div className="text-xs font-medium text-muted-foreground">
+              •••
+            </div>
           </div>
         </TableHead>
       </TableRow>
