@@ -20,4 +20,8 @@ export interface BreakingChange {
   impact: string;
   migration_guide?: string;
   created_at: string;
+  // Enhanced metadata for better tracking
+  is_development_change?: boolean;
+  field_age_hours?: number;
+  auto_dismissible?: boolean;
 }

@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { DatabaseHeader } from './DatabaseHeader';
 import { DatabaseViewRenderer } from './DatabaseViewRenderer';
@@ -54,11 +53,15 @@ export function DatabaseViewContainer({
   onFieldCreate,
   onFieldsChange
 }: DatabaseViewContainerProps) {
+  // Enhanced breaking changes with configuration
   const {
-    loadingBreakingChanges,
     visibleBreakingChanges,
+    categorizedChanges,
+    config,
+    loadingBreakingChanges,
     handleDismissBreakingChange,
-    handleAcknowledgeAllBreakingChanges
+    handleAcknowledgeAllBreakingChanges,
+    updateConfig
   } = useBreakingChanges(databaseId);
 
   return (
@@ -66,13 +69,16 @@ export function DatabaseViewContainer({
       {/* Database Header */}
       <DatabaseHeader database={database} />
 
-      {/* Breaking Changes Alert */}
+      {/* Enhanced Breaking Changes Alert */}
       {!loadingBreakingChanges && visibleBreakingChanges.length > 0 && (
-        <div className="px-6 py-4">
+        <div className="p-4 border-b">
           <BreakingChangesAlert
             breakingChanges={visibleBreakingChanges}
+            categorizedChanges={categorizedChanges}
+            config={config}
             onDismiss={handleDismissBreakingChange}
             onAcknowledgeAll={handleAcknowledgeAllBreakingChanges}
+            onConfigUpdate={updateConfig}
           />
         </div>
       )}
