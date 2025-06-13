@@ -121,7 +121,7 @@ export function DatabasePage() {
 
   return (
     <AppLayoutWithSidebar breadcrumbs={breadcrumbs}>
-      <div className="h-full flex flex-col overflow-hidden">
+      <div className="flex flex-col h-full">
         <div className="shrink-0">
           <DatabaseHeader
             title={database.name}
@@ -134,7 +134,7 @@ export function DatabasePage() {
           />
         </div>
 
-        <div className="flex-1 min-h-0 overflow-hidden">
+        <div className="flex-1 min-h-0">
           <DatabaseView 
             databaseId={database.id} 
             workspaceId={workspaceId!}

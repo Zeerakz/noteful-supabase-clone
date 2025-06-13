@@ -77,10 +77,7 @@ export function DatabaseTableViewContent({
   workspaceId,
   onItemsPerPageChange
 }: DatabaseTableViewContentProps) {
-  const [sortBy, setSortBy] = useState<string | null>(null);
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
-  const [resizingFields, setResizingFields] = useState<Set<string>>(new Set());
 
   // Column resizing functionality with consistent width management
   const {
@@ -103,8 +100,6 @@ export function DatabaseTableViewContent({
   });
 
   const handleSort = (fieldId: string, direction: 'asc' | 'desc') => {
-    setSortBy(fieldId);
-    setSortDirection(direction);
     const newSortRules: SortRule[] = [{ fieldId, direction }];
     setSortRules(newSortRules);
   };
@@ -129,11 +124,7 @@ export function DatabaseTableViewContent({
     }
   }, [pagesWithProperties]);
 
-  const handleResizeStateChange = useCallback((newResizingFields: Set<string>) => {
-    setResizingFields(newResizingFields);
-  }, []);
-
-  // Calculate total width for the table with consistent approach
+  // Calculate total width for the table
   const calculateTotalWidth = () => {
     const checkboxWidth = getColumnWidth('checkbox');
     const titleWidth = getColumnWidth('title');
@@ -147,7 +138,7 @@ export function DatabaseTableViewContent({
   if (pagesLoading) {
     return (
       <div className="flex flex-col h-full bg-background">
-        <div className="flex items-center justify-between p-6 border-b bg-card">
+        <div className="flex items-center justify-between p-6 border-b bg-card shrink-0">
           <div className="flex items-center gap-3">
             <Skeleton className="h-7 w-28" />
             <Skeleton className="h-5 w-20" />
@@ -192,9 +183,9 @@ export function DatabaseTableViewContent({
   }
 
   return (
-    <div className="flex flex-col h-full bg-background overflow-hidden">
-      {/* Header with improved styling - Fixed height */}
-      <div className="flex items-center justify-between px-6 py-4 border-b bg-card/50 backdrop-blur-sm shrink-0">
+    <div className="flex flex-col h-full bg-background">
+      {/* Fixed Header */}
+      <div className="flex items-center justify-between px-6 py-4 border-b bg-card/50 backdrop-blur-sm shrink-0 z-10">
         <div className="flex items-center gap-3">
           <h3 className="text-xl font-semibold text-foreground">Table View</h3>
           <div className="px-2 py-1 bg-muted rounded-md">
@@ -226,17 +217,10 @@ export function DatabaseTableViewContent({
         </div>
       </div>
 
-      {/* Table container with native scrolling - uses remaining height */}
-      <div className="flex-1 min-h-0 overflow-auto bg-background">
-        <div 
-          className="relative"
-          style={{ 
-            minWidth: `${totalTableWidth}px`,
-            width: 'max-content'
-          }}
-        >
-          <Table className="w-full table-fixed" style={{ width: `${totalTableWidth}px` }}>
-            {/* Sticky Header */}
+      {/* Scrollable Table Container */}
+      <div className="flex-1 overflow-auto bg-background">
+        <div className="min-w-max">
+          <Table className="w-full border-separate border-spacing-0">
             <DatabaseTableHeader
               fields={fields}
               sortRules={sortRules}
@@ -245,10 +229,8 @@ export function DatabaseTableViewContent({
               onFieldReorder={onFieldReorder}
               getColumnWidth={getColumnWidth}
               onColumnResize={updateColumnWidth}
-              onResizeStateChange={handleResizeStateChange}
             />
             
-            {/* Table Body */}
             <DatabaseTableBody
               pagesWithProperties={pagesWithProperties}
               fields={fields}
@@ -262,7 +244,6 @@ export function DatabaseTableViewContent({
               onSelectAll={handleSelectAll}
               showNewRow={true}
               getColumnWidth={getColumnWidth}
-              resizingFields={resizingFields}
             />
           </Table>
         </div>

@@ -24,7 +24,6 @@ interface DatabaseTableBodyProps {
   onRowSelect?: (pageId: string, selected: boolean) => void;
   onSelectAll?: (selected: boolean) => void;
   showNewRow?: boolean;
-  resizingFields?: Set<string>;
 }
 
 export function DatabaseTableBody({
@@ -39,8 +38,7 @@ export function DatabaseTableBody({
   selectedRows = new Set(),
   onRowSelect,
   onSelectAll,
-  showNewRow = true,
-  resizingFields = new Set()
+  showNewRow = true
 }: DatabaseTableBodyProps) {
   return (
     <TableBody>
@@ -68,7 +66,6 @@ export function DatabaseTableBody({
               isSelected={selectedRows.has(page.id)}
               onSelect={onRowSelect}
               isEvenRow={index % 2 === 0}
-              resizingFields={resizingFields}
             />
           ))}
           
@@ -79,7 +76,6 @@ export function DatabaseTableBody({
               onCreateRow={onCreateRow}
               getColumnWidth={getColumnWidth}
               isEvenRow={pagesWithProperties.length % 2 === 0}
-              resizingFields={resizingFields}
             />
           )}
         </>
