@@ -6,6 +6,7 @@ import { ThemeProvider } from "@/contexts/ThemeContext";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
+import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 import { initializePropertyRegistry } from "./services/propertyTypeRegistry";
 import { ErrorBoundary } from "./components/error/ErrorBoundary";
 import { RouteErrorBoundary } from "./components/error/RouteErrorBoundary";

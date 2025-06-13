@@ -75,6 +75,7 @@ export function WorkspaceList() {
     navigate('/login');
   };
 
+  // Show loading while fetching workspaces
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -83,6 +84,7 @@ export function WorkspaceList() {
     );
   }
 
+  // Show error state with retry option
   if (error) {
     return (
       <div className="flex items-center justify-center min-h-screen">

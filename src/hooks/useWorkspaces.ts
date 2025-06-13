@@ -36,9 +36,10 @@ export function useWorkspaces() {
 
   const fetchWorkspaces = async () => {
     if (!user) {
-      console.log('No user authenticated, skipping workspace fetch');
+      console.log('No user authenticated, clearing workspaces and stopping load');
       setWorkspaces([]);
       setLoading(false);
+      setError(null);
       return;
     }
 
@@ -160,7 +161,7 @@ export function useWorkspaces() {
   };
 
   useEffect(() => {
-    // Only fetch workspaces when authentication is complete and user is available
+    // Only fetch workspaces when authentication is complete
     if (!authLoading) {
       fetchWorkspaces();
     }
@@ -168,7 +169,7 @@ export function useWorkspaces() {
 
   return {
     workspaces,
-    loading: loading || authLoading,
+    loading: loading || authLoading, // Show loading while auth is loading OR workspaces are loading
     error,
     fetchWorkspaces,
     createWorkspace,
