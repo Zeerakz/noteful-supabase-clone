@@ -19,6 +19,7 @@ interface SimpleTableBodyProps {
   onDeleteRow: (pageId: string) => void;
   isLoading?: boolean;
   workspaceId: string;
+  getColumnWidth: (fieldId: string) => number;
 }
 
 export function SimpleTableBody({
@@ -28,7 +29,8 @@ export function SimpleTableBody({
   onPropertyUpdate,
   onDeleteRow,
   isLoading = false,
-  workspaceId
+  workspaceId,
+  getColumnWidth
 }: SimpleTableBodyProps) {
   if (isLoading) {
     return (
@@ -65,17 +67,18 @@ export function SimpleTableBody({
   return (
     <Table>
       <TableBody>
-        {pages.map((page) => (
-          <TableRow key={page.id} className="hover:bg-muted/50">
-            <DatabaseTableRow
-              page={page}
-              fields={fields}
-              onTitleUpdate={onTitleUpdate}
-              onPropertyUpdate={onPropertyUpdate}
-              onDeleteRow={onDeleteRow}
-              workspaceId={workspaceId}
-            />
-          </TableRow>
+        {pages.map((page, index) => (
+          <DatabaseTableRow
+            key={page.id}
+            page={page}
+            fields={fields}
+            onTitleUpdate={onTitleUpdate}
+            onPropertyUpdate={onPropertyUpdate}
+            onDeleteRow={onDeleteRow}
+            workspaceId={workspaceId}
+            getColumnWidth={getColumnWidth}
+            isEvenRow={index % 2 === 0}
+          />
         ))}
       </TableBody>
     </Table>

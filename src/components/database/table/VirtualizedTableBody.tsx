@@ -20,7 +20,7 @@ interface VirtualizedTableBodyProps {
   onPropertyUpdate: (pageId: string, fieldId: string, value: string) => void;
   onDeleteRow: (pageId: string) => void;
   isLoading?: boolean;
-  columnWidths?: Record<string, number>;
+  getColumnWidth: (fieldId: string) => number;
   workspaceId: string;
 }
 
@@ -31,7 +31,7 @@ export function VirtualizedTableBody({
   onPropertyUpdate,
   onDeleteRow,
   isLoading = false,
-  columnWidths = {},
+  getColumnWidth,
   workspaceId
 }: VirtualizedTableBodyProps) {
   if (isLoading) {
@@ -61,7 +61,7 @@ export function VirtualizedTableBody({
   return (
     <Table>
       <TableBody>
-        {pages.map((page) => (
+        {pages.map((page, index) => (
           <DatabaseTableRow
             key={page.id}
             page={page}
@@ -69,8 +69,9 @@ export function VirtualizedTableBody({
             onTitleUpdate={onTitleUpdate}
             onPropertyUpdate={onPropertyUpdate}
             onDeleteRow={onDeleteRow}
-            columnWidths={columnWidths}
+            getColumnWidth={getColumnWidth}
             workspaceId={workspaceId}
+            isEvenRow={index % 2 === 0}
           />
         ))}
       </TableBody>
