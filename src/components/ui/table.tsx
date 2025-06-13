@@ -11,7 +11,7 @@ const Table = React.forwardRef<
     <table
       ref={ref}
       className={cn(
-        "w-full caption-bottom text-sm table-grid min-w-[800px]", 
+        "w-full caption-bottom text-sm table-grid border-collapse", 
         className
       )}
       {...props}
@@ -24,7 +24,7 @@ const TableHeader = React.forwardRef<
   HTMLTableSectionElement,
   React.HTMLAttributes<HTMLTableSectionElement>
 >(({ className, ...props }, ref) => (
-  <thead ref={ref} className={cn("hairline-divider", className)} {...props} />
+  <thead ref={ref} className={cn("bg-card/50 sticky top-0 z-10", className)} {...props} />
 ))
 TableHeader.displayName = "TableHeader"
 
@@ -62,7 +62,7 @@ const TableRow = React.forwardRef<
   <tr
     ref={ref}
     className={cn(
-      "table-grid-row transition-colors data-[state=selected]:bg-muted/40",
+      "table-grid-row transition-colors border-b border-border/5 data-[state=selected]:bg-muted/40",
       className
     )}
     {...props}
@@ -77,7 +77,7 @@ const TableHead = React.forwardRef<
   <th
     ref={ref}
     className={cn(
-      "text-left align-middle font-medium text-muted-foreground table-header-content",
+      "text-left align-middle font-medium text-muted-foreground border-b border-border/20 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60",
       className
     )}
     {...props}
@@ -91,7 +91,7 @@ const TableCell = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <td
     ref={ref}
-    className={cn("align-middle", className)}
+    className={cn("align-middle border-b border-border/5", className)}
     {...props}
   />
 ))

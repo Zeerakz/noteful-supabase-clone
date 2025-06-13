@@ -44,10 +44,10 @@ export function DatabaseTableHeader({
 
   return (
     <TableHeader>
-      <TableRow className="hover:bg-transparent">
-        {/* Checkbox Header - Grid Aligned */}
+      <TableRow className="hover:bg-transparent border-b-2 border-border">
+        {/* Checkbox Header */}
         <TableHead 
-          className="checkbox-cell p-0"
+          className="checkbox-cell p-0 border-r border-border/10"
           style={{ width: '48px' }}
         >
           <div className="table-header-content justify-center">
@@ -65,32 +65,25 @@ export function DatabaseTableHeader({
           </div>
         </TableHead>
 
-        {/* Title Header - Clean Typography */}
+        {/* Title Header */}
         <TableHead 
-          className="hairline-vertical p-0"
+          className="p-0 border-r border-border/10"
           style={{ width: `${getColumnWidth('title')}px` }}
         >
           <div className="table-header-content">
-            <DatabaseColumnHeader
-              field={{ id: 'title', name: 'Title', type: 'title' } as DatabaseField}
-              sortRules={sortRules}
-              onSort={onSort}
-              onStartResize={onStartResize}
-              onEndResize={onEndResize}
-              onResize={onResize}
-              isResizing={resizingFields.has('title')}
-              onFieldsChange={onFieldsChange}
-            />
+            <div className="flex items-center gap-2 w-full">
+              <span className="text-column-header">TITLE</span>
+            </div>
           </div>
         </TableHead>
 
-        {/* Field Headers - Minimal Grid Structure */}
+        {/* Field Headers */}
         {fields.map((field, index) => {
           const isLastField = index === fields.length - 1;
           return (
             <TableHead
               key={field.id}
-              className={`p-0 ${!isLastField ? 'hairline-vertical' : ''}`}
+              className={`p-0 ${!isLastField ? 'border-r border-border/10' : ''}`}
               style={{ width: `${getColumnWidth(field.id)}px` }}
             >
               <div className="table-header-content">
@@ -110,13 +103,13 @@ export function DatabaseTableHeader({
           );
         })}
 
-        {/* Actions Header - Minimal */}
+        {/* Actions Header */}
         <TableHead 
           className="actions-cell p-0"
           style={{ width: '64px' }}
         >
           <div className="table-header-content justify-center">
-            <span className="text-column-header">Actions</span>
+            <span className="text-column-header">ACTIONS</span>
           </div>
         </TableHead>
       </TableRow>

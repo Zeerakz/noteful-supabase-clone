@@ -88,15 +88,15 @@ export function DatabaseTableRow({
   return (
     <TableRow 
       className={`
-        group transition-all duration-200
-        ${!isAnyColumnResizing ? 'hover:bg-muted/30' : ''}
+        group transition-all duration-200 border-b border-border/5
+        ${!isAnyColumnResizing ? 'hover:bg-muted/20' : ''}
         ${isSelected ? 'bg-accent/20' : ''}
         ${isAnyColumnResizing ? 'pointer-events-none' : ''}
       `}
     >
-      {/* Selection Checkbox - Grid Aligned */}
+      {/* Selection Checkbox */}
       <TableCell 
-        className="checkbox-cell p-0"
+        className="checkbox-cell p-0 border-r border-border/5"
         style={{ width: '48px' }}
       >
         <div className="table-cell-content justify-center">
@@ -112,9 +112,9 @@ export function DatabaseTableRow({
         </div>
       </TableCell>
 
-      {/* Title Cell - Clean Grid Layout */}
+      {/* Title Cell */}
       <TableCell 
-        className="hairline-vertical p-0"
+        className="p-0 border-r border-border/5"
         style={{ width: `${getColumnWidth('title')}px` }}
       >
         <div className="table-cell-content">
@@ -139,12 +139,13 @@ export function DatabaseTableRow({
               onChange={(newTitle) => onTitleUpdate(page.id, newTitle)}
               placeholder="Untitled"
               disabled={isAnyColumnResizing}
+              className="text-hero font-medium"
             />
           </div>
         </div>
       </TableCell>
 
-      {/* Property Cells - Minimal Grid Structure */}
+      {/* Property Cells */}
       {fields.map((field, index) => {
         const cellValue = page.properties[field.id] || '';
         const isFieldResizing = resizingFields.has(field.id);
@@ -153,7 +154,7 @@ export function DatabaseTableRow({
         return (
           <TableCell 
             key={field.id} 
-            className={`p-0 ${!isLastField ? 'hairline-vertical' : ''}`}
+            className={`p-0 ${!isLastField ? 'border-r border-border/5' : ''}`}
             style={{ width: `${getColumnWidth(field.id)}px` }}
           >
             <div className="table-cell-content">
@@ -176,12 +177,9 @@ export function DatabaseTableRow({
                 >
                   {cellValue ? (
                     <div className="w-full overflow-hidden">
-                      <EditableCell
-                        value={cellValue}
-                        onChange={(value) => handlePropertyChange(field.id, value)}
-                        placeholder={`Enter ${field.name.toLowerCase()}`}
-                        disabled={isAnyColumnResizing}
-                      />
+                      <span className="text-hero text-foreground/90">
+                        {cellValue}
+                      </span>
                     </div>
                   ) : (
                     <span className={`text-muted-foreground/50 text-sm ${isAnyColumnResizing ? 'text-muted-foreground/30' : ''}`}>
@@ -195,7 +193,7 @@ export function DatabaseTableRow({
         );
       })}
 
-      {/* Actions Cell - Minimal Grid Alignment */}
+      {/* Actions Cell */}
       <TableCell 
         className="actions-cell p-0"
         style={{ width: '64px' }}

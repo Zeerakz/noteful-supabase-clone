@@ -103,8 +103,6 @@ export function DatabaseColumnHeader({
 
     const handleMouseMove = (moveEvent: MouseEvent) => {
       const deltaX = moveEvent.clientX - resizeStartX;
-      // Only allow extending to the right (positive deltaX)
-      // Minimum width is the starting width, maximum can grow
       const newWidth = Math.max(resizeStartWidth, resizeStartWidth + deltaX);
       onResize(field.id, newWidth);
     };
@@ -180,24 +178,16 @@ export function DatabaseColumnHeader({
     <TooltipProvider>
       <div 
         className={`
-          relative flex items-center justify-between group 
-          border-b-2 border-border bg-background/98 backdrop-blur-md 
-          hover:bg-muted/30 transition-colors 
+          relative flex items-center justify-between group h-full
           ${isDragging ? 'opacity-50' : ''}
           ${dragOver === 'before' ? 'border-l-4 border-l-primary' : ''}
           ${dragOver === 'after' ? 'border-r-4 border-r-primary' : ''}
           ${className}
         `}
         style={{ width: width ? `${width}px` : undefined }}
-        draggable={isDraggable && !!onFieldReorder}
-        onDragStart={handleDragStart}
-        onDragEnd={handleDragEnd}
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop}
       >
-        {/* Header Content - Distinct from Data Content */}
-        <div className="flex items-center gap-2 px-3.5 py-3 flex-1 min-w-0">
+        {/* Header Content */}
+        <div className="flex items-center gap-2 flex-1 min-w-0 h-full">
           {/* Drag Handle */}
           {isDraggable && onFieldReorder && (
             <Tooltip>
@@ -212,13 +202,13 @@ export function DatabaseColumnHeader({
             </Tooltip>
           )}
 
-          {/* Column Title with Sort - Distinct Weight and Color */}
+          {/* Column Title with Sort */}
           <Button
             variant="ghost"
             onClick={handleSortClick}
-            className="flex items-center gap-2 px-1 py-0.5 h-auto font-semibold text-xs text-muted-foreground/90 hover:bg-transparent hover:text-foreground flex-1 justify-start min-w-0 transition-colors tracking-wide"
+            className="flex items-center gap-2 px-1 py-0.5 h-auto text-column-header hover:bg-transparent hover:text-foreground flex-1 justify-start min-w-0 transition-colors"
           >
-            <span className="truncate uppercase tracking-[0.05em]">{field.name}</span>
+            <span className="truncate">{field.name.toUpperCase()}</span>
             
             {/* Sort Indicator */}
             {sortDirection && (
@@ -284,7 +274,7 @@ export function DatabaseColumnHeader({
           </InlinePropertyEditor>
         </div>
 
-        {/* Resize Handle - Modified to show right-only resize cursor */}
+        {/* Resize Handle */}
         {isResizable && onResize && (
           <div
             className={`
