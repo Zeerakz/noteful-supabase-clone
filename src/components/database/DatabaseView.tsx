@@ -10,6 +10,7 @@ import { useOptimisticDatabaseFields } from '@/hooks/useOptimisticDatabaseFields
 import { useSavedDatabaseViews } from '@/hooks/useSavedDatabaseViews';
 import { useComplexFilters } from '@/hooks/useComplexFilters';
 import { useSorting } from '@/hooks/useSorting';
+import { useMultiLevelGrouping } from '@/hooks/useMultiLevelGrouping';
 import { createEmptyFilterGroup } from '@/utils/filterUtils';
 
 interface DatabaseViewProps {
@@ -60,6 +61,18 @@ export function DatabaseView({ databaseId, workspaceId }: DatabaseViewProps) {
     clearSorts,
   } = useSorting();
 
+  // Multi-level grouping hook
+  const {
+    groupingConfig,
+    collapsedGroups: multiLevelCollapsedGroups,
+    hasGrouping: hasMultiLevelGrouping,
+    updateGroupingConfig,
+    toggleGroupCollapse,
+    clearGrouping
+  } = useMultiLevelGrouping({
+    maxLevels: 3,
+  });
+
   // Update local state when current view changes
   useEffect(() => {
     if (currentView) {
@@ -109,9 +122,14 @@ export function DatabaseView({ databaseId, workspaceId }: DatabaseViewProps) {
   const handleGroupingChange = (fieldId?: string) => {
     setGroupingFieldId(fieldId);
     setCollapsedGroups([]); // Reset collapsed groups when changing grouping field
+    
+    // Clear multi-level grouping when using simple grouping
+    if (fieldId && hasMultiLevelGrouping) {
+      clearGrouping();
+    }
   };
 
-  const toggleGroupCollapse = (groupValue: string) => {
+  const toggleGroupCollapseLegacy = (groupValue: string) => {
     setCollapsedGroups(prev => {
       const isCollapsed = prev.includes(groupValue);
       return isCollapsed
@@ -174,7 +192,7 @@ export function DatabaseView({ databaseId, workspaceId }: DatabaseViewProps) {
         groupingFieldId={groupingFieldId}
       />
 
-      {/* View Controls with Primary Toolbar */}
+      {/* View Controls with Multi-Level Grouping */}
       <DatabaseViewControls
         fields={fields}
         currentViewType={currentViewType}
@@ -193,9 +211,11 @@ export function DatabaseView({ databaseId, workspaceId }: DatabaseViewProps) {
         setShowFilterModal={setShowFilterModal}
         showSortModal={showSortModal}
         setShowSortModal={setShowSortModal}
+        groupingConfig={groupingConfig}
+        onGroupingConfigChange={updateGroupingConfig}
       />
 
-      {/* View Renderer */}
+      {/* View Renderer with Multi-Level Grouping Support */}
       <DatabaseViewRenderer
         currentViewType={currentViewType}
         databaseId={databaseId}
@@ -205,9 +225,11 @@ export function DatabaseView({ databaseId, workspaceId }: DatabaseViewProps) {
         sortRules={sortRules}
         setSortRules={setSortRules}
         groupingFieldId={groupingFieldId}
-        collapsedGroups={collapsedGroups}
-        onToggleGroupCollapse={toggleGroupCollapse}
+        collapsedGroups={hasMultiLevelGrouping ? multiLevelCollapsedGroups : collapsedGroups}
+        onToggleGroupCollapse={hasMultiLevelGrouping ? toggleGroupCollapse : toggleGroupCollapseLegacy}
         onFieldsChange={handleFieldsChange}
+        groupingConfig={hasMultiLevelGrouping ? groupingConfig : undefined}
+        onGroupingConfigChange={hasMultiLevelGrouping ? updateGroupingConfig : undefined}
       />
 
       {/* Filter Modal */}

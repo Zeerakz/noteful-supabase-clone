@@ -1,8 +1,10 @@
 
 import React from 'react';
 import { DatabaseListContent } from './list/DatabaseListContent';
+import { GroupedListView } from './grouping/GroupedListView';
 import { useOptimisticDatabasePages } from '@/hooks/useOptimisticDatabasePages';
 import { useListActions } from '@/hooks/database/useListActions';
+import { createMultiLevelGroups } from '@/utils/multiLevelGrouping';
 import { DatabaseField } from '@/types/database';
 import { FilterGroup } from '@/types/filters';
 import { SortRule } from '@/components/database/SortingModal';
@@ -13,6 +15,10 @@ interface DatabaseListViewProps {
   fields: DatabaseField[];
   filterGroup: FilterGroup;
   sortRules: SortRule[];
+  groupingConfig?: any;
+  onGroupingConfigChange?: (config: any) => void;
+  collapsedGroups?: string[];
+  onToggleGroupCollapse?: (groupKey: string) => void;
 }
 
 interface PageWithProperties {
@@ -26,7 +32,11 @@ export function DatabaseListView({
   workspaceId, 
   fields, 
   filterGroup, 
-  sortRules 
+  sortRules,
+  groupingConfig,
+  onGroupingConfigChange,
+  collapsedGroups = [],
+  onToggleGroupCollapse
 }: DatabaseListViewProps) {
   const { 
     pages, 
@@ -84,18 +94,45 @@ export function DatabaseListView({
     };
   });
 
+  // Create grouped data if grouping is configured
+  const groupedData = groupingConfig && groupingConfig.levels.length > 0
+    ? createMultiLevelGroups(
+        pagesWithProperties.map(page => ({
+          id: page.pageId,
+          title: page.title,
+          properties: page.properties,
+          groupPath: []
+        })),
+        fields,
+        groupingConfig,
+        collapsedGroups
+      )
+    : [];
+
+  const hasGrouping = groupingConfig && groupingConfig.levels.length > 0;
+
   return (
     <div className="h-full bg-background">
-      <DatabaseListContent
-        pagesWithProperties={pagesWithProperties}
-        fields={fields}
-        loading={loading}
-        error={error}
-        onCreateEntry={handleOptimisticCreateEntry}
-        onFieldEdit={handleOptimisticFieldEdit}
-        onTitleEdit={handleOptimisticTitleEdit}
-        onRefetch={refetch}
-      />
+      {hasGrouping && groupedData.length > 0 ? (
+        <GroupedListView
+          groups={groupedData}
+          fields={fields}
+          onToggleGroupCollapse={onToggleGroupCollapse || (() => {})}
+          onFieldEdit={handleOptimisticFieldEdit}
+          onTitleEdit={handleOptimisticTitleEdit}
+        />
+      ) : (
+        <DatabaseListContent
+          pagesWithProperties={pagesWithProperties}
+          fields={fields}
+          loading={loading}
+          error={error}
+          onCreateEntry={handleOptimisticCreateEntry}
+          onFieldEdit={handleOptimisticFieldEdit}
+          onTitleEdit={handleOptimisticTitleEdit}
+          onRefetch={refetch}
+        />
+      )}
     </div>
   );
 }

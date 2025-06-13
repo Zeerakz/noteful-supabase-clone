@@ -2,9 +2,13 @@
 import React, { useState, useEffect } from 'react';
 import { useDatabaseTableView } from '@/hooks/useDatabaseTableView';
 import { DatabaseTableViewContent } from './table/DatabaseTableViewContent';
+import { GroupedTableView } from './grouping/GroupedTableView';
 import { ManagePropertiesModal } from './fields/ManagePropertiesModal';
 import { useOptimisticDatabaseFields } from '@/hooks/useOptimisticDatabaseFields';
 import { useEnhancedDatabaseFieldOperations } from '@/hooks/useEnhancedDatabaseFieldOperations';
+import { useMultiLevelGrouping } from '@/hooks/useMultiLevelGrouping';
+import { createMultiLevelGroups } from '@/utils/multiLevelGrouping';
+import { useColumnResizing } from './table/hooks/useColumnResizing';
 import { DatabaseField } from '@/types/database';
 import { FilterGroup } from '@/types/filters';
 import { SortRule } from '@/components/database/SortingModal';
@@ -17,6 +21,10 @@ interface DatabaseTableViewProps {
   sortRules: SortRule[];
   setSortRules: (rules: SortRule[]) => void;
   onFieldsChange?: () => void;
+  groupingConfig?: any;
+  onGroupingConfigChange?: (config: any) => void;
+  collapsedGroups?: string[];
+  onToggleGroupCollapse?: (groupKey: string) => void;
 }
 
 export function DatabaseTableView({ 
@@ -26,7 +34,11 @@ export function DatabaseTableView({
   filterGroup, 
   sortRules,
   setSortRules,
-  onFieldsChange
+  onFieldsChange,
+  groupingConfig,
+  onGroupingConfigChange,
+  collapsedGroups = [],
+  onToggleGroupCollapse
 }: DatabaseTableViewProps) {
   const [enablePagination, setEnablePagination] = useState(false);
   const [itemsPerPage, setItemsPerPage] = useState(50);
@@ -84,6 +96,26 @@ export function DatabaseTableView({
     enableVirtualScrolling: false
   });
 
+  // Column resizing functionality
+  const {
+    getColumnWidth,
+    updateColumnWidth,
+    resetColumnWidth,
+    resetAllWidths
+  } = useColumnResizing({
+    defaultWidths: {
+      checkbox: 48,
+      title: 280,
+      actions: 64,
+      ...fieldsWithDatabaseId.reduce((acc, field) => ({
+        ...acc,
+        [field.id]: 200
+      }), {})
+    },
+    minWidth: 120,
+    maxWidth: 600
+  });
+
   const handleItemsPerPageChange = (newItemsPerPage: number) => {
     setItemsPerPage(newItemsPerPage);
   };
@@ -112,6 +144,47 @@ export function DatabaseTableView({
     await fieldOperations.reorderFields(reorderedFields);
   };
 
+  // Create grouped data if grouping is configured
+  const groupedData = groupingConfig && groupingConfig.levels.length > 0
+    ? createMultiLevelGroups(
+        pagesWithProperties,
+        fieldsWithDatabaseId,
+        groupingConfig,
+        collapsedGroups
+      )
+    : [];
+
+  const hasGrouping = groupingConfig && groupingConfig.levels.length > 0;
+
+  // Render grouped table view if grouping is active
+  if (hasGrouping && groupedData.length > 0) {
+    return (
+      <>
+        <GroupedTableView
+          groups={groupedData}
+          fields={fieldsWithDatabaseId}
+          onToggleGroupCollapse={onToggleGroupCollapse || (() => {})}
+          onTitleUpdate={handleTitleUpdate}
+          onPropertyUpdate={handlePropertyUpdate}
+          workspaceId={workspaceId}
+          getColumnWidth={getColumnWidth}
+        />
+
+        <ManagePropertiesModal
+          open={showManageProperties}
+          onOpenChange={setShowManageProperties}
+          fields={fieldsWithDatabaseId}
+          onFieldsReorder={fieldOperations.reorderFields}
+          onFieldUpdate={fieldOperations.updateField}
+          onFieldDuplicate={fieldOperations.duplicateField}
+          onFieldDelete={fieldOperations.deleteField}
+          onFieldCreate={fieldOperations.createField}
+        />
+      </>
+    );
+  }
+
+  // Render standard table view
   return (
     <>
       <DatabaseTableViewContent

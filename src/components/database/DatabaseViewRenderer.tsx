@@ -10,6 +10,7 @@ import { DatabaseViewType } from './DatabaseViewSelector';
 import { DatabaseField } from '@/types/database';
 import { FilterGroup } from '@/types/filters';
 import { SortRule } from './SortingModal';
+import { GroupingConfig } from '@/types/grouping';
 
 interface DatabaseViewRendererProps {
   currentViewType: DatabaseViewType;
@@ -23,6 +24,8 @@ interface DatabaseViewRendererProps {
   collapsedGroups: string[];
   onToggleGroupCollapse: (groupValue: string) => void;
   onFieldsChange?: () => void;
+  groupingConfig?: GroupingConfig;
+  onGroupingConfigChange?: (config: GroupingConfig) => void;
 }
 
 export function DatabaseViewRenderer({
@@ -37,6 +40,8 @@ export function DatabaseViewRenderer({
   collapsedGroups,
   onToggleGroupCollapse,
   onFieldsChange,
+  groupingConfig,
+  onGroupingConfigChange,
 }: DatabaseViewRendererProps) {
   const commonProps = {
     databaseId,
@@ -48,12 +53,29 @@ export function DatabaseViewRenderer({
     onFieldsChange,
   };
 
+  const groupingProps = {
+    groupingConfig,
+    onGroupingConfigChange,
+    collapsedGroups,
+    onToggleGroupCollapse,
+  };
+
   switch (currentViewType) {
     case 'table':
-      return <DatabaseTableView {...commonProps} />;
+      return (
+        <DatabaseTableView 
+          {...commonProps}
+          {...groupingProps}
+        />
+      );
 
     case 'list':
-      return <DatabaseListView {...commonProps} />;
+      return (
+        <DatabaseListView 
+          {...commonProps}
+          {...groupingProps}
+        />
+      );
 
     case 'kanban':
       return (
