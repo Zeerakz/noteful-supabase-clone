@@ -42,13 +42,16 @@ export function DatabaseTableHeader({
   const allSelected = selectedRows.size === totalRows && totalRows > 0;
   const someSelected = selectedRows.size > 0 && selectedRows.size < totalRows;
 
+  // Use onColumnResize if available, otherwise fall back to onResize
+  const handleResize = onColumnResize || onResize;
+
   return (
     <TableHeader>
       <TableRow className="hover:bg-transparent border-b-2 border-border">
         {/* Checkbox Header */}
         <TableHead 
           className="checkbox-cell p-0 border-r border-border/10"
-          style={{ width: '48px' }}
+          style={{ width: '48px', minWidth: '48px', maxWidth: '48px' }}
         >
           <div className="table-header-content justify-center">
             <Checkbox
@@ -68,7 +71,11 @@ export function DatabaseTableHeader({
         {/* Title Header */}
         <TableHead 
           className="p-0 border-r border-border/10"
-          style={{ width: `${getColumnWidth('title')}px` }}
+          style={{ 
+            width: `${getColumnWidth('title')}px`,
+            minWidth: `${getColumnWidth('title')}px`,
+            maxWidth: `${getColumnWidth('title')}px`
+          }}
         >
           <div className="table-header-content">
             <div className="flex items-center gap-2 w-full">
@@ -80,11 +87,16 @@ export function DatabaseTableHeader({
         {/* Field Headers */}
         {fields.map((field, index) => {
           const isLastField = index === fields.length - 1;
+          const columnWidth = getColumnWidth(field.id);
           return (
             <TableHead
               key={field.id}
               className={`p-0 ${!isLastField ? 'border-r border-border/10' : ''}`}
-              style={{ width: `${getColumnWidth(field.id)}px` }}
+              style={{ 
+                width: `${columnWidth}px`,
+                minWidth: `${columnWidth}px`,
+                maxWidth: `${columnWidth}px`
+              }}
             >
               <div className="table-header-content">
                 <DatabaseColumnHeader
@@ -94,9 +106,12 @@ export function DatabaseTableHeader({
                   onFieldReorder={onFieldReorder}
                   onStartResize={onStartResize}
                   onEndResize={onEndResize}
-                  onResize={onResize}
+                  onResize={handleResize}
                   isResizing={resizingFields.has(field.id)}
                   onFieldsChange={onFieldsChange}
+                  width={columnWidth}
+                  isResizable={true}
+                  isDraggable={true}
                 />
               </div>
             </TableHead>
@@ -106,7 +121,7 @@ export function DatabaseTableHeader({
         {/* Actions Header */}
         <TableHead 
           className="actions-cell p-0"
-          style={{ width: '64px' }}
+          style={{ width: '64px', minWidth: '64px', maxWidth: '64px' }}
         >
           <div className="table-header-content justify-center">
             <span className="text-column-header">ACTIONS</span>

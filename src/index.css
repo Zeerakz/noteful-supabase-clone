@@ -107,6 +107,7 @@
     word-wrap: break-word;
     border: none;
     padding: 0;
+    position: relative;
   }
 
   /* Grid spacing system */
@@ -249,6 +250,7 @@
     display: flex;
     align-items: center;
     padding: var(--grid-3x) var(--grid-4x);
+    position: relative;
   }
 
   /* Checkbox column - minimal grid alignment */
@@ -263,5 +265,47 @@
     width: calc(var(--grid-8x) * 2); /* 64px */
     min-width: calc(var(--grid-8x) * 2);
     max-width: calc(var(--grid-8x) * 2);
+  }
+
+  /* Enhanced resize handle styles */
+  .resize-handle {
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 8px;
+    cursor: col-resize;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+
+  .resize-handle:hover,
+  .resize-handle.active {
+    opacity: 1;
+    background-color: hsl(var(--primary) / 0.1);
+  }
+
+  .resize-handle::after {
+    content: '';
+    width: 2px;
+    height: 16px;
+    background-color: hsl(var(--muted-foreground) / 0.5);
+    border-radius: 2px;
+  }
+
+  .resize-handle.active::after {
+    background-color: hsl(var(--primary));
+  }
+
+  /* Prevent text selection during resize */
+  .resizing {
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
   }
 }

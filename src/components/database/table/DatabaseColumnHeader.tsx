@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -69,8 +70,6 @@ export function DatabaseColumnHeader({
 }: DatabaseColumnHeaderProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [dragOver, setDragOver] = useState<'before' | 'after' | null>(null);
-  const [resizeStartX, setResizeStartX] = useState(0);
-  const [resizeStartWidth, setResizeStartWidth] = useState(0);
 
   const currentSort = sortRules.find(rule => rule.fieldId === field.id);
   const sortDirection = currentSort?.direction;
@@ -94,16 +93,17 @@ export function DatabaseColumnHeader({
     
     e.preventDefault();
     e.stopPropagation();
-    setResizeStartX(e.clientX);
-    setResizeStartWidth(width || 150);
+    
+    const startX = e.clientX;
+    const startWidth = width || 200;
 
     if (onStartResize) {
       onStartResize(field.id);
     }
 
     const handleMouseMove = (moveEvent: MouseEvent) => {
-      const deltaX = moveEvent.clientX - resizeStartX;
-      const newWidth = Math.max(resizeStartWidth, resizeStartWidth + deltaX);
+      const deltaX = moveEvent.clientX - startX;
+      const newWidth = Math.max(120, Math.min(600, startWidth + deltaX));
       onResize(field.id, newWidth);
     };
 
@@ -114,10 +114,14 @@ export function DatabaseColumnHeader({
       
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
     };
 
     document.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('mouseup', handleMouseUp);
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
   };
 
   // Drag and drop handlers
@@ -178,13 +182,18 @@ export function DatabaseColumnHeader({
     <TooltipProvider>
       <div 
         className={`
-          relative flex items-center justify-between group h-full
+          relative flex items-center group h-full w-full
           ${isDragging ? 'opacity-50' : ''}
           ${dragOver === 'before' ? 'border-l-4 border-l-primary' : ''}
           ${dragOver === 'after' ? 'border-r-4 border-r-primary' : ''}
           ${className}
         `}
-        style={{ width: width ? `${width}px` : undefined }}
+        draggable={isDraggable && onFieldReorder}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
       >
         {/* Header Content */}
         <div className="flex items-center gap-2 flex-1 min-w-0 h-full">
@@ -278,13 +287,13 @@ export function DatabaseColumnHeader({
         {isResizable && onResize && (
           <div
             className={`
-              absolute right-0 top-0 bottom-0 w-2 cursor-e-resize 
+              absolute right-0 top-0 bottom-0 w-2 cursor-col-resize z-10
               opacity-0 group-hover:opacity-100 transition-opacity 
               hover:bg-primary/20 flex items-center justify-center
               ${isResizing ? 'opacity-100 bg-primary/30' : ''}
             `}
             onMouseDown={handleResizeStart}
-            title="Drag to extend column width"
+            title="Drag to resize column"
           >
             <div className="w-0.5 h-4 bg-muted-foreground/50 rounded-full" />
           </div>
@@ -292,7 +301,7 @@ export function DatabaseColumnHeader({
 
         {/* Active resize indicator */}
         {isResizing && (
-          <div className="absolute right-0 top-0 bottom-0 w-0.5 bg-primary shadow-lg" />
+          <div className="absolute right-0 top-0 bottom-0 w-0.5 bg-primary shadow-lg z-20" />
         )}
       </div>
     </TooltipProvider>
