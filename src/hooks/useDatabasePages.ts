@@ -11,7 +11,7 @@ export function useDatabasePages(databaseId: string, workspaceId: string) {
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
   const channelRef = useRef<any>(null);
-  const isSubscribedRef = useRef<boolean>(false);
+  const mountedRef = useRef(true);
 
   const fetchPages = async () => {
     if (!user || !databaseId) return;
@@ -21,11 +21,17 @@ export function useDatabasePages(databaseId: string, workspaceId: string) {
       const { data, error } = await PageService.fetchDatabasePages(databaseId);
 
       if (error) throw new Error(error);
-      setPages(data || []);
+      if (mountedRef.current) {
+        setPages(data || []);
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch database pages');
+      if (mountedRef.current) {
+        setError(err instanceof Error ? err.message : 'Failed to fetch database pages');
+      }
     } finally {
-      setLoading(false);
+      if (mountedRef.current) {
+        setLoading(false);
+      }
     }
   };
 
@@ -54,11 +60,11 @@ export function useDatabasePages(databaseId: string, workspaceId: string) {
   };
 
   const cleanup = () => {
-    if (channelRef.current && isSubscribedRef.current) {
+    if (channelRef.current) {
       try {
         console.log('Cleaning up database pages channel subscription');
+        channelRef.current.unsubscribe();
         supabase.removeChannel(channelRef.current);
-        isSubscribedRef.current = false;
       } catch (error) {
         console.warn('Error removing database pages channel:', error);
       }
@@ -67,6 +73,8 @@ export function useDatabasePages(databaseId: string, workspaceId: string) {
   };
 
   useEffect(() => {
+    mountedRef.current = true;
+
     if (!user || !databaseId) {
       cleanup();
       setPages([]);
@@ -95,6 +103,8 @@ export function useDatabasePages(databaseId: string, workspaceId: string) {
         filter: `database_id=eq.${databaseId}`
       },
       (payload) => {
+        if (!mountedRef.current) return;
+        
         console.log('Realtime database pages update:', payload);
         
         if (payload.eventType === 'INSERT') {
@@ -117,19 +127,17 @@ export function useDatabasePages(databaseId: string, workspaceId: string) {
       }
     );
 
-    // Subscribe only once and track status
+    // Subscribe and track status
     channel.subscribe((status) => {
       console.log('Database pages subscription status:', status);
-      if (status === 'SUBSCRIBED') {
-        isSubscribedRef.current = true;
-      } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
-        isSubscribedRef.current = false;
-      }
     });
 
     channelRef.current = channel;
 
-    return cleanup;
+    return () => {
+      mountedRef.current = false;
+      cleanup();
+    };
   }, [user?.id, databaseId]);
 
   return {

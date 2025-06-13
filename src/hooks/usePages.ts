@@ -13,7 +13,7 @@ export function usePages(workspaceId?: string) {
   const { user } = useAuth();
   const { updatePageHierarchy: updateHierarchy } = usePageHierarchy();
   const channelRef = useRef<any>(null);
-  const isSubscribedRef = useRef<boolean>(false);
+  const mountedRef = useRef(true);
 
   const fetchPages = async () => {
     if (!user || !workspaceId) return;
@@ -23,11 +23,17 @@ export function usePages(workspaceId?: string) {
       const { data, error } = await PageService.fetchPages(workspaceId);
 
       if (error) throw new Error(error);
-      setPages(data || []);
+      if (mountedRef.current) {
+        setPages(data || []);
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch pages');
+      if (mountedRef.current) {
+        setError(err instanceof Error ? err.message : 'Failed to fetch pages');
+      }
     } finally {
-      setLoading(false);
+      if (mountedRef.current) {
+        setLoading(false);
+      }
     }
   };
 
@@ -61,11 +67,11 @@ export function usePages(workspaceId?: string) {
   };
 
   const cleanup = () => {
-    if (channelRef.current && isSubscribedRef.current) {
+    if (channelRef.current) {
       try {
         console.log('Cleaning up pages channel subscription');
+        channelRef.current.unsubscribe();
         supabase.removeChannel(channelRef.current);
-        isSubscribedRef.current = false;
       } catch (error) {
         console.warn('Error removing pages channel:', error);
       }
@@ -74,6 +80,8 @@ export function usePages(workspaceId?: string) {
   };
 
   useEffect(() => {
+    mountedRef.current = true;
+
     if (!user || !workspaceId) {
       cleanup();
       setPages([]);
@@ -102,6 +110,8 @@ export function usePages(workspaceId?: string) {
         filter: `workspace_id=eq.${workspaceId}`
       },
       (payload) => {
+        if (!mountedRef.current) return;
+        
         console.log('Realtime pages update:', payload);
         
         if (payload.eventType === 'INSERT') {
@@ -124,19 +134,17 @@ export function usePages(workspaceId?: string) {
       }
     );
 
-    // Subscribe only once and track status
+    // Subscribe and track status
     channel.subscribe((status) => {
       console.log('Pages subscription status:', status);
-      if (status === 'SUBSCRIBED') {
-        isSubscribedRef.current = true;
-      } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
-        isSubscribedRef.current = false;
-      }
     });
 
     channelRef.current = channel;
 
-    return cleanup;
+    return () => {
+      mountedRef.current = false;
+      cleanup();
+    };
   }, [user?.id, workspaceId]);
 
   return {

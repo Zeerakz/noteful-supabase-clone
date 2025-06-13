@@ -24,6 +24,7 @@ export function useStablePageProperties(pageId?: string): UseStablePagePropertie
     if (channelRef.current) {
       try {
         console.log('🧹 Cleaning up page properties subscription');
+        channelRef.current.unsubscribe();
         supabase.removeChannel(channelRef.current);
       } catch (err) {
         console.warn('Warning during subscription cleanup:', err);
