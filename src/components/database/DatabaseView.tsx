@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useDatabaseViewSelector } from '@/hooks/useDatabaseViewSelector';
@@ -24,6 +23,7 @@ export function DatabaseView({ workspaceId }: DatabaseViewProps) {
 
   const [breakingChanges, setBreakingChanges] = useState<BreakingChange[]>([]);
   const [loadingBreakingChanges, setLoadingBreakingChanges] = useState(true);
+  const [dismissedChangeIds, setDismissedChangeIds] = useState<Set<string>>(new Set());
 
   // Get database info
   const { database, loading: databaseLoading, error: databaseError } = useDatabase(databaseId);
@@ -67,19 +67,29 @@ export function DatabaseView({ workspaceId }: DatabaseViewProps) {
       
       setLoadingBreakingChanges(true);
       try {
-        // Get breaking changes from the last 7 days
+        // Get breaking changes from the last 30 days to ensure we catch all relevant changes
         const since = new Date();
-        since.setDate(since.getDate() - 7);
+        since.setDate(since.getDate() - 30);
         
         const { data, error } = await SchemaAuditService.getBreakingChangesSince(databaseId, since);
         
         if (error) {
           console.error('Failed to load breaking changes:', error);
+          setBreakingChanges([]);
         } else {
-          setBreakingChanges(data || []);
+          // Filter out changes older than 7 days for display, but keep 30 days for analysis
+          const sevenDaysAgo = new Date();
+          sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+          
+          const recentBreakingChanges = (data || []).filter(change => 
+            new Date(change.created_at) >= sevenDaysAgo
+          );
+          
+          setBreakingChanges(recentBreakingChanges);
         }
       } catch (err) {
         console.error('Error loading breaking changes:', err);
+        setBreakingChanges([]);
       } finally {
         setLoadingBreakingChanges(false);
       }
@@ -89,12 +99,18 @@ export function DatabaseView({ workspaceId }: DatabaseViewProps) {
   }, [databaseId]);
 
   const handleDismissBreakingChange = (changeId: string) => {
-    setBreakingChanges(prev => prev.filter(change => change.id !== changeId));
+    setDismissedChangeIds(prev => new Set([...prev, changeId]));
   };
 
   const handleAcknowledgeAllBreakingChanges = () => {
-    setBreakingChanges([]);
+    const allChangeIds = breakingChanges.map(change => change.id);
+    setDismissedChangeIds(new Set(allChangeIds));
   };
+
+  // Filter out dismissed changes
+  const visibleBreakingChanges = breakingChanges.filter(change => 
+    !dismissedChangeIds.has(change.id)
+  );
 
   if (!databaseId || !workspaceId) {
     return (
@@ -150,10 +166,10 @@ export function DatabaseView({ workspaceId }: DatabaseViewProps) {
       />
 
       {/* Breaking Changes Alert */}
-      {!loadingBreakingChanges && breakingChanges.length > 0 && (
+      {!loadingBreakingChanges && visibleBreakingChanges.length > 0 && (
         <div className="px-6 py-4">
           <BreakingChangesAlert
-            breakingChanges={breakingChanges}
+            breakingChanges={visibleBreakingChanges}
             onDismiss={handleDismissBreakingChange}
             onAcknowledgeAll={handleAcknowledgeAllBreakingChanges}
           />

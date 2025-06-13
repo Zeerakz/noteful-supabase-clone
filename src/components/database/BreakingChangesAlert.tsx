@@ -9,7 +9,8 @@ import {
   ChevronUp, 
   X, 
   Info,
-  Clock
+  Clock,
+  CheckCircle
 } from 'lucide-react';
 import { BreakingChange } from '@/types/schemaAudit';
 import { formatDistanceToNow } from 'date-fns';
@@ -26,26 +27,8 @@ export function BreakingChangesAlert({
   onAcknowledgeAll 
 }: BreakingChangesAlertProps) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const [dismissedChanges, setDismissedChanges] = useState<Set<string>>(new Set());
 
-  const visibleChanges = breakingChanges.filter(change => !dismissedChanges.has(change.id));
-
-  const handleDismiss = (changeId: string) => {
-    setDismissedChanges(prev => new Set([...prev, changeId]));
-    if (onDismiss) {
-      onDismiss(changeId);
-    }
-  };
-
-  const handleAcknowledgeAll = () => {
-    const allChangeIds = breakingChanges.map(change => change.id);
-    setDismissedChanges(new Set(allChangeIds));
-    if (onAcknowledgeAll) {
-      onAcknowledgeAll();
-    }
-  };
-
-  if (visibleChanges.length === 0) {
+  if (breakingChanges.length === 0) {
     return null;
   }
 
@@ -75,6 +58,9 @@ export function BreakingChangesAlert({
     }
   };
 
+  const highSeverityCount = breakingChanges.filter(change => change.severity === 'high').length;
+  const totalCount = breakingChanges.length;
+
   return (
     <Alert className="border-orange-200 bg-orange-50 dark:border-orange-800 dark:bg-orange-950/20">
       <AlertTriangle className="h-4 w-4 text-orange-600" />
@@ -83,7 +69,10 @@ export function BreakingChangesAlert({
           Breaking Changes Detected
         </AlertTitle>
         <AlertDescription className="text-orange-700 dark:text-orange-300 mt-1">
-          {visibleChanges.length} {visibleChanges.length === 1 ? 'high severity change' : 'changes'} detected that may affect API consumers.
+          {totalCount} {totalCount === 1 ? 'change' : 'changes'} detected that may affect API consumers.
+          {highSeverityCount > 0 && (
+            <span className="font-medium"> {highSeverityCount} high severity.</span>
+          )}
         </AlertDescription>
         
         <div className="flex items-center gap-2 mt-3">
@@ -94,16 +83,17 @@ export function BreakingChangesAlert({
             className="gap-2 border-orange-300 hover:bg-orange-100 dark:border-orange-700 dark:hover:bg-orange-900/20"
           >
             {isExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-            View Details ({visibleChanges.length})
+            View Details ({totalCount})
           </Button>
           
-          {visibleChanges.length > 1 && (
+          {totalCount > 1 && onAcknowledgeAll && (
             <Button
               variant="outline"
               size="sm"
-              onClick={handleAcknowledgeAll}
+              onClick={onAcknowledgeAll}
               className="gap-2 border-orange-300 hover:bg-orange-100 dark:border-orange-700 dark:hover:bg-orange-900/20"
             >
+              <CheckCircle className="h-3 w-3" />
               Acknowledge All
             </Button>
           )}
@@ -111,7 +101,7 @@ export function BreakingChangesAlert({
 
         {isExpanded && (
           <div className="mt-4 space-y-3">
-            {visibleChanges.map((change) => (
+            {breakingChanges.map((change) => (
               <div 
                 key={change.id}
                 className="bg-white dark:bg-gray-900/50 border border-orange-200 dark:border-orange-800 rounded-md p-3"
@@ -149,14 +139,16 @@ export function BreakingChangesAlert({
                     )}
                   </div>
                   
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleDismiss(change.id)}
-                    className="p-1 h-auto text-muted-foreground hover:text-foreground"
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
+                  {onDismiss && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => onDismiss(change.id)}
+                      className="p-1 h-auto text-muted-foreground hover:text-foreground ml-2"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  )}
                 </div>
               </div>
             ))}
