@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Navigate, useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -10,6 +10,7 @@ import { useDatabaseFields } from '@/hooks/useDatabaseFields';
 import { usePageProperties } from '@/hooks/usePageProperties';
 import { supabase } from '@/integrations/supabase/client';
 import { Page } from '@/types/page';
+import { errorHandler } from '@/utils/errorHandler';
 
 interface PageWithWorkspace extends Page {
   workspace: {
@@ -25,16 +26,46 @@ export function PageView() {
   const [pageWithWorkspace, setPageWithWorkspace] = useState<PageWithWorkspace | null>(null);
   const [userProfiles, setUserProfiles] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [mounted, setMounted] = useState(true);
+  
+  // Use refs to track subscriptions and prevent multiple subscriptions
+  const subscriptionRef = useRef<any>(null);
+  const fetchedPageIdRef = useRef<string | null>(null);
 
   // Get database fields and properties if this page belongs to a database
   const { fields } = useDatabaseFields(pageWithWorkspace?.database_id || '');
   const { properties, updateProperty } = usePageProperties(pageId);
 
+  // Clean up function
+  const cleanup = () => {
+    if (subscriptionRef.current) {
+      console.log('🧹 Cleaning up page subscription');
+      subscriptionRef.current.unsubscribe();
+      subscriptionRef.current = null;
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      setMounted(false);
+      cleanup();
+    };
+  }, []);
+
   useEffect(() => {
     const fetchPageWithWorkspace = async () => {
-      if (!pageId || workspacesLoading) return;
+      if (!pageId || workspacesLoading || !mounted) return;
+      
+      // Prevent duplicate fetches
+      if (fetchedPageIdRef.current === pageId) return;
+      fetchedPageIdRef.current = pageId;
+
+      // Clean up any existing subscription
+      cleanup();
 
       try {
+        console.log('📄 Fetching page with workspace for pageId:', pageId);
+        
         // Fetch the page directly with its workspace info
         const { data: pageData, error } = await supabase
           .from('pages')
@@ -48,53 +79,77 @@ export function PageView() {
           .eq('id', pageId)
           .single();
 
+        if (!mounted) return; // Component unmounted during fetch
+
         if (error) {
-          console.error('Error fetching page:', error);
+          console.error('❌ Error fetching page:', error);
+          errorHandler.logError(error as Error, { context: 'page_fetch', pageId });
           setPageWithWorkspace(null);
         } else if (pageData) {
+          console.log('✅ Page fetched successfully:', pageData.title);
           setPageWithWorkspace({
             ...pageData,
             workspace: pageData.workspaces
           });
         }
       } catch (err) {
-        console.error('Error fetching page with workspace:', err);
-        setPageWithWorkspace(null);
+        console.error('💥 Error fetching page with workspace:', err);
+        errorHandler.logError(err as Error, { context: 'page_fetch_critical', pageId });
+        if (mounted) {
+          setPageWithWorkspace(null);
+        }
       } finally {
-        setLoading(false);
+        if (mounted) {
+          setLoading(false);
+        }
       }
     };
 
     fetchPageWithWorkspace();
-  }, [pageId, workspacesLoading]);
+  }, [pageId, workspacesLoading, mounted]);
 
   useEffect(() => {
     const fetchUserProfiles = async () => {
-      if (!pageWithWorkspace?.workspace.id) return;
+      if (!pageWithWorkspace?.workspace.id || !mounted) return;
 
       try {
+        console.log('👥 Fetching user profiles for workspace:', pageWithWorkspace.workspace.id);
+        
         // Fetch user profiles for the workspace
         const { data: profiles, error } = await supabase
           .from('profiles')
           .select('*');
 
+        if (!mounted) return; // Component unmounted during fetch
+
         if (error) {
-          console.error('Error fetching user profiles:', error);
+          console.error('❌ Error fetching user profiles:', error);
+          errorHandler.logError(error as Error, { context: 'profiles_fetch', workspaceId: pageWithWorkspace.workspace.id });
         } else {
+          console.log('✅ User profiles fetched:', profiles?.length || 0);
           setUserProfiles(profiles || []);
         }
       } catch (err) {
-        console.error('Error fetching user profiles:', err);
+        console.error('💥 Error fetching user profiles:', err);
+        errorHandler.logError(err as Error, { context: 'profiles_fetch_critical', workspaceId: pageWithWorkspace?.workspace.id });
       }
     };
 
     fetchUserProfiles();
-  }, [pageWithWorkspace?.workspace.id]);
+  }, [pageWithWorkspace?.workspace.id, mounted]);
 
   const handlePropertyUpdate = async (fieldId: string, value: string) => {
-    const result = await updateProperty(fieldId, value);
-    if (result.error) {
-      throw new Error(result.error);
+    try {
+      console.log('🔄 Updating property:', { fieldId, value });
+      const result = await updateProperty(fieldId, value);
+      if (result.error) {
+        throw new Error(result.error);
+      }
+      console.log('✅ Property updated successfully');
+    } catch (error) {
+      console.error('❌ Property update failed:', error);
+      errorHandler.logError(error as Error, { context: 'property_update', fieldId, value });
+      throw error;
     }
   };
 
@@ -113,6 +168,7 @@ export function PageView() {
   const { workspace, ...page } = pageWithWorkspace;
 
   const handleBack = () => {
+    cleanup(); // Clean up before navigation
     navigate(`/workspace/${workspace.id}`);
   };
 
