@@ -27,7 +27,7 @@ export function LazyRollupFieldDisplay({
   className = '',
   priority = 'normal'
 }: LazyRollupFieldDisplayProps) {
-  const { ref, isVisible } = useIntersectionObserver({
+  const { ref, isVisible } = useIntersectionObserver<HTMLDivElement>({
     threshold: 0.1,
     rootMargin: '100px', // Start loading before fully visible
     triggerOnce: true // Only calculate once
