@@ -9,9 +9,10 @@ interface UseKanbanFieldSelectionProps {
 export function useKanbanFieldSelection({ fields }: UseKanbanFieldSelectionProps) {
   const [selectedField, setSelectedField] = useState<DatabaseField | null>(null);
 
-  // Get all select-type and status fields for grouping options
+  // Get all select-type and status fields for grouping options, filter out fields with empty IDs
   const selectFields = fields.filter(field => 
-    field.type === 'select' || field.type === 'multi-select' || field.type === 'status'
+    (field.type === 'select' || field.type === 'multi-select' || field.type === 'status') &&
+    field.id && field.id.trim() !== ''
   );
 
   // Auto-select the first available field when fields change

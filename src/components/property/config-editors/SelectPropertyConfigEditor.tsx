@@ -26,7 +26,7 @@ export function SelectPropertyConfigEditor({
   return (
     <div className="space-y-4">
       <SelectOptionManager
-        options={selectConfig.options || []}
+        options={(selectConfig.options || []).filter(option => option.id && option.id.trim() !== '')}
         onOptionsChange={(options) => updateConfig({ options })}
         label="Options"
         placeholder="Enter option name and press Enter"

@@ -13,11 +13,14 @@ interface SelectFieldConfigProps {
 }
 
 export function SelectFieldConfig({ settings, onSettingsChange }: SelectFieldConfigProps) {
-  const [options, setOptions] = useState(settings.options || []);
+  // Filter out options with empty IDs
+  const [options, setOptions] = useState((settings.options || []).filter(option => option.id && option.id.trim() !== ''));
   const [newOptionName, setNewOptionName] = useState('');
 
   useEffect(() => {
-    onSettingsChange({ options });
+    // Always filter options before updating settings
+    const validOptions = options.filter(option => option.id && option.id.trim() !== '');
+    onSettingsChange({ options: validOptions });
   }, [options, onSettingsChange]);
 
   const addOption = () => {

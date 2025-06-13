@@ -41,17 +41,20 @@ export function FieldVisibilitySettings({
     }
   };
 
+  // Ensure we have a valid value, fallback to default if not
+  const safeValue = value || 'show_when_not_empty';
+
   return (
     <div className="space-y-2">
       <Label htmlFor="visibility-setting">Visibility</Label>
       <Select 
-        value={value} 
+        value={safeValue} 
         onValueChange={onValueChange}
         disabled={disabled}
       >
         <SelectTrigger id="visibility-setting" className="w-full">
           <div className="flex items-center gap-2">
-            {getIcon(value)}
+            {getIcon(safeValue)}
             <SelectValue />
           </div>
         </SelectTrigger>
@@ -77,7 +80,7 @@ export function FieldVisibilitySettings({
         </SelectContent>
       </Select>
       <p className="text-xs text-muted-foreground">
-        {getDescription(value)}
+        {getDescription(safeValue)}
       </p>
     </div>
   );
