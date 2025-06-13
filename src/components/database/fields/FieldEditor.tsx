@@ -6,6 +6,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { DatabaseField } from '@/types/database';
 import { SelectFieldEditor } from './SelectFieldEditor';
 import { DateFieldEditor } from './DateFieldEditor';
+import { EnhancedDateFieldEditor } from './EnhancedDateFieldEditor';
 import { RelationFieldEditor } from './RelationFieldEditor';
 
 interface FieldEditorProps {
@@ -32,17 +33,11 @@ export function FieldEditor({ field, value, onChange, workspaceId, pageId }: Fie
       setIsUpdating(true);
       
       try {
-        // Update the last saved value immediately for optimistic UI
         setLastSavedValue(newValue);
-        
-        // Trigger the actual update
         onChange(newValue);
-        
-        // Show updating state briefly
         setTimeout(() => setIsUpdating(false), 300);
       } catch (error) {
         console.error('FieldEditor: Error saving value', error);
-        // Revert on error
         setLastSavedValue(value || '');
         setLocalValue(value || '');
         setIsUpdating(false);
@@ -202,6 +197,21 @@ export function FieldEditor({ field, value, onChange, workspaceId, pageId }: Fie
       );
 
     case 'date':
+      // Check if enhanced features are enabled
+      const hasEnhancedFeatures = field.settings?.enableRange || 
+                                 field.settings?.enableNaturalLanguage || 
+                                 field.settings?.enableReminders;
+      
+      if (hasEnhancedFeatures) {
+        return (
+          <EnhancedDateFieldEditor
+            value={localValue}
+            onChange={handleSelectChange}
+            config={field.settings}
+          />
+        );
+      }
+      
       return (
         <DateFieldEditor
           value={localValue}

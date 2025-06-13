@@ -9,4 +9,10 @@ export interface DatePropertyConfig extends BasePropertyConfig {
   defaultValue?: string;
   minDate?: string;
   maxDate?: string;
+  // New features
+  enableRange?: boolean;
+  enableNaturalLanguage?: boolean;
+  enableReminders?: boolean;
+  defaultReminderOffset?: number; // minutes before
+  allowedTimezones?: string[];
 }
