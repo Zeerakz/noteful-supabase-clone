@@ -9,5 +9,6 @@ export interface PageWithProperties {
 export interface KanbanColumn {
   id: string;
   title: string;
+  color?: string;
   pages: PageWithProperties[];
 }
