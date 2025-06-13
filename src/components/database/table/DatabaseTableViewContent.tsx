@@ -226,14 +226,13 @@ export function DatabaseTableViewContent({
         </div>
       </div>
 
-      {/* Scrollable table content with proper containment */}
-      <div className="flex-1 min-h-0 overflow-x-auto bg-background">
+      {/* Scrollable table content */}
+      <div className="flex-1 min-h-0 overflow-auto">
         <div 
-          className="relative"
+          className="relative bg-background"
           style={{ 
-            width: 'fit-content',
-            maxWidth: '100%',
-            minWidth: `${totalTableWidth}px`
+            minWidth: `${totalTableWidth}px`,
+            width: 'max-content'
           }}
         >
           <Table className="w-full table-fixed" style={{ width: `${totalTableWidth}px` }}>
