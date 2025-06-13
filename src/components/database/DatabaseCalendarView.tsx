@@ -42,6 +42,8 @@ export function DatabaseCalendarView({
     pagesWithProperties,
     datesWithEntries,
     selectedDatePages,
+    hasDateFields,
+    hasValidDateField,
   } = useCalendarData({ databaseId, filterGroup, fields, sortRules });
 
   if (loading) {
@@ -52,7 +54,13 @@ export function DatabaseCalendarView({
     return <ErrorState error={error} />;
   }
 
-  if (dateFields.length === 0) {
+  // Show validation when no date fields are available
+  if (!hasDateFields) {
+    return <NoDateFieldEmptyState />;
+  }
+
+  // Show validation when no valid date field is selected
+  if (!hasValidDateField) {
     return <NoDateFieldEmptyState />;
   }
 
@@ -80,7 +88,7 @@ export function DatabaseCalendarView({
         />
       </div>
 
-      {/* Empty State */}
+      {/* Empty State for when no entries have dates */}
       {pagesWithProperties.filter(p => p.dateValue).length === 0 && (
         <NoEntriesEmptyState />
       )}

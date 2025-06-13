@@ -64,7 +64,15 @@ export function DatabaseViewRenderer({
       );
 
     case 'calendar':
-      return <DatabaseCalendarView {...commonProps} />;
+      return (
+        <DatabaseCalendarView
+          databaseId={databaseId}
+          workspaceId={workspaceId}
+          fields={fields}
+          filterGroup={filterGroup}
+          sortRules={sortRules}
+        />
+      );
 
     case 'gallery':
       return <DatabaseGalleryView {...commonProps} />;

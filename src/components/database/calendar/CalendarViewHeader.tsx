@@ -1,7 +1,7 @@
 
 import React from 'react';
-import { Button } from '@/components/ui/button';
-import { Plus } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { CalendarDays } from 'lucide-react';
 import { DatabaseField } from '@/types/database';
 
 interface CalendarViewHeaderProps {
@@ -10,41 +10,45 @@ interface CalendarViewHeaderProps {
   onDateFieldChange: (field: DatabaseField | null) => void;
 }
 
-export function CalendarViewHeader({ 
-  dateFields, 
-  selectedDateField, 
-  onDateFieldChange 
+export function CalendarViewHeader({
+  dateFields,
+  selectedDateField,
+  onDateFieldChange
 }: CalendarViewHeaderProps) {
+  if (dateFields.length === 0) {
+    return null; // Don't render header if no date fields
+  }
+
   return (
     <div className="flex items-center justify-between">
-      <div className="space-y-1">
+      <div className="flex items-center gap-3">
+        <CalendarDays className="h-5 w-5 text-muted-foreground" />
         <h3 className="text-lg font-medium">Calendar View</h3>
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <span>Viewing entries by</span>
-          {dateFields.length > 1 ? (
-            <select
-              value={selectedDateField?.id || ''}
-              onChange={(e) => {
-                const field = dateFields.find(f => f.id === e.target.value);
-                onDateFieldChange(field || null);
-              }}
-              className="bg-background border border-input rounded px-2 py-1 text-sm"
-            >
-              {dateFields.map(field => (
-                <option key={field.id} value={field.id}>
-                  {field.name}
-                </option>
-              ))}
-            </select>
-          ) : (
-            <span className="font-medium">{selectedDateField?.name}</span>
-          )}
-        </div>
       </div>
-      <Button size="sm" className="gap-2">
-        <Plus className="h-4 w-4" />
-        Add Entry
-      </Button>
+      
+      {dateFields.length > 1 && (
+        <div className="flex items-center gap-2 text-sm">
+          <span className="text-muted-foreground">Date field:</span>
+          <Select
+            value={selectedDateField?.id || ''}
+            onValueChange={(value) => {
+              const field = dateFields.find(f => f.id === value);
+              onDateFieldChange(field || null);
+            }}
+          >
+            <SelectTrigger className="w-[200px]">
+              <SelectValue placeholder="Select date field" />
+            </SelectTrigger>
+            <SelectContent>
+              {dateFields.map(field => (
+                <SelectItem key={field.id} value={field.id}>
+                  {field.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
     </div>
   );
 }

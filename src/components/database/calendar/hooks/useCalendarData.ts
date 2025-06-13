@@ -40,6 +40,8 @@ export function useCalendarData({ databaseId, filterGroup, fields, sortRules }: 
   useEffect(() => {
     if (dateFields.length > 0 && !selectedDateField) {
       setSelectedDateField(dateFields[0]);
+    } else if (dateFields.length === 0) {
+      setSelectedDateField(null);
     }
   }, [dateFields, selectedDateField]);
 
@@ -112,6 +114,10 @@ export function useCalendarData({ databaseId, filterGroup, fields, sortRules }: 
   const datesWithEntries = getDatesWithEntries();
   const selectedDatePages = selectedDate ? getPagesForDate(selectedDate) : [];
 
+  // Add validation for date fields
+  const hasDateFields = dateFields.length > 0;
+  const hasValidDateField = selectedDateField !== null;
+
   return {
     loading,
     error,
@@ -123,5 +129,7 @@ export function useCalendarData({ databaseId, filterGroup, fields, sortRules }: 
     pagesWithProperties,
     datesWithEntries,
     selectedDatePages,
+    hasDateFields,
+    hasValidDateField,
   };
 }
