@@ -66,7 +66,7 @@ export function EditableCell({
     }
   };
 
-  const handleSubmit = () => {
+  const handleSave = () => {
     // Clear any pending save timeout
     if (saveTimeoutRef.current) {
       clearTimeout(saveTimeoutRef.current);
@@ -94,11 +94,11 @@ export function EditableCell({
     if (e.key === 'Enter' && !multiline) {
       e.preventDefault();
       e.stopPropagation();
-      handleSubmit();
+      handleSave();
     } else if (e.key === 'Enter' && multiline && (e.metaKey || e.ctrlKey)) {
       e.preventDefault();
       e.stopPropagation();
-      handleSubmit();
+      handleSave();
     } else if (e.key === 'Escape') {
       e.preventDefault();
       e.stopPropagation();
@@ -121,7 +121,7 @@ export function EditableCell({
     // Use a timeout to allow for potential re-focus events
     saveTimeoutRef.current = setTimeout(() => {
       if (isEditing) {
-        handleSubmit();
+        handleSave();
       }
     }, 100);
   };
@@ -155,9 +155,8 @@ export function EditableCell({
         <div
           ref={containerRef}
           className={cn(
-            "w-full h-full border border-primary rounded-sm outline-none px-2 py-1",
+            "w-full h-full px-2 py-1",
             "text-sm font-normal text-foreground leading-relaxed",
-            "focus-within:ring-2 focus-within:ring-primary/20 focus-within:ring-offset-0",
             "tracking-normal bg-transparent",
             className
           )}
@@ -194,10 +193,9 @@ export function EditableCell({
           onFocus={handleFocus}
           onKeyDown={handleKeyDown}
           className={cn(
-            "w-full h-full border border-primary rounded-sm outline-none resize-none px-2 py-1",
+            "w-full h-full outline-none resize-none px-2 py-1",
             "text-sm font-normal text-foreground leading-relaxed",
-            "focus:ring-2 focus:ring-primary/20 focus:ring-offset-0",
-            "tracking-normal bg-transparent",
+            "tracking-normal bg-transparent border-none",
             className
           )}
           style={{ 

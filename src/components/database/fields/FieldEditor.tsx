@@ -94,7 +94,7 @@ export function FieldEditor({
           type={field.type === 'number' ? 'number' : field.type === 'email' ? 'email' : 'text'}
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="w-full px-2 py-1 bg-transparent border-none rounded focus:outline-none focus:ring-0 text-foreground"
+          className="w-full px-2 py-1 bg-transparent border-none outline-none text-foreground"
           autoFocus
         />
       );
@@ -169,7 +169,7 @@ export function FieldEditor({
           type="text"
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="w-full px-2 py-1 bg-transparent border-none rounded focus:outline-none focus:ring-0 text-foreground"
+          className="w-full px-2 py-1 bg-transparent border-none outline-none text-foreground"
           autoFocus
         />
       );
