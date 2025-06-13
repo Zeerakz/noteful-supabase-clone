@@ -26,11 +26,21 @@ export function EditableCell({
   const [isEditing, setIsEditing] = useState(false);
   const [localValue, setLocalValue] = useState(value);
   const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement>(null);
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Update local value when prop value changes
   useEffect(() => {
     setLocalValue(value);
   }, [value]);
+
+  // Clear timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const handleClick = () => {
     if (!disabled) {
@@ -39,12 +49,24 @@ export function EditableCell({
   };
 
   const handleSubmit = () => {
+    // Clear any pending save timeout
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+      saveTimeoutRef.current = null;
+    }
+    
     onChange(localValue);
     setIsEditing(false);
     onBlur?.();
   };
 
   const handleCancel = () => {
+    // Clear any pending save timeout
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+      saveTimeoutRef.current = null;
+    }
+    
     setLocalValue(value);
     setIsEditing(false);
     onBlur?.();
@@ -64,9 +86,29 @@ export function EditableCell({
   };
 
   const handleBlur = (e: React.FocusEvent) => {
-    // Only submit if the blur wasn't caused by clicking outside the table or similar
-    // We'll submit on blur to ensure changes are saved when user clicks elsewhere
-    handleSubmit();
+    // Check if the blur is due to clicking on something else in the same row
+    const relatedTarget = e.relatedTarget as HTMLElement;
+    
+    // Don't save immediately if clicking on another input in the same table row
+    if (relatedTarget && relatedTarget.closest('tr') === e.currentTarget.closest('tr')) {
+      return;
+    }
+
+    // Use a timeout to allow for potential re-focus events
+    saveTimeoutRef.current = setTimeout(() => {
+      if (isEditing) {
+        handleSubmit();
+      }
+    }, 100);
+  };
+
+  const handleFocus = () => {
+    // Clear any pending save timeout when focusing
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+      saveTimeoutRef.current = null;
+    }
+    onFocus?.();
   };
 
   // Focus input when editing starts
@@ -74,9 +116,8 @@ export function EditableCell({
     if (isEditing && inputRef.current) {
       inputRef.current.focus();
       inputRef.current.select();
-      onFocus?.();
     }
-  }, [isEditing, onFocus]);
+  }, [isEditing]);
 
   if (isEditing) {
     const InputComponent = multiline ? 'textarea' : 'input';
@@ -87,6 +128,7 @@ export function EditableCell({
         value={localValue}
         onChange={(e) => setLocalValue(e.target.value)}
         onBlur={handleBlur}
+        onFocus={handleFocus}
         onKeyDown={handleKeyDown}
         className={cn(
           "w-full h-full bg-background border border-border rounded-sm outline-none resize-none px-2 py-1",
