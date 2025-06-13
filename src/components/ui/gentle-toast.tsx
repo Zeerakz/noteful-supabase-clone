@@ -13,15 +13,16 @@ interface GentleToastProps {
   className?: string;
 }
 
-export function GentleToast({ 
-  type = 'info', 
-  title, 
-  message, 
-  suggestion,
-  onRetry,
-  className,
-  ...toastProps 
-}: GentleToastProps & Omit<React.ComponentProps<typeof Toast>, keyof GentleToastProps>) {
+export function GentleToast(props: GentleToastProps & Omit<React.ComponentProps<typeof Toast>, keyof GentleToastProps>) {
+  const { 
+    type = 'info', 
+    title, 
+    message, 
+    suggestion,
+    onRetry,
+    className,
+    ...toastProps 
+  } = props;
   
   const getToastStyles = () => {
     switch (type) {
