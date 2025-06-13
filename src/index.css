@@ -30,6 +30,19 @@
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
     --radius: 0.5rem;
+    
+    /* Grid system variables - 4pt base grid */
+    --grid-unit: 4px;
+    --grid-2x: 8px;
+    --grid-3x: 12px;
+    --grid-4x: 16px;
+    --grid-6x: 24px;
+    --grid-8x: 32px;
+    
+    /* Hairline divider system */
+    --hairline-weight: 0.5px;
+    --hairline-color: 214.3 31.8% 95%;
+    --hairline-subtle: 214.3 31.8% 97%;
   }
 
   .dark {
@@ -57,6 +70,10 @@
     --chart-3: 30 80% 55%;
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
+    
+    /* Dark mode hairline adjustments */
+    --hairline-color: 217.2 32.6% 12%;
+    --hairline-subtle: 217.2 32.6% 8%;
   }
 }
 
@@ -75,26 +92,80 @@
   }
 }
 
-/* Enhanced styles for table layout and column resizing */
+/* Enhanced styles for grid-based table layout */
 @layer components {
-  /* Improved table layout for better column synchronization */
-  .table-fixed {
+  /* Clean grid-based table system */
+  .table-grid {
     table-layout: fixed !important;
+    border-collapse: separate;
+    border-spacing: 0;
   }
   
-  .table-fixed th,
-  .table-fixed td {
+  .table-grid th,
+  .table-grid td {
     overflow: hidden;
     word-wrap: break-word;
+    border: none;
+    padding: 0;
   }
 
-  /* Resize mode improvements */
+  /* Grid spacing system */
+  .grid-spacing-2x {
+    padding: var(--grid-2x);
+  }
+  
+  .grid-spacing-3x {
+    padding: var(--grid-3x);
+  }
+  
+  .grid-spacing-4x {
+    padding: var(--grid-4x);
+  }
+  
+  .grid-spacing-6x {
+    padding: var(--grid-6x);
+  }
+
+  /* Hairline divider system */
+  .hairline-divider {
+    position: relative;
+  }
+  
+  .hairline-divider::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: var(--hairline-weight);
+    background-color: hsl(var(--hairline-color));
+  }
+  
+  .hairline-divider-subtle::after {
+    background-color: hsl(var(--hairline-subtle));
+  }
+  
+  .hairline-vertical {
+    position: relative;
+  }
+  
+  .hairline-vertical::after {
+    content: '';
+    position: absolute;
+    top: var(--grid-2x);
+    bottom: var(--grid-2x);
+    right: 0;
+    width: var(--hairline-weight);
+    background-color: hsl(var(--hairline-color));
+  }
+
+  /* Resize mode improvements with grid awareness */
   .resize-mode {
     @apply select-none;
   }
   
   .resize-mode .resize-active {
-    @apply bg-accent/10 pointer-events-none opacity-70;
+    @apply bg-accent/5 pointer-events-none opacity-80;
   }
   
   .resize-mode .resize-active * {
@@ -106,70 +177,91 @@
     @apply bg-transparent !important;
   }
   
-  /* Disable cursor changes during resize */
-  .resize-mode .cursor-text {
-    @apply cursor-default !important;
-  }
-  
-  .resize-mode .cursor-pointer {
-    @apply cursor-default !important;
-  }
-  
-  /* Visual feedback for resize operation */
+  /* Visual feedback for resize operation - minimal overlay */
   .resize-mode::before {
     content: '';
-    @apply fixed inset-0 bg-black/5 pointer-events-none z-10;
-  }
-  
-  /* Placeholder text styling improvements */
-  .editable-cell-placeholder {
-    @apply text-muted-foreground/60 italic text-sm;
-  }
-  
-  .resize-mode .editable-cell-placeholder {
-    @apply text-muted-foreground/40;
+    @apply fixed inset-0 bg-background/20 pointer-events-none z-10;
   }
   
   /* Improved visual feedback for resizing columns */
   .column-resizing {
-    @apply border-primary/50 bg-primary/5;
+    @apply bg-primary/3;
   }
   
   .resize-handle-active {
-    @apply bg-primary/40 shadow-lg;
+    @apply bg-primary/20;
   }
 
-  /* Remove conflicting hover states that interfere with resizing */
-  .resize-mode .hover\:bg-muted\/50:hover,
-  .resize-mode .hover\:bg-muted:hover,
-  .resize-mode .hover\:bg-accent\/30:hover,
-  .resize-mode .hover\:bg-primary\/10:hover {
-    @apply bg-transparent !important;
+  /* Clean, minimal hover states */
+  .table-grid-row {
+    transition: background-color 0.15s ease;
+  }
+  
+  .table-grid-row:hover {
+    background-color: hsl(var(--muted) / 0.3);
+  }
+  
+  .resize-mode .table-grid-row:hover {
+    background-color: transparent !important;
   }
 
-  /* Typographic system classes */
+  /* Typographic system classes with grid alignment */
   .text-hero {
     /* Data content - the most effortlessly legible */
     @apply text-sm font-normal text-foreground leading-relaxed tracking-normal;
+    line-height: calc(var(--grid-6x) * 1);
   }
   
   .text-column-header {
     /* Column headers - distinct from content through weight and color */
     @apply text-xs font-semibold text-muted-foreground/90 uppercase tracking-[0.05em];
+    line-height: calc(var(--grid-4x) * 1);
   }
   
   .text-view-tab {
     /* View switcher tabs - legible but secondary */
     @apply text-xs font-medium tracking-normal;
+    line-height: calc(var(--grid-4x) * 1);
   }
   
   .text-database-title {
     /* Main database title - confident but quiet presence */
     @apply text-2xl font-medium tracking-[-0.02em] text-foreground leading-tight;
+    line-height: calc(var(--grid-8x) * 1);
   }
   
   .text-action-button {
     /* Action buttons - functional weight */
     @apply text-xs font-semibold tracking-normal;
+    line-height: calc(var(--grid-4x) * 1);
+  }
+
+  /* Grid-aligned cell content */
+  .table-cell-content {
+    min-height: calc(var(--grid-8x) + var(--grid-4x)); /* 48px aligned to grid */
+    display: flex;
+    align-items: center;
+    padding: var(--grid-3x) var(--grid-4x);
+  }
+  
+  .table-header-content {
+    height: calc(var(--grid-8x) + var(--grid-4x)); /* 48px aligned to grid */
+    display: flex;
+    align-items: center;
+    padding: var(--grid-3x) var(--grid-4x);
+  }
+
+  /* Checkbox column - minimal grid alignment */
+  .checkbox-cell {
+    width: calc(var(--grid-8x) + var(--grid-4x)); /* 48px */
+    min-width: calc(var(--grid-8x) + var(--grid-4x));
+    max-width: calc(var(--grid-8x) + var(--grid-4x));
+  }
+  
+  /* Actions column - minimal grid alignment */
+  .actions-cell {
+    width: calc(var(--grid-8x) * 2); /* 64px */
+    min-width: calc(var(--grid-8x) * 2);
+    max-width: calc(var(--grid-8x) * 2);
   }
 }

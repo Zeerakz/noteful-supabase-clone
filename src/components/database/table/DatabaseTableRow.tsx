@@ -88,19 +88,18 @@ export function DatabaseTableRow({
   return (
     <TableRow 
       className={`
-        group transition-all duration-200 border-b border-border/30
-        ${!isAnyColumnResizing ? 'hover:bg-muted/40 hover:shadow-sm' : ''}
-        ${isSelected ? 'bg-accent/30 border-accent/50' : ''}
-        ${isEvenRow ? 'bg-muted/10' : 'bg-background'}
+        group transition-all duration-200
+        ${!isAnyColumnResizing ? 'hover:bg-muted/30' : ''}
+        ${isSelected ? 'bg-accent/20' : ''}
         ${isAnyColumnResizing ? 'pointer-events-none' : ''}
       `}
     >
-      {/* Selection Checkbox */}
+      {/* Selection Checkbox - Grid Aligned */}
       <TableCell 
-        className="w-12 p-3 border-r border-border/20"
+        className="checkbox-cell p-0"
         style={{ width: '48px' }}
       >
-        <div className="flex items-center justify-center">
+        <div className="table-cell-content justify-center">
           <Checkbox
             checked={isSelected}
             onCheckedChange={handleSelect}
@@ -113,18 +112,18 @@ export function DatabaseTableRow({
         </div>
       </TableCell>
 
-      {/* Title Cell */}
+      {/* Title Cell - Clean Grid Layout */}
       <TableCell 
-        className="p-0 border-r border-border/20"
+        className="hairline-vertical p-0"
         style={{ width: `${getColumnWidth('title')}px` }}
       >
-        <div className="flex items-center gap-2 px-4 py-3">
+        <div className="table-cell-content">
           {hasSubItems && (
             <Button
               variant="ghost"
               size="sm"
               onClick={handleToggleExpand}
-              className={`h-6 w-6 p-0 hover:bg-muted ${isAnyColumnResizing ? 'pointer-events-none' : ''}`}
+              className={`h-6 w-6 p-0 mr-2 hover:bg-muted ${isAnyColumnResizing ? 'pointer-events-none' : ''}`}
             >
               {isExpanded ? (
                 <ChevronDown className="h-3 w-3" />
@@ -145,18 +144,19 @@ export function DatabaseTableRow({
         </div>
       </TableCell>
 
-      {/* Property Cells */}
-      {fields.map((field) => {
+      {/* Property Cells - Minimal Grid Structure */}
+      {fields.map((field, index) => {
         const cellValue = page.properties[field.id] || '';
         const isFieldResizing = resizingFields.has(field.id);
+        const isLastField = index === fields.length - 1;
         
         return (
           <TableCell 
             key={field.id} 
-            className="p-0 border-r border-border/20 last:border-r-0"
+            className={`p-0 ${!isLastField ? 'hairline-vertical' : ''}`}
             style={{ width: `${getColumnWidth(field.id)}px` }}
           >
-            <div className="px-4 py-3 overflow-hidden">
+            <div className="table-cell-content">
               {editingField === field.id ? (
                 <FieldEditor
                   field={field}
@@ -168,8 +168,8 @@ export function DatabaseTableRow({
               ) : (
                 <div
                   className={`
-                    min-h-[24px] rounded px-2 py-1 transition-colors duration-150 flex items-center overflow-hidden
-                    ${!isAnyColumnResizing && !isFieldResizing ? 'cursor-text hover:bg-muted/30' : 'cursor-default'}
+                    w-full min-h-[24px] rounded-sm px-2 py-1 transition-colors duration-150 flex items-center overflow-hidden
+                    ${!isAnyColumnResizing && !isFieldResizing ? 'cursor-text hover:bg-muted/20' : 'cursor-default'}
                     ${isAnyColumnResizing ? 'pointer-events-none' : ''}
                   `}
                   onClick={() => !isAnyColumnResizing && setEditingField(field.id)}
@@ -184,7 +184,7 @@ export function DatabaseTableRow({
                       />
                     </div>
                   ) : (
-                    <span className={`text-muted-foreground text-sm editable-cell-placeholder ${isAnyColumnResizing ? 'text-muted-foreground/40' : ''}`}>
+                    <span className={`text-muted-foreground/50 text-sm ${isAnyColumnResizing ? 'text-muted-foreground/30' : ''}`}>
                       Enter {field.name.toLowerCase()}
                     </span>
                   )}
@@ -195,26 +195,26 @@ export function DatabaseTableRow({
         );
       })}
 
-      {/* Actions Cell */}
+      {/* Actions Cell - Minimal Grid Alignment */}
       <TableCell 
-        className="w-16 p-3"
+        className="actions-cell p-0"
         style={{ width: '64px' }}
       >
-        <div className="flex items-center justify-center">
+        <div className="table-cell-content justify-center">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
                 variant="ghost"
                 size="sm"
                 className={`
-                  h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-muted
+                  h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-muted/50
                   ${isAnyColumnResizing ? 'pointer-events-none' : ''}
                 `}
               >
                 <MoreHorizontal className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="bg-popover border border-border shadow-lg">
+            <DropdownMenuContent align="end" className="bg-popover shadow-lg">
               <DropdownMenuItem
                 onClick={handleDelete}
                 disabled={isDeleting}
