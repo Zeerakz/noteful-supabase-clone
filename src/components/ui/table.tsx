@@ -14,6 +14,7 @@ const Table = React.forwardRef<
         "w-full caption-bottom text-sm table-grid border-collapse", 
         className
       )}
+      role="table"
       {...props}
     />
   </div>
@@ -24,7 +25,12 @@ const TableHeader = React.forwardRef<
   HTMLTableSectionElement,
   React.HTMLAttributes<HTMLTableSectionElement>
 >(({ className, ...props }, ref) => (
-  <thead ref={ref} className={cn("bg-card/50 sticky top-0 z-10", className)} {...props} />
+  <thead 
+    ref={ref} 
+    className={cn("bg-card/50 sticky top-0 z-10", className)} 
+    role="rowgroup"
+    {...props} 
+  />
 ))
 TableHeader.displayName = "TableHeader"
 
@@ -35,6 +41,7 @@ const TableBody = React.forwardRef<
   <tbody
     ref={ref}
     className={cn("", className)}
+    role="rowgroup"
     {...props}
   />
 ))
@@ -50,6 +57,7 @@ const TableFooter = React.forwardRef<
       "hairline-divider bg-muted/20 font-medium",
       className
     )}
+    role="rowgroup"
     {...props}
   />
 ))
@@ -62,9 +70,11 @@ const TableRow = React.forwardRef<
   <tr
     ref={ref}
     className={cn(
-      "table-grid-row transition-all duration-300 ease-out border-b border-border/5 data-[state=selected]:bg-muted/40",
+      "table-grid-row transition-all duration-300 ease-out border-b border-border/5 data-[state=selected]:bg-muted/40 focus-within:bg-accent/10 focus-within:ring-1 focus-within:ring-primary/20",
       className
     )}
+    role="row"
+    tabIndex={-1}
     {...props}
   />
 ))
@@ -77,9 +87,11 @@ const TableHead = React.forwardRef<
   <th
     ref={ref}
     className={cn(
-      "text-left align-middle font-medium text-muted-foreground border-b border-border/20 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 transition-all duration-300 ease-out",
+      "text-left align-middle font-medium text-muted-foreground border-b border-border/20 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 transition-all duration-300 ease-out focus-within:outline-1 focus-within:outline-primary",
       className
     )}
+    role="columnheader"
+    tabIndex={-1}
     {...props}
   />
 ))
@@ -91,7 +103,12 @@ const TableCell = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <td
     ref={ref}
-    className={cn("align-middle border-b border-border/5 transition-all duration-300 ease-out", className)}
+    className={cn(
+      "align-middle border-b border-border/5 transition-all duration-300 ease-out focus-within:bg-primary/5 focus-within:outline-1 focus-within:outline-primary focus-table-cell",
+      className
+    )}
+    role="gridcell"
+    tabIndex={-1}
     {...props}
   />
 ))
