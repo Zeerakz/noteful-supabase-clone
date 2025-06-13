@@ -20,6 +20,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { Page } from '@/hooks/usePages';
 import { useAuth } from '@/contexts/AuthContext';
+import { ContentType, ContentTypeUtils } from '@/types/contentTypes';
+import { ContentTypeIcon } from '@/components/content-types/ContentTypeIcon';
 
 interface PageTreeItemProps {
   page: Page;
@@ -39,33 +41,52 @@ export function PageTreeItem({ page, pages, workspaceId, onDelete, level = 0, in
   const hasChildren = childPages.length > 0;
   const isOwner = page.created_by === user?.id;
 
+  // Determine content type for icon display
+  // Only show content type icons for first-level items (level 0)
+  const shouldShowContentTypeIcon = level === 0;
+  const contentType = shouldShowContentTypeIcon 
+    ? (page.database_id ? ContentType.DATABASE : ContentType.PAGE)
+    : null;
+
   const handleNavigate = () => {
     navigate(`/workspace/${workspaceId}/page/${page.id}`);
+  };
+
+  // Choose appropriate icon based on hierarchy level and content
+  const getItemIcon = () => {
+    if (shouldShowContentTypeIcon && contentType) {
+      return <ContentTypeIcon contentType={contentType} size="sm" showTooltip={false} />;
+    }
+    
+    if (hasChildren) {
+      return (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={(e) => {
+            e.stopPropagation();
+            setIsExpanded(!isExpanded);
+          }}
+          className={level === 0 ? "h-4 w-4 p-0" : "h-3 w-3 p-0"}
+        >
+          {isExpanded ? (
+            <ChevronDown className={level === 0 ? "h-3 w-3" : "h-2 w-2"} />
+          ) : (
+            <ChevronRight className={level === 0 ? "h-3 w-3" : "h-2 w-2"} />
+          )}
+        </Button>
+      );
+    }
+    
+    // For child items without children, use a simple file icon
+    return <FileText className={level === 0 ? "h-3 w-3 text-muted-foreground" : "h-3 w-3 text-muted-foreground"} />;
   };
 
   const content = (
     <>
       <SidebarMenuButton onClick={handleNavigate} className="group">
         <div className="flex items-center gap-2">
-          {hasChildren ? (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={(e) => {
-                e.stopPropagation();
-                setIsExpanded(!isExpanded);
-              }}
-              className="h-4 w-4 p-0"
-            >
-              {isExpanded ? (
-                <ChevronDown className="h-3 w-3" />
-              ) : (
-                <ChevronRight className="h-3 w-3" />
-              )}
-            </Button>
-          ) : (
-            <FileText className="h-3 w-3 text-muted-foreground" />
-          )}
+          {getItemIcon()}
           <span className="truncate">{page.title}</span>
         </div>
       </SidebarMenuButton>
@@ -143,25 +164,7 @@ export function PageTreeItem({ page, pages, workspaceId, onDelete, level = 0, in
         >
           <SidebarMenuSubButton onClick={handleNavigate} className="group">
             <div className="flex items-center gap-2 w-full">
-              {hasChildren ? (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setIsExpanded(!isExpanded);
-                  }}
-                  className="h-3 w-3 p-0"
-                >
-                  {isExpanded ? (
-                    <ChevronDown className="h-2 w-2" />
-                  ) : (
-                    <ChevronRight className="h-2 w-2" />
-                  )}
-                </Button>
-              ) : (
-                <FileText className="h-3 w-3 text-muted-foreground" />
-              )}
+              {getItemIcon()}
               <span className="truncate flex-1">{page.title}</span>
               {isOwner && (
                 <DropdownMenu>

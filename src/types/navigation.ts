@@ -1,4 +1,3 @@
-
 /**
  * Core Hierarchical Data Model for Navigation Tree
  * 
@@ -57,6 +56,8 @@ export interface NavigationPage extends BaseNavigationItem {
   is_favorited?: boolean;
   /** Last time this page was accessed by the current user */
   last_accessed?: string | null;
+  /** Content type for proper icon display - only used for first-level items */
+  content_type?: string;
 }
 
 /**
@@ -126,7 +127,7 @@ export const DEFAULT_WORKSPACE_SECTIONS: Omit<NavigationSection, 'id' | 'workspa
     type: 'section',
     title: 'Projects',
     order_index: 1,
-    icon: 'folder',
+    icon: 'briefcase',
     is_expanded: true,
     description: 'Active project workspaces',
   },
