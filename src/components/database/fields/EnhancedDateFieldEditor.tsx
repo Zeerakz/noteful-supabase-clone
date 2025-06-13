@@ -103,21 +103,27 @@ export function EnhancedDateFieldEditor({ value, onChange, config = {} }: Enhanc
     }
   };
 
-  const handleDateSelect = (selected: Date | DateRange | undefined) => {
+  const handleSingleDateSelect = (selected: Date | undefined) => {
     if (!selected) {
       setDateRange({ from: undefined, to: undefined });
       onChange('');
       return;
     }
 
-    if (selected instanceof Date) {
-      const newRange = { from: selected, to: undefined };
-      setDateRange(newRange);
-      updateValue(newRange);
-    } else {
-      setDateRange(selected);
-      updateValue(selected);
+    const newRange = { from: selected, to: undefined };
+    setDateRange(newRange);
+    updateValue(newRange);
+  };
+
+  const handleRangeDateSelect = (selected: DateRange | undefined) => {
+    if (!selected) {
+      setDateRange({ from: undefined, to: undefined });
+      onChange('');
+      return;
     }
+
+    setDateRange(selected);
+    updateValue(selected);
   };
 
   const formatDisplayText = (): string => {
@@ -223,13 +229,24 @@ export function EnhancedDateFieldEditor({ value, onChange, config = {} }: Enhanc
               </div>
             )}
 
-            <Calendar
-              mode={config.enableRange ? "range" : "single"}
-              selected={config.enableRange ? dateRange : dateRange.from}
-              onSelect={handleDateSelect}
-              initialFocus
-              className="rounded-md border-0 pointer-events-auto"
-            />
+            {/* Conditionally render Calendar based on mode */}
+            {config.enableRange ? (
+              <Calendar
+                mode="range"
+                selected={dateRange}
+                onSelect={handleRangeDateSelect}
+                initialFocus
+                className="rounded-md border-0 pointer-events-auto"
+              />
+            ) : (
+              <Calendar
+                mode="single"
+                selected={dateRange.from}
+                onSelect={handleSingleDateSelect}
+                initialFocus
+                className="rounded-md border-0 pointer-events-auto"
+              />
+            )}
           </div>
         </PopoverContent>
       </Popover>
