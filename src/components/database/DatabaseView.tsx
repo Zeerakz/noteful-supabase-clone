@@ -7,6 +7,7 @@ import { DatabaseViewRenderer } from './DatabaseViewRenderer';
 import { ComplexFilterModal } from './filters/ComplexFilterModal';
 import { SortingModal } from './SortingModal';
 import { useOptimisticDatabaseFields } from '@/hooks/useOptimisticDatabaseFields';
+import { useEnhancedDatabaseFieldOperations } from '@/hooks/useEnhancedDatabaseFieldOperations';
 import { useSavedDatabaseViews } from '@/hooks/useSavedDatabaseViews';
 import { useComplexFilters } from '@/hooks/useComplexFilters';
 import { useSorting } from '@/hooks/useSorting';
@@ -28,8 +29,24 @@ export function DatabaseView({ databaseId, workspaceId }: DatabaseViewProps) {
   const { 
     fields, 
     loading: fieldsLoading, 
-    error: fieldsError 
+    error: fieldsError,
+    optimisticCreateField,
+    optimisticUpdateField,
+    optimisticDeleteField,
+    optimisticReorderFields,
+    revertOptimisticChanges,
   } = useOptimisticDatabaseFields(databaseId);
+
+  // Enhanced field operations with optimistic updates
+  const fieldOperations = useEnhancedDatabaseFieldOperations({
+    databaseId,
+    onOptimisticCreate: optimisticCreateField,
+    onOptimisticUpdate: optimisticUpdateField,
+    onOptimisticDelete: optimisticDeleteField,
+    onOptimisticReorder: optimisticReorderFields,
+    onRevert: revertOptimisticChanges,
+    onFieldsChange: () => setFieldsRefreshKey(prev => prev + 1),
+  });
   
   const { 
     views,
@@ -244,6 +261,13 @@ export function DatabaseView({ databaseId, workspaceId }: DatabaseViewProps) {
         setShowSortModal={setShowSortModal}
         groupingConfig={groupingConfig}
         onGroupingConfigChange={updateGroupingConfig}
+        databaseId={databaseId}
+        workspaceId={workspaceId}
+        onFieldsReorder={fieldOperations.reorderFields}
+        onFieldUpdate={fieldOperations.updateField}
+        onFieldDuplicate={fieldOperations.duplicateField}
+        onFieldDelete={fieldOperations.deleteField}
+        onFieldCreate={fieldOperations.createField}
       />
 
       {/* View Renderer with Multi-Level Grouping Support */}
