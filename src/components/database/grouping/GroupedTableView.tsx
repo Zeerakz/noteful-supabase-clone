@@ -8,6 +8,7 @@ import { DatabaseField } from '@/types/database';
 import { FlattenedGroup } from '@/types/grouping';
 import { getGroupKey } from '@/utils/multiLevelGrouping';
 import { PropertyTableCell } from '../table/PropertyTableCell';
+import { getFieldSummary, formatSummaryValue, getAvailableMetrics } from '@/utils/summaryCalculations';
 
 interface GroupedTableViewProps {
   groups: FlattenedGroup[];
@@ -87,7 +88,7 @@ export function GroupedTableView({
   const renderGroupItems = (group: FlattenedGroup) => {
     if (group.isCollapsed) return null;
     
-    return group.items.map((item) => (
+    const items = group.items.map((item) => (
       <TableRow key={item.id} className="hover:bg-muted/50">
         <TableCell 
           style={{ 
@@ -113,9 +114,9 @@ export function GroupedTableView({
             <PropertyTableCell
               field={field}
               value={item.properties[field.id] || ''}
-              pageId={item.id} // Fixed: added missing pageId prop
+              pageId={item.id}
               workspaceId={workspaceId}
-              width={getColumnWidth(field.id)} // Fixed: added missing width prop
+              width={getColumnWidth(field.id)}
               onValueChange={(value) => onPropertyUpdate(item.id, field.id, value)}
             />
           </TableCell>
@@ -126,6 +127,73 @@ export function GroupedTableView({
         </TableCell>
       </TableRow>
     ));
+
+    // Add summary row for this group
+    const summaryRow = renderGroupSummaryRow(group);
+    
+    return [...items, summaryRow];
+  };
+
+  const renderGroupSummaryRow = (group: FlattenedGroup) => {
+    if (group.items.length === 0) return null;
+
+    return (
+      <TableRow 
+        key={`summary-${getGroupKey(group.groupPath)}`}
+        className="bg-muted/10 border-t-2 border-primary/20"
+      >
+        <TableCell 
+          style={{ 
+            width: `${getColumnWidth('title')}px`,
+            paddingLeft: `${16 + getIndentLevel(group.level + 1)}px`
+          }}
+          className="font-medium text-muted-foreground text-xs"
+        >
+          <div className="flex items-center gap-1">
+            <span>Σ</span>
+            <span>Summary</span>
+          </div>
+        </TableCell>
+        
+        {fields.map((field) => {
+          const summary = getFieldSummary(group.items, field);
+          
+          return (
+            <TableCell 
+              key={field.id}
+              style={{ width: `${getColumnWidth(field.id)}px` }}
+              className="text-xs text-muted-foreground"
+            >
+              {summary && (
+                <div className="space-y-1">
+                  {field.type === 'number' && (
+                    <>
+                      <div>Sum: {formatSummaryValue(summary, 'sum')}</div>
+                      <div>Avg: {formatSummaryValue(summary, 'average')}</div>
+                    </>
+                  )}
+                  {field.type === 'date' && (
+                    <>
+                      <div>Earliest: {formatSummaryValue(summary, 'earliest')}</div>
+                      <div>Latest: {formatSummaryValue(summary, 'latest')}</div>
+                    </>
+                  )}
+                  {summary.validCount < group.items.length && (
+                    <div className="text-xs opacity-75">
+                      {summary.validCount}/{group.items.length} values
+                    </div>
+                  )}
+                </div>
+              )}
+            </TableCell>
+          );
+        })}
+        
+        <TableCell style={{ width: `${getColumnWidth('actions')}px` }}>
+          {/* Empty actions cell */}
+        </TableCell>
+      </TableRow>
+    );
   };
 
   if (groups.length === 0) {

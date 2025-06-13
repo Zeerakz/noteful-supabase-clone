@@ -8,6 +8,7 @@ import { DatabaseField } from '@/types/database';
 import { FlattenedGroup } from '@/types/grouping';
 import { getGroupKey } from '@/utils/multiLevelGrouping';
 import { ListCard } from '../list/ListCard';
+import { GroupSummaryFooter } from './GroupSummaryFooter';
 
 interface GroupedListViewProps {
   groups: FlattenedGroup[];
@@ -85,23 +86,32 @@ export function GroupedListView({
     if (group.isCollapsed) return null;
     
     return (
-      <div 
-        className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 mb-6"
-        style={{ marginLeft: `${getIndentLevel(group.level + 1)}px` }}
-      >
-        {group.items.map((item) => (
-          <ListCard
-            key={item.id}
-            page={{
-              pageId: item.id,
-              title: item.title,
-              properties: item.properties
-            }}
-            fields={fields}
-            onFieldEdit={onFieldEdit}
-            onTitleEdit={onTitleEdit}
-          />
-        ))}
+      <div className="mb-6">
+        <div 
+          className="grid gap-4 md:grid-cols-2 lg:grid-cols-3"
+          style={{ marginLeft: `${getIndentLevel(group.level + 1)}px` }}
+        >
+          {group.items.map((item) => (
+            <ListCard
+              key={item.id}
+              page={{
+                pageId: item.id,
+                title: item.title,
+                properties: item.properties
+              }}
+              fields={fields}
+              onFieldEdit={onFieldEdit}
+              onTitleEdit={onTitleEdit}
+            />
+          ))}
+        </div>
+        
+        {/* Add summary footer for this group */}
+        <GroupSummaryFooter
+          items={group.items}
+          fields={fields}
+          level={group.level}
+        />
       </div>
     );
   };
