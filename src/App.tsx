@@ -46,17 +46,17 @@ const queryClient = new QueryClient({
 });
 
 // Add global error handling for React Query
-queryClient.getMutationCache().subscribe((mutation) => {
-  if (mutation?.state.status === 'error' && mutation.state.error) {
-    console.error('Mutation error:', mutation.state.error);
-    errorHandler.logError(mutation.state.error as Error, { context: 'react_query_mutation' });
+queryClient.getMutationCache().subscribe((event) => {
+  if (event.type === 'updated' && event.mutation?.state.status === 'error' && event.mutation.state.error) {
+    console.error('Mutation error:', event.mutation.state.error);
+    errorHandler.logError(event.mutation.state.error as Error, { context: 'react_query_mutation' });
   }
 });
 
-queryClient.getQueryCache().subscribe((query) => {
-  if (query?.state.status === 'error' && query.state.error) {
-    console.error('Query error:', query.state.error);
-    errorHandler.logError(query.state.error as Error, { context: 'react_query_query' });
+queryClient.getQueryCache().subscribe((event) => {
+  if (event.type === 'updated' && event.query?.state.status === 'error' && event.query.state.error) {
+    console.error('Query error:', event.query.state.error);
+    errorHandler.logError(event.query.state.error as Error, { context: 'react_query_query' });
   }
 });
 
