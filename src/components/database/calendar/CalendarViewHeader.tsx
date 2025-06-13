@@ -19,8 +19,25 @@ export function CalendarViewHeader({
     return null; // Don't render header if no date fields
   }
 
-  // Filter out fields with empty IDs to prevent Select.Item errors
-  const validDateFields = dateFields.filter(field => field.id && field.id.trim() !== '');
+  // Filter out fields with empty IDs and log for debugging
+  const validDateFields = dateFields.filter(field => {
+    const isValid = field.id && field.id.trim() !== '';
+    if (!isValid) {
+      console.warn('CalendarViewHeader: Filtering out field with empty ID:', field);
+    }
+    return isValid;
+  });
+
+  console.log('CalendarViewHeader: Valid date fields:', validDateFields);
+
+  const handleDateFieldChange = (value: string) => {
+    console.log('CalendarViewHeader: Field change value:', value);
+    // Only proceed if the value is not empty
+    if (value && value.trim() !== '') {
+      const field = validDateFields.find(f => f.id === value);
+      onDateFieldChange(field || null);
+    }
+  };
 
   return (
     <div className="flex items-center justify-between">
@@ -34,20 +51,23 @@ export function CalendarViewHeader({
           <span className="text-muted-foreground">Date field:</span>
           <Select
             value={selectedDateField?.id || ''}
-            onValueChange={(value) => {
-              const field = validDateFields.find(f => f.id === value);
-              onDateFieldChange(field || null);
-            }}
+            onValueChange={handleDateFieldChange}
           >
             <SelectTrigger className="w-[200px]">
               <SelectValue placeholder="Select date field" />
             </SelectTrigger>
             <SelectContent>
-              {validDateFields.map(field => (
-                <SelectItem key={field.id} value={field.id}>
-                  {field.name}
-                </SelectItem>
-              ))}
+              {validDateFields.map(field => {
+                if (!field.id || field.id.trim() === '') {
+                  console.error('CalendarViewHeader: Attempted to render SelectItem with empty ID:', field);
+                  return null;
+                }
+                return (
+                  <SelectItem key={field.id} value={field.id}>
+                    {field.name}
+                  </SelectItem>
+                );
+              })}
             </SelectContent>
           </Select>
         </div>

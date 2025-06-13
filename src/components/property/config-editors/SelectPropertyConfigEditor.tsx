@@ -23,11 +23,36 @@ export function SelectPropertyConfigEditor({
     onConfigChange({ ...selectConfig, ...updates });
   };
 
+  // Filter and validate options before passing to SelectOptionManager
+  const validOptions = (selectConfig.options || []).filter(option => {
+    const isValid = option.id && option.id.trim() !== '';
+    if (!isValid) {
+      console.warn('SelectPropertyConfigEditor: Filtering out option with empty ID:', option);
+    }
+    return isValid;
+  });
+
+  console.log('SelectPropertyConfigEditor: Valid options:', validOptions);
+
+  const handleOptionsChange = (options: any[]) => {
+    // Additional validation before updating config
+    const finalValidOptions = options.filter(option => {
+      const isValid = option.id && option.id.trim() !== '';
+      if (!isValid) {
+        console.warn('SelectPropertyConfigEditor: Rejecting option with empty ID:', option);
+      }
+      return isValid;
+    });
+    
+    console.log('SelectPropertyConfigEditor: Updating config with options:', finalValidOptions);
+    updateConfig({ options: finalValidOptions });
+  };
+
   return (
     <div className="space-y-4">
       <SelectOptionManager
-        options={(selectConfig.options || []).filter(option => option.id && option.id.trim() !== '')}
-        onOptionsChange={(options) => updateConfig({ options })}
+        options={validOptions}
+        onOptionsChange={handleOptionsChange}
         label="Options"
         placeholder="Enter option name and press Enter"
       />

@@ -13,18 +13,37 @@ interface SelectFieldConfigProps {
 }
 
 export function SelectFieldConfig({ settings, onSettingsChange }: SelectFieldConfigProps) {
-  // Filter out options with empty IDs
-  const [options, setOptions] = useState((settings.options || []).filter(option => option.id && option.id.trim() !== ''));
+  // Filter out options with empty IDs and add debugging
+  const validOptions = (settings.options || []).filter(option => {
+    const isValid = option.id && option.id.trim() !== '';
+    if (!isValid) {
+      console.warn('SelectFieldConfig: Filtering out option with empty ID:', option);
+    }
+    return isValid;
+  });
+
+  const [options, setOptions] = useState(validOptions);
   const [newOptionName, setNewOptionName] = useState('');
 
   useEffect(() => {
     // Always filter options before updating settings
-    const validOptions = options.filter(option => option.id && option.id.trim() !== '');
-    onSettingsChange({ options: validOptions });
+    const finalValidOptions = options.filter(option => {
+      const isValid = option.id && option.id.trim() !== '';
+      if (!isValid) {
+        console.warn('SelectFieldConfig: Removing option with empty ID from state:', option);
+      }
+      return isValid;
+    });
+    
+    console.log('SelectFieldConfig: Updating settings with options:', finalValidOptions);
+    onSettingsChange({ options: finalValidOptions });
   }, [options, onSettingsChange]);
 
   const addOption = () => {
-    if (!newOptionName.trim()) return;
+    if (!newOptionName.trim()) {
+      console.warn('SelectFieldConfig: Attempted to add option with empty name');
+      return;
+    }
     
     const newOption = {
       id: crypto.randomUUID(),
@@ -32,11 +51,18 @@ export function SelectFieldConfig({ settings, onSettingsChange }: SelectFieldCon
       color: getNextColor(),
     };
     
+    console.log('SelectFieldConfig: Adding new option:', newOption);
     setOptions([...options, newOption]);
     setNewOptionName('');
   };
 
   const removeOption = (optionId: string) => {
+    if (!optionId || optionId.trim() === '') {
+      console.warn('SelectFieldConfig: Attempted to remove option with empty ID');
+      return;
+    }
+    
+    console.log('SelectFieldConfig: Removing option:', optionId);
     setOptions(options.filter(option => option.id !== optionId));
   };
 
@@ -76,22 +102,30 @@ export function SelectFieldConfig({ settings, onSettingsChange }: SelectFieldCon
         
         {options.length > 0 && (
           <div className="space-y-2">
-            {options.map((option) => (
-              <div key={option.id} className="flex items-center justify-between p-2 border rounded">
-                <Badge variant="outline" className="text-xs">
-                  {option.name}
-                </Badge>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => removeOption(option.id)}
-                  className="h-6 w-6 p-0"
-                >
-                  <X className="h-3 w-3" />
-                </Button>
-              </div>
-            ))}
+            {options.map((option) => {
+              // Additional safety check before rendering
+              if (!option.id || option.id.trim() === '') {
+                console.error('SelectFieldConfig: Skipping render of option with empty ID:', option);
+                return null;
+              }
+              
+              return (
+                <div key={option.id} className="flex items-center justify-between p-2 border rounded">
+                  <Badge variant="outline" className="text-xs">
+                    {option.name}
+                  </Badge>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => removeOption(option.id)}
+                    className="h-6 w-6 p-0"
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
+                </div>
+              );
+            })}
           </div>
         )}
         
