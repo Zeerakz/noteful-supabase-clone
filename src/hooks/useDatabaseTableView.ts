@@ -124,13 +124,17 @@ export function useDatabaseTableView({
 
   // Action handlers with optimistic updates
   const handleCreateRow = useCallback(async () => {
-    if (!user) return;
+    if (!user) {
+      toast({
+        title: "Error",
+        description: "You must be logged in to create a row",
+        variant: "destructive",
+      });
+      return;
+    }
 
     try {
-      console.log('useDatabaseTableView: Creating new row');
-      
-      // Optimistic update
-      optimisticCreatePage({ title: 'Untitled' });
+      console.log('useDatabaseTableView: Creating new row', { databaseId, workspaceId, userId: user.id });
       
       const { data, error } = await PageService.createPage(
         workspaceId,
@@ -139,26 +143,30 @@ export function useDatabaseTableView({
       );
       
       if (error) {
+        console.error('Error creating page:', error);
         toast({
           title: "Error",
           description: error,
           variant: "destructive",
         });
       } else {
+        console.log('Page created successfully:', data);
         toast({
           title: "Success",
           description: "New row created",
         });
-        // Let server sync handle the real data
+        // Refetch to get the latest data
+        await refetchPages();
       }
     } catch (err) {
+      console.error('Exception creating page:', err);
       toast({
         title: "Error",
         description: "Failed to create row",
         variant: "destructive",
       });
     }
-  }, [user, workspaceId, databaseId, toast, optimisticCreatePage]);
+  }, [user, workspaceId, databaseId, toast, refetchPages]);
 
   const handleDeleteRow = useCallback(async (pageId: string) => {
     try {
