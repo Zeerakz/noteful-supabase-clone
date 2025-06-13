@@ -21,7 +21,6 @@ interface DatabaseTableHeaderProps {
   onResize?: (fieldId: string, width: number) => void;
   onFieldsChange?: () => void;
   onColumnResize?: (fieldId: string, width: number) => void;
-  onResizeStateChange?: (newResizingFields: Set<string>) => void;
 }
 
 export function DatabaseTableHeader({
@@ -38,8 +37,7 @@ export function DatabaseTableHeader({
   onEndResize,
   onResize,
   onFieldsChange,
-  onColumnResize,
-  onResizeStateChange
+  onColumnResize
 }: DatabaseTableHeaderProps) {
   const allSelected = selectedRows.size === totalRows && totalRows > 0;
   const someSelected = selectedRows.size > 0 && selectedRows.size < totalRows;
@@ -82,7 +80,6 @@ export function DatabaseTableHeader({
               onResize={onResize}
               isResizing={resizingFields.has('title')}
               onFieldsChange={onFieldsChange}
-              onResizeStateChange={onResizeStateChange}
             />
           </div>
         </TableHead>
@@ -107,7 +104,6 @@ export function DatabaseTableHeader({
                   onResize={onResize}
                   isResizing={resizingFields.has(field.id)}
                   onFieldsChange={onFieldsChange}
-                  onResizeStateChange={onResizeStateChange}
                 />
               </div>
             </TableHead>

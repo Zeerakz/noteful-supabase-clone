@@ -129,8 +129,12 @@ export function DatabaseTableViewContent({
     }
   }, [pagesWithProperties]);
 
-  const handleResizeStateChange = useCallback((newResizingFields: Set<string>) => {
-    setResizingFields(newResizingFields);
+  const handleStartResize = useCallback((fieldId: string) => {
+    setResizingFields(prev => new Set(prev).add(fieldId));
+  }, []);
+
+  const handleEndResize = useCallback(() => {
+    setResizingFields(new Set());
   }, []);
 
   // Calculate total width for the table with consistent approach
@@ -244,8 +248,14 @@ export function DatabaseTableViewContent({
               onFieldsChange={onFieldsChange}
               onFieldReorder={onFieldReorder}
               getColumnWidth={getColumnWidth}
+              selectedRows={selectedRows}
+              totalRows={pagesWithProperties.length}
+              onSelectAll={handleSelectAll}
               onColumnResize={updateColumnWidth}
-              onResizeStateChange={handleResizeStateChange}
+              resizingFields={resizingFields}
+              onStartResize={handleStartResize}
+              onEndResize={handleEndResize}
+              onResize={updateColumnWidth}
             />
             
             {/* Table Body */}
