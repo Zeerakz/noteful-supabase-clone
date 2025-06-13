@@ -205,7 +205,7 @@ export function EditableCell({
       className={cn(
         "w-full h-full cursor-text select-text px-2 py-1 rounded-sm",
         "text-sm font-normal text-foreground leading-relaxed",
-        "hover:bg-muted/30 focus:bg-background transition-colors",
+        "hover:bg-muted/30 transition-colors",
         "border-none outline-none tracking-normal",
         // Empty state styling
         !value && "text-muted-foreground/60 italic",
