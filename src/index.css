@@ -1,11 +1,11 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Import motion philosophy and accessibility tokens */
+/* Import motion philosophy, accessibility tokens, and frosted glass effect */
 @import url('./styles/motion-tokens.css');
 @import url('./styles/accessibility-contrast.css');
+@import url('./styles/frosted-glass.css');
 
 @layer base {
   :root {
@@ -266,8 +266,6 @@
     box-shadow: 0 0 0 6px hsl(var(--primary) / 0.2);
   }
 
-  /* ... keep existing code (resize mode improvements, table styles, etc.) the same ... */
-
   /* Enhanced typographic system classes with improved contrast */
   .text-hero {
     /* Data content - the most effortlessly legible */
@@ -301,8 +299,6 @@
     @apply text-xs font-semibold tracking-normal;
     line-height: calc(var(--grid-4x) * 1);
   }
-
-  /* ... keep existing code (grid-aligned cell content, resize handles, etc.) the same ... */
 
   /* High contrast mode support with enhanced visibility */
   @media (prefers-contrast: high) {
