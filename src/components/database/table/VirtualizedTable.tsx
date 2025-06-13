@@ -85,10 +85,13 @@ export function VirtualizedTable({
 
   if (enableVirtualScrolling && pages.length > 50) {
     return (
-      <div className="border-2 border-border rounded-lg overflow-hidden shadow-sm">
+      <div className="border-2 border-border rounded-lg overflow-hidden shadow-sm bg-background">
         {/* Fixed sticky header with consistent width */}
-        <div className="border-b-2 border-border bg-background/98 backdrop-blur-md sticky top-0 z-30 shadow-sm overflow-hidden">
-          <div style={{ width: `${totalTableWidth}px`, minWidth: `${totalTableWidth}px` }}>
+        <div className="border-b-2 border-border bg-background/98 backdrop-blur-md sticky top-0 z-30 shadow-sm">
+          <div 
+            className="overflow-hidden"
+            style={{ width: `${totalTableWidth}px`, minWidth: `${totalTableWidth}px` }}
+          >
             <Table className="table-fixed" style={{ width: `${totalTableWidth}px` }}>
               <EnhancedTableHeader
                 fields={fields}
@@ -102,14 +105,25 @@ export function VirtualizedTable({
           </div>
         </div>
         
-        {/* Virtualized scrollable body with matching width */}
+        {/* Virtualized scrollable body with custom scrollbar */}
         <div 
           ref={containerRef}
-          className="overflow-auto"
-          style={{ height: maxHeight }}
+          className="overflow-auto scrollbar-thin scrollbar-thumb-border/40 scrollbar-track-transparent hover:scrollbar-thumb-border/60 transition-colors"
+          style={{ 
+            height: maxHeight,
+            scrollbarWidth: 'thin',
+            scrollbarColor: 'rgba(0,0,0,0.2) transparent'
+          }}
           onScroll={virtualScrolling.handleScroll}
         >
-          <div style={{ height: virtualScrolling.totalHeight, position: 'relative', width: `${totalTableWidth}px` }}>
+          <div 
+            style={{ 
+              height: virtualScrolling.totalHeight, 
+              position: 'relative', 
+              width: `${totalTableWidth}px`,
+              minWidth: `${totalTableWidth}px`
+            }}
+          >
             <div 
               style={{ 
                 transform: `translateY(${virtualScrolling.offsetY}px)`,
@@ -143,10 +157,13 @@ export function VirtualizedTable({
   }
 
   return (
-    <div className="border-2 border-border rounded-lg overflow-hidden shadow-sm">
+    <div className="border-2 border-border rounded-lg overflow-hidden shadow-sm bg-background">
       {/* Fixed sticky header with consistent width */}
-      <div className="border-b-2 border-border bg-background/98 backdrop-blur-md sticky top-0 z-30 shadow-sm overflow-hidden">
-        <div style={{ width: `${totalTableWidth}px`, minWidth: `${totalTableWidth}px` }}>
+      <div className="border-b-2 border-border bg-background/98 backdrop-blur-md sticky top-0 z-30 shadow-sm">
+        <div 
+          className="overflow-hidden"
+          style={{ width: `${totalTableWidth}px`, minWidth: `${totalTableWidth}px` }}
+        >
           <Table className="table-fixed" style={{ width: `${totalTableWidth}px` }}>
             <EnhancedTableHeader
               fields={fields}
@@ -160,9 +177,15 @@ export function VirtualizedTable({
         </div>
       </div>
       
-      {/* Scrollable body with matching width */}
-      <ScrollArea style={{ height: maxHeight }}>
-        <div style={{ width: `${totalTableWidth}px`, minWidth: `${totalTableWidth}px` }}>
+      {/* Enhanced scrollable body with better scrollbar styling */}
+      <ScrollArea 
+        className="scrollbar-thin scrollbar-thumb-border/40 scrollbar-track-transparent hover:scrollbar-thumb-border/60 transition-colors"
+        style={{ height: maxHeight }}
+      >
+        <div 
+          className="overflow-x-auto"
+          style={{ width: `${totalTableWidth}px`, minWidth: `${totalTableWidth}px` }}
+        >
           <VirtualizedTableBody
             pages={displayPages}
             fields={fields}

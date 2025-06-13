@@ -31,8 +31,29 @@ export function useVirtualScrolling({
   const offsetY = startIndex * itemHeight;
 
   const handleScroll = useCallback((event: React.UIEvent<HTMLDivElement>) => {
-    setScrollTop(event.currentTarget.scrollTop);
+    const scrollTop = event.currentTarget.scrollTop;
+    setScrollTop(scrollTop);
   }, []);
+
+  // Smooth scrolling utilities
+  const scrollToIndex = useCallback((index: number, behavior: ScrollBehavior = 'smooth') => {
+    const element = document.querySelector('[data-virtual-scroll-container]') as HTMLDivElement;
+    if (element) {
+      const targetScrollTop = Math.max(0, Math.min(index * itemHeight, totalHeight - containerHeight));
+      element.scrollTo({
+        top: targetScrollTop,
+        behavior
+      });
+    }
+  }, [itemHeight, totalHeight, containerHeight]);
+
+  const scrollToTop = useCallback((behavior: ScrollBehavior = 'smooth') => {
+    scrollToIndex(0, behavior);
+  }, [scrollToIndex]);
+
+  const scrollToBottom = useCallback((behavior: ScrollBehavior = 'smooth') => {
+    scrollToIndex(items.length - 1, behavior);
+  }, [scrollToIndex, items.length]);
 
   return {
     visibleItems,
@@ -40,6 +61,11 @@ export function useVirtualScrolling({
     offsetY,
     handleScroll,
     startIndex,
-    endIndex
+    endIndex,
+    scrollToIndex,
+    scrollToTop,
+    scrollToBottom,
+    isScrolledToTop: scrollTop === 0,
+    isScrolledToBottom: scrollTop >= totalHeight - containerHeight
   };
 }
