@@ -16,9 +16,9 @@ interface AppLayoutWithSidebarProps {
 export function AppLayoutWithSidebar({ children, breadcrumbs }: AppLayoutWithSidebarProps) {
   return (
     <SidebarProvider>
-      <div className="min-h-screen max-h-screen flex w-full overflow-hidden">
+      <div className="min-h-screen max-h-screen flex w-full">
         <PagesSidebar />
-        <SidebarInset className="flex flex-col h-screen overflow-hidden">
+        <SidebarInset className="flex flex-col h-screen">
           <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
             <SidebarTrigger className="-ml-1" />
             <Separator orientation="vertical" className="mr-2 h-4" />
@@ -26,7 +26,8 @@ export function AppLayoutWithSidebar({ children, breadcrumbs }: AppLayoutWithSid
               <DarkModeToggle />
             </div>
           </header>
-          <div className="flex-1 min-h-0 overflow-hidden">
+          {/* Main content area with scroll container moved to this level */}
+          <div className="flex-1 min-h-0 overflow-auto">
             {children}
           </div>
         </SidebarInset>

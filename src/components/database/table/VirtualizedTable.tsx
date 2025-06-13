@@ -1,4 +1,3 @@
-
 import React, { useRef, useMemo } from 'react';
 import {
   Table,
@@ -89,9 +88,9 @@ export function VirtualizedTable({
 
   if (enableVirtualScrolling && pages.length > 50) {
     return (
-      <div className="flex flex-col h-full overflow-hidden bg-background border-2 border-border rounded-lg shadow-sm">
-        {/* Fixed sticky header - Use proper table structure */}
-        <div className="shrink-0 border-b-2 border-border bg-background/98 backdrop-blur-md sticky top-0 z-30 shadow-sm overflow-hidden">
+      <div className="flex flex-col bg-background border-2 border-border rounded-lg shadow-sm">
+        {/* Fixed sticky header */}
+        <div className="shrink-0 border-b-2 border-border bg-background/98 backdrop-blur-md sticky top-0 z-30 shadow-sm">
           <Table className="table-fixed" style={{ width: `${totalTableWidth}px` }}>
             <EnhancedTableHeader
               fields={fields}
@@ -104,10 +103,10 @@ export function VirtualizedTable({
           </Table>
         </div>
         
-        {/* Virtualized scrollable body */}
+        {/* Virtualized content without internal scrolling - relies on parent scroll */}
         <div 
           ref={containerRef}
-          className="flex-1 min-h-0 overflow-auto"
+          className="flex-1"
           style={{ height: maxHeight }}
           onScroll={virtualScrolling.handleScroll}
         >
@@ -151,9 +150,9 @@ export function VirtualizedTable({
   }
 
   return (
-    <div className="flex flex-col h-full overflow-hidden bg-background border-2 border-border rounded-lg shadow-sm">
-      {/* Fixed sticky header - Use proper table structure */}
-      <div className="shrink-0 border-b-2 border-border bg-background/98 backdrop-blur-md sticky top-0 z-30 shadow-sm overflow-hidden">
+    <div className="flex flex-col bg-background border-2 border-border rounded-lg shadow-sm">
+      {/* Fixed sticky header */}
+      <div className="shrink-0 border-b-2 border-border bg-background/98 backdrop-blur-md sticky top-0 z-30 shadow-sm">
         <Table className="table-fixed" style={{ width: `${totalTableWidth}px` }}>
           <EnhancedTableHeader
             fields={fields}
@@ -166,8 +165,8 @@ export function VirtualizedTable({
         </Table>
       </div>
       
-      {/* Scrollable body with native scrolling */}
-      <div className="flex-1 min-h-0 overflow-auto" style={{ height: maxHeight }}>
+      {/* Table body without internal scrolling */}
+      <div className="flex-1">
         <VirtualizedTableBody
           pages={displayPages}
           fields={fields}

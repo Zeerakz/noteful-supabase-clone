@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback } from 'react';
 import { DatabaseField, PageProperty } from '@/types/database';
 import { DatabaseTableHeader } from './DatabaseTableHeader';
@@ -155,7 +154,7 @@ export function DatabaseTableViewContent({
           <Skeleton className="h-10 w-36" />
         </div>
         
-        <div className="flex-1 overflow-hidden">
+        <div className="flex-1">
           <div className="bg-card border-b">
             <div className="flex">
               <Skeleton className="h-12 w-[250px] border-r" />
@@ -192,9 +191,9 @@ export function DatabaseTableViewContent({
   }
 
   return (
-    <div className="flex flex-col h-full bg-background overflow-hidden">
+    <div className="flex flex-col bg-background">
       {/* Header with improved styling - Fixed height */}
-      <div className="flex items-center justify-between px-6 py-4 border-b bg-card/50 backdrop-blur-sm shrink-0">
+      <div className="flex items-center justify-between px-6 py-4 border-b bg-card/50 backdrop-blur-sm shrink-0 sticky top-0 z-10">
         <div className="flex items-center gap-3">
           <h3 className="text-xl font-semibold text-foreground">Table View</h3>
           <div className="px-2 py-1 bg-muted rounded-md">
@@ -226,8 +225,8 @@ export function DatabaseTableViewContent({
         </div>
       </div>
 
-      {/* Table container with native scrolling - uses remaining height */}
-      <div className="flex-1 min-h-0 overflow-auto bg-background">
+      {/* Table container without internal scrolling */}
+      <div className="bg-background">
         <div 
           className="relative"
           style={{ 
