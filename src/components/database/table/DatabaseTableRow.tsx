@@ -85,33 +85,28 @@ export function DatabaseTableRow({
   return (
     <TableRow 
       className={`
-        group transition-all duration-200 ease-out border-b border-border/5
-        hover:bg-accent/20
-        ${isSelected ? 'bg-accent/30' : ''}
+        group
+        ${isSelected ? 'bg-accent/20' : ''}
         ${isAnyColumnResizing ? 'pointer-events-none opacity-75' : ''}
       `}
     >
       {/* Selection Checkbox */}
-      <TableCell 
-        className="p-3 border-r border-border/5 text-center"
-        style={{ width: '48px' }}
-      >
-        <Checkbox
-          checked={isSelected}
-          onCheckedChange={handleSelect}
-          className={`
-            transition-all duration-200 ease-out
-            ${isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}
-            ${isAnyColumnResizing ? 'pointer-events-none' : ''}
-          `}
-        />
+      <TableCell style={{ width: '48px' }}>
+        <div className="flex items-center justify-center">
+          <Checkbox
+            checked={isSelected}
+            onCheckedChange={handleSelect}
+            className={`
+              transition-opacity duration-200
+              ${isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}
+              ${isAnyColumnResizing ? 'pointer-events-none' : ''}
+            `}
+          />
+        </div>
       </TableCell>
 
       {/* Title Cell */}
-      <TableCell 
-        className="p-3 border-r border-border/5"
-        style={{ width: `${getColumnWidth('title')}px` }}
-      >
+      <TableCell style={{ width: `${getColumnWidth('title')}px` }}>
         <div className="flex items-center gap-2">
           {hasSubItems && (
             <Button
@@ -119,7 +114,7 @@ export function DatabaseTableRow({
               size="sm"
               onClick={handleToggleExpand}
               className={`
-                h-6 w-6 p-0 transition-all duration-200 ease-out
+                h-6 w-6 p-0 transition-all duration-200
                 hover:bg-muted/50
                 ${isAnyColumnResizing ? 'pointer-events-none' : ''}
               `}
@@ -138,22 +133,20 @@ export function DatabaseTableRow({
               onChange={(newTitle) => onTitleUpdate(page.id, newTitle)}
               placeholder="Untitled"
               disabled={isAnyColumnResizing}
-              className="text-sm font-medium text-foreground"
+              className="text-sm font-medium"
             />
           </div>
         </div>
       </TableCell>
 
       {/* Property Cells */}
-      {fields.map((field, index) => {
+      {fields.map((field) => {
         const cellValue = page.properties[field.id] || '';
         const isFieldResizing = resizingFields.has(field.id);
-        const isLastField = index === fields.length - 1;
         
         return (
           <TableCell 
             key={field.id} 
-            className={`p-3 ${!isLastField ? 'border-r border-border/5' : ''}`}
             style={{ width: `${getColumnWidth(field.id)}px` }}
           >
             <EditableCell
@@ -166,43 +159,42 @@ export function DatabaseTableRow({
               pageId={page.id}
               userProfiles={userProfiles}
               allFields={allFields}
-              className="w-full min-h-[24px] rounded-sm px-2 py-1 transition-all duration-200 ease-out flex items-center overflow-hidden bg-transparent text-foreground hover:bg-muted/30"
+              className="w-full"
             />
           </TableCell>
         );
       })}
 
       {/* Actions Cell */}
-      <TableCell 
-        className="p-3 text-center"
-        style={{ width: '64px' }}
-      >
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              size="sm"
-              className={`
-                h-8 w-8 p-0 transition-all duration-200 ease-out
-                ${isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}
-                hover:bg-muted/50
-                ${isAnyColumnResizing ? 'pointer-events-none' : ''}
-              `}
-            >
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="bg-popover shadow-lg">
-            <DropdownMenuItem
-              onClick={handleDelete}
-              disabled={isDeleting}
-              className="text-destructive focus:text-destructive hover:bg-destructive/10"
-            >
-              <Trash2 className="h-4 w-4 mr-2" />
-              {isDeleting ? 'Deleting...' : 'Delete'}
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+      <TableCell style={{ width: '64px' }}>
+        <div className="flex items-center justify-center">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className={`
+                  h-8 w-8 p-0 transition-opacity duration-200
+                  ${isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}
+                  hover:bg-muted/50
+                  ${isAnyColumnResizing ? 'pointer-events-none' : ''}
+                `}
+              >
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem
+                onClick={handleDelete}
+                disabled={isDeleting}
+                className="text-destructive focus:text-destructive"
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                {isDeleting ? 'Deleting...' : 'Delete'}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </TableCell>
     </TableRow>
   );

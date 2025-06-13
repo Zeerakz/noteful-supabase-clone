@@ -35,32 +35,25 @@ export function NewTableRow({
   return (
     <TableRow 
       className={`
-        group border-b-0 transition-all duration-200 ease-out
-        hover:bg-accent/10
-        bg-background/80
+        group hover:bg-muted/30 border-t border-border/40
         ${isAnyColumnResizing ? 'pointer-events-none opacity-60' : ''}
-        border-t border-border/40
       `}
     >
       {/* Empty checkbox cell */}
-      <TableCell 
-        className="p-3 border-r border-border/20 text-center"
-        style={{ width: '48px' }}
-      >
-        <div className="w-4 h-4" />
+      <TableCell style={{ width: '48px' }}>
+        <div className="flex items-center justify-center">
+          <div className="w-4 h-4" />
+        </div>
       </TableCell>
 
-      {/* Title Cell with Create Button */}
-      <TableCell 
-        className="p-3 border-r border-border/20"
-        style={{ width: `${getColumnWidth('title')}px` }}
-      >
+      {/* Title Cell */}
+      <TableCell style={{ width: `${getColumnWidth('title')}px` }}>
         <Button
           variant="ghost"
           onClick={handleCreateRow}
           disabled={isAnyColumnResizing}
           className={`
-            w-full justify-start h-10 px-3 rounded-lg transition-all duration-200 ease-out
+            w-full justify-start h-10 px-3 rounded-lg
             ${!isAnyColumnResizing 
               ? 'text-muted-foreground hover:text-foreground hover:bg-accent/30' 
               : 'cursor-not-allowed text-muted-foreground/40'
@@ -76,26 +69,16 @@ export function NewTableRow({
       {fields.map((field) => (
         <TableCell 
           key={field.id} 
-          className="p-3 border-r border-border/20 last:border-r-0"
           style={{ width: `${getColumnWidth(field.id)}px` }}
         >
-          <div 
-            className={`
-              min-h-[32px] px-2 py-1 flex items-center rounded-sm transition-all duration-200 ease-out
-              ${isAnyColumnResizing ? 'text-muted-foreground/20' : 'text-muted-foreground/40 hover:bg-muted/10'}
-              bg-transparent
-            `}
-          >
+          <div className="h-10 flex items-center px-2 text-muted-foreground/40">
             {/* Empty placeholder */}
           </div>
         </TableCell>
       ))}
 
       {/* Empty Actions Cell */}
-      <TableCell 
-        className="p-3 text-center"
-        style={{ width: '64px' }}
-      >
+      <TableCell style={{ width: '64px' }}>
         <div className="w-8 h-8" />
       </TableCell>
     </TableRow>
