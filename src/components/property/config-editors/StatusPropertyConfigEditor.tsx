@@ -19,8 +19,9 @@ export function StatusPropertyConfigEditor({ config, onConfigChange }: StatusPro
     onConfigChange({ ...statusConfig, ...updates });
   };
 
-  // Get all available options across all groups
+  // Get all available options across all groups and filter out empty IDs
   const allOptions = statusConfig.groups?.flatMap(group => group.options || []) || [];
+  const validOptions = allOptions.filter(option => option.id && option.id.trim() !== '');
 
   return (
     <div className="space-y-6">
@@ -56,24 +57,31 @@ export function StatusPropertyConfigEditor({ config, onConfigChange }: StatusPro
             <SelectValue placeholder="Select default status" />
           </SelectTrigger>
           <SelectContent>
-            {statusConfig.groups?.map((group) => (
-              <React.Fragment key={group.id}>
-                <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
-                  {group.name}
-                </div>
-                {group.options?.map((option) => (
-                  <SelectItem key={option.id} value={option.id}>
-                    <div className="flex items-center gap-2">
-                      <div 
-                        className="w-3 h-3 rounded-full" 
-                        style={{ backgroundColor: option.color }}
-                      />
-                      {option.name}
-                    </div>
-                  </SelectItem>
-                ))}
-              </React.Fragment>
-            ))}
+            {statusConfig.groups?.map((group) => {
+              // Filter valid options within each group
+              const validGroupOptions = (group.options || []).filter(option => option.id && option.id.trim() !== '');
+              
+              if (validGroupOptions.length === 0) return null;
+              
+              return (
+                <React.Fragment key={group.id}>
+                  <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
+                    {group.name}
+                  </div>
+                  {validGroupOptions.map((option) => (
+                    <SelectItem key={option.id} value={option.id}>
+                      <div className="flex items-center gap-2">
+                        <div 
+                          className="w-3 h-3 rounded-full" 
+                          style={{ backgroundColor: option.color }}
+                        />
+                        {option.name}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </React.Fragment>
+              );
+            })}
           </SelectContent>
         </Select>
       </div>
