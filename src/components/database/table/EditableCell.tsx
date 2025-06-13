@@ -43,6 +43,7 @@ export function EditableCell({
   const [isEditing, setIsEditing] = useState(false);
   const [localValue, setLocalValue] = useState(value);
   const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Update local value when prop value changes
@@ -92,21 +93,27 @@ export function EditableCell({
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !multiline) {
       e.preventDefault();
+      e.stopPropagation();
       handleSubmit();
     } else if (e.key === 'Enter' && multiline && (e.metaKey || e.ctrlKey)) {
       e.preventDefault();
+      e.stopPropagation();
       handleSubmit();
     } else if (e.key === 'Escape') {
       e.preventDefault();
+      e.stopPropagation();
       handleCancel();
     }
   };
 
   const handleBlur = (e: React.FocusEvent) => {
-    // Check if the blur is due to clicking on something else in the same row
+    // Prevent blur handling if the focus is moving to an element within our container
     const relatedTarget = e.relatedTarget as HTMLElement;
-    
-    // Don't save immediately if clicking on another input in the same table row
+    if (relatedTarget && containerRef.current?.contains(relatedTarget)) {
+      return;
+    }
+
+    // Also check if we're clicking on another cell in the same row
     if (relatedTarget && relatedTarget.closest('tr') === e.currentTarget.closest('tr')) {
       return;
     }
@@ -146,6 +153,7 @@ export function EditableCell({
     if (field && workspaceId && pageId) {
       return (
         <div
+          ref={containerRef}
           className={cn(
             "w-full h-full border border-primary rounded-sm outline-none px-2 py-1",
             "text-sm font-normal text-foreground leading-relaxed",
@@ -177,25 +185,27 @@ export function EditableCell({
     const InputComponent = multiline ? 'textarea' : 'input';
     
     return (
-      <InputComponent
-        ref={inputRef as any}
-        value={localValue}
-        onChange={(e) => setLocalValue(e.target.value)}
-        onBlur={handleBlur}
-        onFocus={handleFocus}
-        onKeyDown={handleKeyDown}
-        className={cn(
-          "w-full h-full border border-primary rounded-sm outline-none resize-none px-2 py-1",
-          "text-sm font-normal text-foreground leading-relaxed",
-          "focus:ring-2 focus:ring-primary/20 focus:ring-offset-0",
-          "tracking-normal bg-transparent",
-          className
-        )}
-        style={{ 
-          minHeight: multiline ? '60px' : 'auto',
-          fontFamily: 'inherit'
-        }}
-      />
+      <div ref={containerRef}>
+        <InputComponent
+          ref={inputRef as any}
+          value={localValue}
+          onChange={(e) => setLocalValue(e.target.value)}
+          onBlur={handleBlur}
+          onFocus={handleFocus}
+          onKeyDown={handleKeyDown}
+          className={cn(
+            "w-full h-full border border-primary rounded-sm outline-none resize-none px-2 py-1",
+            "text-sm font-normal text-foreground leading-relaxed",
+            "focus:ring-2 focus:ring-primary/20 focus:ring-offset-0",
+            "tracking-normal bg-transparent",
+            className
+          )}
+          style={{ 
+            minHeight: multiline ? '60px' : 'auto',
+            fontFamily: 'inherit'
+          }}
+        />
+      </div>
     );
   }
 

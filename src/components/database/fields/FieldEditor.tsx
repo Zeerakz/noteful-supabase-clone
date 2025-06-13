@@ -95,6 +95,7 @@ export function FieldEditor({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           className="w-full px-2 py-1 bg-transparent border-none rounded focus:outline-none focus:ring-0 text-foreground"
+          autoFocus
         />
       );
 
@@ -105,6 +106,7 @@ export function FieldEditor({
           checked={value === 'true'}
           onChange={(e) => onChange(e.target.checked ? 'true' : 'false')}
           className="rounded"
+          autoFocus
         />
       );
 
@@ -168,6 +170,7 @@ export function FieldEditor({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           className="w-full px-2 py-1 bg-transparent border-none rounded focus:outline-none focus:ring-0 text-foreground"
+          autoFocus
         />
       );
   }
