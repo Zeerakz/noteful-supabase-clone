@@ -63,6 +63,14 @@ export function RelationFieldConfig({ settings, onSettingsChange, workspaceId }:
     setDisplayProperty('title');
   };
 
+  const handleAllowMultipleChange = (checked: boolean | "indeterminate") => {
+    setAllowMultiple(checked === true);
+  };
+
+  const handleBidirectionalChange = (checked: boolean | "indeterminate") => {
+    setBidirectional(checked === true);
+  };
+
   return (
     <div className="space-y-6">
       {/* Target Database */}
@@ -132,7 +140,7 @@ export function RelationFieldConfig({ settings, onSettingsChange, workspaceId }:
             <Checkbox
               id="allow-multiple"
               checked={allowMultiple}
-              onCheckedChange={setAllowMultiple}
+              onCheckedChange={handleAllowMultipleChange}
             />
             <div className="grid gap-1.5 leading-none">
               <Label htmlFor="allow-multiple" className="font-medium">
@@ -148,7 +156,7 @@ export function RelationFieldConfig({ settings, onSettingsChange, workspaceId }:
             <Checkbox
               id="bidirectional"
               checked={bidirectional}
-              onCheckedChange={setBidirectional}
+              onCheckedChange={handleBidirectionalChange}
             />
             <div className="grid gap-1.5 leading-none">
               <Label htmlFor="bidirectional" className="font-medium">
