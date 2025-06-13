@@ -47,35 +47,40 @@ export function DatabaseTableHeader({
 
   return (
     <TableHeader>
-      <TableRow className="hover:bg-transparent border-b border-border/20">
+      <TableRow className="hover:bg-transparent hairline-divider">
         {/* Checkbox Header */}
         <TableHead 
-          className="w-12 text-center"
+          className="checkbox-cell p-0 hairline-vertical"
           style={{ width: '48px', minWidth: '48px', maxWidth: '48px' }}
         >
-          <Checkbox
-            checked={allSelected}
-            ref={(ref) => {
-              if (ref) {
-                const input = ref.querySelector('input');
-                if (input) input.indeterminate = someSelected;
-              }
-            }}
-            onCheckedChange={onSelectAll}
-            className="transition-opacity duration-200"
-          />
+          <div className="table-header-content justify-center">
+            <Checkbox
+              checked={allSelected}
+              ref={(ref) => {
+                if (ref) {
+                  const input = ref.querySelector('input');
+                  if (input) input.indeterminate = someSelected;
+                }
+              }}
+              onCheckedChange={onSelectAll}
+              className="transition-opacity duration-200"
+            />
+          </div>
         </TableHead>
 
         {/* Title Header */}
         <TableHead 
+          className="p-0 hairline-vertical"
           style={{ 
             width: `${getColumnWidth('title')}px`,
             minWidth: `${getColumnWidth('title')}px`,
             maxWidth: `${getColumnWidth('title')}px`
           }}
         >
-          <div className="flex items-center gap-2 w-full">
-            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">TITLE</span>
+          <div className="table-header-content">
+            <div className="flex items-center gap-2 w-full">
+              <span className="text-column-header">TITLE</span>
+            </div>
           </div>
         </TableHead>
 
@@ -86,36 +91,41 @@ export function DatabaseTableHeader({
           return (
             <TableHead
               key={field.id}
+              className={`p-0 ${!isLastField ? 'hairline-vertical' : ''}`}
               style={{ 
                 width: `${columnWidth}px`,
                 minWidth: `${columnWidth}px`,
                 maxWidth: `${columnWidth}px`
               }}
             >
-              <DatabaseColumnHeader
-                field={field}
-                sortRules={sortRules}
-                onSort={onSort}
-                onFieldReorder={onFieldReorder}
-                onStartResize={onStartResize}
-                onEndResize={onEndResize}
-                onResize={handleResize}
-                isResizing={resizingFields.has(field.id)}
-                onFieldsChange={onFieldsChange}
-                width={columnWidth}
-                isResizable={true}
-                isDraggable={true}
-              />
+              <div className="table-header-content">
+                <DatabaseColumnHeader
+                  field={field}
+                  sortRules={sortRules}
+                  onSort={onSort}
+                  onFieldReorder={onFieldReorder}
+                  onStartResize={onStartResize}
+                  onEndResize={onEndResize}
+                  onResize={handleResize}
+                  isResizing={resizingFields.has(field.id)}
+                  onFieldsChange={onFieldsChange}
+                  width={columnWidth}
+                  isResizable={true}
+                  isDraggable={true}
+                />
+              </div>
             </TableHead>
           );
         })}
 
         {/* Actions Header */}
         <TableHead 
-          className="w-16 text-center"
+          className="actions-cell p-0"
           style={{ width: '64px', minWidth: '64px', maxWidth: '64px' }}
         >
-          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">ACTIONS</span>
+          <div className="table-header-content justify-center">
+            <span className="text-column-header">ACTIONS</span>
+          </div>
         </TableHead>
       </TableRow>
     </TableHeader>

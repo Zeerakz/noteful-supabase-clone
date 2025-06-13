@@ -7,11 +7,11 @@ const Table = React.forwardRef<
   HTMLTableElement,
   React.HTMLAttributes<HTMLTableElement>
 >(({ className, ...props }, ref) => (
-  <div className="relative w-full overflow-auto">
+  <div className="relative w-full overflow-auto hairline-divider rounded-lg">
     <table
       ref={ref}
       className={cn(
-        "w-full caption-bottom text-sm table-fixed border-separate border-spacing-0 bg-background", 
+        "w-full caption-bottom text-sm table-fixed border-separate border-spacing-0", 
         className
       )}
       {...props}
@@ -24,7 +24,7 @@ const TableHeader = React.forwardRef<
   HTMLTableSectionElement,
   React.HTMLAttributes<HTMLTableSectionElement>
 >(({ className, ...props }, ref) => (
-  <thead ref={ref} className={cn("bg-background/95 sticky top-0 z-10", className)} {...props} />
+  <thead ref={ref} className={cn("bg-background/95 sticky top-0 z-10 hairline-divider", className)} {...props} />
 ))
 TableHeader.displayName = "TableHeader"
 
@@ -47,7 +47,7 @@ const TableFooter = React.forwardRef<
   <tfoot
     ref={ref}
     className={cn(
-      "border-t border-border/20 bg-background/95 font-medium",
+      "hairline-divider bg-background/95 font-medium",
       className
     )}
     {...props}
@@ -62,7 +62,7 @@ const TableRow = React.forwardRef<
   <tr
     ref={ref}
     className={cn(
-      "group transition-colors duration-200 ease-out border-b border-border/10 hover:bg-muted/30 data-[state=selected]:bg-muted/20",
+      "group transition-colors duration-200 ease-out data-[state=selected]:bg-muted/20 hairline-divider",
       className
     )}
     {...props}
@@ -77,7 +77,7 @@ const TableHead = React.forwardRef<
   <th
     ref={ref}
     className={cn(
-      "h-12 px-4 text-left align-middle font-medium text-muted-foreground bg-background/95 backdrop-blur-sm transition-colors duration-200 ease-out border-b border-border/20",
+      "text-left align-middle font-medium text-muted-foreground bg-background/95 backdrop-blur-sm px-4 py-3 transition-colors duration-200 ease-out hairline-vertical",
       className
     )}
     {...props}
@@ -91,7 +91,7 @@ const TableCell = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <td
     ref={ref}
-    className={cn("px-4 py-3 align-middle transition-colors duration-200 ease-out", className)}
+    className={cn("align-middle px-4 py-3 transition-colors duration-200 ease-out hairline-vertical", className)}
     {...props}
   />
 ))

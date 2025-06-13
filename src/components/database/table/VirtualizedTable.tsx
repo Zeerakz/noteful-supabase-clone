@@ -89,9 +89,9 @@ export function VirtualizedTable({
 
   if (enableVirtualScrolling && pages.length > 50) {
     return (
-      <div className="flex flex-col h-full overflow-hidden bg-background border-2 border-border rounded-lg shadow-sm">
+      <div className="flex flex-col h-full overflow-hidden bg-background hairline-divider rounded-lg shadow-sm">
         {/* Fixed sticky header - Use proper table structure */}
-        <div className="shrink-0 border-b-2 border-border bg-background/98 backdrop-blur-md sticky top-0 z-30 shadow-sm overflow-hidden">
+        <div className="shrink-0 hairline-divider bg-background/98 backdrop-blur-md sticky top-0 z-30 shadow-sm overflow-hidden">
           <Table className="table-fixed" style={{ width: `${totalTableWidth}px` }}>
             <EnhancedTableHeader
               fields={fields}
@@ -143,7 +143,7 @@ export function VirtualizedTable({
         </div>
 
         {/* Virtual scrolling info footer */}
-        <div className="shrink-0 p-2 border-t-2 border-border bg-background/98 backdrop-blur-md text-xs text-muted-foreground shadow-[0_-2px_4px_rgba(0,0,0,0.05)]">
+        <div className="shrink-0 p-2 hairline-divider bg-background/98 backdrop-blur-md text-xs text-muted-foreground shadow-[0_-2px_4px_rgba(0,0,0,0.05)]">
           Showing {virtualScrolling.startIndex + 1}-{virtualScrolling.endIndex + 1} of {pages.length} rows
         </div>
       </div>
@@ -151,9 +151,9 @@ export function VirtualizedTable({
   }
 
   return (
-    <div className="flex flex-col h-full overflow-hidden bg-background border-2 border-border rounded-lg shadow-sm">
+    <div className="flex flex-col h-full overflow-hidden bg-background hairline-divider rounded-lg shadow-sm">
       {/* Fixed sticky header - Use proper table structure */}
-      <div className="shrink-0 border-b-2 border-border bg-background/98 backdrop-blur-md sticky top-0 z-30 shadow-sm overflow-hidden">
+      <div className="shrink-0 hairline-divider bg-background/98 backdrop-blur-md sticky top-0 z-30 shadow-sm overflow-hidden">
         <Table className="table-fixed" style={{ width: `${totalTableWidth}px` }}>
           <EnhancedTableHeader
             fields={fields}

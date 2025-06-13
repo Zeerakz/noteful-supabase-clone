@@ -44,12 +44,13 @@ export function EnhancedTableHeader({
       className={`
         ${stickyHeader ? 'sticky top-0 z-30' : ''} 
         bg-background/95 backdrop-blur-md hairline-divider
+        shadow-sm
       `}
     >
-      <TableRow className="hover:bg-transparent">
+      <TableRow className="hover:bg-transparent border-none">
         {/* Selection Column - Fixed width with consistent padding */}
         <TableHead 
-          className="w-12 p-3 sticky left-0 z-40 bg-background/95 backdrop-blur-md hairline-vertical"
+          className="w-12 p-3 sticky left-0 z-40 bg-background/95 backdrop-blur-md hairline-vertical shadow-[2px_0_4px_rgba(0,0,0,0.05)] dark:shadow-[2px_0_4px_rgba(255,255,255,0.05)]"
           style={{ width: '48px' }}
         >
           <div className="flex items-center justify-center">
@@ -63,63 +64,56 @@ export function EnhancedTableHeader({
 
         {/* Title Column - Use exact width from getColumnWidth */}
         <TableHead 
-          className="sticky left-[48px] z-40 bg-background/95 backdrop-blur-md hairline-vertical p-0"
+          className="sticky left-[48px] z-40 bg-background/95 backdrop-blur-md hairline-vertical p-0 shadow-[2px_0_4px_rgba(0,0,0,0.05)] dark:shadow-[2px_0_4px_rgba(255,255,255,0.05)]"
           style={{ width: `${getColumnWidth('title')}px`, minWidth: `${getColumnWidth('title')}px`, maxWidth: `${getColumnWidth('title')}px` }}
         >
-          <div className="px-3 py-3">
-            <DatabaseColumnHeader
-              field={{
-                id: 'title',
-                name: 'Title',
-                type: 'text',
-                database_id: '',
-                pos: 0,
-                created_by: '',
-                created_at: '',
-                updated_at: ''
-              }}
-              sortRules={sortRules}
-              onSort={onSort}
-              onResize={onColumnResize}
-              width={getColumnWidth('title')}
-              className="bg-background/95"
-            />
-          </div>
+          <DatabaseColumnHeader
+            field={{
+              id: 'title',
+              name: 'Title',
+              type: 'text',
+              database_id: '',
+              pos: 0,
+              created_by: '',
+              created_at: '',
+              updated_at: ''
+            }}
+            sortRules={sortRules}
+            onSort={onSort}
+            onResize={onColumnResize}
+            width={getColumnWidth('title')}
+            className="border-b-0 bg-background/95"
+          />
         </TableHead>
 
         {/* Dynamic Field Columns - Use exact width from getColumnWidth */}
-        {fields.map((field, index) => {
-          const isLastField = index === fields.length - 1;
-          return (
-            <TableHead 
-              key={field.id} 
-              className={`relative p-0 bg-background/95 backdrop-blur-md ${!isLastField ? 'hairline-vertical' : ''}`}
-              style={{ 
-                width: `${getColumnWidth(field.id)}px`, 
-                minWidth: `${getColumnWidth(field.id)}px`, 
-                maxWidth: `${getColumnWidth(field.id)}px` 
-              }}
-            >
-              <div className="px-3 py-3">
-                <DatabaseColumnHeader
-                  field={field}
-                  sortRules={sortRules}
-                  onSort={onSort}
-                  onResize={onColumnResize}
-                  width={getColumnWidth(field.id)}
-                  className="bg-background/95"
-                />
-              </div>
-            </TableHead>
-          );
-        })}
+        {fields.map((field) => (
+          <TableHead 
+            key={field.id} 
+            className="relative p-0 bg-background/95 backdrop-blur-md hairline-vertical last:border-r-0"
+            style={{ 
+              width: `${getColumnWidth(field.id)}px`, 
+              minWidth: `${getColumnWidth(field.id)}px`, 
+              maxWidth: `${getColumnWidth(field.id)}px` 
+            }}
+          >
+            <DatabaseColumnHeader
+              field={field}
+              sortRules={sortRules}
+              onSort={onSort}
+              onResize={onColumnResize}
+              width={getColumnWidth(field.id)}
+              className="border-b-0 bg-background/95"
+            />
+          </TableHead>
+        ))}
 
         {/* Actions Column - Fixed width */}
         <TableHead 
           className="w-16 p-0 bg-background/95 backdrop-blur-md"
           style={{ width: '64px', minWidth: '64px', maxWidth: '64px' }}
         >
-          <div className="flex items-center justify-center px-3 py-3 text-xs font-semibold text-muted-foreground bg-background/95 backdrop-blur-md">
+          <div className="flex items-center justify-center px-3 py-3 text-xs font-semibold text-muted-foreground bg-background/95 backdrop-blur-md hairline-divider">
             <MoreHorizontal className="h-4 w-4" />
           </div>
         </TableHead>
