@@ -111,37 +111,32 @@ export function DatabaseTableViewContent({
 
   if (pagesLoading) {
     return (
-      <div className="flex flex-col h-full">
-        <div className="flex items-center justify-between p-4 border-b border-border">
-          <div className="flex items-center gap-2">
-            <Skeleton className="h-6 w-24" />
-            <Skeleton className="h-4 w-16" />
+      <div className="flex flex-col h-full bg-background">
+        <div className="flex items-center justify-between p-6 border-b bg-card">
+          <div className="flex items-center gap-3">
+            <Skeleton className="h-7 w-28" />
+            <Skeleton className="h-5 w-20" />
           </div>
-          <Skeleton className="h-9 w-32" />
+          <Skeleton className="h-10 w-36" />
         </div>
         
-        <div className="flex-1 min-h-0">
-          <Table className="border-none">
-            <DatabaseTableHeader
-              fields={fields}
-              sortRules={sortRules}
-              onSort={handleSort}
-              onFieldsChange={onFieldsChange}
-              onFieldReorder={onFieldReorder}
-            />
-            <DatabaseTableBody
-              pagesWithProperties={[]}
-              fields={fields}
-              onTitleUpdate={() => Promise.resolve()}
-              onPropertyUpdate={() => {}}
-              onDeleteRow={() => Promise.resolve()}
-              workspaceId={workspaceId}
-              selectedRows={selectedRows}
-              onRowSelect={handleRowSelect}
-              onSelectAll={handleSelectAll}
-              showNewRow={false}
-            />
-          </Table>
+        <div className="flex-1 overflow-hidden">
+          <div className="bg-card border-b">
+            <div className="flex">
+              <Skeleton className="h-12 w-[250px] border-r" />
+              <Skeleton className="h-12 w-[200px] border-r" />
+              <Skeleton className="h-12 w-[200px]" />
+            </div>
+          </div>
+          <div className="space-y-0">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <div key={i} className="flex border-b">
+                <Skeleton className="h-16 w-[250px] border-r" />
+                <Skeleton className="h-16 w-[200px] border-r" />
+                <Skeleton className="h-16 w-[200px]" />
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     );
@@ -149,26 +144,34 @@ export function DatabaseTableViewContent({
 
   if (pagesError) {
     return (
-      <div className="flex items-center justify-center h-full">
-        <p className="text-muted-foreground">Error: {pagesError}</p>
+      <div className="flex items-center justify-center h-full bg-background">
+        <div className="text-center space-y-2">
+          <p className="text-lg font-medium text-foreground">Something went wrong</p>
+          <p className="text-muted-foreground">{pagesError}</p>
+          <Button onClick={onRefetch} variant="outline">
+            Try again
+          </Button>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col h-full">
-      {/* Header with Add Row and Manage Properties buttons */}
-      <div className="flex items-center justify-between p-4 border-b border-border">
-        <div className="flex items-center gap-2">
-          <h3 className="text-lg font-semibold">Table View</h3>
-          <span className="text-sm text-muted-foreground">
-            {pagesWithProperties.length} {pagesWithProperties.length === 1 ? 'row' : 'rows'}
-          </span>
+    <div className="flex flex-col h-full bg-background">
+      {/* Header with improved styling */}
+      <div className="flex items-center justify-between px-6 py-4 border-b bg-card/50 backdrop-blur-sm">
+        <div className="flex items-center gap-3">
+          <h3 className="text-xl font-semibold text-foreground">Table View</h3>
+          <div className="px-2 py-1 bg-muted rounded-md">
+            <span className="text-sm font-medium text-muted-foreground">
+              {pagesWithProperties.length} {pagesWithProperties.length === 1 ? 'row' : 'rows'}
+            </span>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           <Button
             onClick={onCreateRow}
-            className="gap-2"
+            className="gap-2 bg-primary hover:bg-primary/90"
             size="sm"
           >
             <Plus className="h-4 w-4" />
@@ -179,7 +182,7 @@ export function DatabaseTableViewContent({
               variant="outline"
               size="sm"
               onClick={onShowManageProperties}
-              className="gap-2"
+              className="gap-2 border-border/60 hover:bg-muted/50"
             >
               <Settings className="h-4 w-4" />
               Manage Properties
@@ -188,29 +191,32 @@ export function DatabaseTableViewContent({
         </div>
       </div>
 
-      <div className="flex-1 min-h-0 overflow-auto">
-        <Table className="border-none">
-          <DatabaseTableHeader
-            fields={fields}
-            sortRules={sortRules}
-            onSort={handleSort}
-            onFieldsChange={onFieldsChange}
-            onFieldReorder={onFieldReorder}
-          />
-          <DatabaseTableBody
-            pagesWithProperties={pagesWithProperties}
-            fields={fields}
-            onTitleUpdate={onTitleUpdate}
-            onPropertyUpdate={onPropertyUpdate}
-            onDeleteRow={onDeleteRow}
-            onCreateRow={onCreateRow}
-            workspaceId={workspaceId}
-            selectedRows={selectedRows}
-            onRowSelect={handleRowSelect}
-            onSelectAll={handleSelectAll}
-            showNewRow={true}
-          />
-        </Table>
+      {/* Table container with improved styling */}
+      <div className="flex-1 overflow-auto bg-background">
+        <div className="min-w-full">
+          <Table className="border-none">
+            <DatabaseTableHeader
+              fields={fields}
+              sortRules={sortRules}
+              onSort={handleSort}
+              onFieldsChange={onFieldsChange}
+              onFieldReorder={onFieldReorder}
+            />
+            <DatabaseTableBody
+              pagesWithProperties={pagesWithProperties}
+              fields={fields}
+              onTitleUpdate={onTitleUpdate}
+              onPropertyUpdate={onPropertyUpdate}
+              onDeleteRow={onDeleteRow}
+              onCreateRow={onCreateRow}
+              workspaceId={workspaceId}
+              selectedRows={selectedRows}
+              onRowSelect={handleRowSelect}
+              onSelectAll={handleSelectAll}
+              showNewRow={true}
+            />
+          </Table>
+        </div>
       </div>
     </div>
   );

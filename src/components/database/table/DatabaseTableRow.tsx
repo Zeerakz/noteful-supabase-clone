@@ -85,15 +85,14 @@ export function DatabaseTableRow({
   return (
     <TableRow 
       className={`
-        group transition-colors duration-150 border-b border-border/40
-        hover:bg-muted/30 
-        ${isSelected ? 'bg-accent/50 border-accent-foreground/20' : ''}
+        group transition-all duration-200 border-b border-border/30
+        hover:bg-muted/40 hover:shadow-sm
+        ${isSelected ? 'bg-accent/30 border-accent/50' : ''}
         ${isEvenRow ? 'bg-muted/10' : 'bg-background'}
-        ${isSelected && isEvenRow ? 'bg-accent/60' : ''}
       `}
     >
       {/* Selection Checkbox */}
-      <TableCell className="w-[48px] p-2">
+      <TableCell className="w-12 p-3 border-r border-border/20">
         <div className="flex items-center justify-center">
           <Checkbox
             checked={isSelected}
@@ -106,13 +105,9 @@ export function DatabaseTableRow({
         </div>
       </TableCell>
 
-      {/* Title Cell with Expand/Collapse */}
-      <TableCell 
-        className="sticky left-[48px] bg-inherit border-r w-[200px] z-10"
-        style={{ width: columnWidths['title'] ? `${columnWidths['title']}px` : '200px' }}
-      >
-        <div className="flex items-center gap-2">
-          {/* Expand/Collapse Button */}
+      {/* Title Cell */}
+      <TableCell className="w-[280px] p-0 border-r border-border/20">
+        <div className="flex items-center gap-2 px-4 py-3">
           {hasSubItems && (
             <Button
               variant="ghost"
@@ -141,21 +136,14 @@ export function DatabaseTableRow({
       {/* Property Cells */}
       {fields.map((field) => {
         const cellValue = page.properties[field.id] || '';
-        const isMultilineField = field.type === 'text' && field.settings?.multiline;
-        const shouldWrap = field.type === 'text' && field.settings?.wrapText;
         
         return (
           <TableCell 
             key={field.id} 
-            className={`min-w-[150px] p-1 ${shouldWrap || isMultilineField ? 'align-top' : ''}`}
-            style={{ 
-              width: columnWidths[field.id] ? `${columnWidths[field.id]}px` : undefined,
-              maxHeight: shouldWrap ? 'none' : '60px',
-              overflow: shouldWrap ? 'visible' : 'hidden'
-            }}
+            className="min-w-[200px] p-0 border-r border-border/20 last:border-r-0"
           >
-            {editingField === field.id ? (
-              <div className="w-full">
+            <div className="px-4 py-3">
+              {editingField === field.id ? (
                 <FieldEditor
                   field={field}
                   value={cellValue}
@@ -163,50 +151,56 @@ export function DatabaseTableRow({
                   workspaceId={workspaceId}
                   pageId={page.id}
                 />
-              </div>
-            ) : (
-              <div
-                className={`min-h-[32px] px-2 py-1 cursor-text hover:bg-muted/30 rounded flex items-center transition-colors duration-150 ${
-                  shouldWrap ? 'items-start' : ''
-                }`}
-                onClick={() => setEditingField(field.id)}
-              >
-                <EditableCell
-                  value={cellValue}
-                  onSave={(value) => handlePropertyChange(field.id, value)}
-                  fieldType={field.type}
-                  fieldConfig={field.settings}
-                  placeholder={`Enter ${field.name.toLowerCase()}`}
-                />
-              </div>
-            )}
+              ) : (
+                <div
+                  className="min-h-[24px] cursor-text hover:bg-muted/30 rounded px-2 py-1 transition-colors duration-150 flex items-center"
+                  onClick={() => setEditingField(field.id)}
+                >
+                  {cellValue ? (
+                    <EditableCell
+                      value={cellValue}
+                      onSave={(value) => handlePropertyChange(field.id, value)}
+                      fieldType={field.type}
+                      fieldConfig={field.settings}
+                      placeholder={`Enter ${field.name.toLowerCase()}`}
+                    />
+                  ) : (
+                    <span className="text-muted-foreground text-sm">
+                      Enter {field.name.toLowerCase()}
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
           </TableCell>
         );
       })}
 
       {/* Actions Cell */}
-      <TableCell className="w-[60px] p-2">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-            >
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="bg-popover border border-border shadow-md">
-            <DropdownMenuItem
-              onClick={handleDelete}
-              disabled={isDeleting}
-              className="text-destructive focus:text-destructive"
-            >
-              <Trash2 className="h-4 w-4 mr-2" />
-              {isDeleting ? 'Deleting...' : 'Delete'}
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+      <TableCell className="w-16 p-3">
+        <div className="flex items-center justify-center">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-muted"
+              >
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="bg-popover border border-border shadow-lg">
+              <DropdownMenuItem
+                onClick={handleDelete}
+                disabled={isDeleting}
+                className="text-destructive focus:text-destructive hover:bg-destructive/10"
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                {isDeleting ? 'Deleting...' : 'Delete'}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </TableCell>
     </TableRow>
   );
