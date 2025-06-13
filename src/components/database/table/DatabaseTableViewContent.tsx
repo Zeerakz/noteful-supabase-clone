@@ -2,12 +2,12 @@
 import React, { useState, useCallback } from 'react';
 import { DatabaseField, PageProperty } from '@/types/database';
 import { DatabaseTableHeader } from './DatabaseTableHeader';
-import { DatabaseTableRow } from './DatabaseTableRow';
-import { Table, TableBody, TableCaption, TableHead, TableHeader, TableRow, TableCell } from '@/components/ui/table';
+import { DatabaseTableBody } from './DatabaseTableBody';
+import { Table, TableCaption } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Pagination } from '@/components/ui/pagination';
-import { Settings } from 'lucide-react';
+import { Settings, Plus } from 'lucide-react';
 import { SortRule } from '@/components/database/SortingModal';
 
 interface PageWithProperties {
@@ -78,6 +78,7 @@ export function DatabaseTableViewContent({
 }: DatabaseTableViewContentProps) {
   const [sortBy, setSortBy] = useState<string | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
 
   const handleSort = (fieldId: string, direction: 'asc' | 'desc') => {
     setSortBy(fieldId);
@@ -88,31 +89,60 @@ export function DatabaseTableViewContent({
     setSortRules(newSortRules);
   };
 
+  const handleRowSelect = useCallback((pageId: string, selected: boolean) => {
+    setSelectedRows(prev => {
+      const newSet = new Set(prev);
+      if (selected) {
+        newSet.add(pageId);
+      } else {
+        newSet.delete(pageId);
+      }
+      return newSet;
+    });
+  }, []);
+
+  const handleSelectAll = useCallback((selected: boolean) => {
+    if (selected) {
+      setSelectedRows(new Set(pagesWithProperties.map(p => p.id)));
+    } else {
+      setSelectedRows(new Set());
+    }
+  }, [pagesWithProperties]);
+
   if (pagesLoading) {
     return (
       <div className="flex flex-col h-full">
-        <Table className="border-none">
-          <TableHeader>
-            <TableRow>
-              {Array.from({ length: fields.length + 1 }).map((_, i) => (
-                <TableHead key={i} className="w-[200px]">
-                  <Skeleton className="h-4 w-32" />
-                </TableHead>
-              ))}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {Array.from({ length: 5 }).map((_, i) => (
-              <TableRow key={i}>
-                {Array.from({ length: fields.length + 1 }).map((_, j) => (
-                  <TableCell key={j} className="font-medium">
-                    <Skeleton className="h-4 w-full" />
-                  </TableCell>
-                ))}
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+        <div className="flex items-center justify-between p-4 border-b border-border">
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-6 w-24" />
+            <Skeleton className="h-4 w-16" />
+          </div>
+          <Skeleton className="h-9 w-32" />
+        </div>
+        
+        <div className="flex-1 min-h-0">
+          <Table className="border-none">
+            <DatabaseTableHeader
+              fields={fields}
+              sortRules={sortRules}
+              onSort={handleSort}
+              onFieldsChange={onFieldsChange}
+              onFieldReorder={onFieldReorder}
+            />
+            <DatabaseTableBody
+              pagesWithProperties={[]}
+              fields={fields}
+              onTitleUpdate={() => Promise.resolve()}
+              onPropertyUpdate={() => {}}
+              onDeleteRow={() => Promise.resolve()}
+              workspaceId={workspaceId}
+              selectedRows={selectedRows}
+              onRowSelect={handleRowSelect}
+              onSelectAll={handleSelectAll}
+              showNewRow={false}
+            />
+          </Table>
+        </div>
       </div>
     );
   }
@@ -127,7 +157,7 @@ export function DatabaseTableViewContent({
 
   return (
     <div className="flex flex-col h-full">
-      {/* Header with Manage Properties Button */}
+      {/* Header with Add Row and Manage Properties buttons */}
       <div className="flex items-center justify-between p-4 border-b border-border">
         <div className="flex items-center gap-2">
           <h3 className="text-lg font-semibold">Table View</h3>
@@ -135,44 +165,52 @@ export function DatabaseTableViewContent({
             {pagesWithProperties.length} {pagesWithProperties.length === 1 ? 'row' : 'rows'}
           </span>
         </div>
-        {onShowManageProperties && (
+        <div className="flex items-center gap-2">
           <Button
-            variant="outline"
-            size="sm"
-            onClick={onShowManageProperties}
+            onClick={onCreateRow}
             className="gap-2"
+            size="sm"
           >
-            <Settings className="h-4 w-4" />
-            Manage Properties
+            <Plus className="h-4 w-4" />
+            Add Row
           </Button>
-        )}
+          {onShowManageProperties && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onShowManageProperties}
+              className="gap-2"
+            >
+              <Settings className="h-4 w-4" />
+              Manage Properties
+            </Button>
+          )}
+        </div>
       </div>
 
-      <div className="flex-1 min-h-0">
-        <DatabaseTableHeader
-          fields={fields}
-          sortRules={sortRules}
-          onSort={handleSort}
-          onFieldsChange={onFieldsChange}
-          onFieldReorder={onFieldReorder}
-        />
-        <div className="overflow-auto">
-          <Table className="border-none">
-            <TableBody>
-              {pagesWithProperties.map((page) => (
-                <DatabaseTableRow
-                  key={page.id}
-                  page={page}
-                  fields={fields}
-                  onTitleUpdate={(newTitle) => onTitleUpdate(page.id, newTitle)}
-                  onPropertyUpdate={(fieldId, value) => onPropertyUpdate(page.id, fieldId, value)}
-                  onDeleteRow={() => onDeleteRow(page.id)}
-                  workspaceId={workspaceId}
-                />
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+      <div className="flex-1 min-h-0 overflow-auto">
+        <Table className="border-none">
+          <DatabaseTableHeader
+            fields={fields}
+            sortRules={sortRules}
+            onSort={handleSort}
+            onFieldsChange={onFieldsChange}
+            onFieldReorder={onFieldReorder}
+          />
+          <DatabaseTableBody
+            pagesWithProperties={pagesWithProperties}
+            fields={fields}
+            onTitleUpdate={onTitleUpdate}
+            onPropertyUpdate={onPropertyUpdate}
+            onDeleteRow={onDeleteRow}
+            onCreateRow={onCreateRow}
+            workspaceId={workspaceId}
+            selectedRows={selectedRows}
+            onRowSelect={handleRowSelect}
+            onSelectAll={handleSelectAll}
+            showNewRow={true}
+          />
+        </Table>
       </div>
     </div>
   );

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { TableCell, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
@@ -27,11 +26,16 @@ export function NewTableRow({
     setTitle('');
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const trimmedTitle = title.trim();
-    onCreateRow(trimmedTitle || 'Untitled');
-    setIsCreating(false);
-    setTitle('');
+    try {
+      await onCreateRow(trimmedTitle || 'Untitled');
+      setIsCreating(false);
+      setTitle('');
+    } catch (error) {
+      console.error('Failed to create row:', error);
+      // Keep the form open on error
+    }
   };
 
   const handleCancel = () => {
