@@ -40,23 +40,17 @@ export function DatabaseTableHeader({
           className="min-w-[250px] p-0 bg-background border-r border-border/50"
           style={{ width: columnWidths['title'] ? `${columnWidths['title']}px` : '250px' }}
         >
-          <DatabaseColumnHeader
-            field={{
-              id: 'title',
-              name: 'Title',
-              type: 'text',
-              database_id: '',
-              pos: 0,
-              created_by: '',
-              created_at: '',
-              updated_at: ''
-            }}
-            sortRules={sortRules}
-            onSort={onSort}
-            onResize={onColumnResize}
-            width={columnWidths['title'] || 250}
-            className="h-12"
-          />
+          <div className="flex items-center gap-2.5 px-4 py-3 h-12">
+            <div className="flex-shrink-0 p-1 rounded-md bg-muted/40">
+              <span className="text-xs font-medium text-muted-foreground">T</span>
+            </div>
+            <button
+              onClick={() => onSort('title', sortRules.find(r => r.fieldId === 'title')?.direction === 'asc' ? 'desc' : 'asc')}
+              className="flex items-center gap-2 px-1 py-1 h-auto font-semibold text-sm text-foreground hover:bg-transparent hover:text-primary flex-1 justify-start min-w-0 transition-colors"
+            >
+              <span className="truncate tracking-tight">Title</span>
+            </button>
+          </div>
         </TableHead>
 
         {/* Field Columns */}
