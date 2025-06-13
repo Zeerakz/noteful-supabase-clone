@@ -7,21 +7,39 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useDatabases } from '@/hooks/useDatabases';
-import { Link, ArrowLeftRight, Search, Zap } from 'lucide-react';
+import { Link, ArrowLeftRight, Search, Zap, AlertCircle } from 'lucide-react';
 
 interface RelationPropertyConfigEditorProps {
   config: any;
   onConfigChange: (config: RelationPropertyConfig) => void;
   workspaceId?: string;
+  currentDatabaseId?: string;
 }
 
-export function RelationPropertyConfigEditor({ config, onConfigChange, workspaceId }: RelationPropertyConfigEditorProps) {
+export function RelationPropertyConfigEditor({ 
+  config, 
+  onConfigChange, 
+  workspaceId,
+  currentDatabaseId 
+}: RelationPropertyConfigEditorProps) {
   const relationConfig = config as RelationPropertyConfig;
   const { databases } = useDatabases(workspaceId);
 
   const updateConfig = (updates: Partial<RelationPropertyConfig>) => {
     onConfigChange({ ...relationConfig, ...updates });
+  };
+
+  // Check if this is a self-referencing relation
+  const isSelfReferencing = relationConfig.targetDatabaseId === currentDatabaseId;
+
+  const handleTargetDatabaseChange = (value: string) => {
+    updateConfig({ 
+      targetDatabaseId: value,
+      // Reset backlink name if switching to/from self-referencing
+      relatedPropertyName: value === currentDatabaseId ? 'Related items' : relationConfig.relatedPropertyName
+    });
   };
 
   return (
@@ -39,7 +57,7 @@ export function RelationPropertyConfigEditor({ config, onConfigChange, workspace
             <Label htmlFor="targetDatabase">Database to link to</Label>
             <Select 
               value={relationConfig.targetDatabaseId || ''} 
-              onValueChange={(value) => updateConfig({ targetDatabaseId: value })}
+              onValueChange={handleTargetDatabaseChange}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select a database to link to" />
@@ -47,7 +65,7 @@ export function RelationPropertyConfigEditor({ config, onConfigChange, workspace
               <SelectContent>
                 {databases?.map((database) => (
                   <SelectItem key={database.id} value={database.id}>
-                    {database.name}
+                    {database.name} {database.id === currentDatabaseId && '(This database)'}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -58,6 +76,17 @@ export function RelationPropertyConfigEditor({ config, onConfigChange, workspace
               </p>
             )}
           </div>
+
+          {/* Self-referencing warning */}
+          {isSelfReferencing && (
+            <Alert>
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                This relation will link to the same database. Be careful with bidirectional relations 
+                to avoid creating circular references.
+              </AlertDescription>
+            </Alert>
+          )}
 
           <div className="space-y-2">
             <Label htmlFor="displayProperty">Display Property</Label>
@@ -111,6 +140,7 @@ export function RelationPropertyConfigEditor({ config, onConfigChange, workspace
               </Label>
               <p className="text-xs text-muted-foreground">
                 Show backlinks in the target database pointing back to this database
+                {isSelfReferencing && ' (creates a reverse relation field in the same database)'}
               </p>
             </div>
           </div>
@@ -122,11 +152,20 @@ export function RelationPropertyConfigEditor({ config, onConfigChange, workspace
                 id="relatedPropertyName"
                 value={relationConfig.relatedPropertyName || ''}
                 onChange={(e) => updateConfig({ relatedPropertyName: e.target.value })}
-                placeholder="Related items"
+                placeholder={isSelfReferencing ? "Related items" : "Related items"}
               />
               <p className="text-xs text-muted-foreground">
-                Name for the reverse relationship property in the target database
+                Name for the reverse relationship property{isSelfReferencing ? ' in the same database' : ' in the target database'}
               </p>
+              
+              {isSelfReferencing && (
+                <Alert>
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    Make sure the backlink property name is unique to avoid conflicts with existing fields.
+                  </AlertDescription>
+                </Alert>
+              )}
             </div>
           )}
         </CardContent>
