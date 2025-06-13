@@ -3,25 +3,38 @@ import React from 'react';
 import { TimelineViewHeader } from './timeline/TimelineViewHeader';
 import { TimelineContent } from './timeline/TimelineContent';
 import { DatabaseField } from '@/types/database';
+import { FilterGroup } from '@/types/filters';
+import { SortRule } from './SortingModal';
 import { useTimelineData } from '@/hooks/database/useTimelineData';
+import { useFilteredDatabasePages } from '@/hooks/useFilteredDatabasePages';
 
 interface DatabaseTimelineViewProps {
   databaseId: string;
   workspaceId: string;
   fields: DatabaseField[];
-  pages: any[];
-  loading: boolean;
-  error: string | null;
+  filterGroup: FilterGroup;
+  sortRules: SortRule[];
+  setSortRules: (rules: SortRule[]) => void;
+  onFieldsChange?: () => void;
 }
 
 export function DatabaseTimelineView({ 
   databaseId, 
   workspaceId, 
   fields, 
-  pages, 
-  loading, 
-  error 
+  filterGroup,
+  sortRules,
+  setSortRules,
+  onFieldsChange
 }: DatabaseTimelineViewProps) {
+  // Get filtered pages data
+  const { pages, loading, error } = useFilteredDatabasePages({
+    databaseId,
+    filterGroup,
+    fields,
+    sortRules
+  });
+
   // Filter date fields and ensure they have valid IDs before passing to header
   const dateFields = fields.filter(field => {
     const isDateType = field.type === 'date' || field.type === 'datetime';
@@ -37,14 +50,24 @@ export function DatabaseTimelineView({
   console.log('DatabaseTimelineView: Valid date fields for timeline:', dateFields);
 
   const {
-    selectedDateField,
-    timelineData,
-    setSelectedDateField
+    selectedStartField,
+    selectedEndField,
+    viewMode,
+    timelineItems,
+    timelineRange,
+    setSelectedStartField,
+    setSelectedEndField,
+    setViewMode
   } = useTimelineData({
     databaseId,
     fields: dateFields, // Pass filtered fields
     pages
   });
+
+  const handleDragEnd = (result: any) => {
+    // Handle drag and drop logic here if needed
+    console.log('Timeline drag end:', result);
+  };
 
   if (loading) {
     return (
@@ -65,14 +88,21 @@ export function DatabaseTimelineView({
   return (
     <div className="space-y-4">
       <TimelineViewHeader
-        dateFields={dateFields} // Pass filtered date fields
-        selectedDateField={selectedDateField}
-        onDateFieldChange={setSelectedDateField}
+        dateFields={dateFields}
+        selectedStartField={selectedStartField}
+        selectedEndField={selectedEndField}
+        viewMode={viewMode}
+        onStartFieldChange={setSelectedStartField}
+        onEndFieldChange={setSelectedEndField}
+        onViewModeChange={setViewMode}
       />
       <TimelineContent
-        data={timelineData}
-        selectedDateField={selectedDateField}
+        items={timelineItems}
         fields={fields}
+        viewMode={viewMode}
+        startDate={timelineRange.startDate}
+        endDate={timelineRange.endDate}
+        onDragEnd={handleDragEnd}
       />
     </div>
   );

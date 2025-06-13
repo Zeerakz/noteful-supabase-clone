@@ -10,35 +10,36 @@ import { addDays, subDays, startOfMonth, endOfMonth, startOfWeek, endOfWeek } fr
 interface UseTimelineDataProps {
   databaseId: string;
   fields: DatabaseField[];
-  filterGroup: FilterGroup;
-  sortRules: SortRule[];
-  startDateField: DatabaseField | null;
-  endDateField: DatabaseField | null;
-  viewMode: TimelineViewMode;
+  pages: any[];
 }
 
 export function useTimelineData({
   databaseId,
   fields,
-  filterGroup,
-  sortRules,
-  startDateField,
-  endDateField,
-  viewMode
+  pages
 }: UseTimelineDataProps) {
-  const { pages, loading, error, refetch } = useFilteredDatabasePages({
-    databaseId,
-    filterGroup,
-    fields,
-    sortRules
-  });
+  const [selectedDateField, setSelectedDateField] = useState<DatabaseField | null>(null);
+  const [selectedStartField, setSelectedStartField] = useState<DatabaseField | null>(null);
+  const [selectedEndField, setSelectedEndField] = useState<DatabaseField | null>(null);
+  const [viewMode, setViewMode] = useState<TimelineViewMode>('month');
+
+  // Auto-select first date field if none selected
+  useEffect(() => {
+    if (fields.length > 0 && !selectedDateField) {
+      const firstDateField = fields.find(field => field.type === 'date' || field.type === 'datetime');
+      if (firstDateField) {
+        setSelectedDateField(firstDateField);
+        setSelectedStartField(firstDateField);
+      }
+    }
+  }, [fields, selectedDateField]);
 
   const timelineItems = useMemo(() => {
-    if (!startDateField || !pages.length) return [];
+    if (!selectedStartField || !pages.length) return [];
 
     return pages
       .map(page => {
-        const startDateValue = page.properties?.[startDateField.id];
+        const startDateValue = page.properties?.[selectedStartField.id];
         if (!startDateValue) return null;
 
         // Handle both date and timestamp field types
@@ -56,8 +57,8 @@ export function useTimelineData({
         }
 
         let endDate: Date | undefined;
-        if (endDateField) {
-          const endDateValue = page.properties?.[endDateField.id];
+        if (selectedEndField) {
+          const endDateValue = page.properties?.[selectedEndField.id];
           if (endDateValue) {
             try {
               const parsedEndDate = new Date(endDateValue);
@@ -80,7 +81,7 @@ export function useTimelineData({
         } as TimelineItem;
       })
       .filter(Boolean) as TimelineItem[];
-  }, [pages, startDateField, endDateField]);
+  }, [pages, selectedStartField, selectedEndField]);
 
   const timelineRange = useMemo(() => {
     if (!timelineItems.length) {
@@ -122,10 +123,15 @@ export function useTimelineData({
   }, [timelineItems, viewMode]);
 
   return {
+    selectedDateField,
+    selectedStartField,
+    selectedEndField,
+    viewMode,
     timelineItems,
     timelineRange,
-    loading,
-    error,
-    refetch
+    setSelectedDateField,
+    setSelectedStartField,
+    setSelectedEndField,
+    setViewMode
   };
 }
