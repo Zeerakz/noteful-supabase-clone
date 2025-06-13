@@ -25,7 +25,12 @@ export function useOptimisticPages({ pages, onServerUpdate }: UseOptimisticPages
       const update = optimisticUpdates.get(page.id);
       return update ? { ...page, ...update.updates } : page;
     })
-    .concat(optimisticCreations)
+    .concat(optimisticCreations.filter(optimisticPage => {
+      // Only include optimistic creations that haven't been replaced by real pages
+      return !pages.some(realPage => realPage.title === optimisticPage.title && 
+        realPage.workspace_id === optimisticPage.workspace_id &&
+        realPage.parent_page_id === optimisticPage.parent_page_id);
+    }))
     .sort((a, b) => a.order_index - b.order_index);
 
   const optimisticCreatePage = useCallback((pageData: Partial<Page>) => {
@@ -83,6 +88,15 @@ export function useOptimisticPages({ pages, onServerUpdate }: UseOptimisticPages
     });
   }, []);
 
+  const clearOptimisticCreationByMatch = useCallback((realPage: Page) => {
+    setOptimisticCreations(prev => prev.filter(optimisticPage => {
+      // Remove optimistic pages that match the real page
+      return !(optimisticPage.title === realPage.title && 
+        optimisticPage.workspace_id === realPage.workspace_id &&
+        optimisticPage.parent_page_id === realPage.parent_page_id);
+    }));
+  }, []);
+
   const revertAllOptimisticChanges = useCallback(() => {
     setOptimisticUpdates(new Map());
     setOptimisticCreations([]);
@@ -97,6 +111,7 @@ export function useOptimisticPages({ pages, onServerUpdate }: UseOptimisticPages
     clearOptimisticUpdate,
     clearOptimisticCreation,
     clearOptimisticDeletion,
+    clearOptimisticCreationByMatch,
     revertAllOptimisticChanges,
     hasOptimisticChanges: optimisticUpdates.size > 0 || optimisticCreations.length > 0 || optimisticDeletions.size > 0,
   };

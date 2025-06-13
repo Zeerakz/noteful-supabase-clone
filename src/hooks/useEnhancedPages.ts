@@ -16,6 +16,7 @@ export function useEnhancedPages(workspaceId?: string) {
     optimisticDeletePage,
     clearOptimisticUpdate,
     clearOptimisticCreation,
+    clearOptimisticCreationByMatch,
     revertAllOptimisticChanges,
     hasOptimisticChanges,
   } = useOptimisticPages({ pages });
@@ -39,8 +40,12 @@ export function useEnhancedPages(workspaceId?: string) {
         throw new Error(error);
       }
 
-      // Clear optimistic update on success
-      clearOptimisticCreation(tempId);
+      // Clear optimistic update on success using the real page data
+      if (data) {
+        clearOptimisticCreationByMatch(data);
+      } else {
+        clearOptimisticCreation(tempId);
+      }
       
       toast({
         title: "Success",
@@ -57,7 +62,7 @@ export function useEnhancedPages(workspaceId?: string) {
       });
       return { data: null, error: errorMessage };
     }
-  }, [workspaceId, createPage, optimisticCreatePage, clearOptimisticCreation, toast]);
+  }, [workspaceId, createPage, optimisticCreatePage, clearOptimisticCreation, clearOptimisticCreationByMatch, toast]);
 
   const enhancedUpdatePage = useCallback(async (id: string, updates: Partial<Pick<Page, 'title' | 'parent_page_id' | 'order_index'>>) => {
     // Optimistic update
