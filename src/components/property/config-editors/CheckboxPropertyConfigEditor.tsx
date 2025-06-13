@@ -1,82 +1,74 @@
 
 import React from 'react';
-import { Control } from 'react-hook-form';
 import { FormField, FormItem, FormLabel, FormControl, FormDescription } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { CheckboxPropertyConfig } from '@/types/property/configs/checkbox';
 
 interface CheckboxPropertyConfigEditorProps {
-  control: Control<any>;
   config: CheckboxPropertyConfig;
+  onConfigChange: (config: CheckboxPropertyConfig) => void;
+  workspaceId?: string;
+  availableProperties?: any[];
 }
 
 export function CheckboxPropertyConfigEditor({ 
-  control, 
-  config 
+  config, 
+  onConfigChange,
+  workspaceId,
+  availableProperties
 }: CheckboxPropertyConfigEditorProps) {
+  const handleConfigChange = (field: keyof CheckboxPropertyConfig, value: any) => {
+    onConfigChange({
+      ...config,
+      [field]: value
+    });
+  };
+
   return (
     <div className="space-y-4">
-      <FormField
-        control={control}
-        name="config.defaultValue"
-        render={({ field }) => (
-          <FormItem className="flex flex-row items-center space-x-3 space-y-0">
-            <FormControl>
-              <Checkbox
-                checked={field.value}
-                onCheckedChange={field.onChange}
-              />
-            </FormControl>
-            <div className="space-y-1 leading-none">
-              <FormLabel>Default value</FormLabel>
-              <FormDescription>
-                The default state for new entries
-              </FormDescription>
-            </div>
-          </FormItem>
-        )}
-      />
+      <div className="flex flex-row items-center space-x-3 space-y-0">
+        <Checkbox
+          checked={config.defaultValue || false}
+          onCheckedChange={(checked) => handleConfigChange('defaultValue', checked)}
+        />
+        <div className="space-y-1 leading-none">
+          <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+            Default value
+          </label>
+          <p className="text-sm text-muted-foreground">
+            The default state for new entries
+          </p>
+        </div>
+      </div>
 
-      <FormField
-        control={control}
-        name="config.trueLabel"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>True label</FormLabel>
-            <FormControl>
-              <Input
-                {...field}
-                placeholder="Yes"
-                value={field.value || ''}
-              />
-            </FormControl>
-            <FormDescription>
-              Text displayed when checkbox is checked
-            </FormDescription>
-          </FormItem>
-        )}
-      />
+      <div className="space-y-2">
+        <label className="text-sm font-medium leading-none">
+          True label
+        </label>
+        <Input
+          value={config.trueLabel || ''}
+          onChange={(e) => handleConfigChange('trueLabel', e.target.value)}
+          placeholder="Yes"
+        />
+        <p className="text-sm text-muted-foreground">
+          Text displayed when checkbox is checked
+        </p>
+      </div>
 
-      <FormField
-        control={control}
-        name="config.falseLabel"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>False label</FormLabel>
-            <FormControl>
-              <Input
-                {...field}
-                placeholder="No"
-                value={field.value || ''}
-              />
-            </FormControl>
-            <FormDescription>
-              Text displayed when checkbox is unchecked
-            </FormDescription>
-          </FormItem>
-        )}
-      />
+      <div className="space-y-2">
+        <label className="text-sm font-medium leading-none">
+          False label
+        </label>
+        <Input
+          value={config.falseLabel || ''}
+          onChange={(e) => handleConfigChange('falseLabel', e.target.value)}
+          placeholder="No"
+        />
+        <p className="text-sm text-muted-foreground">
+          Text displayed when checkbox is unchecked
+        </p>
+      </div>
     </div>
   );
 }

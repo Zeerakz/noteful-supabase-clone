@@ -95,7 +95,7 @@ export function PropertyConfigEditor({
       case 'checkbox':
         return (
           <CheckboxPropertyConfigEditor
-            config={safeConfig}
+            config={safeConfig as any}
             onConfigChange={onConfigChange}
           />
         );
