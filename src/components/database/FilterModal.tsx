@@ -29,13 +29,6 @@ import { Plus, X } from 'lucide-react';
 import { DatabaseField } from '@/types/database';
 import { FilterGroup, FilterRule } from '@/types/filters';
 
-export interface FilterRule {
-  id: string;
-  fieldId: string;
-  operator: string;
-  value: string;
-}
-
 interface FilterModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
