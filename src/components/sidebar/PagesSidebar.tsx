@@ -20,7 +20,11 @@ import { GlobalSearchModal } from '@/components/search/GlobalSearchModal';
 import { useGlobalSearch } from '@/hooks/useGlobalSearch';
 import { cn } from '@/lib/utils';
 
-export function PagesSidebar() {
+interface PagesSidebarProps {
+  onNavigationItemSelect?: () => void;
+}
+
+export function PagesSidebar({ onNavigationItemSelect }: PagesSidebarProps) {
   const { workspaces } = useWorkspaces();
   const { isSearchOpen, closeSearch } = useGlobalSearch();
 
@@ -30,10 +34,10 @@ export function PagesSidebar() {
         <nav aria-label="Main navigation">
           <SidebarHeader className="p-3 border-b sidebar-accessible">
             <div className="sidebar-focus-ring">
-              <WorkspaceSwitcher />
+              <WorkspaceSwitcher onSelect={onNavigationItemSelect} />
             </div>
             <div className="mt-2">
-              <SearchTrigger />
+              <SearchTrigger onSelect={onNavigationItemSelect} />
             </div>
           </SidebarHeader>
           
@@ -44,6 +48,7 @@ export function PagesSidebar() {
                   key={workspace.id}
                   workspaceId={workspace.id}
                   workspaceName={workspace.name}
+                  onNavigationItemSelect={onNavigationItemSelect}
                 />
               ))}
             </ul>
@@ -51,7 +56,7 @@ export function PagesSidebar() {
 
           <SidebarFooter className="p-3 border-t space-y-2 sidebar-accessible">
             <div className="sidebar-focus-ring">
-              <NewPageAction />
+              <NewPageAction onSelect={onNavigationItemSelect} />
             </div>
             
             <SidebarSeparator className="bg-sidebar-border" />
@@ -61,7 +66,7 @@ export function PagesSidebar() {
                 System
               </SidebarGroupLabel>
               <SidebarGroupContent>
-                <SystemActions />
+                <SystemActions onNavigationItemSelect={onNavigationItemSelect} />
               </SidebarGroupContent>
             </SidebarGroup>
           </SidebarFooter>

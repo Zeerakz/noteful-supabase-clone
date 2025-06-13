@@ -290,6 +290,32 @@
   opacity: 0;
 }
 
+/* Mobile Navigation Drawer Specific Animations */
+.mobile-drawer-animate {
+  transition: transform var(--duration-medium) var(--ease-out-expo);
+  will-change: var(--will-change-transform);
+  transform: var(--gpu-acceleration);
+}
+
+.mobile-drawer-enter {
+  transform: translateX(0) var(--gpu-acceleration);
+}
+
+.mobile-drawer-exit {
+  transform: translateX(-100%) var(--gpu-acceleration);
+}
+
+/* Touch feedback for mobile interactions */
+.mobile-touch-feedback {
+  transition: transform 100ms ease-out;
+  will-change: var(--will-change-transform);
+  transform: var(--gpu-acceleration);
+}
+
+.mobile-touch-feedback:active {
+  transform: scale(0.96) var(--gpu-acceleration);
+}
+
 /* Performance optimizations for specific scenarios */
 @media (prefers-reduced-motion: reduce) {
   .animate-hw,
@@ -304,7 +330,8 @@
   .focus-ring-animate,
   .slide-animate,
   .scale-animate,
-  .fade-animate {
+  .fade-animate,
+  .mobile-drawer-animate {
     transition: none !important;
     animation: none !important;
   }
