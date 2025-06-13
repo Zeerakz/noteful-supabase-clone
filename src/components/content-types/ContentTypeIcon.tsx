@@ -2,6 +2,7 @@
 import React from 'react';
 import { ContentType, ContentTypeUtils } from '@/types/contentTypes';
 import { cn } from '@/lib/utils';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface ContentTypeIconProps {
   contentType: ContentType;
@@ -48,15 +49,31 @@ export function ContentTypeIcon({
     gray: 'text-gray-600'
   };
 
-  return (
+  const iconElement = (
     <IconComponent
       className={cn(
         sizeClasses[size],
         colorClasses[color as keyof typeof colorClasses] || colorClasses.gray,
         className
       )}
-      title={showTooltip ? label : undefined}
       aria-label={label}
     />
+  );
+
+  if (!showTooltip) {
+    return iconElement;
+  }
+
+  return (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          {iconElement}
+        </TooltipTrigger>
+        <TooltipContent>
+          <p>{label}</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   );
 }
