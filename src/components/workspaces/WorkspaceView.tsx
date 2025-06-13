@@ -2,7 +2,7 @@
 import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useWorkspaces } from '@/hooks/useWorkspaces';
-import { usePages } from '@/hooks/usePages';
+import { useEnhancedPages } from '@/hooks/useEnhancedPages';
 import { useDatabases } from '@/hooks/useDatabases';
 import { useGlobalSearch } from '@/hooks/useGlobalSearch';
 import { Button } from '@/components/ui/button';
@@ -33,7 +33,7 @@ export function WorkspaceView() {
   const { workspaceId } = useParams<{ workspaceId: string }>();
   const navigate = useNavigate();
   const { workspaces } = useWorkspaces();
-  const { pages, createPage } = usePages(workspaceId!);
+  const { pages, createPage, hasOptimisticChanges } = useEnhancedPages(workspaceId!);
   const { databases, deleteDatabase, fetchDatabases } = useDatabases(workspaceId!);
   const { openSearch } = useGlobalSearch();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -113,7 +113,9 @@ export function WorkspaceView() {
   };
 
   const breadcrumbs = [
-    { label: workspace.name }
+    { 
+      label: workspace.name + (hasOptimisticChanges ? ' (syncing...)' : '')
+    }
   ];
 
   return (
@@ -121,7 +123,12 @@ export function WorkspaceView() {
       <div className="p-6 space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold">{workspace.name}</h1>
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl font-bold">{workspace.name}</h1>
+              {hasOptimisticChanges && (
+                <span className="inline-block w-2 h-2 bg-blue-500 rounded-full animate-pulse" title="Syncing changes..." />
+              )}
+            </div>
             {workspace.description && (
               <p className="text-muted-foreground mt-1">{workspace.description}</p>
             )}

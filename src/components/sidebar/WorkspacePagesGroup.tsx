@@ -12,7 +12,7 @@ import {
   SidebarMenuButton,
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
-import { usePages } from '@/hooks/usePages';
+import { useEnhancedPages } from '@/hooks/useEnhancedPages';
 import { useToast } from '@/hooks/use-toast';
 import { PageTreeItem } from './PageTreeItem';
 
@@ -22,7 +22,7 @@ interface WorkspacePagesGroupProps {
 }
 
 export function WorkspacePagesGroup({ workspaceId, workspaceName }: WorkspacePagesGroupProps) {
-  const { pages, deletePage, createPage, updatePageHierarchy } = usePages(workspaceId);
+  const { pages, createPage, updatePageHierarchy, deletePage, hasOptimisticChanges } = useEnhancedPages(workspaceId);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -73,48 +73,27 @@ export function WorkspacePagesGroup({ workspaceId, workspaceName }: WorkspacePag
       return;
     }
 
-    const { error } = await deletePage(pageId);
-    
-    if (error) {
-      toast({
-        title: "Error",
-        description: error,
-        variant: "destructive",
-      });
-    } else {
-      toast({
-        title: "Success",
-        description: "Page deleted successfully!",
-      });
-    }
+    await deletePage(pageId);
   };
 
   const handleCreatePage = async () => {
     const { data, error } = await createPage('Untitled Page');
     
-    if (error) {
-      toast({
-        title: "Error",
-        description: error,
-        variant: "destructive",
-      });
-    } else {
-      toast({
-        title: "Success",
-        description: "Page created successfully!",
-      });
-      
+    if (!error && data) {
       // Navigate to the new page
-      if (data) {
-        navigate(`/workspace/${workspaceId}/page/${data.id}`);
-      }
+      navigate(`/workspace/${workspaceId}/page/${data.id}`);
     }
   };
 
   return (
     <SidebarGroup>
       <SidebarGroupLabel className="flex items-center justify-between">
-        <span className="truncate">{workspaceName}</span>
+        <span className="truncate flex items-center gap-2">
+          {workspaceName}
+          {hasOptimisticChanges && (
+            <span className="inline-block w-2 h-2 bg-blue-500 rounded-full animate-pulse" title="Syncing changes..." />
+          )}
+        </span>
         <Button
           variant="ghost"
           size="sm"

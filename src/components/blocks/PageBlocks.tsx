@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { useBlocks } from '@/hooks/useBlocks';
+import { useEnhancedBlocks } from '@/hooks/useEnhancedBlocks';
 import { DraggableBlockList } from './DraggableBlockList';
 
 interface PageBlocksProps {
@@ -9,27 +9,18 @@ interface PageBlocksProps {
 }
 
 export function PageBlocks({ pageId, isEditable = false }: PageBlocksProps) {
-  const { blocks, loading, error, updateBlock, deleteBlock, createBlock } = useBlocks(pageId);
+  const { blocks, loading, error, createBlock, updateBlock, deleteBlock } = useEnhancedBlocks(pageId);
 
   const handleUpdateBlock = async (id: string, updates: any) => {
-    const { error } = await updateBlock(id, updates);
-    if (error) {
-      console.error('Failed to update block:', error);
-    }
+    await updateBlock(id, updates);
   };
 
   const handleDeleteBlock = async (id: string) => {
-    const { error } = await deleteBlock(id);
-    if (error) {
-      console.error('Failed to delete block:', error);
-    }
+    await deleteBlock(id);
   };
 
   const handleCreateBlock = async (type: string, content?: any, parentBlockId?: string) => {
-    const { error } = await createBlock(type, content, parentBlockId);
-    if (error) {
-      console.error('Failed to create block:', error);
-    }
+    await createBlock(type, content, parentBlockId);
   };
 
   if (loading) {

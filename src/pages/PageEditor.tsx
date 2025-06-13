@@ -8,10 +8,11 @@ import { BlockEditor } from '@/components/blocks/BlockEditor';
 import { PresenceProvider } from '@/components/collaboration/PresenceProvider';
 import { ActiveUsers } from '@/components/collaboration/ActiveUsers';
 import { SaveAsTemplateDialog } from '@/components/templates/SaveAsTemplateDialog';
-import { usePages } from '@/hooks/usePages';
+import { usePageData } from '@/hooks/usePageData';
+import { useEnhancedPages } from '@/hooks/useEnhancedPages';
 import { useWorkspaces } from '@/hooks/useWorkspaces';
 import { usePresence } from '@/hooks/usePresence';
-import { useBlocks } from '@/hooks/useBlocks';
+import { useEnhancedBlocks } from '@/hooks/useEnhancedBlocks';
 import { useToast } from '@/hooks/use-toast';
 
 export function PageEditor() {
@@ -19,10 +20,11 @@ export function PageEditor() {
   const navigate = useNavigate();
   
   // Call ALL hooks before any conditional logic
-  const { pages, loading: pagesLoading, updatePage } = usePages(workspaceId);
+  const { pageData, loading: pageLoading, error: pageError } = usePageData(pageId);
   const { workspaces, loading: workspacesLoading } = useWorkspaces();
   const { activeUsers, loading: presenceLoading } = usePresence(pageId);
-  const { blocks } = useBlocks(pageId!);
+  const { blocks, hasOptimisticChanges: hasBlockChanges } = useEnhancedBlocks(pageId!);
+  const { updatePage, hasOptimisticChanges: hasPageChanges } = useEnhancedPages(workspaceId);
   const { toast } = useToast();
 
   const [isEditingTitle, setIsEditingTitle] = useState(false);
@@ -30,7 +32,7 @@ export function PageEditor() {
   const titleInputRef = useRef<HTMLInputElement>(null);
 
   // Now handle loading states and conditional rendering
-  if (pagesLoading || workspacesLoading) {
+  if (pageLoading || workspacesLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-lg">Loading...</div>
@@ -38,12 +40,12 @@ export function PageEditor() {
     );
   }
 
-  const workspace = workspaces.find(w => w.id === workspaceId);
-  const page = pages.find(p => p.id === pageId);
-
-  if (!workspace || !page) {
+  if (pageError || !pageData) {
     return <Navigate to="/" replace />;
   }
+
+  const workspace = pageData.workspace;
+  const page = pageData;
 
   // For now, we'll assume users can edit if they have access to the page
   // This should be enhanced with proper role checking
@@ -80,17 +82,7 @@ export function PageEditor() {
 
     const { error } = await updatePage(page.id, { title: titleValue.trim() });
     
-    if (error) {
-      toast({
-        title: "Error",
-        description: error,
-        variant: "destructive",
-      });
-    } else {
-      toast({
-        title: "Success",
-        description: "Page title updated",
-      });
+    if (!error) {
       setIsEditingTitle(false);
     }
   };
@@ -109,6 +101,8 @@ export function PageEditor() {
       handleTitleCancel();
     }
   };
+
+  const hasAnyOptimisticChanges = hasPageChanges || hasBlockChanges;
 
   return (
     <PresenceProvider pageId={pageId}>
@@ -150,6 +144,9 @@ export function PageEditor() {
                         >
                           <Edit2 className="h-3 w-3" />
                         </Button>
+                      )}
+                      {hasAnyOptimisticChanges && (
+                        <span className="inline-block w-2 h-2 bg-blue-500 rounded-full animate-pulse ml-2" title="Syncing changes..." />
                       )}
                     </div>
                   )}
