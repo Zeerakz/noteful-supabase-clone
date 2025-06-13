@@ -113,8 +113,10 @@ export function GroupedTableView({
             <PropertyTableCell
               field={field}
               value={item.properties[field.id] || ''}
-              onValueChange={(value) => onPropertyUpdate(item.id, field.id, value)}
+              pageId={item.id} // Fixed: added missing pageId prop
               workspaceId={workspaceId}
+              width={getColumnWidth(field.id)} // Fixed: added missing width prop
+              onValueChange={(value) => onPropertyUpdate(item.id, field.id, value)}
             />
           </TableCell>
         ))}
