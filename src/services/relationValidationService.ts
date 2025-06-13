@@ -120,8 +120,10 @@ export class RelationValidationService {
         fields
           .filter(field => field.type === 'relation' && isRelationFieldSettings(field.settings))
           .map(field => {
-            const settings = field.settings as RelationFieldSettings;
-            return settings.related_property_name?.toLowerCase();
+            if (!isRelationFieldSettings(field.settings)) {
+              return null;
+            }
+            return field.settings.related_property_name?.toLowerCase();
           })
           .filter(Boolean) as string[]
       );
