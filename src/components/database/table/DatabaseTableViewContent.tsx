@@ -7,7 +7,7 @@ import { Table, TableCaption } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Pagination } from '@/components/ui/pagination';
-import { Settings, Plus } from 'lucide-react';
+import { Settings } from 'lucide-react';
 import { SortRule } from '@/components/database/SortingModal';
 import { useColumnResizing } from './hooks/useColumnResizing';
 
@@ -208,14 +208,6 @@ export function DatabaseTableViewContent({
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <Button
-            onClick={onCreateRow}
-            className="gap-2 bg-primary hover:bg-primary/90"
-            size="sm"
-          >
-            <Plus className="h-4 w-4" />
-            Add Row
-          </Button>
           {onShowManageProperties && (
             <Button
               variant="outline"

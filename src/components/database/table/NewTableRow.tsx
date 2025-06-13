@@ -62,11 +62,11 @@ export function NewTableRow({
   return (
     <TableRow 
       className={`
-        group border-b border-border/20 transition-colors duration-150
-        ${!isAnyColumnResizing && !isCreating ? 'hover:bg-accent/20' : ''}
-        ${isEvenRow ? 'bg-muted/10' : 'bg-background'}
-        ${isCreating ? 'bg-accent/10 border-accent/30' : ''}
+        group border-b-0 transition-all duration-200 
+        ${!isAnyColumnResizing && !isCreating ? 'hover:bg-accent/30' : ''}
+        ${isCreating ? 'bg-accent/20 shadow-sm' : 'bg-background/80'}
         ${isAnyColumnResizing ? 'pointer-events-none opacity-60' : ''}
+        border-t border-border/40
       `}
     >
       {/* Empty checkbox cell with consistent width */}
@@ -96,7 +96,7 @@ export function NewTableRow({
                 onChange={(e) => setTitle(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder="Enter title..."
-                className="flex-1 h-8 text-sm border-primary/50 focus:border-primary"
+                className="flex-1 h-8 text-sm border-primary/50 focus:border-primary bg-background"
                 autoFocus
               />
               <Button
@@ -121,12 +121,15 @@ export function NewTableRow({
               onClick={handleStartCreating}
               disabled={isAnyColumnResizing}
               className={`
-                w-full justify-start h-8 px-2 rounded-md transition-all duration-200
-                ${!isAnyColumnResizing ? 'text-muted-foreground hover:text-foreground hover:bg-accent/30' : 'cursor-not-allowed text-muted-foreground/40'}
+                w-full justify-start h-10 px-3 rounded-lg transition-all duration-200 border-2 border-dashed
+                ${!isAnyColumnResizing 
+                  ? 'border-border/40 text-muted-foreground hover:text-foreground hover:bg-accent/40 hover:border-primary/40 group-hover:border-primary/60' 
+                  : 'cursor-not-allowed text-muted-foreground/40 border-border/20'
+                }
               `}
             >
               <Plus className="h-4 w-4 mr-2" />
-              New
+              <span className="font-medium">New</span>
             </Button>
           )}
         </div>
@@ -144,8 +147,8 @@ export function NewTableRow({
           }}
         >
           <div className="px-4 py-3 overflow-hidden">
-            <div className="min-h-[24px] px-2 py-1 flex items-center">
-              <span className={`text-sm editable-cell-placeholder ${isAnyColumnResizing ? 'text-muted-foreground/30' : 'text-muted-foreground/40'}`}>
+            <div className="min-h-[32px] px-2 py-1 flex items-center">
+              <span className={`text-sm ${isAnyColumnResizing ? 'text-muted-foreground/20' : 'text-muted-foreground/30'}`}>
                 —
               </span>
             </div>
