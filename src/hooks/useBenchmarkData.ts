@@ -463,17 +463,23 @@ export function useBenchmarkData() {
     if (!testDatabaseId) return;
 
     try {
-      // Delete test data
-      await supabase
-        .from('page_properties')
-        .delete()
-        .in('page_id', 
-          supabase
-            .from('pages')
-            .select('id')
-            .eq('database_id', testDatabaseId)
-        );
+      // First, get all page IDs for this database
+      const { data: pages } = await supabase
+        .from('pages')
+        .select('id')
+        .eq('database_id', testDatabaseId);
 
+      if (pages && pages.length > 0) {
+        const pageIds = pages.map(page => page.id);
+        
+        // Delete page properties for these pages
+        await supabase
+          .from('page_properties')
+          .delete()
+          .in('page_id', pageIds);
+      }
+
+      // Delete pages
       await supabase
         .from('pages')
         .delete()

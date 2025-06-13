@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -14,7 +13,7 @@ import {
   TrendingUp, 
   Clock, 
   Database, 
-  Memory, 
+  HardDrive, 
   Zap,
   AlertTriangle,
   CheckCircle
@@ -245,7 +244,7 @@ export function BenchmarkPanel() {
               <Card>
                 <CardContent className="p-4">
                   <div className="flex items-center gap-2 mb-2">
-                    <Memory className="h-4 w-4 text-purple-600" />
+                    <HardDrive className="h-4 w-4 text-purple-600" />
                     <span className="text-sm font-medium">Memory Usage</span>
                   </div>
                   <div className="text-2xl font-bold">
