@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Page, PageCreateRequest, PageUpdateRequest } from '@/types/page';
 import { PropertyInheritanceService } from '@/services/propertyInheritanceService';
@@ -186,13 +185,25 @@ export class PageService {
         throw new Error('Invalid page ID');
       }
 
-      // Clean up null values in updates
-      const cleanUpdates = { ...updates };
-      Object.keys(cleanUpdates).forEach(key => {
-        if (cleanUpdates[key as keyof PageUpdateRequest] === 'null' || cleanUpdates[key as keyof PageUpdateRequest] === 'undefined') {
-          cleanUpdates[key as keyof PageUpdateRequest] = null as any;
-        }
-      });
+      // Clean up null values in updates - properly handle optional properties
+      const cleanUpdates: Partial<PageUpdateRequest> = {};
+      
+      // Only include properties that are actually being updated
+      if (updates.title !== undefined) {
+        cleanUpdates.title = updates.title === 'null' || updates.title === 'undefined' ? undefined : updates.title;
+      }
+      
+      if (updates.parent_page_id !== undefined) {
+        cleanUpdates.parent_page_id = updates.parent_page_id === 'null' || updates.parent_page_id === 'undefined' ? null : updates.parent_page_id;
+      }
+      
+      if (updates.database_id !== undefined) {
+        cleanUpdates.database_id = updates.database_id === 'null' || updates.database_id === 'undefined' ? null : updates.database_id;
+      }
+      
+      if (updates.order_index !== undefined) {
+        cleanUpdates.order_index = updates.order_index;
+      }
 
       // Get the current page data to check for database changes
       const { data: currentPage, error: fetchError } = await supabase
