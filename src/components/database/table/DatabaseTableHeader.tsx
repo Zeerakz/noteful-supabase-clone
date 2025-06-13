@@ -53,7 +53,11 @@ export function DatabaseTableHeader({
         {/* Selection Column - Fixed width */}
         <TableHead 
           className="w-12 p-3 bg-card/95 border-r border-border/40"
-          style={{ width: '48px' }}
+          style={{ 
+            width: '48px',
+            minWidth: '48px',
+            maxWidth: '48px'
+          }}
         >
           <div className="flex items-center justify-center">
             <Checkbox className="opacity-50" />
@@ -64,7 +68,9 @@ export function DatabaseTableHeader({
         <TableHead 
           className="p-0 bg-card/95 border-r border-border/40"
           style={{ 
-            width: columnWidths['title'] ? `${columnWidths['title']}px` : '280px'
+            width: `${columnWidths['title'] || 280}px`,
+            minWidth: `${columnWidths['title'] || 280}px`,
+            maxWidth: `${columnWidths['title'] || 280}px`
           }}
         >
           <DatabaseColumnHeader
@@ -93,7 +99,9 @@ export function DatabaseTableHeader({
             key={field.id} 
             className="p-0 bg-card/95 border-r border-border/40 last:border-r-0"
             style={{ 
-              width: columnWidths[field.id] ? `${columnWidths[field.id]}px` : '200px'
+              width: `${columnWidths[field.id] || 200}px`,
+              minWidth: `${columnWidths[field.id] || 200}px`,
+              maxWidth: `${columnWidths[field.id] || 200}px`
             }}
           >
             <DatabaseColumnHeader
@@ -114,7 +122,11 @@ export function DatabaseTableHeader({
         {/* Actions Column - Fixed width */}
         <TableHead 
           className="w-16 p-3 bg-card/95"
-          style={{ width: '64px' }}
+          style={{ 
+            width: '64px',
+            minWidth: '64px',
+            maxWidth: '64px'
+          }}
         >
           <div className="text-center text-xs font-medium text-muted-foreground">
             •••

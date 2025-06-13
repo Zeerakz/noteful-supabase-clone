@@ -96,7 +96,7 @@ export function DatabaseTableViewContent({
         [field.id]: 200
       }), {})
     },
-    minWidth: 120, // Reduced minimum width for better flexibility
+    minWidth: 120,
     maxWidth: 600
   });
 
@@ -132,6 +132,12 @@ export function DatabaseTableViewContent({
   const handleResizeStateChange = useCallback((newResizingFields: Set<string>) => {
     setResizingFields(newResizingFields);
   }, []);
+
+  // Calculate total width for the table
+  const totalTableWidth = 48 + // checkbox column
+    (columnWidths['title'] || 280) + // title column
+    fields.reduce((acc, field) => acc + (columnWidths[field.id] || 200), 0) + // field columns
+    64; // actions column
 
   if (pagesLoading) {
     return (
@@ -215,10 +221,13 @@ export function DatabaseTableViewContent({
         </div>
       </div>
 
-      {/* Table container with fixed layout */}
+      {/* Table container with fixed layout and consistent width */}
       <div className="flex-1 overflow-auto bg-background">
-        <div className="w-full">
-          <Table className="table-fixed border-collapse w-full" style={{ minWidth: '800px' }}>
+        <div className="w-full" style={{ minWidth: `${totalTableWidth}px` }}>
+          <Table className="border-collapse" style={{ 
+            tableLayout: 'fixed',
+            width: `${totalTableWidth}px`
+          }}>
             <DatabaseTableHeader
               fields={fields}
               sortRules={sortRules}

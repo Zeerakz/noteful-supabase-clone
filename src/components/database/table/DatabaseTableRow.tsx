@@ -102,7 +102,11 @@ export function DatabaseTableRow({
           w-12 p-3 border-r border-border/20
           ${resizingFields.has('checkbox') ? 'resize-active' : ''}
         `}
-        style={{ width: '48px' }}
+        style={{ 
+          width: '48px',
+          minWidth: '48px',
+          maxWidth: '48px'
+        }}
       >
         <div className="flex items-center justify-center">
           <Checkbox
@@ -124,7 +128,9 @@ export function DatabaseTableRow({
           ${resizingFields.has('title') ? 'resize-active' : ''}
         `}
         style={{ 
-          width: columnWidths['title'] ? `${columnWidths['title']}px` : '280px'
+          width: `${columnWidths['title'] || 280}px`,
+          minWidth: `${columnWidths['title'] || 280}px`,
+          maxWidth: `${columnWidths['title'] || 280}px`
         }}
       >
         <div className="flex items-center gap-2 px-4 py-3">
@@ -168,7 +174,9 @@ export function DatabaseTableRow({
               ${isFieldResizing ? 'resize-active' : ''}
             `}
             style={{ 
-              width: columnWidths[field.id] ? `${columnWidths[field.id]}px` : '200px'
+              width: `${columnWidths[field.id] || 200}px`,
+              minWidth: `${columnWidths[field.id] || 200}px`,
+              maxWidth: `${columnWidths[field.id] || 200}px`
             }}
           >
             <div className="px-4 py-3 overflow-hidden">
@@ -216,7 +224,11 @@ export function DatabaseTableRow({
       {/* Actions Cell - Fixed width */}
       <TableCell 
         className="w-16 p-3"
-        style={{ width: '64px' }}
+        style={{ 
+          width: '64px',
+          minWidth: '64px',
+          maxWidth: '64px'
+        }}
       >
         <div className="flex items-center justify-center">
           <DropdownMenu>
