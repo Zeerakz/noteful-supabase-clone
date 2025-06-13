@@ -178,6 +178,8 @@ export function DatabaseColumnHeader({
     setDragOver(null);
   };
 
+  const canDrag = isDraggable && !!onFieldReorder;
+
   return (
     <TooltipProvider>
       <div 
@@ -188,7 +190,7 @@ export function DatabaseColumnHeader({
           ${dragOver === 'after' ? 'border-r-4 border-r-primary' : ''}
           ${className}
         `}
-        draggable={isDraggable && onFieldReorder}
+        draggable={canDrag}
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
         onDragOver={handleDragOver}
@@ -198,7 +200,7 @@ export function DatabaseColumnHeader({
         {/* Header Content */}
         <div className="flex items-center gap-2 flex-1 min-w-0 h-full">
           {/* Drag Handle */}
-          {isDraggable && onFieldReorder && (
+          {canDrag && (
             <Tooltip>
               <TooltipTrigger asChild>
                 <div className="flex-shrink-0 p-0.5 rounded-md hover:bg-muted/60 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing">
