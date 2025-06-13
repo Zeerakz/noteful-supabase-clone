@@ -18,7 +18,7 @@ export function PerformantAnimatedAccordion({
   onToggle,
   className,
 }: PerformantAnimatedAccordionProps) {
-  const { elementRef, accordion } = usePerformantAnimation();
+  const { elementRef, accordion } = usePerformantAnimation<HTMLDivElement>();
   const contentRef = React.useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {

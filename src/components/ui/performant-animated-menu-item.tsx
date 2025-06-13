@@ -18,7 +18,7 @@ export function PerformantAnimatedMenuItem({
   className,
   icon,
 }: PerformantAnimatedMenuItemProps) {
-  const { elementRef, applyHoverAnimation } = usePerformantAnimation();
+  const { elementRef, applyHoverAnimation } = usePerformantAnimation<HTMLButtonElement>();
 
   React.useEffect(() => {
     const cleanup = applyHoverAnimation('menu-item');

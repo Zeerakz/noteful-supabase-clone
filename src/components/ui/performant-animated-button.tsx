@@ -39,7 +39,7 @@ export interface PerformantAnimatedButtonProps
 
 const PerformantAnimatedButton = React.forwardRef<HTMLButtonElement, PerformantAnimatedButtonProps>(
   ({ className, variant, size, asChild = false, ...props }, ref) => {
-    const { elementRef, applyHoverAnimation } = usePerformantAnimation();
+    const { elementRef, applyHoverAnimation } = usePerformantAnimation<HTMLButtonElement>();
     const Comp = asChild ? Slot : "button";
 
     React.useEffect(() => {
@@ -50,7 +50,7 @@ const PerformantAnimatedButton = React.forwardRef<HTMLButtonElement, PerformantA
     return (
       <Comp
         className={cn(buttonVariants({ variant, size, className }))}
-        ref={(node) => {
+        ref={(node: HTMLButtonElement) => {
           // Handle both forwarded ref and internal ref
           if (typeof ref === 'function') {
             ref(node);

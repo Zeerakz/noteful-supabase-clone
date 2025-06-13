@@ -16,7 +16,7 @@ export function PerformantAnimatedSidebar({
   onToggle,
   className,
 }: PerformantAnimatedSidebarProps) {
-  const { elementRef, slideHorizontal } = usePerformantAnimation();
+  const { elementRef, slideHorizontal } = usePerformantAnimation<HTMLDivElement>();
   const contentRef = React.useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {

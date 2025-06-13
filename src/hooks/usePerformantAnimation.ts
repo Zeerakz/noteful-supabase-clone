@@ -18,8 +18,8 @@ interface AnimationState {
  * Hook for performant animations using hardware-accelerated CSS properties
  * Only uses transform and opacity, JavaScript only toggles CSS classes
  */
-export function usePerformantAnimation() {
-  const elementRef = useRef<HTMLElement>(null);
+export function usePerformantAnimation<T extends HTMLElement = HTMLElement>() {
+  const elementRef = useRef<T>(null);
   const [animationState, setAnimationState] = useState<AnimationState>({
     isAnimating: false,
     isVisible: false,

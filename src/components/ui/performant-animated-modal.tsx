@@ -17,8 +17,8 @@ export function PerformantAnimatedModal({
   children,
   className,
 }: PerformantAnimatedModalProps) {
-  const { elementRef: overlayRef, toggleVisibility: toggleOverlay } = usePerformantAnimation();
-  const { elementRef: contentRef, scale } = usePerformantAnimation();
+  const { elementRef: overlayRef, toggleVisibility: toggleOverlay } = usePerformantAnimation<HTMLDivElement>();
+  const { elementRef: contentRef, scale } = usePerformantAnimation<HTMLDivElement>();
   const [shouldRender, setShouldRender] = React.useState(isOpen);
 
   React.useEffect(() => {

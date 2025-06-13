@@ -16,7 +16,7 @@ export function PerformantAnimatedTooltip({
   side = 'top',
   className,
 }: PerformantAnimatedTooltipProps) {
-  const { elementRef, toggleVisibility } = usePerformantAnimation();
+  const { elementRef, toggleVisibility } = usePerformantAnimation<HTMLDivElement>();
   const [isVisible, setIsVisible] = React.useState(false);
   const timeoutRef = React.useRef<NodeJS.Timeout>();
 
