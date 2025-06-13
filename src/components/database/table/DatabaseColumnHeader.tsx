@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -24,6 +23,7 @@ import { DatabaseField } from '@/types/database';
 import { SortRule } from '@/components/database/SortingModal';
 import { InlinePropertyEditor } from '@/components/database/fields/InlinePropertyEditor';
 import { useDatabaseFieldOperations } from '@/hooks/useDatabaseFieldOperations';
+import { getPropertyGlyph } from './PropertyGlyphs';
 
 interface DatabaseColumnHeaderProps {
   field: DatabaseField;
@@ -77,6 +77,9 @@ export function DatabaseColumnHeader({
   const hasDescription = field.name in fieldDescriptions;
   const databaseId = field.database_id;
   const fieldOperations = useDatabaseFieldOperations(databaseId, onFieldsChange);
+
+  // Get the appropriate glyph component for this field
+  const PropertyGlyph = getPropertyGlyph(field.type, field.name);
 
   const handleSortClick = () => {
     if (sortDirection === 'asc') {
@@ -213,6 +216,11 @@ export function DatabaseColumnHeader({
             </Tooltip>
           )}
 
+          {/* Property Glyph */}
+          <div className="flex-shrink-0 opacity-60 group-hover:opacity-80 transition-opacity">
+            <PropertyGlyph className="text-muted-foreground/70" />
+          </div>
+
           {/* Column Title with Sort */}
           <Button
             variant="ghost"
@@ -248,6 +256,7 @@ export function DatabaseColumnHeader({
               <HoverCardContent className="w-80 p-4" side="bottom" align="start">
                 <div className="space-y-3">
                   <div className="flex items-center gap-2">
+                    <PropertyGlyph className="text-muted-foreground/70" />
                     <h4 className="text-sm font-semibold text-foreground">{field.name}</h4>
                   </div>
                   <p className="text-xs text-muted-foreground leading-relaxed">
