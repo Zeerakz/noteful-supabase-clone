@@ -12,7 +12,7 @@ export class SchemaAuditService {
         .order('created_at', { ascending: false })
         .limit(limit);
 
-      return { data, error: error?.message || null };
+      return { data: data as SchemaAuditLog[] | null, error: error?.message || null };
     } catch (error) {
       console.error('Error fetching audit logs:', error);
       return { data: null, error: error instanceof Error ? error.message : 'Failed to fetch audit logs' };
@@ -28,7 +28,7 @@ export class SchemaAuditService {
         .order('created_at', { ascending: false })
         .limit(limit);
 
-      return { data, error: error?.message || null };
+      return { data: data as SchemaAuditLog[] | null, error: error?.message || null };
     } catch (error) {
       console.error('Error fetching workspace audit logs:', error);
       return { data: null, error: error instanceof Error ? error.message : 'Failed to fetch workspace audit logs' };

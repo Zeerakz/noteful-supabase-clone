@@ -35,88 +35,36 @@ export function DatabasePage() {
     { label: database.name }
   ];
 
-  const handleTitleChange = async (newTitle: string) => {
-    try {
-      const { error } = await DatabaseService.updateDatabase(database.id, {
-        name: newTitle
-      });
-      
-      if (error) {
-        toast({
-          title: "Error",
-          description: error,
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "Success",
-          description: "Database title updated",
-        });
-        fetchDatabases(); // Refresh the databases list
-      }
-    } catch (err) {
-      toast({
-        title: "Error",
-        description: "Failed to update database title",
-        variant: "destructive",
-      });
-    }
+  const handleEdit = async () => {
+    // TODO: Implement edit functionality
+    toast({
+      title: "Edit Database",
+      description: "Edit functionality will be implemented soon",
+    });
   };
 
-  const handleDescriptionChange = async (newDescription: string) => {
-    try {
-      const { error } = await DatabaseService.updateDatabase(database.id, {
-        description: newDescription
-      });
-      
-      if (error) {
-        toast({
-          title: "Error",
-          description: error,
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "Success",
-          description: "Database description updated",
-        });
-        fetchDatabases(); // Refresh the databases list
-      }
-    } catch (err) {
-      toast({
-        title: "Error",
-        description: "Failed to update database description",
-        variant: "destructive",
-      });
-    }
+  const handleDuplicate = async () => {
+    // TODO: Implement duplicate functionality
+    toast({
+      title: "Duplicate Database",
+      description: "Duplicate functionality will be implemented soon",
+    });
   };
 
-  const handleIconChange = async (newIcon: string) => {
-    try {
-      const { error } = await DatabaseService.updateDatabase(database.id, {
-        icon: newIcon
-      });
-      
-      if (error) {
-        toast({
-          title: "Error",
-          description: error,
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "Success",
-          description: "Database icon updated",
-        });
-        fetchDatabases(); // Refresh the databases list
-      }
-    } catch (err) {
-      toast({
-        title: "Error",
-        description: "Failed to update database icon",
-        variant: "destructive",
-      });
-    }
+  const handleDelete = async () => {
+    // TODO: Implement delete functionality
+    toast({
+      title: "Delete Database",
+      description: "Delete functionality will be implemented soon",
+    });
+  };
+
+  const handleExport = async () => {
+    // TODO: Implement export functionality
+    toast({
+      title: "Export Database",
+      description: "Export functionality will be implemented soon",
+    });
   };
 
   return (
@@ -124,13 +72,11 @@ export function DatabasePage() {
       <div className="h-full flex flex-col overflow-hidden">
         <div className="shrink-0">
           <DatabaseHeader
-            title={database.name}
-            description={database.description}
-            icon={database.icon || "📊"}
-            onTitleChange={handleTitleChange}
-            onDescriptionChange={handleDescriptionChange}
-            onIconChange={handleIconChange}
-            breadcrumbs={breadcrumbs}
+            database={database}
+            onEdit={handleEdit}
+            onDuplicate={handleDuplicate}
+            onDelete={handleDelete}
+            onExport={handleExport}
           />
         </div>
 
