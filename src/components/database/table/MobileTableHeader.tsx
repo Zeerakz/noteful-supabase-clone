@@ -44,17 +44,20 @@ export function MobileTableHeader({
   };
 
   return (
-    <div className="flex items-center justify-between px-4 py-3 border-b bg-card/50 backdrop-blur-sm">
+    <div className="flex items-center justify-between px-4 py-3 hairline-divider bg-card/50 backdrop-blur-sm">
       {/* Left side - Selection and count */}
       <div className="flex items-center gap-3">
         <Checkbox
           checked={isAllSelected}
-          ref={(ref) => {
-            if (ref) {
-              ref.indeterminate = isPartiallySelected;
+          onCheckedChange={(checked) => {
+            // Handle indeterminate state properly
+            if (isPartiallySelected) {
+              onSelectAll(false);
+            } else {
+              onSelectAll(!!checked);
             }
           }}
-          onCheckedChange={(checked) => onSelectAll(!!checked)}
+          className={isPartiallySelected ? 'data-[state=indeterminate]:bg-primary data-[state=indeterminate]:text-primary-foreground' : ''}
         />
         
         <div className="text-sm text-muted-foreground">
