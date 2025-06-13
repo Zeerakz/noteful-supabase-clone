@@ -72,38 +72,52 @@ export function VirtualizedTable({
       : pages;
   }, [enableVirtualScrolling, pages, virtualScrolling.visibleItems]);
 
+  // Calculate total table width for consistent layout
+  const calculateTableWidth = () => {
+    const checkboxWidth = 48;
+    const titleWidth = getColumnWidth('title');
+    const fieldsWidth = fields.reduce((sum, field) => sum + getColumnWidth(field.id), 0);
+    const actionsWidth = 64;
+    return checkboxWidth + titleWidth + fieldsWidth + actionsWidth;
+  };
+
+  const totalTableWidth = calculateTableWidth();
+
   if (enableVirtualScrolling && pages.length > 50) {
     return (
       <div className="border-2 border-border rounded-lg overflow-hidden shadow-sm">
-        {/* Fixed sticky header */}
-        <div className="border-b-2 border-border bg-background/98 backdrop-blur-md sticky top-0 z-30 shadow-sm">
-          <Table>
-            <EnhancedTableHeader
-              fields={fields}
-              sortRules={sortRules}
-              onSort={handleSort}
-              onColumnResize={updateColumnWidth}
-              getColumnWidth={getColumnWidth}
-              stickyHeader={false}
-            />
-          </Table>
+        {/* Fixed sticky header with consistent width */}
+        <div className="border-b-2 border-border bg-background/98 backdrop-blur-md sticky top-0 z-30 shadow-sm overflow-hidden">
+          <div style={{ width: `${totalTableWidth}px`, minWidth: `${totalTableWidth}px` }}>
+            <Table className="table-fixed" style={{ width: `${totalTableWidth}px` }}>
+              <EnhancedTableHeader
+                fields={fields}
+                sortRules={sortRules}
+                onSort={handleSort}
+                onColumnResize={updateColumnWidth}
+                getColumnWidth={getColumnWidth}
+                stickyHeader={false}
+              />
+            </Table>
+          </div>
         </div>
         
-        {/* Virtualized scrollable body */}
+        {/* Virtualized scrollable body with matching width */}
         <div 
           ref={containerRef}
           className="overflow-auto"
           style={{ height: maxHeight }}
           onScroll={virtualScrolling.handleScroll}
         >
-          <div style={{ height: virtualScrolling.totalHeight, position: 'relative' }}>
+          <div style={{ height: virtualScrolling.totalHeight, position: 'relative', width: `${totalTableWidth}px` }}>
             <div 
               style={{ 
                 transform: `translateY(${virtualScrolling.offsetY}px)`,
                 position: 'absolute',
                 top: 0,
                 left: 0,
-                right: 0
+                right: 0,
+                width: `${totalTableWidth}px`
               }}
             >
               <VirtualizedTableBody
@@ -130,32 +144,36 @@ export function VirtualizedTable({
 
   return (
     <div className="border-2 border-border rounded-lg overflow-hidden shadow-sm">
-      {/* Fixed sticky header */}
-      <div className="border-b-2 border-border bg-background/98 backdrop-blur-md sticky top-0 z-30 shadow-sm">
-        <Table>
-          <EnhancedTableHeader
-            fields={fields}
-            sortRules={sortRules}
-            onSort={handleSort}
-            onColumnResize={updateColumnWidth}
-            getColumnWidth={getColumnWidth}
-            stickyHeader={false}
-          />
-        </Table>
+      {/* Fixed sticky header with consistent width */}
+      <div className="border-b-2 border-border bg-background/98 backdrop-blur-md sticky top-0 z-30 shadow-sm overflow-hidden">
+        <div style={{ width: `${totalTableWidth}px`, minWidth: `${totalTableWidth}px` }}>
+          <Table className="table-fixed" style={{ width: `${totalTableWidth}px` }}>
+            <EnhancedTableHeader
+              fields={fields}
+              sortRules={sortRules}
+              onSort={handleSort}
+              onColumnResize={updateColumnWidth}
+              getColumnWidth={getColumnWidth}
+              stickyHeader={false}
+            />
+          </Table>
+        </div>
       </div>
       
-      {/* Scrollable body */}
+      {/* Scrollable body with matching width */}
       <ScrollArea style={{ height: maxHeight }}>
-        <VirtualizedTableBody
-          pages={displayPages}
-          fields={fields}
-          onTitleUpdate={onTitleUpdate}
-          onPropertyUpdate={onPropertyUpdate}
-          onDeleteRow={onDeleteRow}
-          isLoading={isLoading}
-          getColumnWidth={getColumnWidth}
-          workspaceId={workspaceId}
-        />
+        <div style={{ width: `${totalTableWidth}px`, minWidth: `${totalTableWidth}px` }}>
+          <VirtualizedTableBody
+            pages={displayPages}
+            fields={fields}
+            onTitleUpdate={onTitleUpdate}
+            onPropertyUpdate={onPropertyUpdate}
+            onDeleteRow={onDeleteRow}
+            isLoading={isLoading}
+            getColumnWidth={getColumnWidth}
+            workspaceId={workspaceId}
+          />
+        </div>
       </ScrollArea>
     </div>
   );

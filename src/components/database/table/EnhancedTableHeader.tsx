@@ -48,9 +48,9 @@ export function EnhancedTableHeader({
       `}
     >
       <TableRow className="hover:bg-transparent border-none">
-        {/* Selection Column */}
+        {/* Selection Column - Fixed width with consistent padding */}
         <TableHead 
-          className="w-[48px] p-2 sticky left-0 z-40 bg-background/95 backdrop-blur-md border-r border-border/60 shadow-[2px_0_4px_rgba(0,0,0,0.05)] dark:shadow-[2px_0_4px_rgba(255,255,255,0.05)]"
+          className="w-12 p-3 sticky left-0 z-40 bg-background/95 backdrop-blur-md border-r border-border/60 shadow-[2px_0_4px_rgba(0,0,0,0.05)] dark:shadow-[2px_0_4px_rgba(255,255,255,0.05)]"
           style={{ width: '48px' }}
         >
           <div className="flex items-center justify-center">
@@ -62,10 +62,10 @@ export function EnhancedTableHeader({
           </div>
         </TableHead>
 
-        {/* Title Column */}
+        {/* Title Column - Use exact width from getColumnWidth */}
         <TableHead 
           className="sticky left-[48px] z-40 bg-background/95 backdrop-blur-md border-r border-border/60 p-0 shadow-[2px_0_4px_rgba(0,0,0,0.05)] dark:shadow-[2px_0_4px_rgba(255,255,255,0.05)]"
-          style={{ width: `${getColumnWidth('title')}px` }}
+          style={{ width: `${getColumnWidth('title')}px`, minWidth: `${getColumnWidth('title')}px`, maxWidth: `${getColumnWidth('title')}px` }}
         >
           <DatabaseColumnHeader
             field={{
@@ -86,12 +86,16 @@ export function EnhancedTableHeader({
           />
         </TableHead>
 
-        {/* Dynamic Field Columns */}
+        {/* Dynamic Field Columns - Use exact width from getColumnWidth */}
         {fields.map((field) => (
           <TableHead 
             key={field.id} 
-            className="min-w-[160px] relative p-0 bg-background/95 backdrop-blur-md"
-            style={{ width: `${getColumnWidth(field.id)}px` }}
+            className="relative p-0 bg-background/95 backdrop-blur-md border-r border-border/60 last:border-r-0"
+            style={{ 
+              width: `${getColumnWidth(field.id)}px`, 
+              minWidth: `${getColumnWidth(field.id)}px`, 
+              maxWidth: `${getColumnWidth(field.id)}px` 
+            }}
           >
             <DatabaseColumnHeader
               field={field}
@@ -104,10 +108,10 @@ export function EnhancedTableHeader({
           </TableHead>
         ))}
 
-        {/* Actions Column */}
+        {/* Actions Column - Fixed width */}
         <TableHead 
-          className="w-[60px] p-0 bg-background/95 backdrop-blur-md"
-          style={{ width: '64px' }}
+          className="w-16 p-0 bg-background/95 backdrop-blur-md"
+          style={{ width: '64px', minWidth: '64px', maxWidth: '64px' }}
         >
           <div className="flex items-center justify-center px-3 py-3 text-xs font-semibold text-muted-foreground bg-background/95 backdrop-blur-md border-b-2 border-border">
             <MoreHorizontal className="h-4 w-4" />

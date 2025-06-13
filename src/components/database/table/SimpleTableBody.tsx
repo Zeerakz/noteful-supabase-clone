@@ -32,21 +32,35 @@ export function SimpleTableBody({
   workspaceId,
   getColumnWidth
 }: SimpleTableBodyProps) {
+  // Calculate total table width for consistent layout
+  const calculateTableWidth = () => {
+    const checkboxWidth = 48;
+    const titleWidth = getColumnWidth('title');
+    const fieldsWidth = fields.reduce((sum, field) => sum + getColumnWidth(field.id), 0);
+    const actionsWidth = 64;
+    return checkboxWidth + titleWidth + fieldsWidth + actionsWidth;
+  };
+
+  const totalTableWidth = calculateTableWidth();
+
   if (isLoading) {
     return (
-      <Table>
+      <Table className="table-fixed" style={{ width: `${totalTableWidth}px` }}>
         <TableBody>
           {Array.from({ length: 5 }).map((_, i) => (
             <TableRow key={i}>
-              <TableCell className="w-[200px]">
+              <TableCell style={{ width: '48px' }}>
+                <Skeleton className="h-4 w-32" />
+              </TableCell>
+              <TableCell style={{ width: `${getColumnWidth('title')}px` }}>
                 <Skeleton className="h-4 w-32" />
               </TableCell>
               {fields.map((field) => (
-                <TableCell key={field.id} className="min-w-[150px]">
+                <TableCell key={field.id} style={{ width: `${getColumnWidth(field.id)}px` }}>
                   <Skeleton className="h-4 w-24" />
                 </TableCell>
               ))}
-              <TableCell className="w-[50px]">
+              <TableCell style={{ width: '64px' }}>
                 <Skeleton className="h-8 w-8 rounded" />
               </TableCell>
             </TableRow>
@@ -65,7 +79,7 @@ export function SimpleTableBody({
   }
 
   return (
-    <Table>
+    <Table className="table-fixed" style={{ width: `${totalTableWidth}px` }}>
       <TableBody>
         {pages.map((page, index) => (
           <DatabaseTableRow

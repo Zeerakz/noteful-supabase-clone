@@ -69,20 +69,24 @@ export function NewTableRow({
         ${isAnyColumnResizing ? 'pointer-events-none opacity-60' : ''}
       `}
     >
-      {/* Empty checkbox cell */}
+      {/* Empty checkbox cell with consistent width */}
       <TableCell 
-        className="w-12 p-3 border-r border-border/20"
-        style={{ width: '48px' }}
+        className="p-3 border-r border-border/20"
+        style={{ width: '48px', minWidth: '48px', maxWidth: '48px' }}
       >
         <div className="flex items-center justify-center">
           <div className="w-4 h-4" />
         </div>
       </TableCell>
 
-      {/* Title Cell */}
+      {/* Title Cell with consistent width */}
       <TableCell 
         className="p-0 border-r border-border/20"
-        style={{ width: `${getColumnWidth('title')}px` }}
+        style={{ 
+          width: `${getColumnWidth('title')}px`, 
+          minWidth: `${getColumnWidth('title')}px`, 
+          maxWidth: `${getColumnWidth('title')}px` 
+        }}
       >
         <div className="px-4 py-3">
           {isCreating ? (
@@ -128,12 +132,16 @@ export function NewTableRow({
         </div>
       </TableCell>
 
-      {/* Empty Property Cells */}
+      {/* Empty Property Cells with consistent widths */}
       {fields.map((field) => (
         <TableCell 
           key={field.id} 
           className="p-0 border-r border-border/20 last:border-r-0"
-          style={{ width: `${getColumnWidth(field.id)}px` }}
+          style={{ 
+            width: `${getColumnWidth(field.id)}px`, 
+            minWidth: `${getColumnWidth(field.id)}px`, 
+            maxWidth: `${getColumnWidth(field.id)}px` 
+          }}
         >
           <div className="px-4 py-3 overflow-hidden">
             <div className="min-h-[24px] px-2 py-1 flex items-center">
@@ -145,10 +153,10 @@ export function NewTableRow({
         </TableCell>
       ))}
 
-      {/* Empty Actions Cell */}
+      {/* Empty Actions Cell with consistent width */}
       <TableCell 
-        className="w-16 p-3"
-        style={{ width: '64px' }}
+        className="p-3"
+        style={{ width: '64px', minWidth: '64px', maxWidth: '64px' }}
       >
         <div className="w-8 h-8" />
       </TableCell>

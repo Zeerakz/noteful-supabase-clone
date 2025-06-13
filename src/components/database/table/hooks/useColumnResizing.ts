@@ -15,8 +15,8 @@ export function useColumnResizing({
   const [columnWidths, setColumnWidths] = useState<Record<string, number>>(defaultWidths);
 
   const updateColumnWidth = useCallback((fieldId: string, width: number) => {
-    // Allow both expanding and shrinking while respecting constraints
-    const constrainedWidth = Math.min(Math.max(width, minWidth), maxWidth);
+    // Ensure width is within bounds and use exact values
+    const constrainedWidth = Math.min(Math.max(Math.round(width), minWidth), maxWidth);
     
     setColumnWidths(prev => ({
       ...prev,
@@ -37,7 +37,8 @@ export function useColumnResizing({
   }, [defaultWidths]);
 
   const getColumnWidth = useCallback((fieldId: string) => {
-    return columnWidths[fieldId] || defaultWidths[fieldId] || (fieldId === 'title' ? 280 : 200);
+    const width = columnWidths[fieldId] || defaultWidths[fieldId] || (fieldId === 'title' ? 280 : 200);
+    return Math.round(width); // Ensure integer values for consistent layout
   }, [columnWidths, defaultWidths]);
 
   return {
