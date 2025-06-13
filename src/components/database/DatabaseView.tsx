@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { DatabaseViewType } from './DatabaseViewSelector';
 import { DatabaseViewManager } from './DatabaseViewManager';
 import { DatabaseViewControls } from './DatabaseViewControls';
@@ -12,6 +12,8 @@ import { useComplexFilters } from '@/hooks/useComplexFilters';
 import { useSorting } from '@/hooks/useSorting';
 import { useMultiLevelGrouping } from '@/hooks/useMultiLevelGrouping';
 import { createEmptyFilterGroup } from '@/utils/filterUtils';
+import { useAuth } from '@/contexts/AuthContext';
+import { useDebounce } from '@/hooks/useDebounce';
 
 interface DatabaseViewProps {
   databaseId: string;
@@ -20,6 +22,7 @@ interface DatabaseViewProps {
 
 export function DatabaseView({ databaseId, workspaceId }: DatabaseViewProps) {
   const [fieldsRefreshKey, setFieldsRefreshKey] = useState(0);
+  const { user } = useAuth();
   
   // Use optimistic fields instead of the regular hook
   const { 
@@ -72,6 +75,34 @@ export function DatabaseView({ databaseId, workspaceId }: DatabaseViewProps) {
   } = useMultiLevelGrouping({
     maxLevels: 3,
   });
+
+  // Debounce filter and sort changes to avoid excessive saves
+  const debouncedFilterGroup = useDebounce(filterGroup, 1000);
+  const debouncedSortRules = useDebounce(sortRules, 1000);
+
+  // Auto-save filters and sorts to current view
+  const autoSaveViewState = useCallback(async () => {
+    if (!currentView || !user) return;
+    
+    try {
+      await updateView(currentView.id, {
+        filters: JSON.stringify(debouncedFilterGroup),
+        sorts: JSON.stringify(debouncedSortRules),
+        grouping_field_id: groupingFieldId,
+        grouping_collapsed_groups: collapsedGroups,
+        updated_at: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('Failed to auto-save view state:', error);
+    }
+  }, [currentView, user, debouncedFilterGroup, debouncedSortRules, groupingFieldId, collapsedGroups, updateView]);
+
+  // Auto-save when filters or sorts change
+  useEffect(() => {
+    if (currentView && (hasActiveFilters || hasActiveSorts)) {
+      autoSaveViewState();
+    }
+  }, [debouncedFilterGroup, debouncedSortRules, autoSaveViewState, currentView, hasActiveFilters, hasActiveSorts]);
 
   // Update local state when current view changes
   useEffect(() => {

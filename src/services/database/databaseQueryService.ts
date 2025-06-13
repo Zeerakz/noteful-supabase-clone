@@ -10,7 +10,8 @@ export class DatabaseQueryService {
     databaseId: string,
     filterGroup?: FilterGroup,
     fields?: DatabaseField[],
-    sortRules?: SortRule[]
+    sortRules?: SortRule[],
+    currentUserId?: string
   ): Promise<{ data: any[] | null; error: string | null }> {
     try {
       console.log('Fetching pages for database:', databaseId);
@@ -43,9 +44,9 @@ export class DatabaseQueryService {
       console.log('Pages fetched successfully:', pages.length);
       let processedPages = pages;
 
-      // Apply complex filters on the client side
+      // Apply complex filters on the client side with current user context
       if (filterGroup && fields) {
-        processedPages = applyComplexFilters(pages, filterGroup, fields);
+        processedPages = applyComplexFilters(pages, filterGroup, fields, currentUserId);
       }
 
       // Apply sorting on the client side

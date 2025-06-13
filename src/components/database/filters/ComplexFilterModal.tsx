@@ -9,10 +9,12 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Info } from 'lucide-react';
 import { FilterGroup } from '@/types/filters';
 import { DatabaseField } from '@/types/database';
 import { FilterGroupEditor } from './FilterGroupEditor';
 import { createEmptyFilterGroup } from '@/utils/filterUtils';
+import { getPersonFieldOptions } from '@/utils/relativeFilters';
 
 interface ComplexFilterModalProps {
   open: boolean;
@@ -34,6 +36,7 @@ export function ComplexFilterModal({
   };
 
   const totalFilters = countFilters(filterGroup);
+  const personFields = getPersonFieldOptions(fields);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -48,6 +51,18 @@ export function ComplexFilterModal({
         </DialogHeader>
 
         <div className="space-y-4 py-4">
+          {personFields.length > 0 && (
+            <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
+              <div className="flex items-start gap-2">
+                <Info className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                <div className="text-sm text-blue-800">
+                  <p className="font-medium">Person Field Filters</p>
+                  <p>You can use "Me" filters for person fields ({personFields.map(f => f.name).join(', ')}) to filter by the current logged-in user.</p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {totalFilters > 0 && (
             <div className="flex justify-between items-center">
               <p className="text-sm text-muted-foreground">

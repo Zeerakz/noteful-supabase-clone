@@ -7,6 +7,7 @@ import { X } from 'lucide-react';
 import { FilterRule, FILTER_OPERATORS } from '@/types/filters';
 import { DatabaseField } from '@/types/database';
 import { getOperatorsForFieldType, needsValue, needsSecondValue } from '@/utils/filterUtils';
+import { PersonFilterEditor } from './PersonFilterEditor';
 
 interface FilterRuleEditorProps {
   rule: FilterRule;
@@ -51,6 +52,8 @@ export function FilterRuleEditor({ rule, fields, onUpdate, onRemove }: FilterRul
     onUpdate({ ...rule, value2 });
   };
 
+  const isPersonField = selectedField?.type === 'person' || selectedField?.type === 'people';
+
   return (
     <div className="flex items-center gap-2 p-3 border rounded-lg bg-muted/30">
       <Select value={rule.fieldId} onValueChange={handleFieldChange}>
@@ -83,16 +86,26 @@ export function FilterRuleEditor({ rule, fields, onUpdate, onRemove }: FilterRul
       </Select>
 
       {needsValue(rule.operator) && (
-        <Input
-          placeholder="Value"
-          value={rule.value}
-          onChange={(e) => handleValueChange(e.target.value)}
-          className="w-32"
-          type={selectedField?.type === 'number' ? 'number' : selectedField?.type === 'date' ? 'date' : 'text'}
-        />
+        <>
+          {isPersonField ? (
+            <PersonFilterEditor
+              rule={rule}
+              field={selectedField!}
+              onUpdate={onUpdate}
+            />
+          ) : (
+            <Input
+              placeholder="Value"
+              value={rule.value}
+              onChange={(e) => handleValueChange(e.target.value)}
+              className="w-32"
+              type={selectedField?.type === 'number' ? 'number' : selectedField?.type === 'date' ? 'date' : 'text'}
+            />
+          )}
+        </>
       )}
 
-      {needsSecondValue(rule.operator) && (
+      {needsSecondValue(rule.operator) && !isPersonField && (
         <>
           <span className="text-sm text-muted-foreground">and</span>
           <Input

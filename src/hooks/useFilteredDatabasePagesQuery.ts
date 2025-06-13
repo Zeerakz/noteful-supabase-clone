@@ -4,6 +4,7 @@ import { DatabaseQueryService } from '@/services/database/databaseQueryService';
 import { DatabaseField } from '@/types/database';
 import { FilterGroup } from '@/types/filters';
 import { SortRule } from '@/components/database/SortingModal';
+import { useAuth } from '@/contexts/AuthContext';
 import { useCallback, useMemo } from 'react';
 
 interface UseFilteredDatabasePagesQueryProps {
@@ -22,6 +23,7 @@ export function useFilteredDatabasePagesQuery({
   enabled = true
 }: UseFilteredDatabasePagesQueryProps) {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   // Simplify query key - only include essential data for caching
   const queryKey = useMemo(() => [
@@ -29,8 +31,9 @@ export function useFilteredDatabasePagesQuery({
     databaseId,
     // Only include filter/sort data if they exist
     filterGroup.rules.length > 0 ? JSON.stringify(filterGroup) : 'no-filters',
-    sortRules.length > 0 ? JSON.stringify(sortRules) : 'no-sort'
-  ], [databaseId, filterGroup, sortRules]);
+    sortRules.length > 0 ? JSON.stringify(sortRules) : 'no-sort',
+    user?.id || 'no-user' // Include user context for "me" filters
+  ], [databaseId, filterGroup, sortRules, user?.id]);
 
   console.log('useFilteredDatabasePagesQuery: Using query key', queryKey);
 
@@ -42,7 +45,8 @@ export function useFilteredDatabasePagesQuery({
         databaseId,
         filterGroup,
         fields,
-        sortRules
+        sortRules,
+        user?.id
       );
       console.log('useFilteredDatabasePagesQuery: Query result', { 
         dataLength: result.data?.length || 0, 

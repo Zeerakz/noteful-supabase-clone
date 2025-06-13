@@ -1,7 +1,7 @@
-
 import { FilterGroup, FilterRule, FilterOperator } from '@/types/filters';
 import { DatabaseField } from '@/types/database';
 import { format, isToday, isThisWeek, isThisMonth, isBefore, isAfter, parseISO, isValid } from 'date-fns';
+import { resolveFilterGroupMeFilters } from './relativeFilters';
 
 export function createEmptyFilterGroup(): FilterGroup {
   return {
@@ -120,32 +120,35 @@ export function evaluateFilterRule(rule: FilterRule, value: any, field?: Databas
   }
 }
 
-export function evaluateFilterGroup(group: FilterGroup, data: any, fields: DatabaseField[]): boolean {
-  const ruleResults = group.rules.map(rule => {
+export function evaluateFilterGroup(group: FilterGroup, data: any, fields: DatabaseField[], currentUserId?: string): boolean {
+  // Resolve "me" filters before evaluation
+  const resolvedGroup = currentUserId ? resolveFilterGroupMeFilters(group, currentUserId) : group;
+  
+  const ruleResults = resolvedGroup.rules.map(rule => {
     const field = fields.find(f => f.id === rule.fieldId);
     const value = data.properties?.[rule.fieldId] || data[rule.fieldId] || '';
     return evaluateFilterRule(rule, value, field);
   });
 
-  const groupResults = group.groups.map(subGroup => 
-    evaluateFilterGroup(subGroup, data, fields)
+  const groupResults = resolvedGroup.groups.map(subGroup => 
+    evaluateFilterGroup(subGroup, data, fields, currentUserId)
   );
 
   const allResults = [...ruleResults, ...groupResults];
 
   if (allResults.length === 0) return true;
 
-  return group.operator === 'AND' 
+  return resolvedGroup.operator === 'AND' 
     ? allResults.every(result => result)
     : allResults.some(result => result);
 }
 
-export function applyComplexFilters(data: any[], filterGroup: FilterGroup, fields: DatabaseField[]): any[] {
+export function applyComplexFilters(data: any[], filterGroup: FilterGroup, fields: DatabaseField[], currentUserId?: string): any[] {
   if (!filterGroup || (filterGroup.rules.length === 0 && filterGroup.groups.length === 0)) {
     return data;
   }
 
-  return data.filter(item => evaluateFilterGroup(filterGroup, item, fields));
+  return data.filter(item => evaluateFilterGroup(filterGroup, item, fields, currentUserId));
 }
 
 export function getOperatorsForFieldType(fieldType: string): FilterOperator[] {
