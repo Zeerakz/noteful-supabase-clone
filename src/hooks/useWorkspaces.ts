@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -31,22 +32,38 @@ export function useWorkspaces() {
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
 
   const fetchWorkspaces = async () => {
-    if (!user) return;
+    if (!user) {
+      console.log('No user authenticated, skipping workspace fetch');
+      setWorkspaces([]);
+      setLoading(false);
+      return;
+    }
 
     try {
       setLoading(true);
+      setError(null);
+      console.log('🏢 Fetching workspaces for user:', user.id);
+      
       const { data, error } = await supabase
         .from('workspaces')
         .select('*')
+        .eq('owner_user_id', user.id)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Error fetching workspaces:', error);
+        throw error;
+      }
+      
+      console.log('✅ Workspaces fetched successfully:', data?.length || 0);
       setWorkspaces(data || []);
     } catch (err) {
+      console.error('💥 Failed to fetch workspaces:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch workspaces');
+      setWorkspaces([]);
     } finally {
       setLoading(false);
     }
@@ -143,12 +160,15 @@ export function useWorkspaces() {
   };
 
   useEffect(() => {
-    fetchWorkspaces();
-  }, [user]);
+    // Only fetch workspaces when authentication is complete and user is available
+    if (!authLoading) {
+      fetchWorkspaces();
+    }
+  }, [user, authLoading]);
 
   return {
     workspaces,
-    loading,
+    loading: loading || authLoading,
     error,
     fetchWorkspaces,
     createWorkspace,

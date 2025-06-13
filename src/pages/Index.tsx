@@ -1,9 +1,14 @@
 
 import React from 'react';
+import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { WorkspaceList } from '@/components/workspaces/WorkspaceList';
 
 const Index = () => {
-  return <WorkspaceList />;
+  return (
+    <ProtectedRoute>
+      <WorkspaceList />
+    </ProtectedRoute>
+  );
 };
 
 export default Index;

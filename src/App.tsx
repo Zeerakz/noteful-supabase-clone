@@ -83,9 +83,30 @@ const App = () => {
                     <Route path="/" element={<Index />} />
                     <Route path="/login" element={<Login />} />
                     <Route path="/register" element={<Register />} />
-                    <Route path="/workspace/:workspaceId" element={<Workspace />} />
-                    <Route path="/workspace/:workspaceId/page/:pageId" element={<PageView />} />
-                    <Route path="/workspace/:workspaceId/database/:databaseId" element={<DatabasePage />} />
+                    <Route 
+                      path="/workspace/:workspaceId" 
+                      element={
+                        <ProtectedRoute>
+                          <Workspace />
+                        </ProtectedRoute>
+                      } 
+                    />
+                    <Route 
+                      path="/workspace/:workspaceId/page/:pageId" 
+                      element={
+                        <ProtectedRoute>
+                          <PageView />
+                        </ProtectedRoute>
+                      } 
+                    />
+                    <Route 
+                      path="/workspace/:workspaceId/database/:databaseId" 
+                      element={
+                        <ProtectedRoute>
+                          <DatabasePage />
+                        </ProtectedRoute>
+                      } 
+                    />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </RouteErrorBoundary>

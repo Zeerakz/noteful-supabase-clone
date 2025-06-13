@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Plus, Settings, Users, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -17,8 +18,8 @@ export function WorkspaceList() {
   const [newWorkspaceDescription, setNewWorkspaceDescription] = useState('');
   const [isCreating, setIsCreating] = useState(false);
   
-  const { workspaces, loading, createWorkspace, deleteWorkspace } = useWorkspaces();
-  const { user } = useAuth();
+  const { workspaces, loading, error, createWorkspace, deleteWorkspace } = useWorkspaces();
+  const { user, signOut } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -69,10 +70,30 @@ export function WorkspaceList() {
     }
   };
 
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/login');
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-lg">Loading workspaces...</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center space-y-4">
+          <div className="text-lg text-red-600">Error loading workspaces</div>
+          <p className="text-muted-foreground">{error}</p>
+          <div className="space-x-2">
+            <Button onClick={() => window.location.reload()}>Try Again</Button>
+            <Button variant="outline" onClick={handleSignOut}>Sign Out</Button>
+          </div>
+        </div>
       </div>
     );
   }
@@ -83,53 +104,62 @@ export function WorkspaceList() {
         <div>
           <h1 className="text-3xl font-bold">Your Workspaces</h1>
           <p className="text-gray-600 mt-2">Manage your collaborative workspaces</p>
+          {user && (
+            <p className="text-sm text-gray-500 mt-1">Signed in as {user.email}</p>
+          )}
         </div>
         
-        <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              Create Workspace
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Create New Workspace</DialogTitle>
-              <DialogDescription>
-                Create a new workspace to organize your projects and collaborate with others.
-              </DialogDescription>
-            </DialogHeader>
-            <form onSubmit={handleCreateWorkspace}>
-              <div className="space-y-4 py-4">
-                <div className="space-y-2">
-                  <Label htmlFor="workspace-name">Workspace Name</Label>
-                  <Input
-                    id="workspace-name"
-                    value={newWorkspaceName}
-                    onChange={(e) => setNewWorkspaceName(e.target.value)}
-                    placeholder="Enter workspace name"
-                    required
-                  />
+        <div className="flex space-x-2">
+          <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="h-4 w-4 mr-2" />
+                Create Workspace
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Create New Workspace</DialogTitle>
+                <DialogDescription>
+                  Create a new workspace to organize your projects and collaborate with others.
+                </DialogDescription>
+              </DialogHeader>
+              <form onSubmit={handleCreateWorkspace}>
+                <div className="space-y-4 py-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="workspace-name">Workspace Name</Label>
+                    <Input
+                      id="workspace-name"
+                      value={newWorkspaceName}
+                      onChange={(e) => setNewWorkspaceName(e.target.value)}
+                      placeholder="Enter workspace name"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="workspace-description">Description (Optional)</Label>
+                    <Textarea
+                      id="workspace-description"
+                      value={newWorkspaceDescription}
+                      onChange={(e) => setNewWorkspaceDescription(e.target.value)}
+                      placeholder="Describe your workspace"
+                      rows={3}
+                    />
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="workspace-description">Description (Optional)</Label>
-                  <Textarea
-                    id="workspace-description"
-                    value={newWorkspaceDescription}
-                    onChange={(e) => setNewWorkspaceDescription(e.target.value)}
-                    placeholder="Describe your workspace"
-                    rows={3}
-                  />
-                </div>
-              </div>
-              <DialogFooter>
-                <Button type="submit" disabled={isCreating}>
-                  {isCreating ? 'Creating...' : 'Create Workspace'}
-                </Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
+                <DialogFooter>
+                  <Button type="submit" disabled={isCreating}>
+                    {isCreating ? 'Creating...' : 'Create Workspace'}
+                  </Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
+          
+          <Button variant="outline" onClick={handleSignOut}>
+            Sign Out
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
