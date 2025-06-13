@@ -20,8 +20,8 @@ export function GentleToast({
   suggestion,
   onRetry,
   className,
-  ...props 
-}: GentleToastProps & React.ComponentProps<typeof Toast>) {
+  ...toastProps 
+}: GentleToastProps & Omit<React.ComponentProps<typeof Toast>, keyof GentleToastProps>) {
   
   const getToastStyles = () => {
     switch (type) {
@@ -56,7 +56,7 @@ export function GentleToast({
         getToastStyles(),
         className
       )}
-      {...props}
+      {...toastProps}
     >
       <div className="flex items-start gap-3">
         <div className="flex-shrink-0 mt-0.5">
