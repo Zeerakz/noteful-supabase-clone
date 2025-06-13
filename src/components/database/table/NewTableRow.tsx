@@ -35,7 +35,7 @@ export function NewTableRow({
   return (
     <TableRow 
       className={`
-        group border-b-0 transition-all duration-200 ease-out
+        group border-b-0 transition-all duration-300 ease-out motion-content-drift-in
         hover:bg-accent/10
         bg-background/80
         ${isAnyColumnResizing ? 'pointer-events-none opacity-60' : ''}
@@ -60,19 +60,19 @@ export function NewTableRow({
           onClick={handleCreateRow}
           disabled={isAnyColumnResizing}
           className={`
-            w-full justify-start h-10 px-3 rounded-lg transition-all duration-200 ease-out
+            w-full justify-start h-10 px-3 rounded-lg transition-all duration-300 ease-out motion-interactive motion-focus-ring
             ${!isAnyColumnResizing 
               ? 'text-muted-foreground hover:text-foreground hover:bg-accent/30' 
               : 'cursor-not-allowed text-muted-foreground/40'
             }
           `}
         >
-          <Plus className="h-4 w-4 mr-2" />
+          <Plus className="h-4 w-4 mr-2 transition-transform duration-200 group-hover:scale-110" />
           <span className="font-medium">New</span>
         </Button>
       </TableCell>
 
-      {/* Property Cells - Empty placeholders */}
+      {/* Property Cells - Empty placeholders with subtle hover */}
       {fields.map((field) => (
         <TableCell 
           key={field.id} 
@@ -81,8 +81,8 @@ export function NewTableRow({
         >
           <div 
             className={`
-              min-h-[32px] px-2 py-1 flex items-center rounded-sm transition-all duration-200 ease-out
-              ${isAnyColumnResizing ? 'text-muted-foreground/20' : 'text-muted-foreground/40 hover:bg-muted/10'}
+              min-h-[32px] px-2 py-1 flex items-center rounded-sm transition-all duration-300 ease-out
+              ${isAnyColumnResizing ? 'text-muted-foreground/20' : 'text-muted-foreground/40 hover:bg-muted/10 motion-interactive'}
               bg-transparent
             `}
           >

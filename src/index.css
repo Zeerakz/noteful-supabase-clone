@@ -3,6 +3,9 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Import motion philosophy */
+@import url('./styles/motion-tokens.css');
+
 @layer base {
   :root {
     /* Light mode - sophisticated warm neutrals */
