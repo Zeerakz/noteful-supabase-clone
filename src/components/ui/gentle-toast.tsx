@@ -21,7 +21,7 @@ export function GentleToast({
   onRetry,
   className,
   ...props 
-}: GentleToastProps & Omit<React.ComponentProps<typeof Toast>, keyof GentleToastProps>) {
+}: GentleToastProps & React.ComponentProps<typeof Toast>) {
   
   const getToastStyles = () => {
     switch (type) {
