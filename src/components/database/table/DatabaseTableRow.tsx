@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { TableCell, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { MoreHorizontal, Trash2, ChevronDown, ChevronRight, GripVertical } from 'lucide-react';
+import { MoreHorizontal, Trash2, ChevronDown, ChevronRight } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -85,15 +85,15 @@ export function DatabaseTableRow({
   return (
     <TableRow 
       className={`
-        group transition-all duration-200 ease-out border-b border-border/5
-        hover:bg-accent/20
-        ${isSelected ? 'bg-accent/30' : ''}
+        group transition-all duration-200 ease-out
+        hover:bg-muted/30
+        ${isSelected ? 'bg-muted/20' : ''}
         ${isAnyColumnResizing ? 'pointer-events-none opacity-75' : ''}
       `}
     >
       {/* Selection Checkbox */}
       <TableCell 
-        className="p-3 border-r border-border/5 text-center"
+        className="text-center"
         style={{ width: '48px' }}
       >
         <Checkbox
@@ -109,7 +109,6 @@ export function DatabaseTableRow({
 
       {/* Title Cell */}
       <TableCell 
-        className="p-3 border-r border-border/5"
         style={{ width: `${getColumnWidth('title')}px` }}
       >
         <div className="flex items-center gap-2">
@@ -145,15 +144,13 @@ export function DatabaseTableRow({
       </TableCell>
 
       {/* Property Cells */}
-      {fields.map((field, index) => {
+      {fields.map((field) => {
         const cellValue = page.properties[field.id] || '';
         const isFieldResizing = resizingFields.has(field.id);
-        const isLastField = index === fields.length - 1;
         
         return (
           <TableCell 
             key={field.id} 
-            className={`p-3 ${!isLastField ? 'border-r border-border/5' : ''}`}
             style={{ width: `${getColumnWidth(field.id)}px` }}
           >
             <EditableCell
@@ -174,7 +171,7 @@ export function DatabaseTableRow({
 
       {/* Actions Cell */}
       <TableCell 
-        className="p-3 text-center"
+        className="text-center"
         style={{ width: '64px' }}
       >
         <DropdownMenu>

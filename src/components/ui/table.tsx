@@ -11,7 +11,7 @@ const Table = React.forwardRef<
     <table
       ref={ref}
       className={cn(
-        "w-full caption-bottom text-sm table-fixed border-separate border-spacing-0", 
+        "w-full caption-bottom text-sm table-fixed border-separate border-spacing-0 bg-background", 
         className
       )}
       {...props}
@@ -47,7 +47,7 @@ const TableFooter = React.forwardRef<
   <tfoot
     ref={ref}
     className={cn(
-      "hairline-divider bg-background/95 font-medium",
+      "border-t border-border/20 bg-background/95 font-medium",
       className
     )}
     {...props}
@@ -62,7 +62,7 @@ const TableRow = React.forwardRef<
   <tr
     ref={ref}
     className={cn(
-      "group transition-colors duration-200 ease-out data-[state=selected]:bg-muted/20",
+      "group transition-colors duration-200 ease-out border-b border-border/10 hover:bg-muted/30 data-[state=selected]:bg-muted/20",
       className
     )}
     {...props}
@@ -77,7 +77,7 @@ const TableHead = React.forwardRef<
   <th
     ref={ref}
     className={cn(
-      "text-left align-middle font-medium text-muted-foreground bg-background/95 backdrop-blur-sm transition-colors duration-200 ease-out",
+      "h-12 px-4 text-left align-middle font-medium text-muted-foreground bg-background/95 backdrop-blur-sm transition-colors duration-200 ease-out border-b border-border/20",
       className
     )}
     {...props}
@@ -91,7 +91,7 @@ const TableCell = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <td
     ref={ref}
-    className={cn("align-middle transition-colors duration-200 ease-out", className)}
+    className={cn("px-4 py-3 align-middle transition-colors duration-200 ease-out", className)}
     {...props}
   />
 ))

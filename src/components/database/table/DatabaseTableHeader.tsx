@@ -47,10 +47,10 @@ export function DatabaseTableHeader({
 
   return (
     <TableHeader>
-      <TableRow className="hover:bg-transparent hairline-divider">
+      <TableRow className="hover:bg-transparent border-b border-border/20">
         {/* Checkbox Header */}
         <TableHead 
-          className="p-3 text-center hairline-vertical"
+          className="w-12 text-center"
           style={{ width: '48px', minWidth: '48px', maxWidth: '48px' }}
         >
           <Checkbox
@@ -68,7 +68,6 @@ export function DatabaseTableHeader({
 
         {/* Title Header */}
         <TableHead 
-          className="p-3 hairline-vertical"
           style={{ 
             width: `${getColumnWidth('title')}px`,
             minWidth: `${getColumnWidth('title')}px`,
@@ -87,36 +86,33 @@ export function DatabaseTableHeader({
           return (
             <TableHead
               key={field.id}
-              className={`p-0 ${!isLastField ? 'hairline-vertical' : ''}`}
               style={{ 
                 width: `${columnWidth}px`,
                 minWidth: `${columnWidth}px`,
                 maxWidth: `${columnWidth}px`
               }}
             >
-              <div className="px-3 py-3">
-                <DatabaseColumnHeader
-                  field={field}
-                  sortRules={sortRules}
-                  onSort={onSort}
-                  onFieldReorder={onFieldReorder}
-                  onStartResize={onStartResize}
-                  onEndResize={onEndResize}
-                  onResize={handleResize}
-                  isResizing={resizingFields.has(field.id)}
-                  onFieldsChange={onFieldsChange}
-                  width={columnWidth}
-                  isResizable={true}
-                  isDraggable={true}
-                />
-              </div>
+              <DatabaseColumnHeader
+                field={field}
+                sortRules={sortRules}
+                onSort={onSort}
+                onFieldReorder={onFieldReorder}
+                onStartResize={onStartResize}
+                onEndResize={onEndResize}
+                onResize={handleResize}
+                isResizing={resizingFields.has(field.id)}
+                onFieldsChange={onFieldsChange}
+                width={columnWidth}
+                isResizable={true}
+                isDraggable={true}
+              />
             </TableHead>
           );
         })}
 
         {/* Actions Header */}
         <TableHead 
-          className="p-3 text-center"
+          className="w-16 text-center"
           style={{ width: '64px', minWidth: '64px', maxWidth: '64px' }}
         >
           <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">ACTIONS</span>
