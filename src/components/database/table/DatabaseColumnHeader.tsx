@@ -17,21 +17,7 @@ import {
   ArrowUp, 
   ArrowDown, 
   Info, 
-  Type, 
-  Hash, 
-  Calendar, 
-  CheckSquare, 
-  Link, 
-  Mail, 
-  Phone, 
-  Tag, 
-  Tags, 
-  File, 
-  Image as ImageIcon,
-  Calculator,
-  Database,
   GripVertical,
-  Users,
   Settings
 } from 'lucide-react';
 import { DatabaseField } from '@/types/database';
@@ -52,24 +38,6 @@ interface DatabaseColumnHeaderProps {
   isResizable?: boolean;
   isDraggable?: boolean;
 }
-
-const fieldTypeIcons = {
-  text: Type,
-  number: Hash,
-  date: Calendar,
-  checkbox: CheckSquare,
-  url: Link,
-  email: Mail,
-  phone: Phone,
-  select: Tag,
-  multi_select: Tags,
-  file_attachment: File,
-  image: ImageIcon,
-  formula: Calculator,
-  relation: Database,
-  rollup: Calculator,
-  users: Users,
-};
 
 const fieldDescriptions = {
   'Partner Name': 'The name of the partner organization or individual involved in this campaign. This field helps track collaboration partnerships and external relationships.',
@@ -102,8 +70,6 @@ export function DatabaseColumnHeader({
   const [isDragging, setIsDragging] = useState(false);
   const [dragOver, setDragOver] = useState<'before' | 'after' | null>(null);
 
-  const FieldIcon = fieldTypeIcons[field.type as keyof typeof fieldTypeIcons] || Type;
-  
   const currentSort = sortRules.find(rule => rule.fieldId === field.id);
   const sortDirection = currentSort?.direction;
   
@@ -249,19 +215,7 @@ export function DatabaseColumnHeader({
             </Tooltip>
           )}
 
-          {/* Field Type Icon */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <div className="flex-shrink-0 p-1 rounded-md bg-muted/40">
-                <FieldIcon className="h-3.5 w-3.5 text-muted-foreground" />
-              </div>
-            </TooltipTrigger>
-            <TooltipContent side="bottom">
-              <p className="text-xs font-medium capitalize">{field.type.replace('_', ' ')} field</p>
-            </TooltipContent>
-          </Tooltip>
-
-          {/* Column Title with Sort */}
+          {/* Column Title with Sort - No icon */}
           <Button
             variant="ghost"
             onClick={handleSortClick}
@@ -296,7 +250,6 @@ export function DatabaseColumnHeader({
               <HoverCardContent className="w-80 p-4" side="bottom" align="start">
                 <div className="space-y-3">
                   <div className="flex items-center gap-2">
-                    <FieldIcon className="h-4 w-4 text-muted-foreground" />
                     <h4 className="text-sm font-semibold text-foreground">{field.name}</h4>
                   </div>
                   <p className="text-xs text-muted-foreground leading-relaxed">
