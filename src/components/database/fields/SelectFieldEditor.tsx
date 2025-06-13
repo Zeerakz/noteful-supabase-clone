@@ -14,6 +14,9 @@ interface SelectFieldEditorProps {
 export function SelectFieldEditor({ value, settings, onChange, multiSelect = false }: SelectFieldEditorProps) {
   const options = settings.options || [];
   
+  // Filter out options with empty IDs to prevent Select.Item errors
+  const validOptions = options.filter(option => option.id && option.id.trim() !== '');
+  
   const selectedValues = multiSelect && value ? value.split(',') : [];
   
   const handleSingleSelect = (newValue: string) => {
@@ -41,7 +44,7 @@ export function SelectFieldEditor({ value, settings, onChange, multiSelect = fal
       <div className="space-y-2">
         <div className="flex flex-wrap gap-1">
           {selectedValues.map((valueId) => {
-            const option = options.find(opt => opt.id === valueId);
+            const option = validOptions.find(opt => opt.id === valueId);
             if (!option) return null;
             
             return (
@@ -63,7 +66,7 @@ export function SelectFieldEditor({ value, settings, onChange, multiSelect = fal
             <SelectValue placeholder="Select options..." />
           </SelectTrigger>
           <SelectContent>
-            {options.map((option) => (
+            {validOptions.map((option) => (
               <SelectItem 
                 key={option.id} 
                 value={option.id}
@@ -84,7 +87,7 @@ export function SelectFieldEditor({ value, settings, onChange, multiSelect = fal
         <SelectValue placeholder="Select an option..." />
       </SelectTrigger>
       <SelectContent>
-        {options.map((option) => (
+        {validOptions.map((option) => (
           <SelectItem key={option.id} value={option.id}>
             {option.name}
           </SelectItem>

@@ -19,6 +19,9 @@ export function CalendarViewHeader({
     return null; // Don't render header if no date fields
   }
 
+  // Filter out fields with empty IDs to prevent Select.Item errors
+  const validDateFields = dateFields.filter(field => field.id && field.id.trim() !== '');
+
   return (
     <div className="flex items-center justify-between">
       <div className="flex items-center gap-3">
@@ -26,13 +29,13 @@ export function CalendarViewHeader({
         <h3 className="text-lg font-medium">Calendar View</h3>
       </div>
       
-      {dateFields.length > 1 && (
+      {validDateFields.length > 1 && (
         <div className="flex items-center gap-2 text-sm">
           <span className="text-muted-foreground">Date field:</span>
           <Select
             value={selectedDateField?.id || ''}
             onValueChange={(value) => {
-              const field = dateFields.find(f => f.id === value);
+              const field = validDateFields.find(f => f.id === value);
               onDateFieldChange(field || null);
             }}
           >
@@ -40,7 +43,7 @@ export function CalendarViewHeader({
               <SelectValue placeholder="Select date field" />
             </SelectTrigger>
             <SelectContent>
-              {dateFields.map(field => (
+              {validDateFields.map(field => (
                 <SelectItem key={field.id} value={field.id}>
                   {field.name}
                 </SelectItem>
