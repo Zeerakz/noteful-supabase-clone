@@ -147,10 +147,10 @@ export function EditableCell({
       return (
         <div
           className={cn(
-            "w-full h-full bg-background border border-border rounded-sm outline-none px-2 py-1",
+            "w-full h-full border border-primary rounded-sm outline-none px-2 py-1",
             "text-sm font-normal text-foreground leading-relaxed",
-            "focus-within:ring-2 focus-within:ring-primary/20 focus-within:ring-offset-0 focus-within:border-primary",
-            "tracking-normal",
+            "focus-within:ring-2 focus-within:ring-primary/20 focus-within:ring-offset-0",
+            "tracking-normal bg-transparent",
             className
           )}
           onBlur={handleBlur}
@@ -185,10 +185,10 @@ export function EditableCell({
         onFocus={handleFocus}
         onKeyDown={handleKeyDown}
         className={cn(
-          "w-full h-full bg-background border border-border rounded-sm outline-none resize-none px-2 py-1",
+          "w-full h-full border border-primary rounded-sm outline-none resize-none px-2 py-1",
           "text-sm font-normal text-foreground leading-relaxed",
-          "focus:ring-2 focus:ring-primary/20 focus:ring-offset-0 focus:border-primary",
-          "tracking-normal",
+          "focus:ring-2 focus:ring-primary/20 focus:ring-offset-0",
+          "tracking-normal bg-transparent",
           className
         )}
         style={{ 
