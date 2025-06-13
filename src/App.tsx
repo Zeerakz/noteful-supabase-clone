@@ -7,11 +7,11 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import { initializePropertyRegistry } from "./services/propertyTypeRegistry";
 import Index from "./pages/Index";
-import Login from "./pages/Login";
+import { Login } from "./pages/Login";
 import Register from "./pages/Register";
 import Workspace from "./pages/Workspace";
 import { PageView } from "./pages/PageView";
-import DatabasePage from "./pages/DatabasePage";
+import { DatabasePage } from "./pages/DatabasePage";
 
 // Initialize property registry early
 initializePropertyRegistry();

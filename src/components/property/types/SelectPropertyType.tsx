@@ -16,7 +16,6 @@ export const selectPropertyType: PropertyTypeDefinition<SelectPropertyConfig> = 
 
   getDefaultConfig: () => ({
     options: [],
-    allowCustomValues: false,
     placeholder: 'Select an option...',
   }),
 
@@ -42,11 +41,9 @@ export const selectPropertyType: PropertyTypeDefinition<SelectPropertyConfig> = 
       return { isValid: true, errors: [] };
     }
 
-    if (!config.allowCustomValues) {
-      const validOptions = config.options?.map(opt => typeof opt === 'string' ? opt : opt.value) || [];
-      if (!validOptions.includes(value)) {
-        return { isValid: false, errors: ['Value must be one of the predefined options'] };
-      }
+    const validOptions = config.options?.map(opt => typeof opt === 'string' ? opt : opt.id) || [];
+    if (!validOptions.includes(value)) {
+      return { isValid: false, errors: ['Value must be one of the predefined options'] };
     }
 
     return { isValid: true, errors: [] };
@@ -57,11 +54,11 @@ export const selectPropertyType: PropertyTypeDefinition<SelectPropertyConfig> = 
     
     // Find the option to get display label
     const option = config.options?.find(opt => 
-      typeof opt === 'string' ? opt === value : opt.value === value
+      typeof opt === 'string' ? opt === value : opt.id === value
     );
     
     if (option) {
-      return typeof option === 'string' ? option : option.label;
+      return typeof option === 'string' ? option : option.name;
     }
     
     return value;
@@ -72,8 +69,8 @@ export const selectPropertyType: PropertyTypeDefinition<SelectPropertyConfig> = 
   },
 
   ConfigEditor: SelectPropertyConfigEditor,
-  FieldDisplay: SelectFieldDisplay,
-  FieldEditor: SelectFieldEditor,
+  FieldDisplay: (props) => <SelectFieldDisplay {...props} config={props.config} />,
+  FieldEditor: (props) => <SelectFieldEditor {...props} config={props.config} />,
 
   isComputed: false,
   supportsFiltering: true,
@@ -98,13 +95,11 @@ export const multiSelectPropertyType: PropertyTypeDefinition<SelectPropertyConfi
     // Handle comma-separated values
     const values = typeof value === 'string' ? value.split(',').map(v => v.trim()) : [value];
     
-    if (!config.allowCustomValues) {
-      const validOptions = config.options?.map(opt => typeof opt === 'string' ? opt : opt.value) || [];
-      const invalidValues = values.filter(v => !validOptions.includes(v));
-      
-      if (invalidValues.length > 0) {
-        return { isValid: false, errors: [`Invalid values: ${invalidValues.join(', ')}`] };
-      }
+    const validOptions = config.options?.map(opt => typeof opt === 'string' ? opt : opt.id) || [];
+    const invalidValues = values.filter(v => !validOptions.includes(v));
+    
+    if (invalidValues.length > 0) {
+      return { isValid: false, errors: [`Invalid values: ${invalidValues.join(', ')}`] };
     }
 
     return { isValid: true, errors: [] };
@@ -117,12 +112,12 @@ export const multiSelectPropertyType: PropertyTypeDefinition<SelectPropertyConfi
     
     return values.map(val => {
       const option = config.options?.find(opt => 
-        typeof opt === 'string' ? opt === val : opt.value === val
+        typeof opt === 'string' ? opt === val : opt.id === val
       );
-      return option ? (typeof option === 'string' ? option : option.label) : val;
+      return option ? (typeof option === 'string' ? option : option.name) : val;
     }).join(', ');
   },
 
-  FieldEditor: (props) => <SelectFieldEditor {...props} multiSelect />,
-  FieldDisplay: (props) => <SelectFieldDisplay {...props} multiSelect />,
+  FieldEditor: (props) => <SelectFieldEditor {...props} config={props.config} multiSelect />,
+  FieldDisplay: (props) => <SelectFieldDisplay {...props} config={props.config} multiSelect />,
 };
