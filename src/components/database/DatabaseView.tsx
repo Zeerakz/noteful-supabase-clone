@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useDatabaseViewSelector } from '@/hooks/useDatabaseViewSelector';
@@ -6,7 +7,6 @@ import { useDatabaseFilters } from '@/hooks/useDatabaseFilters';
 import { useDatabaseSorting } from '@/hooks/useDatabaseSorting';
 import { useDatabaseViews } from '@/hooks/useDatabaseViews';
 import { useDatabase } from '@/hooks/useDatabase';
-import { useAuth } from '@/contexts/AuthContext';
 import { DatabaseHeader } from './DatabaseHeader';
 import { DatabaseViewRenderer } from './DatabaseViewRenderer';
 import { DatabaseUnifiedToolbar } from './DatabaseUnifiedToolbar';
@@ -15,10 +15,12 @@ import { SchemaAuditService } from '@/services/schemaAuditService';
 import { BreakingChange } from '@/types/schemaAudit';
 import { Skeleton } from '@/components/ui/skeleton';
 
-export function DatabaseView() {
+interface DatabaseViewProps {
+  workspaceId: string;
+}
+
+export function DatabaseView({ workspaceId }: DatabaseViewProps) {
   const { databaseId } = useParams<{ databaseId: string }>();
-  const { user } = useAuth();
-  const workspaceId = user?.user_metadata?.current_workspace_id;
 
   const [breakingChanges, setBreakingChanges] = useState<BreakingChange[]>([]);
   const [loadingBreakingChanges, setLoadingBreakingChanges] = useState(true);
@@ -37,7 +39,7 @@ export function DatabaseView() {
     deleteField,
     duplicateField,
     reorderFields
-  } = useDatabaseFields(databaseId!, workspaceId!);
+  } = useDatabaseFields(databaseId!, workspaceId);
 
   // Get database views
   const { views, createView, updateView, deleteView } = useDatabaseViews(databaseId!);

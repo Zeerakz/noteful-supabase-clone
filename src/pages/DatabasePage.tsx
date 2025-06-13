@@ -24,7 +24,7 @@ export function DatabasePage() {
   const workspace = workspaces.find(w => w.id === workspaceId);
   const database = databases.find(d => d.id === databaseId);
 
-  if (!workspace || !database) {
+  if (!workspace || !database || !workspaceId) {
     return <Navigate to="/" replace />;
   }
 
@@ -65,7 +65,7 @@ export function DatabasePage() {
     <AppLayoutWithSidebar breadcrumbs={breadcrumbs}>
       <div className="h-full flex flex-col overflow-hidden">
         <div className="flex-1 min-h-0 overflow-hidden">
-          <DatabaseView />
+          <DatabaseView workspaceId={workspaceId} />
         </div>
       </div>
     </AppLayoutWithSidebar>
