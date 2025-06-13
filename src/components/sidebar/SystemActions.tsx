@@ -36,19 +36,23 @@ export function SystemActions() {
   ];
 
   return (
-    <SidebarMenu>
-      {systemItems.map((item) => (
-        <SidebarMenuItem key={item.title}>
-          <SidebarMenuButton
-            onClick={item.onClick}
-            disabled={item.disabled}
-            className="text-muted-foreground hover:text-foreground"
-          >
-            <item.icon className="h-4 w-4" />
-            <span>{item.title}</span>
-          </SidebarMenuButton>
-        </SidebarMenuItem>
-      ))}
-    </SidebarMenu>
+    <ul role="group" aria-label="System actions">
+      <SidebarMenu>
+        {systemItems.map((item) => (
+          <li key={item.title} role="treeitem">
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                onClick={item.onClick}
+                disabled={item.disabled}
+                className="text-muted-foreground hover:text-foreground"
+              >
+                <item.icon className="h-4 w-4" />
+                <span>{item.title}</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </li>
+        ))}
+      </SidebarMenu>
+    </ul>
   );
 }

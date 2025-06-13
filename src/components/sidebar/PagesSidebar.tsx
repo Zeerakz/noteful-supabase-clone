@@ -26,37 +26,41 @@ export function PagesSidebar() {
   return (
     <>
       <Sidebar>
-        <SidebarHeader className="p-3 border-b">
-          <WorkspaceSwitcher />
-          <div className="mt-2">
-            <SearchTrigger />
-          </div>
-        </SidebarHeader>
-        
-        <SidebarContent className="px-2">
-          {workspaces.map((workspace) => (
-            <WorkspacePagesGroup
-              key={workspace.id}
-              workspaceId={workspace.id}
-              workspaceName={workspace.name}
-            />
-          ))}
-        </SidebarContent>
+        <nav aria-label="Main navigation">
+          <SidebarHeader className="p-3 border-b">
+            <WorkspaceSwitcher />
+            <div className="mt-2">
+              <SearchTrigger />
+            </div>
+          </SidebarHeader>
+          
+          <SidebarContent className="px-2">
+            <ul role="tree" aria-label="Workspace navigation">
+              {workspaces.map((workspace) => (
+                <WorkspacePagesGroup
+                  key={workspace.id}
+                  workspaceId={workspace.id}
+                  workspaceName={workspace.name}
+                />
+              ))}
+            </ul>
+          </SidebarContent>
 
-        <SidebarFooter className="p-3 border-t space-y-2">
-          <NewPageAction />
-          
-          <SidebarSeparator />
-          
-          <SidebarGroup>
-            <SidebarGroupLabel className="text-xs text-muted-foreground px-2 py-1">
-              System
-            </SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SystemActions />
-            </SidebarGroupContent>
-          </SidebarGroup>
-        </SidebarFooter>
+          <SidebarFooter className="p-3 border-t space-y-2">
+            <NewPageAction />
+            
+            <SidebarSeparator />
+            
+            <SidebarGroup>
+              <SidebarGroupLabel className="text-xs text-muted-foreground px-2 py-1">
+                System
+              </SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SystemActions />
+              </SidebarGroupContent>
+            </SidebarGroup>
+          </SidebarFooter>
+        </nav>
       </Sidebar>
 
       <GlobalSearchModal isOpen={isSearchOpen} onClose={closeSearch} />

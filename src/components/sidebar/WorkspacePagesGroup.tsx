@@ -91,65 +91,71 @@ export function WorkspacePagesGroup({ workspaceId, workspaceName }: WorkspacePag
 
   if (loading) {
     return (
-      <SidebarGroup>
-        <SidebarGroupLabel className="flex items-center justify-between">
-          <span className="truncate flex items-center gap-2">
-            {workspaceName}
-            <Loader2 className="h-3 w-3 animate-spin" />
-          </span>
-        </SidebarGroupLabel>
-        <SidebarGroupContent>
-          <SidebarMenu>
-            <SidebarMenuItem>
-              <SidebarMenuButton disabled className="text-muted-foreground">
-                Loading pages...
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          </SidebarMenu>
-        </SidebarGroupContent>
-      </SidebarGroup>
+      <li role="treeitem" aria-expanded="false">
+        <SidebarGroup>
+          <SidebarGroupLabel className="flex items-center justify-between">
+            <span className="truncate flex items-center gap-2">
+              {workspaceName}
+              <Loader2 className="h-3 w-3 animate-spin" />
+            </span>
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton disabled className="text-muted-foreground">
+                  Loading pages...
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+      </li>
     );
   }
 
   return (
-    <SidebarGroup>
-      <SidebarGroupLabel className="flex items-center justify-between">
-        <span className="truncate flex items-center gap-2">
-          {workspaceName}
-          {hasOptimisticChanges && (
-            <span className="inline-block w-2 h-2 bg-blue-500 rounded-full animate-pulse" title="Syncing changes..." />
-          )}
-        </span>
-      </SidebarGroupLabel>
-      <SidebarGroupContent>
-        <DragDropContext onDragEnd={handleDragEnd}>
-          <Droppable droppableId={`workspace-${workspaceId}`} type="page">
-            {(provided) => (
-              <SidebarMenu ref={provided.innerRef} {...provided.droppableProps}>
-                {topLevelPages.length === 0 ? (
-                  <SidebarMenuItem>
-                    <SidebarMenuButton className="text-muted-foreground" disabled>
-                      <span>No pages yet</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ) : (
-                  topLevelPages.map((page, index) => (
-                    <PageTreeItem
-                      key={page.id}
-                      page={page}
-                      pages={pages}
-                      workspaceId={workspaceId}
-                      onDelete={handleDeletePage}
-                      index={index}
-                    />
-                  ))
-                )}
-                {provided.placeholder}
-              </SidebarMenu>
+    <li role="treeitem" aria-expanded="true">
+      <SidebarGroup>
+        <SidebarGroupLabel className="flex items-center justify-between">
+          <span className="truncate flex items-center gap-2">
+            {workspaceName}
+            {hasOptimisticChanges && (
+              <span className="inline-block w-2 h-2 bg-blue-500 rounded-full animate-pulse" title="Syncing changes..." />
             )}
-          </Droppable>
-        </DragDropContext>
-      </SidebarGroupContent>
-    </SidebarGroup>
+          </span>
+        </SidebarGroupLabel>
+        <SidebarGroupContent>
+          <DragDropContext onDragEnd={handleDragEnd}>
+            <Droppable droppableId={`workspace-${workspaceId}`} type="page">
+              {(provided) => (
+                <ul role="group" aria-label={`${workspaceName} pages`}>
+                  <SidebarMenu ref={provided.innerRef} {...provided.droppableProps}>
+                    {topLevelPages.length === 0 ? (
+                      <SidebarMenuItem>
+                        <SidebarMenuButton className="text-muted-foreground" disabled>
+                          <span>No pages yet</span>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    ) : (
+                      topLevelPages.map((page, index) => (
+                        <PageTreeItem
+                          key={page.id}
+                          page={page}
+                          pages={pages}
+                          workspaceId={workspaceId}
+                          onDelete={handleDeletePage}
+                          index={index}
+                        />
+                      ))
+                    )}
+                    {provided.placeholder}
+                  </SidebarMenu>
+                </ul>
+              )}
+            </Droppable>
+          </DragDropContext>
+        </SidebarGroupContent>
+      </SidebarGroup>
+    </li>
   );
 }
