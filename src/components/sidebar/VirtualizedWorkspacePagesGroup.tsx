@@ -1,5 +1,5 @@
 
-import React, { useMemo, useState, useRef } from 'react';
+import React, { useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import { useVirtualizer } from '@tanstack/react-virtual';
@@ -14,7 +14,8 @@ import {
 } from '@/components/ui/sidebar';
 import { useEnhancedPages } from '@/hooks/useEnhancedPages';
 import { useToast } from '@/hooks/use-toast';
-import { useTreeViewKeyboardNavigation } from '@/hooks/useTreeViewKeyboardNavigation';
+import { useEnhancedTreeViewNavigation } from '@/hooks/useEnhancedTreeViewNavigation';
+import { useNavigationState } from '@/contexts/NavigationStateContext';
 import { PageTreeItem } from './PageTreeItem';
 import { validateDragAndDrop } from '@/utils/navigationConstraints';
 import { Page } from '@/hooks/usePages';
@@ -40,10 +41,15 @@ export function VirtualizedWorkspacePagesGroup({
   const { pages, updatePageHierarchy, deletePage, hasOptimisticChanges, loading } = useEnhancedPages(workspaceId);
   const { toast } = useToast();
   const navigate = useNavigate();
-  const [expandedPages, setExpandedPages] = useState<Set<string>>(new Set());
   const parentRef = useRef<HTMLDivElement>(null);
+  const { isExpanded, setActiveWorkspace } = useNavigationState();
 
-  // Flatten the page tree for virtualization
+  // Set active workspace when component mounts
+  React.useEffect(() => {
+    setActiveWorkspace(workspaceId);
+  }, [workspaceId, setActiveWorkspace]);
+
+  // Flatten the page tree for virtualization using centralized expansion state
   const flattenedPages = useMemo(() => {
     const flattenPages = (pages: Page[], parentId: string | null = null, level: number = 0): FlattenedPageItem[] => {
       const result: FlattenedPageItem[] = [];
@@ -58,7 +64,7 @@ export function VirtualizedWorkspacePagesGroup({
         });
         
         // If page is expanded, add its children
-        if (expandedPages.has(page.id)) {
+        if (isExpanded(page.id)) {
           const children = flattenPages(pages, page.id, level + 1);
           result.push(...children);
         }
@@ -68,7 +74,7 @@ export function VirtualizedWorkspacePagesGroup({
     };
     
     return flattenPages(pages);
-  }, [pages, expandedPages]);
+  }, [pages, isExpanded]);
 
   // Convert flattened pages to tree items for keyboard navigation
   const treeItems = useMemo(() => {
@@ -76,10 +82,10 @@ export function VirtualizedWorkspacePagesGroup({
       id: page.id,
       parentId: page.parent_page_id,
       hasChildren: pages.some(p => p.parent_page_id === page.id),
-      isExpanded: expandedPages.has(page.id),
+      isExpanded: isExpanded(page.id),
       level,
     }));
-  }, [flattenedPages, pages, expandedPages]);
+  }, [flattenedPages, pages, isExpanded]);
 
   // Initialize virtualizer
   const virtualizer = useVirtualizer({
@@ -95,18 +101,6 @@ export function VirtualizedWorkspacePagesGroup({
     onNavigationItemSelect?.();
   };
 
-  const handleToggleExpanded = (pageId: string) => {
-    setExpandedPages(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(pageId)) {
-        newSet.delete(pageId);
-      } else {
-        newSet.add(pageId);
-      }
-      return newSet;
-    });
-  };
-
   const handleActivate = (pageId: string) => {
     navigate(`/workspace/${workspaceId}/page/${pageId}`);
     onNavigationItemSelect?.();
@@ -114,13 +108,15 @@ export function VirtualizedWorkspacePagesGroup({
 
   const {
     focusedItemId,
+    currentItemId,
     containerRef,
     handleKeyDown,
     focusItem,
-  } = useTreeViewKeyboardNavigation({
+    isFocused,
+    isCurrent,
+  } = useEnhancedTreeViewNavigation({
     items: treeItems,
     onNavigate: handleNavigate,
-    onToggleExpanded: handleToggleExpanded,
     onActivate: handleActivate,
   });
 
@@ -271,11 +267,13 @@ export function VirtualizedWorkspacePagesGroup({
                                     onDelete={handleDeletePage}
                                     index={flattenedPage.index}
                                     focusedItemId={focusedItemId}
+                                    currentItemId={currentItemId}
                                     onKeyDown={handleKeyDown}
-                                    onToggleExpanded={handleToggleExpanded}
-                                    isExpanded={expandedPages.has(flattenedPage.page.id)}
                                     level={flattenedPage.level}
                                     onNavigationItemSelect={onNavigationItemSelect}
+                                    // Pass accessibility state functions
+                                    isFocused={isFocused}
+                                    isCurrent={isCurrent}
                                   />
                                 </div>
                               );
