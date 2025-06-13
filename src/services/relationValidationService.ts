@@ -45,13 +45,13 @@ export class RelationValidationService {
             return false;
           }
           
-          const settings = field.settings as RelationFieldSettings;
+          const settings = field.settings as RelationFieldSettings | null;
           return settings?.bidirectional && settings?.target_database_id === sourceDatabaseId;
         });
 
         // Check if any existing relation field has the same backlink name
         const backlinkConflict = existingRelationFields.find(field => {
-          const settings = field.settings as RelationFieldSettings;
+          const settings = field.settings as RelationFieldSettings | null;
           return settings?.related_property_name === relatedPropertyName;
         });
 
@@ -65,7 +65,7 @@ export class RelationValidationService {
 
         // Check for potential circular references
         const potentialCircular = existingRelationFields.find(field => {
-          const settings = field.settings as RelationFieldSettings;
+          const settings = field.settings as RelationFieldSettings | null;
           const fieldBacklinkName = settings?.related_property_name;
           return fieldBacklinkName && 
                  targetFields.some(f => f.name === fieldBacklinkName && f.type === 'relation');
@@ -105,7 +105,7 @@ export class RelationValidationService {
         fields
           .filter(field => field.type === 'relation')
           .map(field => {
-            const settings = field.settings as RelationFieldSettings;
+            const settings = field.settings as RelationFieldSettings | null;
             return settings?.related_property_name?.toLowerCase();
           })
           .filter(Boolean) as string[]
@@ -163,7 +163,7 @@ export class RelationValidationService {
     const bidirectionalCount = existingRelations.filter(field => {
       if (field.type !== 'relation') return false;
       
-      const settings = field.settings as RelationFieldSettings;
+      const settings = field.settings as RelationFieldSettings | null;
       return settings?.bidirectional && settings?.target_database_id === sourceDatabaseId;
     }).length;
 

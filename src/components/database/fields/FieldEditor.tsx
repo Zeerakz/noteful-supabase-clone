@@ -4,6 +4,7 @@ import { DatabaseField } from '@/types/database';
 import { SelectFieldEditor } from './SelectFieldEditor';
 import { DateFieldEditor } from './DateFieldEditor';
 import { RelationFieldEditor } from './RelationFieldEditor';
+import { RollupFieldDisplay } from './RollupFieldDisplay';
 import { SystemPropertyEditor } from '@/components/property/field-editors/SystemPropertyEditor';
 import { isSystemProperty } from '@/types/systemProperties';
 
@@ -15,6 +16,8 @@ interface FieldEditorProps {
   pageId: string;
   pageData?: any;
   userProfiles?: any[];
+  allFields?: DatabaseField[];
+  computedValue?: string;
 }
 
 export function FieldEditor({ 
@@ -24,7 +27,9 @@ export function FieldEditor({
   workspaceId, 
   pageId,
   pageData,
-  userProfiles
+  userProfiles,
+  allFields = [],
+  computedValue
 }: FieldEditorProps) {
   // Handle system properties first - they are read-only
   if (isSystemProperty(field.type)) {
@@ -38,6 +43,28 @@ export function FieldEditor({
         pageData={pageData}
         userProfiles={userProfiles}
       />
+    );
+  }
+
+  // Handle rollup fields - they are computed and read-only
+  if (field.type === 'rollup') {
+    return (
+      <RollupFieldDisplay
+        field={field}
+        pageId={pageId}
+        value={value}
+        computedValue={computedValue}
+        allFields={allFields}
+      />
+    );
+  }
+
+  // Handle formula fields - they are computed and read-only
+  if (field.type === 'formula') {
+    return (
+      <div className="text-sm text-muted-foreground italic">
+        {computedValue || 'Formula not calculated'}
+      </div>
     );
   }
 
