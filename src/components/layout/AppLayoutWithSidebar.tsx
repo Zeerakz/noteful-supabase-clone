@@ -16,18 +16,18 @@ interface AppLayoutWithSidebarProps {
 export function AppLayoutWithSidebar({ children, breadcrumbs }: AppLayoutWithSidebarProps) {
   return (
     <SidebarProvider>
-      <div className="min-h-screen max-h-screen flex w-full">
+      <div className="min-h-screen flex w-full">
         <PagesSidebar />
-        <SidebarInset className="flex flex-col h-screen">
-          <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
+        <SidebarInset className="flex flex-col min-h-screen w-full">
+          <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4 sticky top-0 z-50 bg-background">
             <SidebarTrigger className="-ml-1" />
             <Separator orientation="vertical" className="mr-2 h-4" />
             <div className="ml-auto">
               <DarkModeToggle />
             </div>
           </header>
-          {/* Main content area with scroll container moved to this level */}
-          <div className="flex-1 min-h-0 overflow-auto">
+          {/* Main content area without internal scroll container */}
+          <div className="flex-1">
             {children}
           </div>
         </SidebarInset>

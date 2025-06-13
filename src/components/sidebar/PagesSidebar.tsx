@@ -11,8 +11,8 @@ export function PagesSidebar() {
   const { workspaces } = useWorkspaces();
 
   return (
-    <Sidebar>
-      <SidebarContent>
+    <Sidebar className="border-r">
+      <SidebarContent className="overflow-visible">
         {workspaces.map((workspace) => (
           <WorkspacePagesGroup
             key={workspace.id}

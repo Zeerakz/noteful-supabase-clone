@@ -47,7 +47,7 @@ export function DatabaseTableHeader({
   };
 
   return (
-    <TableHeader className="sticky top-0 z-20 bg-card/95 backdrop-blur-sm border-b-2 border-border">
+    <TableHeader className="sticky top-20 z-20 bg-card/95 backdrop-blur-sm border-b-2 border-border">
       <TableRow className="hover:bg-transparent border-none">
         {/* Selection Column - Fixed width with consistent padding */}
         <TableHead 

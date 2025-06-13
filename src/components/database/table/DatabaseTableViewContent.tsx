@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback } from 'react';
 import { DatabaseField, PageProperty } from '@/types/database';
 import { DatabaseTableHeader } from './DatabaseTableHeader';
@@ -145,7 +146,7 @@ export function DatabaseTableViewContent({
 
   if (pagesLoading) {
     return (
-      <div className="flex flex-col h-full bg-background">
+      <div className="flex flex-col bg-background">
         <div className="flex items-center justify-between p-6 border-b bg-card">
           <div className="flex items-center gap-3">
             <Skeleton className="h-7 w-28" />
@@ -178,7 +179,7 @@ export function DatabaseTableViewContent({
 
   if (pagesError) {
     return (
-      <div className="flex items-center justify-center h-full bg-background">
+      <div className="flex items-center justify-center py-12 bg-background">
         <div className="text-center space-y-2">
           <p className="text-lg font-medium text-foreground">Something went wrong</p>
           <p className="text-muted-foreground">{pagesError}</p>
@@ -192,8 +193,8 @@ export function DatabaseTableViewContent({
 
   return (
     <div className="flex flex-col bg-background">
-      {/* Header with improved styling - Fixed height */}
-      <div className="flex items-center justify-between px-6 py-4 border-b bg-card/50 backdrop-blur-sm shrink-0 sticky top-0 z-10">
+      {/* Header with improved styling - Sticky header */}
+      <div className="flex items-center justify-between px-6 py-4 border-b bg-card/50 backdrop-blur-sm shrink-0 sticky top-16 z-10">
         <div className="flex items-center gap-3">
           <h3 className="text-xl font-semibold text-foreground">Table View</h3>
           <div className="px-2 py-1 bg-muted rounded-md">
@@ -225,7 +226,7 @@ export function DatabaseTableViewContent({
         </div>
       </div>
 
-      {/* Table container without internal scrolling */}
+      {/* Table container using page scrolling */}
       <div className="bg-background">
         <div 
           className="relative"
