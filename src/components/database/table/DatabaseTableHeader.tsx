@@ -26,39 +26,45 @@ export function DatabaseTableHeader({
   onColumnResize
 }: DatabaseTableHeaderProps) {
   return (
-    <TableHeader className="sticky top-0 z-20 bg-background border-b">
-      <TableRow className="hover:bg-transparent border-b border-border">
+    <TableHeader className="sticky top-0 z-20 bg-card/95 backdrop-blur-sm border-b-2 border-border">
+      <TableRow className="hover:bg-transparent border-none">
         {/* Selection Column */}
-        <TableHead className="w-[50px] p-0 bg-background border-r border-border/50">
-          <div className="flex items-center justify-center h-12 px-3">
+        <TableHead className="w-12 p-3 bg-card/95 border-r border-border/40">
+          <div className="flex items-center justify-center">
             <Checkbox className="opacity-50" />
           </div>
         </TableHead>
 
         {/* Title Column */}
         <TableHead 
-          className="min-w-[250px] p-0 bg-background border-r border-border/50"
-          style={{ width: columnWidths['title'] ? `${columnWidths['title']}px` : '250px' }}
+          className="p-0 bg-card/95 border-r border-border/40"
+          style={{ width: columnWidths['title'] ? `${columnWidths['title']}px` : '280px' }}
         >
-          <div className="flex items-center gap-2.5 px-4 py-3 h-12">
-            <div className="flex-shrink-0 p-1 rounded-md bg-muted/40">
-              <span className="text-xs font-medium text-muted-foreground">T</span>
-            </div>
-            <button
-              onClick={() => onSort('title', sortRules.find(r => r.fieldId === 'title')?.direction === 'asc' ? 'desc' : 'asc')}
-              className="flex items-center gap-2 px-1 py-1 h-auto font-semibold text-sm text-foreground hover:bg-transparent hover:text-primary flex-1 justify-start min-w-0 transition-colors"
-            >
-              <span className="truncate tracking-tight">Title</span>
-            </button>
-          </div>
+          <DatabaseColumnHeader
+            field={{
+              id: 'title',
+              name: 'Title',
+              type: 'text',
+              database_id: '',
+              pos: 0,
+              created_by: '',
+              created_at: '',
+              updated_at: ''
+            }}
+            sortRules={sortRules}
+            onSort={onSort}
+            onResize={onColumnResize}
+            width={columnWidths['title'] || 280}
+            className="border-b-0"
+          />
         </TableHead>
 
         {/* Field Columns */}
-        {fields.map((field, index) => (
+        {fields.map((field) => (
           <TableHead 
             key={field.id} 
-            className={`min-w-[180px] p-0 bg-background ${index < fields.length - 1 ? 'border-r border-border/50' : ''}`}
-            style={{ width: columnWidths[field.id] ? `${columnWidths[field.id]}px` : '180px' }}
+            className="p-0 bg-card/95 border-r border-border/40 last:border-r-0"
+            style={{ width: columnWidths[field.id] ? `${columnWidths[field.id]}px` : '200px' }}
           >
             <DatabaseColumnHeader
               field={field}
@@ -67,19 +73,17 @@ export function DatabaseTableHeader({
               onFieldsChange={onFieldsChange}
               onFieldReorder={onFieldReorder}
               onResize={onColumnResize}
-              width={columnWidths[field.id] || 180}
+              width={columnWidths[field.id] || 200}
               isDraggable={true}
-              className="h-12"
+              className="border-b-0"
             />
           </TableHead>
         ))}
 
         {/* Actions Column */}
-        <TableHead className="w-[60px] p-0 bg-background">
-          <div className="flex items-center justify-center h-12 px-3">
-            <div className="text-xs font-medium text-muted-foreground">
-              •••
-            </div>
+        <TableHead className="w-16 p-3 bg-card/95">
+          <div className="text-center text-xs font-medium text-muted-foreground">
+            •••
           </div>
         </TableHead>
       </TableRow>

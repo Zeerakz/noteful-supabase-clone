@@ -57,27 +57,27 @@ export function NewTableRow({
   return (
     <TableRow 
       className={`
-        group border-b border-border transition-colors duration-150
-        hover:bg-accent/10 
-        ${isEvenRow ? 'bg-muted/5' : 'bg-background'}
+        group border-b border-border/20 transition-colors duration-150
+        hover:bg-accent/20 
+        ${isEvenRow ? 'bg-muted/10' : 'bg-background'}
         ${isCreating ? 'bg-accent/10 border-accent/30' : ''}
       `}
     >
       {/* Empty checkbox cell */}
-      <TableCell className="w-[50px] p-0 border-r border-border/50">
-        <div className="flex items-center justify-center h-12 px-3">
+      <TableCell className="w-12 p-3 border-r border-border/20">
+        <div className="flex items-center justify-center">
           <div className="w-4 h-4" />
         </div>
       </TableCell>
 
       {/* Title Cell */}
       <TableCell 
-        className="p-0 border-r border-border/50"
-        style={{ width: columnWidths['title'] ? `${columnWidths['title']}px` : '250px' }}
+        className="p-0 border-r border-border/20"
+        style={{ width: columnWidths['title'] ? `${columnWidths['title']}px` : '280px' }}
       >
-        <div className="h-12 px-3 flex items-center">
+        <div className="px-4 py-3">
           {isCreating ? (
-            <div className="flex items-center gap-2 w-full">
+            <div className="flex items-center gap-2">
               <Input
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
@@ -116,14 +116,14 @@ export function NewTableRow({
       </TableCell>
 
       {/* Empty Property Cells */}
-      {fields.map((field, index) => (
+      {fields.map((field) => (
         <TableCell 
           key={field.id} 
-          className={`p-0 ${index < fields.length - 1 ? 'border-r border-border/50' : ''}`}
-          style={{ width: columnWidths[field.id] ? `${columnWidths[field.id]}px` : '180px' }}
+          className="p-0 border-r border-border/20 last:border-r-0"
+          style={{ width: columnWidths[field.id] ? `${columnWidths[field.id]}px` : '200px' }}
         >
-          <div className="h-12 px-3 flex items-center">
-            <div className="min-h-[24px] px-2 py-1 flex items-center w-full">
+          <div className="px-4 py-3">
+            <div className="min-h-[24px] px-2 py-1 flex items-center">
               <span className="text-muted-foreground/40 text-sm">—</span>
             </div>
           </div>
@@ -131,10 +131,8 @@ export function NewTableRow({
       ))}
 
       {/* Empty Actions Cell */}
-      <TableCell className="w-[60px] p-0">
-        <div className="h-12 px-3 flex items-center justify-center">
-          <div className="w-8 h-8" />
-        </div>
+      <TableCell className="w-16 p-3">
+        <div className="w-8 h-8" />
       </TableCell>
     </TableRow>
   );
