@@ -17,8 +17,12 @@ export function AppLayoutWithSidebar({ children, breadcrumbs }: AppLayoutWithSid
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full">
+        {/* Fixed sidebar - doesn't scroll */}
         <PagesSidebar />
+        
+        {/* Main content area - this will scroll */}
         <SidebarInset className="flex flex-col min-h-screen w-full">
+          {/* Fixed header */}
           <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4 sticky top-0 z-50 bg-background">
             <SidebarTrigger className="-ml-1" />
             <Separator orientation="vertical" className="mr-2 h-4" />
@@ -26,8 +30,9 @@ export function AppLayoutWithSidebar({ children, breadcrumbs }: AppLayoutWithSid
               <DarkModeToggle />
             </div>
           </header>
-          {/* Main content area without internal scroll container */}
-          <div className="flex-1">
+          
+          {/* Scrollable content area */}
+          <div className="flex-1 overflow-auto">
             {children}
           </div>
         </SidebarInset>
