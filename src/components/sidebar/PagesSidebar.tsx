@@ -11,7 +11,7 @@ import {
   SidebarSeparator,
 } from '@/components/ui/sidebar';
 import { useWorkspaces } from '@/hooks/useWorkspaces';
-import { WorkspacePagesGroup } from './WorkspacePagesGroup';
+import { VirtualizedWorkspacePagesGroup } from './VirtualizedWorkspacePagesGroup';
 import { WorkspaceSwitcher } from './WorkspaceSwitcher';
 import { SearchTrigger } from './SearchTrigger';
 import { NewPageAction } from './NewPageAction';
@@ -44,7 +44,7 @@ export function PagesSidebar({ onNavigationItemSelect }: PagesSidebarProps) {
           <SidebarContent className="px-2 sidebar-accessible">
             <ul role="tree" aria-label="Workspace navigation">
               {workspaces.map((workspace) => (
-                <WorkspacePagesGroup
+                <VirtualizedWorkspacePagesGroup
                   key={workspace.id}
                   workspaceId={workspace.id}
                   workspaceName={workspace.name}
