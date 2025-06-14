@@ -301,31 +301,20 @@
     line-height: calc(var(--grid-4x) * 1);
   }
 
-  /* Comprehensive override to remove blue line/accent from active sidebar navigation items */
-  [data-sidebar="sidebar"] [data-sidebar="menu-button"][data-active="true"],
-  [data-sidebar="sidebar"] [data-sidebar="menu-button"][aria-current="page"],
-  [data-sidebar="sidebar"] [data-sidebar="menu-button"].active {
-    background: transparent !important;
-    border: none !important;
-    box-shadow: none !important;
+  /* Proper active state styling for sidebar navigation that matches the reference design */
+  [data-sidebar="sidebar"] [data-sidebar="menu-button"][data-state="active"] {
+    background-color: hsl(var(--primary) / 0.1) !important;
+    border: 1px solid hsl(var(--primary) / 0.2) !important;
+    border-radius: 6px !important;
+    color: hsl(var(--primary)) !important;
   }
 
-  [data-sidebar="sidebar"] [data-sidebar="menu-button"][data-active="true"]::before,
-  [data-sidebar="sidebar"] [data-sidebar="menu-button"][data-active="true"]::after,
-  [data-sidebar="sidebar"] [data-sidebar="menu-button"][aria-current="page"]::before,
-  [data-sidebar="sidebar"] [data-sidebar="menu-button"][aria-current="page"]::after,
-  [data-sidebar="sidebar"] [data-sidebar="menu-button"].active::before,
-  [data-sidebar="sidebar"] [data-sidebar="menu-button"].active::after {
-    display: none !important;
-  }
-
-  /* Also target any nested elements that might have the blue accent */
-  [data-sidebar="sidebar"] [data-sidebar="menu-button"][data-active="true"] *,
-  [data-sidebar="sidebar"] [data-sidebar="menu-button"][aria-current="page"] *,
-  [data-sidebar="sidebar"] [data-sidebar="menu-button"].active * {
-    background: transparent !important;
-    border-left: none !important;
-    border-right: none !important;
+  /* Also support the isActive prop approach */
+  [data-sidebar="sidebar"] [data-sidebar="menu-button"][aria-current="page"] {
+    background-color: hsl(var(--primary) / 0.1) !important;
+    border: 1px solid hsl(var(--primary) / 0.2) !important;
+    border-radius: 6px !important;
+    color: hsl(var(--primary)) !important;
   }
 
   /* High contrast mode support with enhanced visibility */

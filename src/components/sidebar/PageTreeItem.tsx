@@ -99,7 +99,7 @@ export function PageTreeItem({
             role="treeitem"
             aria-expanded={hasChildren ? expanded : undefined}
             aria-level={level + 1}
-            aria-current={current ? 'page' : undefined}
+            aria-current={isActive ? 'page' : undefined}
             data-tree-item-id={page.id}
             className={cn(
               "group relative",
@@ -111,7 +111,7 @@ export function PageTreeItem({
               onClick={handleNavigate}
               onKeyDown={handleKeyDown}
               className="w-full justify-start text-left pr-8"
-              isActive={isActive}
+              data-state={isActive ? "active" : undefined}
               tabIndex={focused ? 0 : -1}
             >
               <div {...provided.dragHandleProps} className="flex items-center gap-1 min-w-0 flex-1">
