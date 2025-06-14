@@ -1,5 +1,5 @@
 
-import { useState, useCallback } from 'react';
+import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { DatabaseFieldService } from '@/services/database/databaseFieldService';
@@ -11,7 +11,7 @@ export function useDatabaseFieldOperations(databaseId: string, onFieldsChange?: 
   const { user } = useAuth();
   const { toast } = useToast();
 
-  const updateField = useCallback(async (fieldId: string, updates: Partial<DatabaseField>): Promise<void> => {
+  const updateField = async (fieldId: string, updates: Partial<DatabaseField>): Promise<void> => {
     if (!user) {
       toast({
         title: "Error",
@@ -36,9 +36,9 @@ export function useDatabaseFieldOperations(databaseId: string, onFieldsChange?: 
     } finally {
       setLoading(false);
     }
-  }, [user, onFieldsChange, toast]);
+  };
 
-  const duplicateField = useCallback(async (field: DatabaseField): Promise<void> => {
+  const duplicateField = async (field: DatabaseField): Promise<void> => {
     if (!user) {
       toast({
         title: "Error",
@@ -73,9 +73,9 @@ export function useDatabaseFieldOperations(databaseId: string, onFieldsChange?: 
     } finally {
       setLoading(false);
     }
-  }, [databaseId, user, onFieldsChange, toast]);
+  };
 
-  const deleteField = useCallback(async (fieldId: string): Promise<void> => {
+  const deleteField = async (fieldId: string): Promise<void> => {
     setLoading(true);
     try {
       const { error } = await DatabaseFieldService.deleteDatabaseField(fieldId);
@@ -91,9 +91,9 @@ export function useDatabaseFieldOperations(databaseId: string, onFieldsChange?: 
     } finally {
       setLoading(false);
     }
-  }, [onFieldsChange]);
+  };
 
-  const createField = useCallback(async (field: { name: string; type: PropertyType; settings?: any }): Promise<void> => {
+  const createField = async (field: { name: string; type: PropertyType; settings?: any }): Promise<void> => {
     if (!user) {
       toast({
         title: "Error",
@@ -122,9 +122,9 @@ export function useDatabaseFieldOperations(databaseId: string, onFieldsChange?: 
     } finally {
       setLoading(false);
     }
-  }, [databaseId, user, onFieldsChange, toast]);
+  };
 
-  const reorderFields = useCallback(async (fields: DatabaseField[]): Promise<void> => {
+  const reorderFields = async (fields: DatabaseField[]): Promise<void> => {
     setLoading(true);
     try {
       // Update position for each field
@@ -140,7 +140,7 @@ export function useDatabaseFieldOperations(databaseId: string, onFieldsChange?: 
     } finally {
       setLoading(false);
     }
-  }, [onFieldsChange]);
+  };
 
   return {
     loading,
