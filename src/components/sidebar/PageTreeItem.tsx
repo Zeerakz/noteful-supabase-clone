@@ -52,19 +52,19 @@ export function PageTreeItem({
   const hasChildren = subPages.length > 0;
   const isFocused = focusedItemId === page.id;
 
-  // Improved active state detection using React Router's location
+  // Improved active state detection
   const isActive = React.useMemo(() => {
     const currentPath = location.pathname;
     const pageRoute = `/workspace/${workspaceId}/page/${page.id}`;
     const workspaceRootRoute = `/workspace/${workspaceId}`;
     
-    // Check if current route exactly matches this page
+    // Direct page match
     if (currentPath === pageRoute) {
       return true;
     }
     
-    // Check if we're on workspace root and this is the first top-level page
-    if (currentPath === workspaceRootRoute) {
+    // If we're on workspace root, check if this is the first top-level page
+    if (currentPath === workspaceRootRoute || currentPath === `${workspaceRootRoute}/`) {
       const topLevelPages = pages.filter(p => !p.parent_page_id);
       const firstTopLevelPage = topLevelPages.sort((a, b) => 
         new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
@@ -121,8 +121,8 @@ export function PageTreeItem({
               onClick={handleNavigate}
               onKeyDown={handleKeyDown}
               className={cn(
-                "w-full justify-start text-left pr-8 sidebar-menu-button",
-                isActive && "sidebar-menu-button-active"
+                "w-full justify-start text-left pr-8",
+                isActive && "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
               )}
               data-active={isActive}
               tabIndex={isFocused ? 0 : -1}

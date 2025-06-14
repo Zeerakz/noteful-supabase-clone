@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -300,38 +301,24 @@
     line-height: calc(var(--grid-4x) * 1);
   }
 
-  /* Enhanced active state styling for SidebarMenuButton */
-  .sidebar-menu-button[data-active="true"],
+  /* Enhanced active state styling for SidebarMenuButton - using direct className approach */
   .sidebar-menu-button-active {
     background-color: hsl(var(--sidebar-accent)) !important;
     color: hsl(var(--sidebar-accent-foreground)) !important;
-    border-radius: var(--radius);
-    font-weight: 600;
+    font-weight: 500 !important;
   }
 
-  /* Ensure hover state on active item maintains the active appearance */
-  .sidebar-menu-button[data-active="true"]:hover,
+  /* Ensure hover and focus states work correctly */
   .sidebar-menu-button-active:hover {
     background-color: hsl(var(--sidebar-accent)) !important;
     color: hsl(var(--sidebar-accent-foreground)) !important;
   }
 
-  /* Focus state for active items */
-  .sidebar-menu-button[data-active="true"]:focus-visible,
   .sidebar-menu-button-active:focus-visible {
     outline: 2px solid hsl(var(--ring));
     outline-offset: 2px;
     background-color: hsl(var(--sidebar-accent)) !important;
     color: hsl(var(--sidebar-accent-foreground)) !important;
-  }
-
-  /* Ensure virtualized items maintain styling */
-  [data-active="true"] .sidebar-menu-button,
-  .sidebar-menu-button-active {
-    background-color: hsl(var(--sidebar-accent)) !important;
-    color: hsl(var(--sidebar-accent-foreground)) !important;
-    border-radius: var(--radius);
-    font-weight: 600;
   }
 
   /* High contrast mode support with enhanced visibility */
@@ -362,14 +349,12 @@
         0 0 0 8px hsl(var(--primary) / 0.3);
     }
 
-    .sidebar-menu-button[data-active="true"],
     .sidebar-menu-button-active {
       background-color: hsl(var(--sidebar-primary)) !important;
       color: hsl(var(--sidebar-primary-foreground)) !important;
       border: 1px solid hsl(var(--sidebar-foreground));
     }
     
-    .sidebar-menu-button[data-active="true"]:hover,
     .sidebar-menu-button-active:hover {
       background-color: hsl(var(--sidebar-primary)) !important;
       color: hsl(var(--sidebar-primary-foreground)) !important;
