@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Draggable, Droppable } from 'react-beautiful-dnd';
 import { FileText, ChevronRight, ChevronDown, MoreHorizontal, Trash2 } from 'lucide-react';
 import {
@@ -47,9 +47,33 @@ export function PageTreeItem({
   onNavigationItemSelect,
 }: PageTreeItemProps) {
   const navigate = useNavigate();
+  const location = useLocation();
   const subPages = pages.filter(p => p.parent_page_id === page.id);
   const hasChildren = subPages.length > 0;
   const isFocused = focusedItemId === page.id;
+
+  // Improved active state detection using React Router's location
+  const isActive = React.useMemo(() => {
+    const currentPath = location.pathname;
+    const pageRoute = `/workspace/${workspaceId}/page/${page.id}`;
+    const workspaceRootRoute = `/workspace/${workspaceId}`;
+    
+    // Check if current route exactly matches this page
+    if (currentPath === pageRoute) {
+      return true;
+    }
+    
+    // Check if we're on workspace root and this is the first top-level page
+    if (currentPath === workspaceRootRoute) {
+      const topLevelPages = pages.filter(p => !p.parent_page_id);
+      const firstTopLevelPage = topLevelPages.sort((a, b) => 
+        new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+      )[0];
+      return firstTopLevelPage?.id === page.id;
+    }
+    
+    return false;
+  }, [location.pathname, workspaceId, page.id, pages]);
 
   const handleNavigate = () => {
     navigate(`/workspace/${workspaceId}/page/${page.id}`);
@@ -96,8 +120,11 @@ export function PageTreeItem({
             <SidebarMenuButton
               onClick={handleNavigate}
               onKeyDown={handleKeyDown}
-              className="w-full justify-start text-left pr-8"
-              data-active={window.location.pathname === `/workspace/${workspaceId}/page/${page.id}`}
+              className={cn(
+                "w-full justify-start text-left pr-8 sidebar-menu-button",
+                isActive && "sidebar-menu-button-active"
+              )}
+              data-active={isActive}
               tabIndex={isFocused ? 0 : -1}
             >
               <div {...provided.dragHandleProps} className="flex items-center gap-1 min-w-0 flex-1">

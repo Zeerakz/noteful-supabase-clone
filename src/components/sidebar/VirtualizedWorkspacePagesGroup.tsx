@@ -1,6 +1,5 @@
-
 import React, { useMemo, useState, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { DragDropContext, Droppable, DropResult } from 'react-beautiful-dnd';
@@ -40,8 +39,34 @@ export function VirtualizedWorkspacePagesGroup({
   const { pages, updatePageHierarchy, deletePage, hasOptimisticChanges, loading } = useEnhancedPages(workspaceId);
   const { toast } = useToast();
   const navigate = useNavigate();
+  const location = useLocation();
   const [expandedPages, setExpandedPages] = useState<Set<string>>(new Set());
   const parentRef = useRef<HTMLDivElement>(null);
+
+  // Auto-expand pages that contain the currently active page
+  React.useEffect(() => {
+    const currentPath = location.pathname;
+    const pageIdMatch = currentPath.match(/\/workspace\/[^/]+\/page\/([^/]+)/);
+    
+    if (pageIdMatch) {
+      const currentPageId = pageIdMatch[1];
+      const currentPage = pages.find(p => p.id === currentPageId);
+      
+      if (currentPage) {
+        // Expand all parent pages up to the root
+        const expandParents = (page: Page) => {
+          if (page.parent_page_id) {
+            setExpandedPages(prev => new Set(prev.add(page.parent_page_id!)));
+            const parentPage = pages.find(p => p.id === page.parent_page_id);
+            if (parentPage) {
+              expandParents(parentPage);
+            }
+          }
+        };
+        expandParents(currentPage);
+      }
+    }
+  }, [location.pathname, pages]);
 
   // Flatten the page tree for virtualization
   const flattenedPages = useMemo(() => {
