@@ -192,7 +192,13 @@ export function DatabaseTableRow({
               <MoreHorizontal className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="bg-popover shadow-lg">
+          <DropdownMenuContent 
+            side="right" 
+            align="center" 
+            sideOffset={4}
+            className="bg-popover shadow-lg z-50"
+            collisionPadding={8}
+          >
             <DropdownMenuItem
               onClick={handleDelete}
               disabled={isDeleting}

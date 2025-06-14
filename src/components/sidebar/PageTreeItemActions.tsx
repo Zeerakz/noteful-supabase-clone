@@ -28,10 +28,11 @@ export function PageTreeItemActions({ onDelete }: PageTreeItemActionsProps) {
         </SidebarMenuAction>
       </DropdownMenuTrigger>
       <DropdownMenuContent 
-        align="end" 
+        side="right"
+        align="center"
+        sideOffset={8}
         className="w-48 z-50 bg-popover border shadow-md"
-        side="bottom"
-        sideOffset={4}
+        collisionPadding={8}
       >
         <DropdownMenuItem
           onClick={onDelete}

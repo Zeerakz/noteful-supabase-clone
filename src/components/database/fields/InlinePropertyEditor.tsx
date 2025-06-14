@@ -39,7 +39,13 @@ export function InlinePropertyEditor({
         <DropdownMenuTrigger asChild>
           {children}
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-48">
+        <DropdownMenuContent 
+          side="right"
+          align="center"
+          sideOffset={4}
+          className="w-48 z-50"
+          collisionPadding={8}
+        >
           <DropdownMenuItem disabled>
             <Edit className="h-4 w-4 mr-2" />
             Edit Property
