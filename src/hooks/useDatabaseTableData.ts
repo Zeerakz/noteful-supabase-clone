@@ -1,6 +1,11 @@
 
-import { useState, useMemo } from 'react';
-import { useDatabaseTableView } from '@/hooks/useDatabaseTableView';
+import { useState, useMemo, useCallback } from 'react';
+import { useQueryClient, useMutation } from '@tanstack/react-query';
+import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
+import { PageService } from '@/services/pageService';
+import { PagePropertyService } from '@/services/pagePropertyService';
+import { useFilteredDatabasePagesQuery } from '@/hooks/useFilteredDatabasePagesQuery';
 import { useOptimisticDatabaseFields } from '@/hooks/useOptimisticDatabaseFields';
 import { useEnhancedDatabaseFieldOperations } from '@/hooks/useEnhancedDatabaseFieldOperations';
 import { useUserProfiles } from '@/hooks/useUserProfiles';
@@ -8,6 +13,7 @@ import { createMultiLevelGroups } from '@/utils/multiLevelGrouping';
 import { DatabaseField } from '@/types/database';
 import { FilterGroup } from '@/types/filters';
 import { SortRule } from '@/components/database/SortingModal';
+import { Page } from '@/types/page';
 
 interface UseDatabaseTableDataProps {
   databaseId: string;
@@ -20,11 +26,24 @@ interface UseDatabaseTableDataProps {
   collapsedGroups?: string[];
 }
 
+interface PageWithProperties {
+  id: string;
+  title: string;
+  workspace_id: string;
+  database_id: string | null;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+  parent_page_id: string | null;
+  order_index: number;
+  properties: Record<string, string>;
+}
+
 export function useDatabaseTableData({
-  databaseId, 
-  workspaceId, 
-  fields: propFields, 
-  filterGroup, 
+  databaseId,
+  workspaceId,
+  fields: propFields,
+  filterGroup,
   sortRules,
   onFieldsChange,
   groupingConfig,
@@ -32,6 +51,9 @@ export function useDatabaseTableData({
 }: UseDatabaseTableDataProps) {
   const [enablePagination, setEnablePagination] = useState(false);
   const [itemsPerPage, setItemsPerPage] = useState(50);
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const { userProfiles } = useUserProfiles(workspaceId);
 
@@ -63,25 +85,152 @@ export function useDatabaseTableData({
   }, [optimisticFields, propFields, databaseId]);
 
   const {
-    pagesWithProperties,
-    pagesLoading,
-    pagesError,
-    refetchPages,
-    handleCreateRow,
-    handleDeleteRow,
-    handleTitleUpdate,
-    handlePropertyUpdate,
-    pagination,
-    totalPages,
-  } = useDatabaseTableView({
+    pages,
+    loading: pagesLoading,
+    error: pagesError,
+    refetch: refetchPages,
+    queryKey,
+  } = useFilteredDatabasePagesQuery({
     databaseId,
-    workspaceId,
     filterGroup,
     fields: fieldsToUse,
     sortRules,
-    enablePagination,
-    itemsPerPage,
-    enableVirtualScrolling: false
+    enabled: !!databaseId
+  });
+
+  const pagesWithProperties: PageWithProperties[] = useMemo(() => {
+    return pages.map(page => {
+      const properties: Record<string, string> = {};
+      if (page.page_properties && Array.isArray(page.page_properties)) {
+        page.page_properties.forEach((prop) => {
+          if (prop.field_id && prop.value !== undefined) {
+            properties[prop.field_id] = prop.value || '';
+          }
+        });
+      }
+      return {
+        id: page.id,
+        title: page.title,
+        workspace_id: page.workspace_id,
+        database_id: page.database_id,
+        created_by: page.created_by,
+        created_at: page.created_at,
+        updated_at: page.updated_at,
+        parent_page_id: page.parent_page_id,
+        order_index: page.order_index,
+        properties,
+      };
+    });
+  }, [pages]);
+
+  const { mutateAsync: createRowMutation } = useMutation({
+    mutationFn: async ({ title = 'Untitled' }: { title?: string }) => {
+      if (!user) throw new Error('User not authenticated');
+      const { data, error } = await PageService.createPage(workspaceId, user.id, { title, databaseId });
+      if (error) throw new Error(error);
+      return data;
+    },
+    onSuccess: () => {
+      toast({ title: "Success", description: "New row created." });
+      queryClient.invalidateQueries({ queryKey: ['database-pages', databaseId] });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Error", description: error.message || "Failed to create row.", variant: "destructive" });
+    },
+  });
+
+  const handleCreateRow = useCallback(async () => {
+    await createRowMutation({ title: 'Untitled' });
+  }, [createRowMutation]);
+  
+  const { mutate: handleDeleteRow } = useMutation({
+    mutationFn: (pageId: string) => PageService.deletePage(pageId),
+    onMutate: async (pageId: string) => {
+      await queryClient.cancelQueries({ queryKey });
+      const previousData = queryClient.getQueryData(queryKey);
+      queryClient.setQueryData(queryKey, (old: any) => ({
+        ...old,
+        data: old?.data?.filter((p: Page) => p.id !== pageId) || []
+      }));
+      return { previousData };
+    },
+    onError: (err, pageId, context) => {
+      if (context?.previousData) {
+        queryClient.setQueryData(queryKey, context.previousData);
+      }
+      toast({ title: "Error", description: "Failed to delete row.", variant: "destructive" });
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey });
+    }
+  });
+
+  const { mutate: handleTitleUpdate } = useMutation({
+    mutationFn: ({ pageId, newTitle }: { pageId: string, newTitle: string }) => PageService.updatePage(pageId, { title: newTitle }),
+    onMutate: async ({ pageId, newTitle }) => {
+      await queryClient.cancelQueries({ queryKey });
+      const previousData = queryClient.getQueryData(queryKey);
+      queryClient.setQueryData(queryKey, (old: any) => ({
+        ...old,
+        data: old?.data?.map((p: Page) => p.id === pageId ? { ...p, title: newTitle, updated_at: new Date().toISOString() } : p) || []
+      }));
+      return { previousData };
+    },
+    onError: (err, vars, context) => {
+      if (context?.previousData) {
+        queryClient.setQueryData(queryKey, context.previousData);
+      }
+      toast({ title: "Error", description: "Failed to update title.", variant: "destructive" });
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey });
+    }
+  });
+
+  const { mutate: handlePropertyUpdate } = useMutation({
+    mutationFn: ({ pageId, fieldId, value }: { pageId: string, fieldId: string, value: string }) => {
+        if (!user) throw new Error('User not authenticated');
+        return PagePropertyService.upsertPageProperty(pageId, fieldId, value, user.id);
+    },
+    onMutate: async ({ pageId, fieldId, value }) => {
+        await queryClient.cancelQueries({ queryKey });
+        const previousData = queryClient.getQueryData(queryKey);
+        queryClient.setQueryData(queryKey, (old: any) => {
+            if (!old?.data) return old;
+            return {
+                ...old,
+                data: old.data.map((page: Page) => {
+                    if (page.id !== pageId) return page;
+                    const newProperties = [...(page.page_properties || [])];
+                    const propIndex = newProperties.findIndex(p => p.field_id === fieldId);
+                    if (propIndex > -1) {
+                        newProperties[propIndex] = { ...newProperties[propIndex], value };
+                    } else {
+                        newProperties.push({
+                            id: `temp-${Date.now()}`,
+                            page_id: pageId,
+                            field_id: fieldId,
+                            value,
+                            created_by: user?.id || '',
+                            created_at: new Date().toISOString(),
+                            updated_at: new Date().toISOString(),
+                        });
+                    }
+                    return { ...page, page_properties: newProperties, updated_at: new Date().toISOString() };
+                })
+            };
+        });
+        return { previousData };
+    },
+    onError: (err, vars, context) => {
+        if (context?.previousData) {
+            queryClient.setQueryData(queryKey, context.previousData);
+        }
+        toast({ title: "Error", description: "Failed to update property.", variant: "destructive" });
+    },
+    onSettled: () => {
+        queryClient.invalidateQueries({ queryKey });
+    }
   });
 
   const groupedData = useMemo(() => {
@@ -130,11 +279,11 @@ export function useDatabaseTableData({
     pagesError,
     refetchPages,
     handleCreateRow,
-    handleDeleteRow,
-    handleTitleUpdate,
-    handlePropertyUpdate,
-    pagination,
-    totalPages,
+    handleDeleteRow: (pageId: string) => handleDeleteRow(pageId),
+    handleTitleUpdate: (pageId: string, newTitle: string) => handleTitleUpdate({ pageId, newTitle }),
+    handlePropertyUpdate: (pageId: string, fieldId: string, value: string) => handlePropertyUpdate({ pageId, fieldId, value }),
+    pagination: null, // Simplified for now
+    totalPages: enablePagination ? Math.ceil(pages.length / itemsPerPage) : 1,
     itemsPerPage,
     handleItemsPerPageChange,
     handleFieldReorder,

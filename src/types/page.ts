@@ -1,13 +1,23 @@
+
 export interface Page {
   id: string;
   workspace_id: string;
-  parent_page_id?: string;
-  database_id?: string;
+  parent_page_id?: string | null;
+  database_id?: string | null;
   title: string;
   created_by: string;
   order_index: number;
   created_at: string;
   updated_at: string;
+  page_properties?: {
+    id: string;
+    page_id: string;
+    field_id: string;
+    value: string;
+    created_by: string;
+    created_at: string;
+    updated_at: string;
+  }[];
 }
 
 export interface PageCreateRequest {

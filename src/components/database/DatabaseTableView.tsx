@@ -4,7 +4,6 @@ import { useDatabaseTableData } from '@/hooks/useDatabaseTableData';
 import { DatabaseTableViewContent } from './table/DatabaseTableViewContent';
 import { GroupedTableView } from './grouping/GroupedTableView';
 import { ManagePropertiesModal } from './fields/ManagePropertiesModal';
-import { useColumnResizing } from './table/hooks/useColumnResizing';
 import { DatabaseField } from '@/types/database';
 import { FilterGroup } from '@/types/filters';
 import { SortRule } from '@/components/database/SortingModal';
@@ -68,25 +67,6 @@ export function DatabaseTableView({
     collapsedGroups,
   });
 
-  const {
-    getColumnWidth,
-    updateColumnWidth,
-    resetColumnWidth,
-    resetAllWidths
-  } = useColumnResizing({
-    defaultWidths: {
-      checkbox: 48,
-      title: 280,
-      actions: 64,
-      ...fieldsToUse.reduce((acc, field) => ({
-        ...acc,
-        [field.id]: 200
-      }), {})
-    },
-    minWidth: 120,
-    maxWidth: 600
-  });
-
   if (hasGrouping && groupedData.length > 0) {
     return (
       <>
@@ -97,7 +77,7 @@ export function DatabaseTableView({
           onTitleUpdate={handleTitleUpdate}
           onPropertyUpdate={handlePropertyUpdate}
           workspaceId={workspaceId}
-          getColumnWidth={getColumnWidth}
+          getColumnWidth={() => 200} // Simplified, consider passing down resizing hooks if needed
           userProfiles={userProfiles}
           allFields={fieldsToUse}
         />
@@ -135,7 +115,10 @@ export function DatabaseTableView({
           ...pagination,
           totalItems: totalPages,
           itemsPerPage: itemsPerPage,
-          prevPage: pagination.previousPage
+          prevPage: () => {},
+          nextPage: () => {},
+          goToPage: () => {},
+          currentPage: 1,
         } : null}
         totalPages={totalPages}
         databaseId={databaseId}
