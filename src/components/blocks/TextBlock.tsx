@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Block } from '@/hooks/useBlocks';
+import { Block } from '@/types/block';
 import { Button } from '@/components/ui/button';
 import { Trash2 } from 'lucide-react';
 import { CrdtTextEditor } from './CrdtTextEditor';
@@ -9,12 +9,13 @@ import { useComments } from '@/hooks/useComments';
 
 interface TextBlockProps {
   block: Block;
+  pageId: string;
   onUpdate: (content: any) => Promise<void>;
   onDelete: () => Promise<void>;
   isEditable: boolean;
 }
 
-export function TextBlock({ block, onUpdate, onDelete, isEditable }: TextBlockProps) {
+export function TextBlock({ block, pageId, onUpdate, onDelete, isEditable }: TextBlockProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [isCommentPanelOpen, setIsCommentPanelOpen] = useState(false);
   const { comments } = useComments(block.id);
@@ -69,7 +70,7 @@ export function TextBlock({ block, onUpdate, onDelete, isEditable }: TextBlockPr
     >
       <div className="flex-1">
         <CrdtTextEditor
-          pageId={block.page_id}
+          pageId={pageId}
           blockId={block.id}
           initialContent={textContent}
           onContentChange={handleContentChange}

@@ -36,7 +36,7 @@ export function useBlockOperations(workspaceId?: string, parentId?: string | nul
         query = query.eq('parent_id', parentId);
       }
 
-      const { data, error } = await query.order('created_time', { ascending: true });
+      const { data, error } = await query.order('pos', { ascending: true });
 
       if (error) throw error;
       setBlocks(data || []);
@@ -64,6 +64,7 @@ export function useBlockOperations(workspaceId?: string, parentId?: string | nul
         type: params.type || 'text',
         properties: params.properties || {},
         content: params.content || null,
+        pos: params.pos ?? blocks.length,
         created_time: new Date().toISOString(),
         last_edited_time: new Date().toISOString(),
         created_by: user.id,
@@ -86,6 +87,7 @@ export function useBlockOperations(workspaceId?: string, parentId?: string | nul
           content: newBlockData.content,
           created_by: user.id,
           last_edited_by: user.id,
+          pos: newBlockData.pos,
         })
         .select()
         .single();

@@ -1,14 +1,15 @@
 
 import React from 'react';
 import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
-import { Block } from '@/hooks/useBlocks';
+import { Block } from '@/types/block';
 import { BlockRenderer } from './BlockRenderer';
 
 interface DraggableBlockListProps {
   blocks: Block[];
+  pageId: string;
   onUpdateBlock: (id: string, updates: any) => Promise<void>;
   onDeleteBlock: (id: string) => Promise<void>;
-  onCreateBlock?: (type: string, content?: any, parentBlockId?: string) => Promise<void>;
+  onCreateBlock?: (params: any) => Promise<void>;
   isEditable: boolean;
   childBlocks?: Block[];
   parentBlockId?: string;
@@ -16,6 +17,7 @@ interface DraggableBlockListProps {
 
 export function DraggableBlockList({
   blocks,
+  pageId,
   onUpdateBlock,
   onDeleteBlock,
   onCreateBlock,
@@ -56,6 +58,7 @@ export function DraggableBlockList({
           <BlockRenderer
             key={block.id}
             block={block}
+            pageId={pageId}
             onUpdateBlock={onUpdateBlock}
             onDeleteBlock={onDeleteBlock}
             onCreateBlock={onCreateBlock}
@@ -104,6 +107,7 @@ export function DraggableBlockList({
                   >
                     <BlockRenderer
                       block={block}
+                      pageId={pageId}
                       onUpdateBlock={onUpdateBlock}
                       onDeleteBlock={onDeleteBlock}
                       onCreateBlock={onCreateBlock}

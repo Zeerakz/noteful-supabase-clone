@@ -31,7 +31,7 @@ export function DatabaseView({ workspaceId }: DatabaseViewProps) {
     deleteField,
     duplicateField,
     reorderFields
-  } = useDatabaseFields(databaseId!, workspaceId);
+  } = useDatabaseFields(databaseId, workspaceId);
 
   // View selection state
   const { 

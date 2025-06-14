@@ -1,6 +1,5 @@
-
 import React, { useState } from 'react';
-import { Block } from '@/hooks/useBlocks';
+import { Block } from '@/types/block';
 import { Button } from '@/components/ui/button';
 import { Trash2 } from 'lucide-react';
 import { CommentIcon } from './CommentIcon';
@@ -12,12 +11,13 @@ import { FileDisplay } from './FileDisplay';
 
 interface FileAttachmentBlockProps {
   block: Block;
+  pageId: string;
   onUpdate: (content: any) => Promise<void>;
   onDelete: () => Promise<void>;
   isEditable: boolean;
 }
 
-export function FileAttachmentBlock({ block, onUpdate, onDelete, isEditable }: FileAttachmentBlockProps) {
+export function FileAttachmentBlock({ block, pageId, onUpdate, onDelete, isEditable }: FileAttachmentBlockProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [isCommentPanelOpen, setIsCommentPanelOpen] = useState(false);
   const { comments } = useComments(block.id);
@@ -29,7 +29,7 @@ export function FileAttachmentBlock({ block, onUpdate, onDelete, isEditable }: F
     uploadFile,
     downloadFile,
     removeFile,
-  } = useFileAttachment(block.id, block.page_id);
+  } = useFileAttachment(block.id, pageId);
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];

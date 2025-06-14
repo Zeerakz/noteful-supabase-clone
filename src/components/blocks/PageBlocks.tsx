@@ -1,15 +1,17 @@
 
 import React from 'react';
-import { useEnhancedBlocks } from '@/hooks/useEnhancedBlocks';
+import { useBlockOperations } from '@/hooks/blocks/useBlockOperations';
 import { DraggableBlockList } from './DraggableBlockList';
+import { Block } from '@/types/block';
 
 interface PageBlocksProps {
+  workspaceId: string;
   pageId: string;
   isEditable?: boolean;
 }
 
-export function PageBlocks({ pageId, isEditable = false }: PageBlocksProps) {
-  const { blocks, loading, error, createBlock, updateBlock, deleteBlock } = useEnhancedBlocks(pageId);
+export function PageBlocks({ workspaceId, pageId, isEditable = false }: PageBlocksProps) {
+  const { blocks, loading, error, createBlock, updateBlock, deleteBlock } = useBlockOperations(workspaceId, pageId);
 
   const handleUpdateBlock = async (id: string, updates: any) => {
     await updateBlock(id, updates);
@@ -19,8 +21,8 @@ export function PageBlocks({ pageId, isEditable = false }: PageBlocksProps) {
     await deleteBlock(id);
   };
 
-  const handleCreateBlock = async (type: string, content?: any, parentBlockId?: string) => {
-    await createBlock(type, content, parentBlockId);
+  const handleCreateBlock = async (params: Partial<Block>) => {
+    await createBlock(params);
   };
 
   if (loading) {
@@ -43,7 +45,7 @@ export function PageBlocks({ pageId, isEditable = false }: PageBlocksProps) {
     );
   }
 
-  if (blocks.length === 0) {
+  if (blocks.length === 0 && !loading) {
     return (
       <div className="p-4 text-center text-gray-500">
         {isEditable ? 'No blocks yet. Start adding content!' : 'This page is empty.'}
@@ -51,13 +53,13 @@ export function PageBlocks({ pageId, isEditable = false }: PageBlocksProps) {
     );
   }
 
-  // Filter blocks by parent relationship
-  const parentBlocks = blocks.filter(block => !block.parent_block_id);
-  const childBlocks = blocks.filter(block => block.parent_block_id);
+  const parentBlocks = blocks.filter(block => block.parent_id === pageId);
+  const childBlocks = blocks.filter(block => block.parent_id && block.parent_id !== pageId);
 
   return (
     <DraggableBlockList
       blocks={parentBlocks}
+      pageId={pageId}
       onUpdateBlock={handleUpdateBlock}
       onDeleteBlock={handleDeleteBlock}
       onCreateBlock={handleCreateBlock}

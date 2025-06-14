@@ -1,6 +1,5 @@
-
 import React from 'react';
-import { Block } from '@/hooks/useBlocks';
+import { Block } from '@/types/block';
 import { BlockRenderer } from './BlockRenderer';
 import { ResizableBlock } from './ResizableBlock';
 import { Button } from '@/components/ui/button';
@@ -8,6 +7,7 @@ import { Trash2 } from 'lucide-react';
 
 interface TwoColumnBlockProps {
   block: Block;
+  pageId: string;
   onUpdateBlock: (id: string, updates: any) => Promise<void>;
   onDeleteBlock: (id: string) => Promise<void>;
   isEditable: boolean;
@@ -16,6 +16,7 @@ interface TwoColumnBlockProps {
 
 export function TwoColumnBlock({ 
   block, 
+  pageId,
   onUpdateBlock, 
   onDeleteBlock, 
   isEditable,
@@ -23,11 +24,11 @@ export function TwoColumnBlock({
 }: TwoColumnBlockProps) {
   // Get child blocks for each column
   const leftColumnBlocks = childBlocks.filter(
-    child => child.parent_block_id === block.id && child.content?.column === 'left'
+    child => child.parent_id === block.id && child.content?.column === 'left'
   );
   
   const rightColumnBlocks = childBlocks.filter(
-    child => child.parent_block_id === block.id && child.content?.column === 'right'
+    child => child.parent_id === block.id && child.content?.column === 'right'
   );
 
   const handleDelete = async () => {
@@ -54,9 +55,11 @@ export function TwoColumnBlock({
           <BlockRenderer
             key={childBlock.id}
             block={childBlock}
+            pageId={pageId}
             onUpdateBlock={onUpdateBlock}
             onDeleteBlock={onDeleteBlock}
             isEditable={isEditable}
+            childBlocks={childBlocks}
           />
         ))
       ) : (
@@ -75,9 +78,11 @@ export function TwoColumnBlock({
           <BlockRenderer
             key={childBlock.id}
             block={childBlock}
+            pageId={pageId}
             onUpdateBlock={onUpdateBlock}
             onDeleteBlock={onDeleteBlock}
             isEditable={isEditable}
+            childBlocks={childBlocks}
           />
         ))
       ) : (

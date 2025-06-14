@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Block } from '@/hooks/useBlocks';
+import { Block } from '@/types/block';
 import { TextBlock } from './TextBlock';
 import { HeadingBlock } from './HeadingBlock';
 import { ListBlock } from './ListBlock';
@@ -16,14 +16,15 @@ import { FileAttachmentBlock } from './FileAttachmentBlock';
 
 interface BlockRendererProps {
   block: Block;
+  pageId: string;
   onUpdateBlock: (id: string, updates: any) => Promise<void>;
   onDeleteBlock: (id: string) => Promise<void>;
-  onCreateBlock?: (type: string, content?: any, parentBlockId?: string) => Promise<void>;
+  onCreateBlock?: (params: any) => Promise<void>;
   isEditable: boolean;
   childBlocks?: Block[];
 }
 
-export function BlockRenderer({ block, onUpdateBlock, onDeleteBlock, onCreateBlock, isEditable, childBlocks = [] }: BlockRendererProps) {
+export function BlockRenderer({ block, pageId, onUpdateBlock, onDeleteBlock, onCreateBlock, isEditable, childBlocks = [] }: BlockRendererProps) {
   const handleContentUpdate = async (content: any) => {
     await onUpdateBlock(block.id, { content });
   };
@@ -37,14 +38,15 @@ export function BlockRenderer({ block, onUpdateBlock, onDeleteBlock, onCreateBlo
       return (
         <TextBlock
           block={block}
+          pageId={pageId}
           onUpdate={handleContentUpdate}
           onDelete={handleDelete}
           isEditable={isEditable}
         />
       );
-    case 'heading1':
-    case 'heading2':
-    case 'heading3':
+    case 'heading_1':
+    case 'heading_2':
+    case 'heading_3':
       return (
         <HeadingBlock
           block={block}
@@ -53,8 +55,8 @@ export function BlockRenderer({ block, onUpdateBlock, onDeleteBlock, onCreateBlo
           isEditable={isEditable}
         />
       );
-    case 'bullet_list':
-    case 'numbered_list':
+    case 'bulleted_list_item':
+    case 'numbered_list_item':
       return (
         <ListBlock
           block={block}
@@ -76,6 +78,7 @@ export function BlockRenderer({ block, onUpdateBlock, onDeleteBlock, onCreateBlo
       return (
         <TwoColumnBlock
           block={block}
+          pageId={pageId}
           onUpdateBlock={onUpdateBlock}
           onDeleteBlock={onDeleteBlock}
           isEditable={isEditable}
@@ -118,10 +121,11 @@ export function BlockRenderer({ block, onUpdateBlock, onDeleteBlock, onCreateBlo
           isEditable={isEditable}
         />
       );
-    case 'toggle':
+    case 'toggle_list':
       return (
         <ToggleBlock
           block={block}
+          pageId={pageId}
           onUpdate={handleContentUpdate}
           onDelete={handleDelete}
           onUpdateBlock={onUpdateBlock}
@@ -144,6 +148,7 @@ export function BlockRenderer({ block, onUpdateBlock, onDeleteBlock, onCreateBlo
       return (
         <FileAttachmentBlock
           block={block}
+          pageId={pageId}
           onUpdate={handleContentUpdate}
           onDelete={handleDelete}
           isEditable={isEditable}

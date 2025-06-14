@@ -1,6 +1,5 @@
-
 import React, { useState } from 'react';
-import { Block } from '@/hooks/useBlocks';
+import { Block } from '@/types/block';
 import { Button } from '@/components/ui/button';
 import { Trash2, ChevronRight, ChevronDown, Plus } from 'lucide-react';
 import { RichTextEditor } from './RichTextEditor';
@@ -11,17 +10,19 @@ import { useComments } from '@/hooks/useComments';
 
 interface ToggleBlockProps {
   block: Block;
+  pageId: string;
   onUpdate: (content: any) => Promise<void>;
   onDelete: () => Promise<void>;
   onUpdateBlock: (id: string, updates: any) => Promise<void>;
   onDeleteBlock: (id: string) => Promise<void>;
-  onCreateBlock?: (type: string, content?: any, parentBlockId?: string) => Promise<void>;
+  onCreateBlock?: (params: any) => Promise<void>;
   isEditable: boolean;
   childBlocks?: Block[];
 }
 
 export function ToggleBlock({ 
   block, 
+  pageId,
   onUpdate, 
   onDelete, 
   onUpdateBlock,
@@ -57,7 +58,7 @@ export function ToggleBlock({
 
   const handleAddChildBlock = async () => {
     if (onCreateBlock) {
-      await onCreateBlock('text', {}, block.id);
+      await onCreateBlock({ type: 'text', parent_id: block.id });
     }
   };
 
@@ -69,7 +70,7 @@ export function ToggleBlock({
   };
 
   // Get child blocks that belong to this toggle block
-  const toggleChildBlocks = childBlocks.filter(child => child.parent_block_id === block.id);
+  const toggleChildBlocks = childBlocks.filter(child => child.parent_id === block.id);
 
   if (!isEditable) {
     return (
@@ -95,6 +96,7 @@ export function ToggleBlock({
               <BlockRenderer
                 key={childBlock.id}
                 block={childBlock}
+                pageId={pageId}
                 onUpdateBlock={onUpdateBlock}
                 onDeleteBlock={onDeleteBlock}
                 onCreateBlock={onCreateBlock}
@@ -144,6 +146,7 @@ export function ToggleBlock({
               <BlockRenderer
                 key={childBlock.id}
                 block={childBlock}
+                pageId={pageId}
                 onUpdateBlock={onUpdateBlock}
                 onDeleteBlock={onDeleteBlock}
                 onCreateBlock={onCreateBlock}

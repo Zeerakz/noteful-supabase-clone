@@ -1,7 +1,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { Trash2 } from 'lucide-react';
-import { Block } from '@/hooks/useBlocks';
+import { Block } from '@/types/block';
 import { Button } from '@/components/ui/button';
 
 interface HeadingBlockProps {
@@ -41,11 +41,11 @@ export function HeadingBlock({ block, onUpdate, onDelete, isEditable }: HeadingB
 
   const getHeadingStyle = () => {
     switch (block.type) {
-      case 'heading1':
+      case 'heading_1':
         return 'text-3xl font-bold';
-      case 'heading2':
+      case 'heading_2':
         return 'text-2xl font-semibold';
-      case 'heading3':
+      case 'heading_3':
         return 'text-xl font-medium';
       default:
         return 'text-lg font-medium';

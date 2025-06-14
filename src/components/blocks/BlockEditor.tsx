@@ -1,213 +1,82 @@
-
 import React, { useState, useRef, useEffect } from 'react';
-import { Plus, Type, Heading1, Heading2, Heading3, List, ListOrdered, Image, Table, Minus, Quote, MessageSquare, ChevronRight, Globe, Paperclip } from 'lucide-react';
+import { Plus, Type, Heading1, Heading2, Heading3, List, ListOrdered, Image, Table, Minus, Quote, MessageSquare, ChevronRight, Globe, Paperclip, Columns } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { BlockRenderer } from './BlockRenderer';
 import { SlashMenu } from './SlashMenu';
-import { useBlocks } from '@/hooks/useBlocks';
+import { useBlockOperations } from '@/hooks/blocks/useBlockOperations';
 import { useSlashMenu } from '@/hooks/useSlashMenu';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { PageDuplicationService } from '@/services/pageDuplicationService';
 import { useNavigate } from 'react-router-dom';
+import { Block } from '@/types/block';
 
 interface BlockEditorProps {
   pageId: string;
   isEditable: boolean;
-  workspaceId?: string;
+  workspaceId: string;
 }
 
 export function BlockEditor({ pageId, isEditable, workspaceId }: BlockEditorProps) {
-  const { blocks, loading, createBlock, updateBlock, deleteBlock } = useBlocks(pageId);
+  const { blocks, loading, createBlock, updateBlock, deleteBlock } = useBlockOperations(workspaceId, pageId);
   const { toast } = useToast();
   const { user } = useAuth();
   const navigate = useNavigate();
   const editorRef = useRef<HTMLDivElement>(null);
-  const [focusedBlockId, setFocusedBlockId] = useState<string | null>(null);
 
-  const { isOpen, position, searchTerm, openSlashMenu, closeSlashMenu, updateSearchTerm, handleSelectItem } = useSlashMenu({
-    onSelectCommand: handleCreateBlock,
-  });
-
-  async function handleCreateBlock(type: string, content?: any, parentBlockId?: string) {
-    if (type === 'from_template') {
+  const handleCreateBlock = async (params: Partial<Block>) => {
+    if (params.type === 'from_template') {
       if (!workspaceId) {
-        toast({
-          title: "Error",
-          description: "Workspace not found",
-          variant: "destructive",
-        });
+        toast({ title: "Error", description: "Workspace not found", variant: "destructive" });
         return;
       }
-
-      // Navigate to templates page
       navigate(`/workspace/${workspaceId}/templates`);
       return;
     }
 
-    if (type === 'duplicate_page') {
+    if (params.type === 'duplicate_page') {
       if (!user || !workspaceId) {
-        toast({
-          title: "Error",
-          description: "Unable to duplicate page - user not authenticated or workspace not found",
-          variant: "destructive",
-        });
+        toast({ title: "Error", description: "Unable to duplicate page - user not authenticated or workspace not found", variant: "destructive" });
         return;
       }
-
       try {
         const { data: newPage, error } = await PageDuplicationService.duplicatePage(pageId, user.id);
-        
         if (error) {
-          toast({
-            title: "Error",
-            description: error,
-            variant: "destructive",
-          });
+          toast({ title: "Error", description: error, variant: "destructive" });
           return;
         }
-
         if (newPage) {
-          toast({
-            title: "Success",
-            description: "Page duplicated successfully",
-          });
-          
-          // Navigate to the new page
+          toast({ title: "Success", description: "Page duplicated successfully" });
           navigate(`/workspace/${workspaceId}/page/${newPage.id}`);
         }
       } catch (err) {
-        toast({
-          title: "Error",
-          description: "Failed to duplicate page",
-          variant: "destructive",
-        });
+        toast({ title: "Error", description: "Failed to duplicate page", variant: "destructive" });
       }
       return;
     }
-
-    if (type === 'two_column') {
-      const { data: containerBlock, error: containerError } = await createBlock('two_column', {}, parentBlockId);
-      
-      if (containerError) {
-        toast({
-          title: "Error",
-          description: containerError,
-          variant: "destructive",
-        });
-        return;
-      }
-
-      if (containerBlock) {
-        const { error: leftError } = await createBlock('text', { column: 'left' }, containerBlock.id);
-        const { error: rightError } = await createBlock('text', { column: 'right' }, containerBlock.id);
-        
-        if (leftError || rightError) {
-          toast({
-            title: "Error",
-            description: leftError || rightError || "Failed to create column blocks",
-            variant: "destructive",
-          });
-        }
-      }
-    } else if (type === 'callout') {
-      const { error } = await createBlock(type, { 
-        type: 'info', 
-        emoji: '💡', 
-        text: '' 
-      }, parentBlockId);
-      
-      if (error) {
-        toast({
-          title: "Error",
-          description: error,
-          variant: "destructive",
-        });
-      }
-    } else if (type === 'toggle') {
-      const { error } = await createBlock(type, { 
-        title: '', 
-        expanded: true 
-      }, parentBlockId);
-      
-      if (error) {
-        toast({
-          title: "Error",
-          description: error,
-          variant: "destructive",
-        });
-      }
-    } else if (type === 'embed') {
-      const { error } = await createBlock(type, { 
-        url: '' 
-      }, parentBlockId);
-      
-      if (error) {
-        toast({
-          title: "Error",
-          description: error,
-          variant: "destructive",
-        });
-      }
-    } else if (type === 'file_attachment') {
-      const { error } = await createBlock(type, {}, parentBlockId);
-      
-      if (error) {
-        toast({
-          title: "Error",
-          description: error,
-          variant: "destructive",
-        });
-      }
-    } else if (type === 'table') {
-      const { error } = await createBlock(type, {
-        rows: 3,
-        cols: 3,
-        data: Array(3).fill(null).map(() => Array(3).fill(''))
-      }, parentBlockId);
-      
-      if (error) {
-        toast({
-          title: "Error",
-          description: error,
-          variant: "destructive",
-        });
-      }
-    } else {
-      const { error } = await createBlock(type, content || {}, parentBlockId);
-      
-      if (error) {
-        toast({
-          title: "Error",
-          description: error,
-          variant: "destructive",
-        });
-      }
+    
+    const { error } = await createBlock(params);
+    if (error) {
+      toast({ title: "Error", description: error, variant: "destructive" });
     }
-  }
+  };
+
+  const { isOpen, position, searchTerm, openSlashMenu, closeSlashMenu, updateSearchTerm, handleSelectItem } = useSlashMenu({
+    onSelectCommand: (type: string) => handleCreateBlock({ type }),
+  });
 
   const handleUpdateBlock = async (id: string, updates: any) => {
     const { error } = await updateBlock(id, updates);
-    
     if (error) {
-      toast({
-        title: "Error",
-        description: error,
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: error, variant: "destructive" });
     }
   };
 
   const handleDeleteBlock = async (id: string) => {
     const { error } = await deleteBlock(id);
-    
     if (error) {
-      toast({
-        title: "Error",
-        description: error,
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: error, variant: "destructive" });
     }
   };
 
@@ -311,22 +180,21 @@ export function BlockEditor({ pageId, isEditable, workspaceId }: BlockEditorProp
     );
   }
 
-  const parentBlocks = blocks.filter(block => !block.parent_block_id);
-  const childBlocks = blocks.filter(block => block.parent_block_id);
+  const parentBlocks = blocks.filter(block => block.parent_id === pageId);
+  const childBlocks = blocks.filter(block => block.parent_id && block.parent_id !== pageId);
 
   return (
     <div className="space-y-2 p-4" ref={editorRef}>
       {parentBlocks.map((block) => (
-        <div 
-          key={block.id} 
+        <div
+          key={block.id}
           className={`transition-opacity ${
             block.id.startsWith('temp-') ? 'opacity-60' : 'opacity-100'
           }`}
-          onFocus={() => setFocusedBlockId(block.id)}
-          onBlur={() => setFocusedBlockId(null)}
         >
           <BlockRenderer
             block={block}
+            pageId={pageId}
             onUpdateBlock={handleUpdateBlock}
             onDeleteBlock={handleDeleteBlock}
             onCreateBlock={handleCreateBlock}
@@ -346,59 +214,63 @@ export function BlockEditor({ pageId, isEditable, workspaceId }: BlockEditorProp
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent>
-              <DropdownMenuItem onClick={() => handleCreateBlock('text')} data-cy="text-block-option">
+              <DropdownMenuItem onClick={() => handleCreateBlock({ type: 'text' })} data-cy="text-block-option">
                 <Type className="h-4 w-4 mr-2" />
                 Text
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleCreateBlock('heading1')}>
+              <DropdownMenuItem onClick={() => handleCreateBlock({ type: 'heading_1' })}>
                 <Heading1 className="h-4 w-4 mr-2" />
                 Heading 1
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleCreateBlock('heading2')}>
+              <DropdownMenuItem onClick={() => handleCreateBlock({ type: 'heading_2' })}>
                 <Heading2 className="h-4 w-4 mr-2" />
                 Heading 2
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleCreateBlock('heading3')}>
+              <DropdownMenuItem onClick={() => handleCreateBlock({ type: 'heading_3' })}>
                 <Heading3 className="h-4 w-4 mr-2" />
                 Heading 3
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleCreateBlock('bullet_list')}>
+              <DropdownMenuItem onClick={() => handleCreateBlock({ type: 'bulleted_list_item' })}>
                 <List className="h-4 w-4 mr-2" />
                 Bullet List
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleCreateBlock('numbered_list')}>
+              <DropdownMenuItem onClick={() => handleCreateBlock({ type: 'numbered_list_item' })}>
                 <ListOrdered className="h-4 w-4 mr-2" />
                 Numbered List
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleCreateBlock('quote')}>
+              <DropdownMenuItem onClick={() => handleCreateBlock({ type: 'quote' })}>
                 <Quote className="h-4 w-4 mr-2" />
                 Quote
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleCreateBlock('callout')}>
+              <DropdownMenuItem onClick={() => handleCreateBlock({ type: 'callout' })}>
                 <MessageSquare className="h-4 w-4 mr-2" />
                 Callout
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleCreateBlock('toggle')}>
+              <DropdownMenuItem onClick={() => handleCreateBlock({ type: 'toggle_list' })}>
                 <ChevronRight className="h-4 w-4 mr-2" />
                 Toggle
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleCreateBlock('image')}>
+              <DropdownMenuItem onClick={() => handleCreateBlock({ type: 'image' })}>
                 <Image className="h-4 w-4 mr-2" />
                 Image
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleCreateBlock('table')}>
+              <DropdownMenuItem onClick={() => handleCreateBlock({ type: 'two_column' })}>
+                <Columns className="h-4 w-4 mr-2" />
+                Two Column
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleCreateBlock({ type: 'table' })}>
                 <Table className="h-4 w-4 mr-2" />
                 Table
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleCreateBlock('divider')}>
+              <DropdownMenuItem onClick={() => handleCreateBlock({ type: 'divider' })}>
                 <Minus className="h-4 w-4 mr-2" />
                 Divider
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleCreateBlock('file_attachment')}>
+              <DropdownMenuItem onClick={() => handleCreateBlock({ type: 'file_attachment' })}>
                 <Paperclip className="h-4 w-4 mr-2" />
                 File Attachment
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleCreateBlock('embed')}>
+              <DropdownMenuItem onClick={() => handleCreateBlock({ type: 'embed' })}>
                 <Globe className="h-4 w-4 mr-2" />
                 Embed
               </DropdownMenuItem>

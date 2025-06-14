@@ -34,7 +34,7 @@ export function RelationFieldDisplay({ value, settings }: RelationFieldDisplayPr
 
   useEffect(() => {
     const fetchRelatedPages = async () => {
-      if (!value || !settings.target_database_id) {
+      if (!value || (Array.isArray(value) && value.length === 0)) {
         setRelatedPages([]);
         return;
       }
@@ -44,10 +44,10 @@ export function RelationFieldDisplay({ value, settings }: RelationFieldDisplayPr
         const valueArray = Array.isArray(value) ? value : [value];
         
         const { data, error } = await supabase
-          .from('pages')
+          .from('blocks')
           .select('*')
           .in('id', valueArray)
-          .eq('database_id', settings.target_database_id);
+          .eq('type', 'page');
 
         if (error) throw error;
         setRelatedPages(data || []);
@@ -71,7 +71,7 @@ export function RelationFieldDisplay({ value, settings }: RelationFieldDisplayPr
   }
 
   const getDisplayText = (page: Page) => {
-    return page.title;
+    return page.properties?.title || 'Untitled';
   };
 
   return (

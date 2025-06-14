@@ -1,7 +1,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { Trash2 } from 'lucide-react';
-import { Block } from '@/hooks/useBlocks';
+import { Block } from '@/types/block';
 import { Button } from '@/components/ui/button';
 
 interface ListBlockProps {
@@ -41,9 +41,9 @@ export function ListBlock({ block, onUpdate, onDelete, isEditable }: ListBlockPr
     }
   };
 
-  const isBulletList = block.type === 'bullet_list';
+  const isBulletList = block.type === 'bulleted_list_item';
 
-  if (!isEditable && (!items || items.length === 0)) {
+  if (!isEditable && (!items || items.length === 0 || (items.length === 1 && items[0] === ''))) {
     return null;
   }
 

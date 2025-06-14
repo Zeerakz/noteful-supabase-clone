@@ -14,7 +14,11 @@ export type BlockType =
   | 'code'
   | 'quote'
   | 'divider'
-  | 'callout';
+  | 'callout'
+  | 'two_column'
+  | 'table'
+  | 'embed'
+  | 'file_attachment';
 
 export interface Block {
   id: string;
@@ -23,6 +27,7 @@ export interface Block {
   parent_id: string | null;
   properties: Record<string, any>;
   content: Record<string, any> | null;
+  pos: number;
   created_time: string;
   last_edited_time: string;
   created_by: string | null;
