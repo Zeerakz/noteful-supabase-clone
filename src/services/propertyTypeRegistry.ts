@@ -67,6 +67,11 @@ export async function initializePropertyRegistry() {
       'select'
     ) || {};
 
+    const { relationPropertyType } = await importPropertyType(
+      () => import('@/components/property/types/RelationPropertyType'),
+      'relation'
+    ) || {};
+
     // Register all successfully imported property types
     const propertyTypes = [
       { type: textPropertyType, name: 'text' },
@@ -79,6 +84,7 @@ export async function initializePropertyRegistry() {
       { type: datePropertyType, name: 'date' },
       { type: selectPropertyType, name: 'select' },
       { type: multiSelectPropertyType, name: 'multi_select' },
+      { type: relationPropertyType, name: 'relation' },
     ];
 
     let successCount = 0;

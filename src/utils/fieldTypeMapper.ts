@@ -93,6 +93,10 @@ export function mapDatabaseFieldTypeToPropertyType(fieldType: string): PropertyT
     return 'checkbox';
   }
   
+  if (normalizedType.includes('relation') || normalizedType.includes('link')) {
+    return 'relation';
+  }
+  
   // Default fallback
   console.warn(`Unknown field type: ${fieldType}, defaulting to text`);
   return 'text';
@@ -150,6 +154,14 @@ export function getFieldPropertyType(field: { type: string; name?: string }): Pr
              fieldNameLower.includes('author') ||
              fieldNameLower.includes('creator')) {
       propertyType = 'people';
+    }
+    
+    // Relation field name patterns
+    else if (fieldNameLower.includes('relation') ||
+             fieldNameLower.includes('related') ||
+             fieldNameLower.includes('link') ||
+             fieldNameLower.includes('ref')) {
+      propertyType = 'relation';
     }
   }
   
