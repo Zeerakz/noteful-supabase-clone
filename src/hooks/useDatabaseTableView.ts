@@ -198,52 +198,25 @@ export function useDatabaseTableView({
   }, [toast, optimisticDeletePage]);
 
   const handleTitleUpdate = useCallback(async (pageId: string, newTitle: string) => {
-    if (!newTitle.trim()) return;
-
-    try {
-      console.log('useDatabaseTableView: Updating title', { pageId, newTitle });
-      
-      // Optimistic update
-      optimisticUpdatePage(pageId, { title: newTitle.trim() });
-      
-      const { error } = await PageService.updatePage(pageId, { title: newTitle.trim() });
-      if (error) {
-        toast({
-          title: "Error",
-          description: error,
-          variant: "destructive",
-        });
-      }
-    } catch (err) {
-      toast({
-        title: "Error",
-        description: "Failed to update title",
-        variant: "destructive",
-      });
+    if (!user) return;
+    optimisticUpdatePage(pageId, { title: newTitle });
+    const { error } = await PageService.updatePage(pageId, { title: newTitle });
+    if (error) {
+      toast({ title: "Error", description: `Failed to update title: ${error}`, variant: "destructive" });
     }
-  }, [toast, optimisticUpdatePage]);
+  }, [user, optimisticUpdatePage, toast]);
 
-  const handlePropertyUpdate = useCallback((pageId: string, fieldId: string, value: string) => {
-    console.log('useDatabaseTableView: Updating property', { pageId, fieldId, value });
-    
-    // Immediate optimistic update for local state
+  const handlePropertyUpdate = useCallback(async (pageId: string, fieldId: string, value: string) => {
+    if (!user) return;
     optimisticUpdateProperty(pageId, fieldId, value);
-    
-    // Trigger server update with global optimistic handling
-    propertyUpdateMutation.mutate({
-      pageId,
-      fieldId,
-      value
-    });
-  }, [propertyUpdateMutation, optimisticUpdateProperty]);
+    try {
+      await propertyUpdateMutation.mutateAsync({ pageId, fieldId, value, userId: user.id });
+    } catch (error) {
+      toast({ title: "Error", description: "Failed to update property", variant: "destructive" });
+    }
+  }, [user, optimisticUpdateProperty, propertyUpdateMutation, toast]);
 
-  console.log('useDatabaseTableView: Returning data', { 
-    pagesWithPropertiesCount: pagesWithProperties.length,
-    paginatedPagesCount: paginatedPages.length,
-    pagesLoading,
-    pagesError,
-    totalPages: pages.length
-  });
+  const totalPages = enablePagination ? Math.ceil(pages.length / itemsPerPage) : 1;
 
   return {
     pagesWithProperties: paginatedPages,
@@ -254,9 +227,7 @@ export function useDatabaseTableView({
     handleDeleteRow,
     handleTitleUpdate,
     handlePropertyUpdate,
-    pagination: null, // Simplified for now
-    totalPages: pages.length,
-    isPageLoading: () => false, // Simplified
-    cache: null // Removed cache dependency
+    pagination: null,
+    totalPages,
   };
 }
