@@ -1,4 +1,3 @@
-
 // Custom Cypress commands for testing
 
 declare global {
@@ -18,6 +17,12 @@ declare global {
        * Custom command to wait for the RichTextEditor to be ready
        */
       waitForEditor(): Chainable<Element>;
+
+      /**
+       * Custom command to log in a user.
+       * Requires TEST_USER_EMAIL and TEST_USER_PASSWORD env vars.
+       */
+      login(): Chainable<void>;
     }
   }
 }
@@ -59,6 +64,28 @@ Cypress.Commands.add('clearContentEditable', { prevSubject: 'element' }, (subjec
 Cypress.Commands.add('waitForEditor', () => {
   cy.get('[contenteditable="true"]').should('be.visible');
   cy.wait(500); // Small wait for editor initialization
+});
+
+Cypress.Commands.add('login', () => {
+  const email = Cypress.env('TEST_USER_EMAIL');
+  const password = Cypress.env('TEST_USER_PASSWORD');
+
+  if (!email || !password) {
+    throw new Error('TEST_USER_EMAIL and TEST_USER_PASSWORD must be set in cypress.env.json or as environment variables.');
+  }
+
+  cy.session([email, password], () => {
+    cy.visit('/login');
+    cy.get('input[name="email"]').should('be.visible').type(email);
+    cy.get('input[name="password"]').should('be.visible').type(password);
+    cy.get('button[type="submit"]').click();
+    
+    // Wait for redirect to workspace and for the sidebar to be ready
+    cy.url().should('include', '/workspace/');
+    cy.get('[aria-label="Main navigation"]', { timeout: 15000 }).should('be.visible');
+  }, {
+    cacheAcrossSpecs: true,
+  });
 });
 
 export {};

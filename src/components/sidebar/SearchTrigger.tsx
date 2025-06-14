@@ -10,6 +10,7 @@ export function SearchTrigger() {
 
   return (
     <Button
+      data-cy="search-trigger"
       variant="ghost"
       onClick={openSearch}
       className={cn(

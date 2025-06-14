@@ -51,6 +51,7 @@ export function NewPageAction() {
 
   return (
     <Button
+      data-cy="new-page-button"
       onClick={handleCreatePage}
       disabled={isCreating || !workspaceId}
       className="w-full justify-start h-10"

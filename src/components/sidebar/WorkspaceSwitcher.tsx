@@ -37,6 +37,7 @@ export function WorkspaceSwitcher() {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button
+          data-cy="workspace-switcher"
           variant="ghost"
           className={cn(
             "w-full justify-between h-12 px-3 text-left font-normal",
