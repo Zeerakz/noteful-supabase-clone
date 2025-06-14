@@ -6,7 +6,7 @@ import { Page } from '@/types/page';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Eye } from 'lucide-react';
+import { ExternalLink } from 'lucide-react';
 import {
   Tooltip,
   TooltipContent,
@@ -86,12 +86,12 @@ export function RelationFieldDisplay({ value, settings }: RelationFieldDisplayPr
               <TooltipTrigger asChild>
                 <Button
                   variant="ghost"
-                  size="icon"
-                  className="h-6 w-6"
+                  size="sm"
+                  className="h-6 w-6 p-0"
                   onClick={(e) => handleOpenPeek(e, page.id)}
                   aria-label={`Open ${getDisplayText(page)}`}
                 >
-                  <Eye className="h-4 w-4 text-muted-foreground" />
+                  <ExternalLink className="h-3 w-3 text-muted-foreground" />
                 </Button>
               </TooltipTrigger>
               <TooltipContent>

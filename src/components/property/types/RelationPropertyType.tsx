@@ -72,18 +72,21 @@ export const relationPropertyType: PropertyTypeDefinition<RelationPropertyConfig
 
   ConfigEditor: RelationPropertyConfigEditor,
   
-  FieldDisplay: ({ value, config, field }) => (
-    <RelationFieldDisplay 
-      value={value} 
-      settings={{
-        target_database_id: config.targetDatabaseId,
-        display_property: config.displayProperty,
-        allow_multiple: config.allowMultiple,
-        bidirectional: config.bidirectional,
-        related_property_name: config.relatedPropertyName,
-      }} 
-    />
-  ),
+  FieldDisplay: ({ value, config }) => {
+    console.log('RelationPropertyType FieldDisplay rendering with:', { value, config });
+    return (
+      <RelationFieldDisplay 
+        value={value} 
+        settings={{
+          target_database_id: config.targetDatabaseId,
+          display_property: config.displayProperty,
+          allow_multiple: config.allowMultiple,
+          bidirectional: config.bidirectional,
+          related_property_name: config.relatedPropertyName,
+        }} 
+      />
+    );
+  },
   
   FieldEditor: ({ value, config, onChange, workspaceId, pageId }) => (
     <RelationFieldEditor
