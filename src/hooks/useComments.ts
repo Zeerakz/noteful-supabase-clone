@@ -68,25 +68,26 @@ export function useComments(blockId?: string) {
       const mentionedEmails = extractMentions(body);
       if (mentionedEmails.length > 0) {
         try {
-          // Get page information for the notification
+          // Get page information for the notification.
+          // We assume the block's direct parent is the page. This might not be true for nested blocks.
           const { data: blockData } = await supabase
             .from('blocks')
-            .select('page_id')
+            .select('parent_id, workspace_id')
             .eq('id', blockId)
             .single();
 
-          if (blockData) {
+          if (blockData?.parent_id) {
             const { data: pageData } = await supabase
-              .from('pages')
-              .select('title, workspace_id')
-              .eq('id', blockData.page_id)
+              .from('blocks')
+              .select('properties')
+              .eq('id', blockData.parent_id)
               .single();
 
             if (pageData) {
-              const pageUrl = `${window.location.origin}/workspace/${pageData.workspace_id}/page/${blockData.page_id}`;
+              const pageUrl = `${window.location.origin}/workspace/${blockData.workspace_id}/page/${blockData.parent_id}`;
               
               // Call notifyMention with the list of mentioned emails
-              await notifyMention(mentionedEmails, body, pageData.title, pageUrl);
+              await notifyMention(mentionedEmails, body, pageData.properties?.title || 'Untitled', pageUrl);
             }
           }
         } catch (mentionError) {

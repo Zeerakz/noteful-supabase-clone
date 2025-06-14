@@ -1,22 +1,27 @@
+
 import { useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { DatabaseField } from '@/types/database';
+import { useAuth } from '@/contexts/AuthContext';
 
 export function useDatabaseFieldOperations(databaseId?: string, onFieldsChange?: () => void) {
+  const { user } = useAuth();
+
   const handleSuccess = () => {
     onFieldsChange?.();
   };
 
   const createField = useCallback(async (field: { name: string; type: any; settings?: any; }) => {
-    if (!databaseId) return;
+    if (!databaseId || !user) return;
     const { error } = await supabase.from('fields').insert({
       database_id: databaseId,
       name: field.name,
       type: field.type,
       settings: field.settings || {},
+      created_by: user.id,
     });
     if (!error) handleSuccess();
-  }, [databaseId, handleSuccess]);
+  }, [databaseId, handleSuccess, user]);
 
   const updateField = useCallback(async (fieldId: string, updates: Partial<DatabaseField>) => {
     if (!databaseId) return;

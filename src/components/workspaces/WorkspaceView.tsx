@@ -230,12 +230,12 @@ export function WorkspaceView() {
                 <CardHeader className="pb-3">
                   <CardTitle className="text-base flex items-center gap-2">
                     <FileText className="h-4 w-4" />
-                    {page.title}
+                    {page.properties?.title || 'Untitled'}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="pt-0">
                   <p className="text-sm text-muted-foreground">
-                    Created {new Date(page.created_at!).toLocaleDateString()}
+                    Created {new Date(page.created_time).toLocaleDateString()}
                   </p>
                 </CardContent>
               </Card>
