@@ -10,7 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { PageDuplicationService } from '@/services/pageDuplicationService';
 import { useNavigate } from 'react-router-dom';
-import { Block } from '@/types/block';
+import { Block, BlockType } from '@/types/block';
 
 interface BlockEditorProps {
   pageId: string;
@@ -25,8 +25,8 @@ export function BlockEditor({ pageId, isEditable, workspaceId }: BlockEditorProp
   const navigate = useNavigate();
   const editorRef = useRef<HTMLDivElement>(null);
 
-  const handleCreateBlock = async (params: Partial<Block>) => {
-    if (params.type === 'from_template') {
+  const handleCommand = async (command: string) => {
+    if (command === 'from_template') {
       if (!workspaceId) {
         toast({ title: "Error", description: "Workspace not found", variant: "destructive" });
         return;
@@ -35,7 +35,7 @@ export function BlockEditor({ pageId, isEditable, workspaceId }: BlockEditorProp
       return;
     }
 
-    if (params.type === 'duplicate_page') {
+    if (command === 'duplicate_page') {
       if (!user || !workspaceId) {
         toast({ title: "Error", description: "Unable to duplicate page - user not authenticated or workspace not found", variant: "destructive" });
         return;
@@ -56,14 +56,14 @@ export function BlockEditor({ pageId, isEditable, workspaceId }: BlockEditorProp
       return;
     }
     
-    const { error } = await createBlock(params);
+    const { error } = await createBlock({ type: command as BlockType });
     if (error) {
       toast({ title: "Error", description: error, variant: "destructive" });
     }
   };
 
   const { isOpen, position, searchTerm, openSlashMenu, closeSlashMenu, updateSearchTerm, handleSelectItem } = useSlashMenu({
-    onSelectCommand: (type: string) => handleCreateBlock({ type }),
+    onSelectCommand: (type: string) => handleCommand(type),
   });
 
   const handleUpdateBlock = async (id: string, updates: any) => {
@@ -197,7 +197,7 @@ export function BlockEditor({ pageId, isEditable, workspaceId }: BlockEditorProp
             pageId={pageId}
             onUpdateBlock={handleUpdateBlock}
             onDeleteBlock={handleDeleteBlock}
-            onCreateBlock={handleCreateBlock}
+            onCreateBlock={(params: Partial<Block>) => handleCommand(params.type as string)}
             isEditable={isEditable}
             childBlocks={childBlocks}
           />
@@ -214,63 +214,63 @@ export function BlockEditor({ pageId, isEditable, workspaceId }: BlockEditorProp
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent>
-              <DropdownMenuItem onClick={() => handleCreateBlock({ type: 'text' })} data-cy="text-block-option">
+              <DropdownMenuItem onClick={() => handleCommand('text')} data-cy="text-block-option">
                 <Type className="h-4 w-4 mr-2" />
                 Text
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleCreateBlock({ type: 'heading_1' })}>
+              <DropdownMenuItem onClick={() => handleCommand('heading_1')}>
                 <Heading1 className="h-4 w-4 mr-2" />
                 Heading 1
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleCreateBlock({ type: 'heading_2' })}>
+              <DropdownMenuItem onClick={() => handleCommand('heading_2')}>
                 <Heading2 className="h-4 w-4 mr-2" />
                 Heading 2
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleCreateBlock({ type: 'heading_3' })}>
+              <DropdownMenuItem onClick={() => handleCommand('heading_3')}>
                 <Heading3 className="h-4 w-4 mr-2" />
                 Heading 3
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleCreateBlock({ type: 'bulleted_list_item' })}>
+              <DropdownMenuItem onClick={() => handleCommand('bulleted_list_item')}>
                 <List className="h-4 w-4 mr-2" />
                 Bullet List
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleCreateBlock({ type: 'numbered_list_item' })}>
+              <DropdownMenuItem onClick={() => handleCommand('numbered_list_item')}>
                 <ListOrdered className="h-4 w-4 mr-2" />
                 Numbered List
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleCreateBlock({ type: 'quote' })}>
+              <DropdownMenuItem onClick={() => handleCommand('quote')}>
                 <Quote className="h-4 w-4 mr-2" />
                 Quote
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleCreateBlock({ type: 'callout' })}>
+              <DropdownMenuItem onClick={() => handleCommand('callout')}>
                 <MessageSquare className="h-4 w-4 mr-2" />
                 Callout
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleCreateBlock({ type: 'toggle_list' })}>
+              <DropdownMenuItem onClick={() => handleCommand('toggle_list')}>
                 <ChevronRight className="h-4 w-4 mr-2" />
                 Toggle
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleCreateBlock({ type: 'image' })}>
+              <DropdownMenuItem onClick={() => handleCommand('image')}>
                 <Image className="h-4 w-4 mr-2" />
                 Image
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleCreateBlock({ type: 'two_column' })}>
+              <DropdownMenuItem onClick={() => handleCommand('two_column')}>
                 <Columns className="h-4 w-4 mr-2" />
                 Two Column
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleCreateBlock({ type: 'table' })}>
+              <DropdownMenuItem onClick={() => handleCommand('table')}>
                 <Table className="h-4 w-4 mr-2" />
                 Table
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleCreateBlock({ type: 'divider' })}>
+              <DropdownMenuItem onClick={() => handleCommand('divider')}>
                 <Minus className="h-4 w-4 mr-2" />
                 Divider
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleCreateBlock({ type: 'file_attachment' })}>
+              <DropdownMenuItem onClick={() => handleCommand('file_attachment')}>
                 <Paperclip className="h-4 w-4 mr-2" />
                 File Attachment
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleCreateBlock({ type: 'embed' })}>
+              <DropdownMenuItem onClick={() => handleCommand('embed')}>
                 <Globe className="h-4 w-4 mr-2" />
                 Embed
               </DropdownMenuItem>

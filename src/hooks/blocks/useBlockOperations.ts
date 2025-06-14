@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -21,7 +20,7 @@ export function useBlockOperations(workspaceId?: string, parentId?: string | nul
       setLoading(true);
       let query = supabase
         .from('blocks')
-        .select('*')
+        .select('id, workspace_id, type, parent_id, properties, content, pos, created_time, last_edited_time, created_by, last_edited_by, archived, in_trash')
         .eq('workspace_id', workspaceId)
         .eq('archived', false);
 
@@ -82,7 +81,7 @@ export function useBlockOperations(workspaceId?: string, parentId?: string | nul
         .insert({
           workspace_id: newBlockData.workspace_id,
           parent_id: newBlockData.parent_id,
-          type: newBlockData.type,
+          type: newBlockData.type as any, // Cast to any to bypass stale enum type
           properties: newBlockData.properties,
           content: newBlockData.content,
           created_by: user.id,

@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useParams } from 'react-router-dom';
 import { useDatabaseViewSelector } from '@/hooks/useDatabaseViewSelector';
@@ -9,6 +8,7 @@ import { useDatabase } from '@/hooks/useDatabase';
 import { DatabaseViewContainer } from './DatabaseViewContainer';
 import { DatabaseViewLoading } from './DatabaseViewLoading';
 import { DatabaseViewError } from './DatabaseViewError';
+import { useDatabaseFieldOperations } from '@/hooks/useDatabaseFieldOperations';
 
 interface DatabaseViewProps {
   workspaceId: string;
@@ -26,12 +26,16 @@ export function DatabaseView({ workspaceId }: DatabaseViewProps) {
     loading: fieldsLoading, 
     error: fieldsError,
     refetch: refetchFields,
+  } = useDatabaseFields(databaseId);
+
+  // Get field operations
+  const {
     createField,
     updateField,
     deleteField,
     duplicateField,
     reorderFields
-  } = useDatabaseFields(databaseId, workspaceId);
+  } = useDatabaseFieldOperations(databaseId, refetchFields);
 
   // View selection state
   const { 

@@ -1,18 +1,10 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { DatabaseField } from '@/types/database';
 
-export interface Field {
-  id: string;
-  database_id: string;
-  name: string;
-  type: string;
-  settings: Record<string, any>;
-  pos: number;
-}
-
-export function useDatabaseFields(databaseId: string | undefined, workspaceId: string | undefined) {
-  const [fields, setFields] = useState<Field[]>([]);
+export function useDatabaseFields(databaseId: string | undefined) {
+  const [fields, setFields] = useState<DatabaseField[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -43,22 +35,10 @@ export function useDatabaseFields(databaseId: string | undefined, workspaceId: s
     fetchFields();
   }, [fetchFields]);
 
-  // Placeholder functions to satisfy component props
-  const createField = async (fieldData: Partial<Field>) => { console.log('createField not implemented', fieldData); return { data: null, error: 'Not implemented' }};
-  const updateField = async (id: string, updates: Partial<Field>) => { console.log('updateField not implemented', id, updates); return { data: null, error: 'Not implemented' }};
-  const deleteField = async (id: string) => { console.log('deleteField not implemented', id); return { data: null, error: 'Not implemented' }};
-  const duplicateField = async (id: string) => { console.log('duplicateField not implemented', id); return { data: null, error: 'Not implemented' }};
-  const reorderFields = async (reorderedFields: Field[]) => { console.log('reorderFields not implemented', reorderedFields); };
-
   return {
     fields,
     loading,
     error,
     refetch: fetchFields,
-    createField,
-    updateField,
-    deleteField,
-    duplicateField,
-    reorderFields,
   };
 }

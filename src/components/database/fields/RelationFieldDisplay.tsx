@@ -45,12 +45,12 @@ export function RelationFieldDisplay({ value, settings }: RelationFieldDisplayPr
         
         const { data, error } = await supabase
           .from('blocks')
-          .select('*')
+          .select('id, type, properties')
           .in('id', valueArray)
           .eq('type', 'page');
 
         if (error) throw error;
-        setRelatedPages(data || []);
+        setRelatedPages(data as Page[] || []);
       } catch (err) {
         console.error('Error fetching related pages:', err);
         setRelatedPages([]);

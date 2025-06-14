@@ -1,4 +1,3 @@
-
 import { Block } from './types';
 
 export interface BlockInitializer {
@@ -85,7 +84,7 @@ export class BlockCreationService implements BlockInitializer {
   getDefaultPosition(existingBlocks: Block[], parentBlockId?: string): number {
     // Filter blocks by parent to get siblings
     const siblingBlocks = existingBlocks.filter(block => 
-      (block.parent_block_id || null) === (parentBlockId || null)
+      (block.parent_id || null) === (parentBlockId || null)
     );
 
     // Return next position
