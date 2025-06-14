@@ -24,25 +24,16 @@ export function useDatabaseFieldOperations(databaseId?: string, onFieldsChange?:
     if (!error) handleSuccess();
   }, [databaseId, handleSuccess]);
 
-  const deleteField = useCallback(async (fieldId: string) => {
+  const deleteField = useCallback(async (field: DatabaseField) => {
     if (!databaseId) return;
-    const { error } = await supabase.from('fields').delete().eq('id', fieldId);
+    const { error } = await supabase.from('fields').delete().eq('id', field.id);
     if (!error) handleSuccess();
   }, [databaseId, handleSuccess]);
 
-  const duplicateField = useCallback(async (fieldId: string) => {
+  const duplicateField = useCallback(async (field: DatabaseField) => {
     if (!databaseId) return;
 
-    const { data: originalField, error: fetchError } = await supabase
-      .from('fields')
-      .select('*')
-      .eq('id', fieldId)
-      .single();
-
-    if (fetchError || !originalField) {
-      console.error('Failed to fetch field for duplication:', fetchError?.message);
-      return;
-    }
+    const originalField = field;
     
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { id, created_at, updated_at, ...fieldToCopy } = originalField;

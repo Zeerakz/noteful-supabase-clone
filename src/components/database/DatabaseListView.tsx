@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { DatabaseListContent } from './list/DatabaseListContent';
 import { GroupedListView } from './grouping/GroupedListView';
@@ -72,7 +71,7 @@ export function DatabaseListView({
   };
 
   const handleOptimisticCreateEntry = async () => {
-    optimisticCreatePage({ type: 'page', properties: { title: 'Untitled' } } as Partial<Block>);
+    optimisticCreatePage({ title: 'Untitled' });
     await handleCreateEntry();
   };
 

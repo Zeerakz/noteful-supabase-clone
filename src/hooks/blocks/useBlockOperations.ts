@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -26,7 +25,6 @@ export function useBlockOperations(workspaceId?: string, parentId?: string | nul
         .eq('archived', false);
 
       if (parentId === undefined) {
-        // If parentId is undefined, don't fetch anything yet
         setBlocks([]);
         setLoading(false);
         return;
@@ -36,10 +34,15 @@ export function useBlockOperations(workspaceId?: string, parentId?: string | nul
         query = query.eq('parent_id', parentId);
       }
 
-      const { data, error } = await query.order('pos', { ascending: true });
+      // The .order('pos') clause causes a type error, likely due to stale Supabase types.
+      // Sorting client-side as a temporary workaround.
+      const { data, error } = await query;
 
       if (error) throw error;
-      setBlocks((data as Block[]) || []);
+      
+      const sortedData = ((data as Block[]) || []).sort((a, b) => (a.pos || 0) - (b.pos || 0));
+      setBlocks(sortedData);
+
       setError(null);
     } catch (err) {
       console.error('Error fetching blocks:', err);
@@ -75,7 +78,7 @@ export function useBlockOperations(workspaceId?: string, parentId?: string | nul
       };
 
       const optimisticBlock = { ...newBlockData, id: optimisticId };
-      setBlocks(prev => [...prev, optimisticBlock]);
+      setBlocks(prev => [...prev, optimisticBlock].sort((a, b) => (a.pos || 0) - (b.pos || 0)));
 
       const { data, error } = await supabase
         .from('blocks')
@@ -94,7 +97,7 @@ export function useBlockOperations(workspaceId?: string, parentId?: string | nul
 
       if (error) throw error;
 
-      setBlocks(prev => prev.map(block => (block.id === optimisticId ? (data as Block) : block)));
+      setBlocks(prev => prev.map(block => (block.id === optimisticId ? (data as Block) : block)).sort((a, b) => (a.pos || 0) - (b.pos || 0)));
       return { data: data as Block, error: null };
     } catch (err) {
       setBlocks(prev => prev.filter(block => block.id !== optimisticId));
@@ -111,7 +114,7 @@ export function useBlockOperations(workspaceId?: string, parentId?: string | nul
       setBlocks(prev =>
         prev.map(block =>
           block.id === id ? { ...block, ...updates, last_edited_time: new Date().toISOString() } : block
-        )
+        ).sort((a, b) => (a.pos || 0) - (b.pos || 0))
       );
 
       const { data, error } = await supabase
@@ -123,7 +126,7 @@ export function useBlockOperations(workspaceId?: string, parentId?: string | nul
 
       if (error) throw error;
 
-      setBlocks(prev => prev.map(block => (block.id === id ? (data as Block) : block)));
+      setBlocks(prev => prev.map(block => (block.id === id ? (data as Block) : block)).sort((a, b) => (a.pos || 0) - (b.pos || 0)));
       return { data: data as Block, error: null };
     } catch (err) {
       await fetchBlocks(); // Refetch to get correct state
