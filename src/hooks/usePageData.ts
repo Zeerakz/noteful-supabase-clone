@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Page } from '@/types/page';
@@ -38,15 +37,16 @@ export function usePageData(pageId?: string): UsePageDataResult {
       console.log('📄 Fetching page data for:', pageId);
       
       const { data, error: fetchError } = await supabase
-        .from('pages')
+        .from('blocks')
         .select(`
           *,
-          workspaces!inner (
+          workspace:workspaces!inner (
             id,
             name
           )
         `)
         .eq('id', pageId)
+        .eq('type', 'page')
         .single();
 
       if (signal?.aborted) return;
@@ -62,10 +62,11 @@ export function usePageData(pageId?: string): UsePageDataResult {
       }
 
       if (mountedRef.current) {
-        console.log('✅ Page data loaded successfully:', data.title);
+        const properties = data.properties as { title?: string };
+        console.log('✅ Page data loaded successfully:', properties?.title);
         setPageData({
           ...data,
-          workspace: data.workspaces
+          workspace: data.workspace as { id: string; name: string }
         });
       }
     } catch (err) {

@@ -12,12 +12,36 @@ export function usePageHierarchy() {
   ): Promise<{ error: string | null }> => {
     try {
       // First, get all pages that need to be reordered in the target parent
-      const { data: siblingPages } = await supabase
-        .from('pages')
+      const { data: siblingPagesData } = await supabase
+        .from('blocks')
         .select('*')
         .eq('workspace_id', workspaceId)
-        .eq('parent_page_id', newParentId || null)
-        .order('order_index', { ascending: true });
+        .eq('type', 'page')
+        .eq('parent_id', newParentId || pageId) // This is tricky, Supabase can't do IS NULL on .eq
+        .order('pos', { ascending: true });
+        
+      let siblingPages: Page[];
+      if (newParentId === null) {
+          const { data: topLevelPages, error } = await supabase
+            .from('blocks')
+            .select('*')
+            .eq('workspace_id', workspaceId)
+            .eq('type', 'page')
+            .is('parent_id', null)
+            .order('pos', { ascending: true });
+          if(error) throw error;
+          siblingPages = topLevelPages as Page[];
+      } else {
+        const { data: childPages, error } = await supabase
+            .from('blocks')
+            .select('*')
+            .eq('workspace_id', workspaceId)
+            .eq('type', 'page')
+            .eq('parent_id', newParentId)
+            .order('pos', { ascending: true });
+        if(error) throw error;
+        siblingPages = childPages as Page[];
+      }
 
       if (!siblingPages) throw new Error('Failed to fetch sibling pages');
 
@@ -25,33 +49,24 @@ export function usePageHierarchy() {
       const movingPage = pages.find(p => p.id === pageId);
       if (!movingPage) throw new Error('Page not found');
 
-      // Convert sibling pages to our Page type and remove the page being moved
-      const typedSiblingPages = siblingPages as Page[];
-      const filteredPages = typedSiblingPages.filter(p => p.id !== pageId);
+      const filteredPages = siblingPages.filter(p => p.id !== pageId);
       
       // Create a properly typed copy of the moving page for ordering
       const movingPageForOrdering: Page = {
-        id: movingPage.id,
-        workspace_id: movingPage.workspace_id,
-        parent_page_id: newParentId,
-        database_id: movingPage.database_id,
-        title: movingPage.title,
-        created_by: movingPage.created_by,
-        order_index: movingPage.order_index,
-        created_at: movingPage.created_at,
-        updated_at: movingPage.updated_at
+        ...movingPage,
+        parent_id: newParentId,
       };
       
       // Insert the moving page at the new position
       filteredPages.splice(newIndex, 0, movingPageForOrdering);
 
       // Update the moving page's parent first
-      if (movingPage.parent_page_id !== newParentId) {
+      if (movingPage.parent_id !== newParentId) {
         const { error: parentUpdateError } = await supabase
-          .from('pages')
+          .from('blocks')
           .update({ 
-            parent_page_id: newParentId,
-            updated_at: new Date().toISOString()
+            parent_id: newParentId,
+            last_edited_time: new Date().toISOString()
           })
           .eq('id', pageId);
 
@@ -59,19 +74,21 @@ export function usePageHierarchy() {
       }
 
       // Update order indices for all affected pages
-      for (let i = 0; i < filteredPages.length; i++) {
-        const page = filteredPages[i];
-        if (page.order_index !== i) {
-          const { error } = await supabase
-            .from('pages')
+      const updates = filteredPages.map((page, index) => {
+        if (page.pos !== index) {
+          return supabase
+            .from('blocks')
             .update({ 
-              order_index: i,
-              updated_at: new Date().toISOString()
+              pos: index,
+              last_edited_time: new Date().toISOString()
             })
             .eq('id', page.id);
-
-          if (error) throw error;
         }
+        return null;
+      }).filter(Boolean);
+
+      if (updates.length > 0) {
+        await Promise.all(updates);
       }
       
       return { error: null };

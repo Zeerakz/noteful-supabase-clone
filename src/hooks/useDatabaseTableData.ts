@@ -33,9 +33,10 @@ interface PageWithProperties {
   created_by: string;
   created_at: string;
   updated_at: string;
-  parent_page_id: string | null;
-  order_index: number;
-  properties: Record<string, string>;
+  parent_id: string | null;
+  pos: number;
+  properties: Record<string, any>;
+  rawPage: Page;
 }
 
 export function useDatabaseTableData({
@@ -99,25 +100,26 @@ export function useDatabaseTableData({
 
   const pagesWithProperties: PageWithProperties[] = useMemo(() => {
     return pages.map(page => {
-      const properties: Record<string, string> = {};
+      const pageProperties: Record<string, any> = {};
       if (page.page_properties && Array.isArray(page.page_properties)) {
         page.page_properties.forEach((prop) => {
           if (prop.field_id && prop.value !== undefined) {
-            properties[prop.field_id] = prop.value || '';
+            pageProperties[prop.field_id] = prop.value || '';
           }
         });
       }
       return {
         id: page.id,
-        title: page.title,
+        title: (page.properties as any)?.title || '',
         workspace_id: page.workspace_id,
-        database_id: page.database_id,
-        created_by: page.created_by,
-        created_at: page.created_at,
-        updated_at: page.updated_at,
-        parent_page_id: page.parent_page_id,
-        order_index: page.order_index,
-        properties,
+        database_id: (page.properties as any)?.database_id || null,
+        created_by: page.created_by || '',
+        created_at: page.created_time,
+        updated_at: page.last_edited_time,
+        parent_id: page.parent_id,
+        pos: page.pos,
+        properties: pageProperties,
+        rawPage: page,
       };
     });
   }, [pages]);
@@ -125,7 +127,7 @@ export function useDatabaseTableData({
   const { mutateAsync: createRowMutation } = useMutation({
     mutationFn: async ({ title = 'Untitled' }: { title?: string }) => {
       if (!user) throw new Error('User not authenticated');
-      const { data, error } = await PageService.createPage(workspaceId, user.id, { title, databaseId });
+      const { data, error } = await PageService.createPage(workspaceId, user.id, { title, database_id: databaseId });
       if (error) throw new Error(error);
       return data;
     },
@@ -169,13 +171,17 @@ export function useDatabaseTableData({
   }, [deleteRowMutation]);
 
   const { mutateAsync: titleUpdateMutation } = useMutation({
-    mutationFn: ({ pageId, newTitle }: { pageId: string, newTitle: string }) => PageService.updatePage(pageId, { title: newTitle }),
+    mutationFn: async ({ pageId, newTitle }: { pageId: string, newTitle: string }) => {
+      const page = pages.find(p => p.id === pageId);
+      const newProperties = { ...page?.properties, title: newTitle };
+      return PageService.updatePage(pageId, { properties: newProperties });
+    },
     onMutate: async ({ pageId, newTitle }) => {
       await queryClient.cancelQueries({ queryKey });
       const previousData = queryClient.getQueryData(queryKey);
       queryClient.setQueryData(queryKey, (old: any) => ({
         ...old,
-        data: old?.data?.map((p: Page) => p.id === pageId ? { ...p, title: newTitle, updated_at: new Date().toISOString() } : p) || []
+        data: old?.data?.map((p: Page) => p.id === pageId ? { ...p, properties: {...p.properties, title: newTitle}, last_edited_time: new Date().toISOString() } : p) || []
       }));
       return { previousData };
     },
@@ -223,7 +229,7 @@ export function useDatabaseTableData({
                             updated_at: new Date().toISOString(),
                         });
                     }
-                    return { ...page, page_properties: newProperties, updated_at: new Date().toISOString() };
+                    return { ...page, page_properties: newProperties, last_edited_time: new Date().toISOString() };
                 })
             };
         });

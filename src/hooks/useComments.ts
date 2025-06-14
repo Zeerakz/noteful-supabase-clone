@@ -84,9 +84,9 @@ export function useComments(blockId?: string) {
 
             if (pageData) {
               const pageUrl = `${window.location.origin}/workspace/${blockData.workspace_id}/page/${blockData.parent_id}`;
-              
+              const pageProperties = pageData.properties as { title?: string };
               // Call notifyMention with the list of mentioned emails
-              await notifyMention(mentionedEmails, body, pageData.properties?.title || 'Untitled', pageUrl);
+              await notifyMention(mentionedEmails, body, pageProperties?.title || 'Untitled', pageUrl);
             }
           }
         } catch (mentionError) {
