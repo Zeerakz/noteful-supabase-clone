@@ -149,7 +149,7 @@ export function WorkspacePagesGroup({ workspaceId, workspaceName, onNavigationIt
   if (loading) {
     return (
       <li role="treeitem" aria-expanded="false">
-        <SidebarGroup>
+        <SidebarGroup data-testid="workspace-group-loading">
           <SidebarGroupLabel className="flex items-center justify-between">
             <span className="truncate flex items-center gap-2">
               {workspaceName}
@@ -172,7 +172,7 @@ export function WorkspacePagesGroup({ workspaceId, workspaceName, onNavigationIt
 
   return (
     <li role="treeitem" aria-expanded="true">
-      <SidebarGroup>
+      <SidebarGroup data-testid="workspace-group">
         <SidebarGroupLabel className="flex items-center justify-between">
           <span className="truncate flex items-center gap-2">
             {workspaceName}
@@ -207,6 +207,7 @@ export function WorkspacePagesGroup({ workspaceId, workspaceName, onNavigationIt
                             onKeyDown={handleKeyDown}
                             onToggleExpanded={handleToggleExpanded}
                             isExpanded={expandedPages.has(page.id)}
+                            level={0}
                             onNavigationItemSelect={onNavigationItemSelect}
                           />
                         ))
