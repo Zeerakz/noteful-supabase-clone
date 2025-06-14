@@ -1,4 +1,5 @@
 
+
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Draggable, Droppable } from 'react-beautiful-dnd';
@@ -122,9 +123,8 @@ export function PageTreeItem({
               onKeyDown={handleKeyDown}
               className={cn(
                 "w-full justify-start text-left pr-8",
-                isActive && "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                isActive && "bg-sidebar-accent text-sidebar-accent-foreground"
               )}
-              data-active={isActive}
               tabIndex={isFocused ? 0 : -1}
             >
               <div {...provided.dragHandleProps} className="flex items-center gap-1 min-w-0 flex-1">
@@ -199,3 +199,4 @@ export function PageTreeItem({
     </Draggable>
   );
 }
+
