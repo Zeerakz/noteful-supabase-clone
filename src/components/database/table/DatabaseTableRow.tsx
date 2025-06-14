@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { TableCell, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
@@ -191,12 +192,7 @@ export function DatabaseTableRow({
               <MoreHorizontal className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent 
-            side="right" 
-            align="center" 
-            sideOffset={4}
-            collisionPadding={8}
-          >
+          <DropdownMenuContent align="end" className="bg-popover shadow-lg">
             <DropdownMenuItem
               onClick={handleDelete}
               disabled={isDeleting}

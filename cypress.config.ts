@@ -16,13 +16,5 @@ export default defineConfig({
     defaultCommandTimeout: 10000,
     requestTimeout: 10000,
     responseTimeout: 10000,
-    // Add retries for flaky tests
-    retries: {
-      runMode: 2,
-      openMode: 0
-    },
-    // Wait for elements to be stable before interacting
-    waitForAnimations: true,
-    animationDistanceThreshold: 5,
   },
 });

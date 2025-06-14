@@ -3,13 +3,414 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Import organized CSS modules */
-@import url('./styles/theme.css');
-@import url('./styles/base.css');
-@import url('./styles/components.css');
-@import url('./styles/focus-states.css');
-@import url('./styles/typography.css');
+/* Import motion philosophy and accessibility tokens */
 @import url('./styles/motion-tokens.css');
-@import url('./styles/accessibility-contrast.css');
-@import url('./styles/frosted-glass.css');
-@import url('./styles/gentle-animations.css');
+
+@layer base {
+  :root {
+    /* Light mode - sophisticated warm neutrals */
+    --background: 0 0% 98.5%;
+    --foreground: 215 25% 15%;
+    --card: 0 0% 100%;
+    --card-foreground: 215 25% 15%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 215 25% 15%;
+    --primary: 221.2 83.2% 53.3%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 215 25% 15%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96%;
+    --accent-foreground: 215 25% 15%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 221.2 83.2% 53.3%;
+    --chart-1: 12 76% 61%;
+    --chart-2: 173 58% 39%;
+    --chart-3: 197 37% 24%;
+    --chart-4: 43 74% 66%;
+    --chart-5: 27 87% 67%;
+    --radius: 0.5rem;
+    
+    /* Grid system variables - 4pt base grid */
+    --grid-unit: 4px;
+    --grid-2x: 8px;
+    --grid-3x: 12px;
+    --grid-4x: 16px;
+    --grid-6x: 24px;
+    --grid-8x: 32px;
+    
+    /* Hairline divider system */
+    --hairline-weight: 0.5px;
+    --hairline-color: 214.3 31.8% 95%;
+    --hairline-subtle: 214.3 31.8% 97%;
+  }
+
+  .dark {
+    /* Deep atmospheric background with blue-slate undertones */
+    --background: 222 28% 8%;          /* Deep charcoal-blue: #101419 */
+    --foreground: 210 15% 92%;         /* Soft off-white: #E8EAED */
+    --card: 222 28% 9%;                /* Slightly lighter than background */
+    --card-foreground: 210 15% 92%;
+    --popover: 222 28% 9%;
+    --popover-foreground: 210 15% 92%;
+    --primary: 217.2 91.2% 59.8%;
+    --primary-foreground: 222 28% 8%;
+    --secondary: 220 25% 14%;           /* Deeper blue-slate for secondary elements */
+    --secondary-foreground: 210 15% 88%;
+    --muted: 220 25% 14%;
+    --muted-foreground: 215 15% 65%;    /* Balanced mid-tone for secondary text */
+    --accent: 220 25% 16%;              /* Subtle accent background */
+    --accent-foreground: 210 15% 92%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 15% 92%;
+    --border: 220 25% 18%;              /* Subtle borders with blue undertone */
+    --input: 220 25% 16%;
+    --ring: 217.2 91.2% 59.8%;
+    --chart-1: 220 70% 50%;
+    --chart-2: 160 60% 45%;
+    --chart-3: 30 80% 55%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 340 75% 55%;
+    
+    /* Dark mode hairline adjustments - subtle blue undertones */
+    --hairline-color: 220 25% 22%;
+    --hairline-subtle: 220 25% 12%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  
+  body {
+    @apply bg-background text-foreground;
+    /* Rigorous typographic foundation using Inter */
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+    font-feature-settings: 'cv01', 'cv03', 'cv04', 'cv11';
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Accessibility: Skip to main content */
+  .skip-to-main {
+    @apply sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50;
+    @apply bg-primary text-primary-foreground px-4 py-2 rounded-md font-medium;
+    @apply focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-2;
+  }
+}
+
+/* Enhanced styles for grid-based table layout */
+@layer components {
+  /* Clean grid-based table system */
+  .table-grid {
+    table-layout: fixed !important;
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+  
+  .table-grid th,
+  .table-grid td {
+    overflow: hidden;
+    word-wrap: break-word;
+    border: none;
+    padding: 0;
+    position: relative;
+  }
+
+  /* Grid spacing system */
+  .grid-spacing-2x {
+    padding: var(--grid-2x);
+  }
+  
+  .grid-spacing-3x {
+    padding: var(--grid-3x);
+  }
+  
+  .grid-spacing-4x {
+    padding: var(--grid-4x);
+  }
+  
+  .grid-spacing-6x {
+    padding: var(--grid-6x);
+  }
+
+  /* Hairline divider system */
+  .hairline-divider {
+    position: relative;
+  }
+  
+  .hairline-divider::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: var(--hairline-weight);
+    background-color: hsl(var(--hairline-color));
+  }
+  
+  .hairline-divider-subtle::after {
+    background-color: hsl(var(--hairline-subtle));
+  }
+  
+  .hairline-vertical {
+    position: relative;
+  }
+  
+  .hairline-vertical::after {
+    content: '';
+    position: absolute;
+    top: var(--grid-2x);
+    bottom: var(--grid-2x);
+    right: 0;
+    width: var(--hairline-weight);
+    background-color: hsl(var(--hairline-color));
+  }
+
+  /* Enhanced Focus States for Interactive Elements */
+  .focus-button {
+    @apply focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-2;
+    @apply focus-visible:ring-2 focus-visible:ring-primary/20;
+    transition: all var(--motion-duration-fast) var(--motion-ease-out);
+  }
+
+  .focus-input {
+    @apply focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-1;
+    @apply focus-visible:ring-2 focus-visible:ring-primary/20;
+    @apply focus-visible:border-primary;
+    transition: all var(--motion-duration-fast) var(--motion-ease-out);
+  }
+
+  .focus-table-cell {
+    @apply focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-1;
+    @apply focus-visible:ring-2 focus-visible:ring-primary/10;
+    @apply focus-visible:bg-primary/5;
+    transition: all var(--motion-duration-fast) var(--motion-ease-out);
+  }
+
+  .focus-dropdown {
+    @apply focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-2;
+    @apply focus-visible:bg-accent;
+    transition: all var(--motion-duration-fast) var(--motion-ease-out);
+  }
+
+  .focus-tab {
+    @apply focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-1;
+    @apply focus-visible:bg-primary/10;
+    transition: all var(--motion-duration-fast) var(--motion-ease-out);
+  }
+
+  .focus-checkbox {
+    @apply focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-2;
+    @apply focus-visible:ring-4 focus-visible:ring-primary/20;
+    transition: all var(--motion-duration-fast) var(--motion-ease-out);
+  }
+
+  /* Resize mode improvements with grid awareness */
+  .resize-mode {
+    @apply select-none;
+  }
+  
+  .resize-mode .resize-active {
+    @apply bg-accent/5 pointer-events-none opacity-80;
+  }
+  
+  .resize-mode .resize-active * {
+    @apply pointer-events-none;
+  }
+  
+  /* Disable all hover states during resize */
+  .resize-mode *:hover {
+    @apply bg-transparent !important;
+  }
+  
+  /* Visual feedback for resize operation - minimal overlay */
+  .resize-mode::before {
+    content: '';
+    @apply fixed inset-0 bg-background/20 pointer-events-none z-10;
+  }
+  
+  /* Improved visual feedback for resizing columns */
+  .column-resizing {
+    @apply bg-primary/3;
+  }
+  
+  .resize-handle-active {
+    @apply bg-primary/20;
+  }
+
+  /* Clean, minimal hover states with accessibility considerations */
+  .table-grid-row {
+    transition: background-color var(--motion-duration-fast) var(--motion-ease-out);
+    @apply focus-within:bg-accent/10;
+  }
+  
+  .table-grid-row:hover {
+    background-color: hsl(var(--muted) / 0.3);
+  }
+  
+  .resize-mode .table-grid-row:hover {
+    background-color: transparent !important;
+  }
+
+  /* Keyboard navigation indicators */
+  .keyboard-navigating .table-grid-row:focus-within {
+    @apply bg-primary/5 ring-2 ring-primary/20;
+  }
+
+  .keyboard-navigating .focus-current {
+    @apply bg-primary/10 ring-2 ring-primary;
+  }
+
+  /* Typographic system classes with grid alignment */
+  .text-hero {
+    /* Data content - the most effortlessly legible */
+    @apply text-sm font-normal text-foreground leading-relaxed tracking-normal;
+    line-height: calc(var(--grid-6x) * 1);
+  }
+  
+  .text-column-header {
+    /* Column headers - distinct from content through weight and color */
+    @apply text-xs font-semibold text-muted-foreground/90 uppercase tracking-[0.05em];
+    line-height: calc(var(--grid-4x) * 1);
+  }
+  
+  .text-view-tab {
+    /* View switcher tabs - legible but secondary */
+    @apply text-xs font-medium tracking-normal;
+    line-height: calc(var(--grid-4x) * 1);
+  }
+  
+  .text-database-title {
+    /* Main database title - confident but quiet presence */
+    @apply text-2xl font-medium tracking-[-0.02em] text-foreground leading-tight;
+    line-height: calc(var(--grid-8x) * 1);
+  }
+  
+  .text-action-button {
+    /* Action buttons - functional weight */
+    @apply text-xs font-semibold tracking-normal;
+    line-height: calc(var(--grid-4x) * 1);
+  }
+
+  /* Grid-aligned cell content with accessibility */
+  .table-cell-content {
+    min-height: calc(var(--grid-8x) + var(--grid-4x)); /* 48px aligned to grid */
+    display: flex;
+    align-items: center;
+    padding: var(--grid-3x) var(--grid-4x);
+    @apply focus-within:outline-1 focus-within:outline-primary focus-within:outline-offset-1;
+  }
+  
+  .table-header-content {
+    height: calc(var(--grid-8x) + var(--grid-4x)); /* 48px aligned to grid */
+    display: flex;
+    align-items: center;
+    padding: var(--grid-3x) var(--grid-4x);
+    position: relative;
+    @apply focus-within:outline-1 focus-within:outline-primary focus-within:outline-offset-1;
+  }
+
+  /* Checkbox column - minimal grid alignment with focus */
+  .checkbox-cell {
+    width: calc(var(--grid-8x) + var(--grid-4x)); /* 48px */
+    min-width: calc(var(--grid-8x) + var(--grid-4x));
+    max-width: calc(var(--grid-8x) + var(--grid-4x));
+    @apply focus-within:bg-primary/5;
+  }
+  
+  /* Actions column - minimal grid alignment with focus */
+  .actions-cell {
+    width: calc(var(--grid-8x) * 2); /* 64px */
+    min-width: calc(var(--grid-8x) * 2);
+    max-width: calc(var(--grid-8x) * 2);
+    @apply focus-within:bg-primary/5;
+  }
+
+  /* Enhanced resize handle styles with accessibility */
+  .resize-handle {
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 8px;
+    cursor: col-resize;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity var(--motion-duration-normal) var(--motion-ease-out);
+    @apply focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-primary;
+  }
+
+  .resize-handle:hover,
+  .resize-handle:focus-visible,
+  .resize-handle.active {
+    opacity: 1;
+    background-color: hsl(var(--primary) / 0.1);
+  }
+
+  .resize-handle::after {
+    content: '';
+    width: 2px;
+    height: 16px;
+    background-color: hsl(var(--muted-foreground) / 0.5);
+    border-radius: 2px;
+  }
+
+  .resize-handle.active::after,
+  .resize-handle:focus-visible::after {
+    background-color: hsl(var(--primary));
+  }
+
+  /* Prevent text selection during resize */
+  .resizing {
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+  }
+
+  /* High contrast mode support */
+  @media (prefers-contrast: high) {
+    .focus-button:focus-visible,
+    .focus-input:focus-visible,
+    .focus-table-cell:focus-visible,
+    .focus-dropdown:focus-visible,
+    .focus-tab:focus-visible,
+    .focus-checkbox:focus-visible {
+      @apply outline-4 outline-foreground;
+    }
+  }
+
+  /* Screen reader only content */
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .sr-only:focus {
+    position: static;
+    width: auto;
+    height: auto;
+    padding: inherit;
+    margin: inherit;
+    overflow: visible;
+    clip: auto;
+    white-space: normal;
+  }
+}

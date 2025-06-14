@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import {
   DropdownMenu,
@@ -38,13 +39,7 @@ export function InlinePropertyEditor({
         <DropdownMenuTrigger asChild>
           {children}
         </DropdownMenuTrigger>
-        <DropdownMenuContent 
-          side="right"
-          align="center"
-          sideOffset={4}
-          className="w-48"
-          collisionPadding={8}
-        >
+        <DropdownMenuContent align="end" className="w-48">
           <DropdownMenuItem disabled>
             <Edit className="h-4 w-4 mr-2" />
             Edit Property

@@ -21,34 +21,19 @@ export function useBlockRealtimeSubscription({
   const channelRef = useRef<any>(null);
   const isSubscribedRef = useRef<boolean>(false);
   const pageIdRef = useRef<string | undefined>(pageId);
-  const isCleaningUpRef = useRef<boolean>(false);
 
   const cleanup = useCallback(() => {
-    if (isCleaningUpRef.current) {
-      console.log('Cleanup already in progress, skipping...');
-      return;
-    }
-
-    isCleaningUpRef.current = true;
-    
     if (channelRef.current && isSubscribedRef.current) {
       try {
         console.log('Cleaning up blocks channel subscription');
-        const channel = channelRef.current;
-        
-        // Reset refs before cleanup to prevent race conditions
-        channelRef.current = null;
+        channelRef.current.unsubscribe();
+        supabase.removeChannel(channelRef.current);
         isSubscribedRef.current = false;
-        
-        // Now safely cleanup the channel
-        channel.unsubscribe();
-        supabase.removeChannel(channel);
       } catch (error) {
-        console.warn('Error during blocks channel cleanup:', error);
+        console.warn('Error removing blocks channel:', error);
       }
+      channelRef.current = null;
     }
-    
-    isCleaningUpRef.current = false;
   }, []);
 
   useEffect(() => {
@@ -95,9 +80,6 @@ export function useBlockRealtimeSubscription({
       }
     );
 
-    // Store channel reference before subscribing
-    channelRef.current = channel;
-
     // Subscribe only once and track status
     channel.subscribe((status) => {
       console.log('Blocks subscription status:', status, 'for channel:', channelName);
@@ -105,12 +87,13 @@ export function useBlockRealtimeSubscription({
         isSubscribedRef.current = true;
       } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
         isSubscribedRef.current = false;
-        // Only reset channel ref if this is still the current channel
         if (channelRef.current === channel) {
           channelRef.current = null;
         }
       }
     });
+
+    channelRef.current = channel;
 
     return cleanup;
   }, [user?.id, pageId, onBlockInsert, onBlockUpdate, onBlockDelete, cleanup]);

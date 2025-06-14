@@ -179,17 +179,13 @@ const Sidebar = React.forwardRef<
       return (
         <div
           className={cn(
-            "flex h-full w-[--sidebar-width] flex-col bg-sidebar text-sidebar-foreground frosted-glass-sidebar",
+            "flex h-full w-[--sidebar-width] flex-col bg-sidebar text-sidebar-foreground",
             className
           )}
-          data-variant={variant}
           ref={ref}
           {...props}
         >
-          <div className="frosted-glass-content">
-            {children}
-          </div>
-          <div className="sidebar-border-enhancement" />
+          {children}
         </div>
       )
     }
@@ -250,16 +246,9 @@ const Sidebar = React.forwardRef<
         >
           <div
             data-sidebar="sidebar"
-            data-variant={variant}
-            className={cn(
-              "flex h-full w-full flex-col group-data-[variant=floating]:rounded-lg group-data-[variant=floating]:border group-data-[variant=floating]:border-sidebar-border group-data-[variant=floating]:shadow",
-              "frosted-glass-sidebar"
-            )}
+            className="flex h-full w-full flex-col bg-sidebar group-data-[variant=floating]:rounded-lg group-data-[variant=floating]:border group-data-[variant=floating]:border-sidebar-border group-data-[variant=floating]:shadow"
           >
-            <div className="frosted-glass-content">
-              {children}
-            </div>
-            <div className="sidebar-border-enhancement" />
+            {children}
           </div>
         </div>
       </div>

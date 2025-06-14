@@ -14,7 +14,6 @@ export function usePages(workspaceId?: string) {
   const { updatePageHierarchy: updateHierarchy } = usePageHierarchy();
   const channelRef = useRef<any>(null);
   const mountedRef = useRef(true);
-  const isCleaningUpRef = useRef<boolean>(false);
 
   const fetchPages = async () => {
     if (!user || !workspaceId) return;
@@ -68,30 +67,16 @@ export function usePages(workspaceId?: string) {
   };
 
   const cleanup = () => {
-    if (isCleaningUpRef.current) {
-      console.log('Pages cleanup already in progress, skipping...');
-      return;
-    }
-
-    isCleaningUpRef.current = true;
-
     if (channelRef.current) {
       try {
         console.log('Cleaning up pages channel subscription');
-        const channel = channelRef.current;
-        
-        // Reset refs before cleanup to prevent race conditions
-        channelRef.current = null;
-        
-        // Now safely cleanup the channel
-        channel.unsubscribe();
-        supabase.removeChannel(channel);
+        // Use unsubscribe instead of removeChannel for better compatibility
+        channelRef.current.unsubscribe();
       } catch (error) {
-        console.warn('Error during pages cleanup:', error);
+        console.warn('Error unsubscribing from pages channel:', error);
       }
+      channelRef.current = null;
     }
-
-    isCleaningUpRef.current = false;
   };
 
   useEffect(() => {
@@ -157,9 +142,6 @@ export function usePages(workspaceId?: string) {
         }
       );
 
-      // Store channel reference before subscribing
-      channelRef.current = channel;
-
       // Subscribe with proper error handling
       channel.subscribe((status, err) => {
         console.log('Pages subscription status:', status);
@@ -167,6 +149,8 @@ export function usePages(workspaceId?: string) {
           console.error('Pages subscription error:', err);
         }
       });
+
+      channelRef.current = channel;
     } catch (error) {
       console.error('Error setting up pages channel:', error);
     }

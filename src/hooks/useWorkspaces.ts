@@ -1,6 +1,5 @@
 
 import { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { InvitationService, InviteUserRequest } from '@/services/invitationService';
@@ -31,18 +30,14 @@ export interface WorkspaceMembership {
 
 export function useWorkspaces() {
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
-  const [currentWorkspace, setCurrentWorkspace] = useState<Workspace | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { user, loading: authLoading } = useAuth();
-  const navigate = useNavigate();
-  const params = useParams();
 
   const fetchWorkspaces = async () => {
     if (!user) {
       console.log('No user authenticated, clearing workspaces and stopping load');
       setWorkspaces([]);
-      setCurrentWorkspace(null);
       setLoading(false);
       setError(null);
       return;
@@ -66,43 +61,12 @@ export function useWorkspaces() {
       
       console.log('✅ Workspaces fetched successfully:', data?.length || 0);
       setWorkspaces(data || []);
-
-      // Set current workspace based on URL param or default to first workspace
-      if (data && data.length > 0) {
-        const workspaceId = params.workspaceId;
-        if (workspaceId) {
-          const workspace = data.find(w => w.id === workspaceId);
-          if (workspace) {
-            setCurrentWorkspace(workspace);
-          } else {
-            // If workspace ID in URL doesn't exist, default to first workspace
-            setCurrentWorkspace(data[0]);
-          }
-        } else {
-          // No workspace ID in URL, default to first workspace
-          setCurrentWorkspace(data[0]);
-        }
-      } else {
-        setCurrentWorkspace(null);
-      }
     } catch (err) {
       console.error('💥 Failed to fetch workspaces:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch workspaces');
       setWorkspaces([]);
-      setCurrentWorkspace(null);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const switchWorkspace = (workspaceId: string) => {
-    const workspace = workspaces.find(w => w.id === workspaceId);
-    if (workspace) {
-      setCurrentWorkspace(workspace);
-      // Navigate to the workspace if not already there
-      if (params.workspaceId !== workspaceId) {
-        navigate(`/workspace/${workspaceId}`);
-      }
     }
   };
 
@@ -203,23 +167,11 @@ export function useWorkspaces() {
     }
   }, [user, authLoading]);
 
-  // Update current workspace when URL params change
-  useEffect(() => {
-    if (workspaces.length > 0 && params.workspaceId) {
-      const workspace = workspaces.find(w => w.id === params.workspaceId);
-      if (workspace && (!currentWorkspace || currentWorkspace.id !== workspace.id)) {
-        setCurrentWorkspace(workspace);
-      }
-    }
-  }, [params.workspaceId, workspaces, currentWorkspace]);
-
   return {
     workspaces,
-    currentWorkspace,
     loading: loading || authLoading, // Show loading while auth is loading OR workspaces are loading
     error,
     fetchWorkspaces,
-    switchWorkspace,
     createWorkspace,
     updateWorkspace,
     deleteWorkspace,

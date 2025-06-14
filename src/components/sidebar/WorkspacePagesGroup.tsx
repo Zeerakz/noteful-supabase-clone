@@ -1,7 +1,7 @@
 
-import React, { useMemo, useState } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Loader2 } from 'lucide-react';
+import { Plus, Loader2, AlertTriangle } from 'lucide-react';
 import { DragDropContext, Droppable, DropResult } from 'react-beautiful-dnd';
 import {
   SidebarGroup,
@@ -11,78 +11,24 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
 } from '@/components/ui/sidebar';
+import { Button } from '@/components/ui/button';
 import { useEnhancedPages } from '@/hooks/useEnhancedPages';
 import { useToast } from '@/hooks/use-toast';
-import { useTreeViewKeyboardNavigation } from '@/hooks/useTreeViewKeyboardNavigation';
 import { PageTreeItem } from './PageTreeItem';
 import { validateDragAndDrop } from '@/utils/navigationConstraints';
-import { Page } from '@/hooks/usePages';
 
 interface WorkspacePagesGroupProps {
   workspaceId: string;
   workspaceName: string;
-  onNavigationItemSelect?: () => void;
 }
 
-export function WorkspacePagesGroup({ workspaceId, workspaceName, onNavigationItemSelect }: WorkspacePagesGroupProps) {
-  const { pages, updatePageHierarchy, deletePage, hasOptimisticChanges, loading } = useEnhancedPages(workspaceId);
+export function WorkspacePagesGroup({ workspaceId, workspaceName }: WorkspacePagesGroupProps) {
+  const { pages, createPage, updatePageHierarchy, deletePage, hasOptimisticChanges, loading } = useEnhancedPages(workspaceId);
   const { toast } = useToast();
   const navigate = useNavigate();
-  const [expandedPages, setExpandedPages] = useState<Set<string>>(new Set());
+  const [isCreating, setIsCreating] = React.useState(false);
 
   const topLevelPages = pages.filter(page => !page.parent_page_id);
-
-  // Convert pages to tree items for keyboard navigation
-  const treeItems = useMemo(() => {
-    const calculateLevel = (page: Page): number => {
-      if (!page.parent_page_id) return 0;
-      const parent = pages.find(p => p.id === page.parent_page_id);
-      return parent ? calculateLevel(parent) + 1 : 0;
-    };
-
-    return pages.map(page => ({
-      id: page.id,
-      parentId: page.parent_page_id,
-      hasChildren: pages.some(p => p.parent_page_id === page.id),
-      isExpanded: expandedPages.has(page.id),
-      level: calculateLevel(page),
-    }));
-  }, [pages, expandedPages]);
-
-  // Keyboard navigation handlers
-  const handleNavigate = (pageId: string) => {
-    navigate(`/workspace/${workspaceId}/page/${pageId}`);
-    onNavigationItemSelect?.();
-  };
-
-  const handleToggleExpanded = (pageId: string) => {
-    setExpandedPages(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(pageId)) {
-        newSet.delete(pageId);
-      } else {
-        newSet.add(pageId);
-      }
-      return newSet;
-    });
-  };
-
-  const handleActivate = (pageId: string) => {
-    navigate(`/workspace/${workspaceId}/page/${pageId}`);
-    onNavigationItemSelect?.();
-  };
-
-  const {
-    focusedItemId,
-    containerRef,
-    handleKeyDown,
-    focusItem,
-  } = useTreeViewKeyboardNavigation({
-    items: treeItems,
-    onNavigate: handleNavigate,
-    onToggleExpanded: handleToggleExpanded,
-    onActivate: handleActivate,
-  });
 
   const handleDragEnd = async (result: DropResult) => {
     if (!result.destination) return;
@@ -146,81 +92,118 @@ export function WorkspacePagesGroup({ workspaceId, workspaceName, onNavigationIt
     await deletePage(pageId);
   };
 
+  const handleCreatePage = async () => {
+    if (isCreating) return;
+    
+    setIsCreating(true);
+    console.log('Creating new page...');
+    
+    try {
+      const { data, error } = await createPage('Untitled Page');
+      
+      if (!error && data) {
+        console.log('Page created successfully, navigating to:', data.id);
+        // Navigate to the new page
+        navigate(`/workspace/${workspaceId}/page/${data.id}`);
+      } else if (error) {
+        console.error('Failed to create page:', error);
+      }
+    } catch (err) {
+      console.error('Error creating page:', err);
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
   if (loading) {
     return (
-      <li role="treeitem" aria-expanded="false">
-        <SidebarGroup data-testid="workspace-group-loading">
-          <SidebarGroupLabel className="flex items-center justify-between">
-            <span className="truncate flex items-center gap-2">
-              {workspaceName}
-              <Loader2 className="h-3 w-3 animate-spin" />
-            </span>
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton disabled className="text-muted-foreground">
-                  Loading pages...
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-      </li>
+      <SidebarGroup>
+        <SidebarGroupLabel className="flex items-center justify-between">
+          <span className="truncate flex items-center gap-2">
+            {workspaceName}
+            <Loader2 className="h-3 w-3 animate-spin" />
+          </span>
+        </SidebarGroupLabel>
+        <SidebarGroupContent>
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton disabled className="text-muted-foreground">
+                Loading pages...
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarGroupContent>
+      </SidebarGroup>
     );
   }
 
   return (
-    <li role="treeitem" aria-expanded="true">
-      <SidebarGroup data-testid="workspace-group">
-        <SidebarGroupLabel className="flex items-center justify-between">
-          <span className="truncate flex items-center gap-2">
-            {workspaceName}
-            {hasOptimisticChanges && (
-              <span className="inline-block w-2 h-2 bg-blue-500 rounded-full animate-pulse" title="Syncing changes..." />
-            )}
-          </span>
-        </SidebarGroupLabel>
-        <SidebarGroupContent>
-          <DragDropContext onDragEnd={handleDragEnd}>
-            <Droppable droppableId={`workspace-${workspaceId}`} type="page">
-              {(provided) => (
-                <nav aria-label={`${workspaceName} pages navigation`} ref={containerRef}>
-                  <ul role="group" aria-label={`${workspaceName} pages`}>
-                    <SidebarMenu ref={provided.innerRef} {...provided.droppableProps}>
-                      {topLevelPages.length === 0 ? (
-                        <SidebarMenuItem>
-                          <SidebarMenuButton className="text-muted-foreground" disabled>
-                            <span>No pages yet</span>
-                          </SidebarMenuButton>
-                        </SidebarMenuItem>
+    <SidebarGroup>
+      <SidebarGroupLabel className="flex items-center justify-between">
+        <span className="truncate flex items-center gap-2">
+          {workspaceName}
+          {hasOptimisticChanges && (
+            <span className="inline-block w-2 h-2 bg-blue-500 rounded-full animate-pulse" title="Syncing changes..." />
+          )}
+        </span>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleCreatePage}
+          disabled={isCreating}
+          className="h-4 w-4 p-0 opacity-70 hover:opacity-100"
+          title="New Page"
+        >
+          {isCreating ? (
+            <Loader2 className="h-3 w-3 animate-spin" />
+          ) : (
+            <Plus className="h-3 w-3" />
+          )}
+        </Button>
+      </SidebarGroupLabel>
+      <SidebarGroupContent>
+        <DragDropContext onDragEnd={handleDragEnd}>
+          <Droppable droppableId={`workspace-${workspaceId}`} type="page">
+            {(provided) => (
+              <SidebarMenu ref={provided.innerRef} {...provided.droppableProps}>
+                {topLevelPages.length === 0 ? (
+                  <SidebarMenuItem>
+                    <SidebarMenuButton 
+                      onClick={handleCreatePage} 
+                      disabled={isCreating}
+                      className="text-muted-foreground"
+                    >
+                      {isCreating ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          <span>Creating...</span>
+                        </>
                       ) : (
-                        topLevelPages.map((page, index) => (
-                          <PageTreeItem
-                            key={page.id}
-                            page={page}
-                            pages={pages}
-                            workspaceId={workspaceId}
-                            onDelete={handleDeletePage}
-                            index={index}
-                            focusedItemId={focusedItemId}
-                            onKeyDown={handleKeyDown}
-                            onToggleExpanded={handleToggleExpanded}
-                            isExpanded={expandedPages.has(page.id)}
-                            level={0}
-                            onNavigationItemSelect={onNavigationItemSelect}
-                          />
-                        ))
+                        <>
+                          <Plus className="h-4 w-4" />
+                          <span>Create first page</span>
+                        </>
                       )}
-                      {provided.placeholder}
-                    </SidebarMenu>
-                  </ul>
-                </nav>
-              )}
-            </Droppable>
-          </DragDropContext>
-        </SidebarGroupContent>
-      </SidebarGroup>
-    </li>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ) : (
+                  topLevelPages.map((page, index) => (
+                    <PageTreeItem
+                      key={page.id}
+                      page={page}
+                      pages={pages}
+                      workspaceId={workspaceId}
+                      onDelete={handleDeletePage}
+                      index={index}
+                    />
+                  ))
+                )}
+                {provided.placeholder}
+              </SidebarMenu>
+            )}
+          </Droppable>
+        </DragDropContext>
+      </SidebarGroupContent>
+    </SidebarGroup>
   );
 }

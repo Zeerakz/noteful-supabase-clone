@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/button';
 import { LogOut, User } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { DarkModeToggle } from '@/components/ui/dark-mode-toggle';
-import { SkipToContent } from '@/components/accessibility/SkipToContent';
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -15,9 +14,6 @@ export function AppLayout({ children }: AppLayoutProps) {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Skip to content link - first focusable element */}
-      <SkipToContent />
-      
       <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
@@ -40,13 +36,7 @@ export function AppLayout({ children }: AppLayoutProps) {
         </div>
       </header>
       
-      <main 
-        id="main-content" 
-        role="main" 
-        aria-label="Main content"
-      >
-        {children}
-      </main>
+      <main>{children}</main>
     </div>
   );
 }
