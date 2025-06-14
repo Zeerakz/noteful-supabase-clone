@@ -1,0 +1,90 @@
+
+/* Focus States - Enhanced focus management for accessibility */
+
+@layer components {
+  /* Enhanced Focus States for Interactive Elements with WCAG compliance */
+  .focus-button {
+    @apply focus-visible:outline-none;
+    transition: all var(--motion-duration-fast) var(--motion-ease-out);
+  }
+  
+  .focus-button:focus-visible {
+    outline: 3px solid hsl(var(--primary));
+    outline-offset: 2px;
+    box-shadow: 
+      0 0 0 3px hsl(var(--primary)),
+      0 0 0 6px hsl(var(--primary) / 0.2);
+  }
+
+  .focus-input {
+    @apply focus-visible:outline-none;
+    transition: all var(--motion-duration-fast) var(--motion-ease-out);
+  }
+  
+  .focus-input:focus-visible {
+    outline: 2px solid hsl(var(--primary));
+    outline-offset: 1px;
+    border-color: hsl(var(--primary));
+    box-shadow: 0 0 0 4px hsl(var(--primary) / 0.2);
+  }
+
+  .focus-table-cell {
+    @apply focus-visible:outline-none;
+    transition: all var(--motion-duration-fast) var(--motion-ease-out);
+  }
+  
+  .focus-table-cell:focus-visible {
+    outline: 2px solid hsl(var(--primary));
+    outline-offset: -2px;
+    background-color: hsl(var(--primary) / 0.05);
+    box-shadow: inset 0 0 0 2px hsl(var(--primary));
+  }
+
+  .focus-dropdown {
+    @apply focus-visible:outline-none;
+    transition: all var(--motion-duration-fast) var(--motion-ease-out);
+  }
+  
+  .focus-dropdown:focus-visible {
+    outline: 2px solid hsl(var(--primary));
+    outline-offset: -1px;
+    background-color: hsl(var(--accent));
+  }
+
+  .focus-tab {
+    @apply focus-visible:outline-none;
+    transition: all var(--motion-duration-fast) var(--motion-ease-out);
+  }
+  
+  .focus-tab:focus-visible {
+    outline: 2px solid hsl(var(--primary));
+    outline-offset: 1px;
+    background-color: hsl(var(--primary) / 0.1);
+  }
+
+  .focus-checkbox {
+    @apply focus-visible:outline-none;
+    transition: all var(--motion-duration-fast) var(--motion-ease-out);
+  }
+  
+  .focus-checkbox:focus-visible {
+    outline: 3px solid hsl(var(--primary));
+    outline-offset: 2px;
+    box-shadow: 0 0 0 6px hsl(var(--primary) / 0.2);
+  }
+
+  /* High contrast mode enhanced focus states */
+  @media (prefers-contrast: high) {
+    .focus-button:focus-visible,
+    .focus-input:focus-visible,
+    .focus-table-cell:focus-visible,
+    .focus-dropdown:focus-visible,
+    .focus-tab:focus-visible,
+    .focus-checkbox:focus-visible {
+      outline-width: 4px;
+      box-shadow: 
+        0 0 0 4px hsl(var(--primary)),
+        0 0 0 8px hsl(var(--primary) / 0.3);
+    }
+  }
+}

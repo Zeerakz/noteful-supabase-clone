@@ -1,0 +1,38 @@
+
+/* Typography System - Text styles and hierarchy */
+
+@layer components {
+  /* Enhanced typographic system classes with improved contrast */
+  .text-hero {
+    /* Data content - the most effortlessly legible */
+    @apply text-sm font-normal leading-relaxed tracking-normal;
+    color: hsl(var(--foreground));
+    line-height: calc(var(--grid-6x) * 1);
+  }
+  
+  .text-column-header {
+    /* Column headers - distinct from content through weight and color */
+    @apply text-xs font-semibold uppercase tracking-[0.05em];
+    color: hsl(var(--muted-foreground));
+    line-height: calc(var(--grid-4x) * 1);
+  }
+  
+  .text-view-tab {
+    /* View switcher tabs - legible but secondary */
+    @apply text-xs font-medium tracking-normal;
+    line-height: calc(var(--grid-4x) * 1);
+  }
+  
+  .text-database-title {
+    /* Main database title - confident but quiet presence */
+    @apply text-2xl font-medium tracking-[-0.02em] leading-tight;
+    color: hsl(var(--foreground));
+    line-height: calc(var(--grid-8x) * 1);
+  }
+  
+  .text-action-button {
+    /* Action buttons - functional weight */
+    @apply text-xs font-semibold tracking-normal;
+    line-height: calc(var(--grid-4x) * 1);
+  }
+}
