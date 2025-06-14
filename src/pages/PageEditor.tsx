@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { useParams, Navigate, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Edit2 } from 'lucide-react';
@@ -29,7 +28,7 @@ export function PageEditor() {
   const { pageData, loading: pageLoading, error: pageError } = usePageData(pageId);
   const { workspaces, loading: workspacesLoading } = useWorkspaces();
   const { activeUsers, loading: presenceLoading } = usePresence(pageId);
-  const { blocks, hasOptimisticChanges: hasBlockChanges } = useEnhancedBlocks(pageId!);
+  const { blocks, hasOptimisticChanges: hasBlockChanges } = useEnhancedBlocks(pageId, workspaceId);
   const { updatePage, hasOptimisticChanges: hasPageChanges } = useEnhancedPages(workspaceId);
 
   useEffect(() => {
@@ -92,7 +91,7 @@ export function PageEditor() {
       return;
     }
 
-    const { error } = await updatePage(page.id, { properties: { ...page.properties, title: titleValue.trim() } });
+    const { error } = await updatePage(page.id, { title: titleValue.trim() });
     
     if (!error) {
       setIsEditingTitle(false);

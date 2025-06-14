@@ -1,7 +1,7 @@
 import { usePages } from '@/hooks/usePages';
 import { useOptimisticPages } from '@/hooks/useOptimisticPages';
 import { useCallback } from 'react';
-import { Page } from '@/types/page';
+import { Block } from '@/types/block';
 import { useToast } from '@/hooks/use-toast';
 import { canNestPage } from '@/utils/navigationConstraints';
 
@@ -42,8 +42,9 @@ export function useEnhancedPages(workspaceId?: string) {
     // Optimistic update
     const tempId = optimisticCreatePage({
       properties: { title },
-      parent_page_id: parentPageId,
+      parent_id: parentPageId,
       workspace_id: workspaceId,
+      type: 'page',
     });
 
     console.log('Created optimistic page with tempId:', tempId);
@@ -87,12 +88,12 @@ export function useEnhancedPages(workspaceId?: string) {
     }
   }, [workspaceId, createPage, optimisticCreatePage, clearOptimisticCreation, clearOptimisticCreationByMatch, toast, optimisticPages]);
 
-  const enhancedUpdatePage = useCallback(async (id: string, updates: Partial<Pick<Page, 'title' | 'parent_page_id' | 'order_index'>>) => {
+  const enhancedUpdatePage = useCallback(async (id: string, updates: { title?: string, parent_id?: string | null, pos?: number }) => {
     console.log('Updating page optimistically:', { id, updates });
 
     // Validate nesting depth if parent is being changed
-    if (updates.parent_page_id !== undefined) {
-      const validation = canNestPage(optimisticPages, id, updates.parent_page_id);
+    if (updates.parent_id !== undefined) {
+      const validation = canNestPage(optimisticPages, id, updates.parent_id);
       if (!validation.canNest) {
         toast({
           title: "Cannot move page",
@@ -103,29 +104,31 @@ export function useEnhancedPages(workspaceId?: string) {
       }
     }
 
+    const currentPage = optimisticPages.find(p => p.id === id);
+
     // Transform updates for the block structure
     const blockUpdates: Partial<Block> = {};
     if (updates.title !== undefined) {
-      blockUpdates.properties = { title: updates.title };
+      blockUpdates.properties = { ...currentPage?.properties, title: updates.title };
     }
-    if (updates.parent_page_id !== undefined) {
-      blockUpdates.parent_id = updates.parent_page_id;
+    if (updates.parent_id !== undefined) {
+      blockUpdates.parent_id = updates.parent_id;
     }
-    if (updates.order_index !== undefined) {
-      blockUpdates.pos = updates.order_index;
+    if (updates.pos !== undefined) {
+      blockUpdates.pos = updates.pos;
     }
 
     // Optimistic update
     optimisticUpdatePage(id, blockUpdates);
 
     try {
-      const { data, error } = await updatePage(id, updates);
+      const { data, error } = await updatePage(id, blockUpdates);
       
       if (error) {
         console.error('Server page update failed:', error);
         // Revert optimistic update on error
         clearOptimisticUpdate(id);
-        throw new Error(error);
+        throw error;
       }
 
       console.log('Server page update successful:', data);
@@ -150,7 +153,7 @@ export function useEnhancedPages(workspaceId?: string) {
     const pageToDelete = optimisticPages.find(p => p.id === id);
     if (!pageToDelete) return { error: 'Page not found' };
 
-    console.log('Deleting page optimistically:', { id, title: pageToDelete.title });
+    console.log('Deleting page optimistically:', { id, title: pageToDelete.properties?.title });
 
     // Optimistic update
     optimisticDeletePage(id);
@@ -205,8 +208,8 @@ export function useEnhancedPages(workspaceId?: string) {
 
     // Optimistic update
     optimisticUpdatePage(pageId, {
-      parent_page_id: newParentId,
-      order_index: newIndex,
+      parent_id: newParentId,
+      pos: newIndex,
     });
 
     try {

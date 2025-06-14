@@ -1,8 +1,8 @@
-
 import { useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { DatabaseField } from '@/types/database';
 import { useAuth } from '@/contexts/AuthContext';
+import { PropertyType } from '@/types/property';
 
 export function useDatabaseFieldOperations(databaseId?: string, onFieldsChange?: () => void) {
   const { user } = useAuth();
@@ -11,7 +11,7 @@ export function useDatabaseFieldOperations(databaseId?: string, onFieldsChange?:
     onFieldsChange?.();
   };
 
-  const createField = useCallback(async (field: { name: string; type: any; settings?: any; }) => {
+  const createField = useCallback(async (field: { name: string; type: PropertyType; settings?: any; }) => {
     if (!databaseId || !user) return;
     const { error } = await supabase.from('fields').insert({
       database_id: databaseId,
@@ -36,7 +36,7 @@ export function useDatabaseFieldOperations(databaseId?: string, onFieldsChange?:
   }, [databaseId, handleSuccess]);
 
   const duplicateField = useCallback(async (field: DatabaseField) => {
-    if (!databaseId) return;
+    if (!databaseId || !user) return;
 
     const originalField = field;
     
@@ -57,7 +57,7 @@ export function useDatabaseFieldOperations(databaseId?: string, onFieldsChange?:
       ...fieldToCopy,
       name: `${originalField.name} (Copy)`,
       pos: newPosition,
-      created_by: originalField.created_by, // Assuming we want to keep the original creator
+      created_by: user.id,
     };
 
     const { error: insertError } = await supabase.from('fields').insert(newField);
@@ -67,7 +67,7 @@ export function useDatabaseFieldOperations(databaseId?: string, onFieldsChange?:
     } else {
       handleSuccess();
     }
-  }, [databaseId, handleSuccess]);
+  }, [databaseId, user, handleSuccess]);
 
   const reorderFields = useCallback(async (fields: DatabaseField[]) => {
     if (!databaseId) return;

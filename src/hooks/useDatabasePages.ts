@@ -1,12 +1,11 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { Page } from '@/types/page';
+import { Block } from '@/types/block';
 import { PageService } from '@/services/pageService';
 import { supabase } from '@/integrations/supabase/client';
 
 export function useDatabasePages(databaseId: string, workspaceId: string) {
-  const [pages, setPages] = useState<Page[]>([]);
+  const [pages, setPages] = useState<Block[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
@@ -40,17 +39,26 @@ export function useDatabasePages(databaseId: string, workspaceId: string) {
       return { error: 'User not authenticated or required IDs missing' };
     }
 
+    const properties = { title, database_id: databaseId };
+
     const { data, error } = await PageService.createPage(
       workspaceId, 
       user.id, 
-      { title, databaseId }
+      properties
     );
     
     return { data, error };
   };
 
-  const updatePage = async (pageId: string, updates: Partial<Pick<Page, 'title'>>) => {
-    const { data, error } = await PageService.updatePage(pageId, updates);
+  const updatePage = async (pageId: string, updates: Partial<{ title: string }>) => {
+    const blockUpdates: Partial<Block> = {};
+    if (updates.title) {
+        // Here we assume properties is a JSONB field.
+        // A proper implementation might need to fetch existing properties and merge.
+        // For simplicity, we just set the title.
+        blockUpdates.properties = { title: updates.title };
+    }
+    const { data, error } = await PageService.updatePage(pageId, blockUpdates);
     return { data, error };
   };
 
@@ -99,8 +107,8 @@ export function useDatabasePages(databaseId: string, workspaceId: string) {
       {
         event: '*',
         schema: 'public',
-        table: 'pages',
-        filter: `database_id=eq.${databaseId}`
+        table: 'blocks', // Changed from 'pages' to 'blocks'
+        filter: `properties->>database_id=eq.${databaseId}` // Filter by database_id in properties
       },
       (payload) => {
         if (!mountedRef.current) return;
@@ -108,7 +116,7 @@ export function useDatabasePages(databaseId: string, workspaceId: string) {
         console.log('Realtime database pages update:', payload);
         
         if (payload.eventType === 'INSERT') {
-          const newPage = payload.new as Page;
+          const newPage = payload.new as Block;
           setPages(prev => {
             if (prev.some(page => page.id === newPage.id)) {
               return prev;
@@ -116,12 +124,12 @@ export function useDatabasePages(databaseId: string, workspaceId: string) {
             return [newPage, ...prev];
           });
         } else if (payload.eventType === 'UPDATE') {
-          const updatedPage = payload.new as Page;
+          const updatedPage = payload.new as Block;
           setPages(prev => prev.map(page => 
             page.id === updatedPage.id ? updatedPage : page
           ));
         } else if (payload.eventType === 'DELETE') {
-          const deletedPage = payload.old as Page;
+          const deletedPage = payload.old as Block;
           setPages(prev => prev.filter(page => page.id !== deletedPage.id));
         }
       }

@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useParams, Navigate, useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
@@ -19,7 +20,7 @@ function PageViewContent() {
   const { pageData, loading: pageLoading, error: pageError, retry: retryPage } = usePageData(pageId);
   const { properties, loading: propertiesLoading, error: propertiesError, updateProperty, retry: retryProperties } = useStablePageProperties(pageId);
   const { userProfiles } = useUserProfiles(pageData?.workspace?.id);
-  const { fields, loading: fieldsLoading } = useDatabaseFields(pageData?.database_id);
+  const { fields, loading: fieldsLoading } = useDatabaseFields(pageData?.properties.database_id);
 
   const handlePropertyUpdate = async (fieldId: string, value: any) => {
     try {
@@ -80,7 +81,7 @@ function PageViewContent() {
   }
 
   // Show properties section if this page belongs to a database
-  const showProperties = pageData.database_id && fields.length > 0;
+  const showProperties = pageData.properties.database_id && fields.length > 0;
 
   // Convert properties array to Record<string, string> format
   const propertiesRecord = properties.reduce((acc, property) => {

@@ -1,13 +1,12 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { Page } from '@/types/page';
+import { Block } from '@/types/block';
 import { PageService } from '@/services/pageService';
 import { usePageHierarchy } from '@/hooks/usePageHierarchy';
 import { supabase } from '@/integrations/supabase/client';
 
 export function usePages(workspaceId?: string) {
-  const [pages, setPages] = useState<Page[]>([]);
+  const [pages, setPages] = useState<Block[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
@@ -37,19 +36,25 @@ export function usePages(workspaceId?: string) {
     }
   };
 
-  const createPage = async (title: string, parentPageId?: string) => {
+  const createPage = async (title: string, parentId?: string, databaseId?: string) => {
     if (!user || !workspaceId) return { error: 'User not authenticated or workspace not selected' };
 
+    const properties: Record<string, any> = { title };
+    if (databaseId) {
+      properties.database_id = databaseId;
+    }
+
     const { data, error } = await PageService.createPage(
-      workspaceId, 
-      user.id, 
-      { title, parentPageId }
+      workspaceId,
+      user.id,
+      properties,
+      parentId
     );
     
     return { data, error };
   };
 
-  const updatePage = async (id: string, updates: Partial<Pick<Page, 'title' | 'parent_page_id' | 'order_index'>>) => {
+  const updatePage = async (id: string, updates: Partial<Block>) => {
     const { data, error } = await PageService.updatePage(id, updates);
     return { data, error };
   };
@@ -113,7 +118,7 @@ export function usePages(workspaceId?: string) {
         {
           event: '*',
           schema: 'public',
-          table: 'pages',
+          table: 'blocks',
           filter: `workspace_id=eq.${workspaceId}`
         },
         (payload) => {
@@ -122,21 +127,21 @@ export function usePages(workspaceId?: string) {
           console.log('Realtime pages update:', payload);
           
           if (payload.eventType === 'INSERT') {
-            const newPage = payload.new as Page;
+            const newPage = payload.new as Block;
             setPages(prev => {
               // Prevent duplicates
               if (prev.some(page => page.id === newPage.id)) {
                 return prev;
               }
-              return [...prev, newPage].sort((a, b) => a.order_index - b.order_index);
+              return [...prev, newPage].sort((a, b) => a.pos - b.pos);
             });
           } else if (payload.eventType === 'UPDATE') {
-            const updatedPage = payload.new as Page;
+            const updatedPage = payload.new as Block;
             setPages(prev => prev.map(page => 
               page.id === updatedPage.id ? updatedPage : page
-            ).sort((a, b) => a.order_index - b.order_index));
+            ).sort((a, b) => a.pos - b.pos));
           } else if (payload.eventType === 'DELETE') {
-            const deletedPage = payload.old as Page;
+            const deletedPage = payload.old as Block;
             setPages(prev => prev.filter(page => page.id !== deletedPage.id));
           }
         }
@@ -174,4 +179,4 @@ export function usePages(workspaceId?: string) {
 }
 
 // Re-export the Page type for backward compatibility
-export type { Page } from '@/types/page';
+export type { Block } from '@/types/block';

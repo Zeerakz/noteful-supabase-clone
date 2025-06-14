@@ -205,13 +205,15 @@ export function useBenchmarkData() {
     for (let batch = 0; batch < batches; batch++) {
       const batchStartTime = performance.now();
       const currentBatchSize = Math.min(batchSize, rowCount - (batch * batchSize));
-      const blocks: Omit<Block, 'id' | 'created_time' | 'last_edited_time'>[] = [];
+      const blocks: Omit<Block, 'created_time' | 'last_edited_time'>[] = [];
       const properties: any[] = [];
+      const pageIdMap: { [key: number]: string } = {};
 
-      // Generate blocks for this batch
+      // Generate data for this batch
       for (let i = 0; i < currentBatchSize; i++) {
         const pageIndex = (batch * batchSize) + i;
-        const pageId = `test_page_${pageIndex}`;
+        const pageId = crypto.randomUUID();
+        pageIdMap[pageIndex] = pageId;
         
         blocks.push({
           id: pageId,
@@ -278,7 +280,7 @@ export function useBenchmarkData() {
       try {
         const { error: blocksError } = await supabase
           .from('blocks')
-          .insert(blocks.map(b => ({...b, id: undefined}))); // Let db generate UUID
+          .insert(blocks.map(b => ({...b, type: b.type as any})));
 
         if (blocksError) {
           console.error(`Error inserting blocks batch ${batch}:`, blocksError);

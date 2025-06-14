@@ -1,11 +1,11 @@
 import { useBlockOperations } from '@/hooks/blocks/useBlockOperations';
 import { useOptimisticBlocks } from '@/hooks/useOptimisticBlocks';
 import { useCallback } from 'react';
-import { Block, BlockUpdateParams } from '@/hooks/blocks/types';
+import { BlockUpdateParams } from '@/hooks/blocks/types';
 import { useToast } from '@/hooks/use-toast';
 
-export function useEnhancedBlocks(pageId?: string) {
-  const { blocks, loading, error, createBlock, updateBlock, deleteBlock, refetch: fetchBlocks } = useBlockOperations(pageId);
+export function useEnhancedBlocks(pageId?: string, workspaceId?: string) {
+  const { blocks, loading, error, createBlock, updateBlock, deleteBlock, refetch: fetchBlocks } = useBlockOperations(workspaceId, pageId);
   const { toast } = useToast();
 
   const {
@@ -20,19 +20,20 @@ export function useEnhancedBlocks(pageId?: string) {
   } = useOptimisticBlocks({ blocks });
 
   const enhancedCreateBlock = useCallback(async (type: string, content: any = {}, parentBlockId?: string) => {
-    if (!pageId) return { error: 'Page not selected', data: null };
+    if (!workspaceId || !pageId) return { error: 'Page or workspace not selected', data: null };
 
     // Optimistic update
     const tempId = optimisticCreateBlock({
-      page_id: pageId,
+      workspace_id: workspaceId,
       type: type as any,
       content,
-      parent_block_id: parentBlockId,
+      parent_id: parentBlockId || pageId,
       pos: Date.now(),
+      properties: {},
     });
 
     try {
-      const { data, error } = await createBlock({ type: type as any, content, parent_id: parentBlockId });
+      const { data, error } = await createBlock({ type: type as any, content, parent_id: parentBlockId || pageId });
       
       if (error) {
         // Revert optimistic update on error
@@ -53,7 +54,7 @@ export function useEnhancedBlocks(pageId?: string) {
       });
       return { data: null, error: errorMessage };
     }
-  }, [pageId, createBlock, optimisticCreateBlock, clearOptimisticCreation, toast]);
+  }, [pageId, workspaceId, createBlock, optimisticCreateBlock, clearOptimisticCreation, toast]);
 
   const enhancedUpdateBlock = useCallback(async (id: string, updates: BlockUpdateParams) => {
     // Optimistic update
