@@ -1,5 +1,5 @@
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import { DragDropContext, Droppable, DropResult } from 'react-beautiful-dnd';
@@ -13,8 +13,7 @@ import {
 } from '@/components/ui/sidebar';
 import { useEnhancedPages } from '@/hooks/useEnhancedPages';
 import { useToast } from '@/hooks/use-toast';
-import { useEnhancedTreeViewNavigation } from '@/hooks/useEnhancedTreeViewNavigation';
-import { useNavigationState } from '@/contexts/NavigationStateContext';
+import { useTreeViewKeyboardNavigation } from '@/hooks/useTreeViewKeyboardNavigation';
 import { PageTreeItem } from './PageTreeItem';
 import { validateDragAndDrop } from '@/utils/navigationConstraints';
 import { Page } from '@/hooks/usePages';
@@ -29,16 +28,11 @@ export function WorkspacePagesGroup({ workspaceId, workspaceName, onNavigationIt
   const { pages, updatePageHierarchy, deletePage, hasOptimisticChanges, loading } = useEnhancedPages(workspaceId);
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { isExpanded, setActiveWorkspace } = useNavigationState();
-
-  // Set active workspace when component mounts
-  React.useEffect(() => {
-    setActiveWorkspace(workspaceId);
-  }, [workspaceId, setActiveWorkspace]);
+  const [expandedPages, setExpandedPages] = useState<Set<string>>(new Set());
 
   const topLevelPages = pages.filter(page => !page.parent_page_id);
 
-  // Convert pages to tree items for keyboard navigation using centralized expansion state
+  // Convert pages to tree items for keyboard navigation
   const treeItems = useMemo(() => {
     const calculateLevel = (page: Page): number => {
       if (!page.parent_page_id) return 0;
@@ -50,15 +44,27 @@ export function WorkspacePagesGroup({ workspaceId, workspaceName, onNavigationIt
       id: page.id,
       parentId: page.parent_page_id,
       hasChildren: pages.some(p => p.parent_page_id === page.id),
-      isExpanded: isExpanded(page.id),
+      isExpanded: expandedPages.has(page.id),
       level: calculateLevel(page),
     }));
-  }, [pages, isExpanded]);
+  }, [pages, expandedPages]);
 
   // Keyboard navigation handlers
   const handleNavigate = (pageId: string) => {
     navigate(`/workspace/${workspaceId}/page/${pageId}`);
     onNavigationItemSelect?.();
+  };
+
+  const handleToggleExpanded = (pageId: string) => {
+    setExpandedPages(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(pageId)) {
+        newSet.delete(pageId);
+      } else {
+        newSet.add(pageId);
+      }
+      return newSet;
+    });
   };
 
   const handleActivate = (pageId: string) => {
@@ -68,15 +74,13 @@ export function WorkspacePagesGroup({ workspaceId, workspaceName, onNavigationIt
 
   const {
     focusedItemId,
-    currentItemId,
     containerRef,
     handleKeyDown,
     focusItem,
-    isFocused,
-    isCurrent,
-  } = useEnhancedTreeViewNavigation({
+  } = useTreeViewKeyboardNavigation({
     items: treeItems,
     onNavigate: handleNavigate,
+    onToggleExpanded: handleToggleExpanded,
     onActivate: handleActivate,
   });
 
@@ -200,13 +204,10 @@ export function WorkspacePagesGroup({ workspaceId, workspaceName, onNavigationIt
                             onDelete={handleDeletePage}
                             index={index}
                             focusedItemId={focusedItemId}
-                            currentItemId={currentItemId}
                             onKeyDown={handleKeyDown}
-                            level={0}
+                            onToggleExpanded={handleToggleExpanded}
+                            isExpanded={expandedPages.has(page.id)}
                             onNavigationItemSelect={onNavigationItemSelect}
-                            // Pass accessibility state functions
-                            isFocused={isFocused}
-                            isCurrent={isCurrent}
                           />
                         ))
                       )}

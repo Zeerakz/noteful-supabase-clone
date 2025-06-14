@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Draggable, Droppable } from 'react-beautiful-dnd';
 import { FileText, ChevronRight, ChevronDown, MoreHorizontal, Trash2 } from 'lucide-react';
 import {
@@ -51,7 +51,6 @@ export function PageTreeItem({
   isCurrent,
 }: PageTreeItemProps) {
   const navigate = useNavigate();
-  const location = useLocation();
   const { toggleExpanded, isExpanded } = useNavigationState();
   
   const subPages = pages.filter(p => p.parent_page_id === page.id);
@@ -59,9 +58,6 @@ export function PageTreeItem({
   const expanded = isExpanded(page.id);
   const focused = isFocused ? isFocused(page.id) : focusedItemId === page.id;
   const current = isCurrent ? isCurrent(page.id) : currentItemId === page.id;
-  
-  // Check if this page is currently active based on the URL
-  const isActive = location.pathname === `/workspace/${workspaceId}/page/${page.id}`;
 
   const handleNavigate = () => {
     navigate(`/workspace/${workspaceId}/page/${page.id}`);
@@ -99,7 +95,7 @@ export function PageTreeItem({
             role="treeitem"
             aria-expanded={hasChildren ? expanded : undefined}
             aria-level={level + 1}
-            aria-current={isActive ? 'page' : undefined}
+            aria-current={current ? 'page' : undefined}
             data-tree-item-id={page.id}
             className={cn(
               "group relative",
@@ -111,7 +107,7 @@ export function PageTreeItem({
               onClick={handleNavigate}
               onKeyDown={handleKeyDown}
               className="w-full justify-start text-left pr-8"
-              data-state={isActive ? "active" : undefined}
+              data-active={window.location.pathname === `/workspace/${workspaceId}/page/${page.id}`}
               tabIndex={focused ? 0 : -1}
             >
               <div {...provided.dragHandleProps} className="flex items-center gap-1 min-w-0 flex-1">
