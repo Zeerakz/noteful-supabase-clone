@@ -1,30 +1,13 @@
 
-export interface Block {
-  id: string;
-  page_id: string;
-  parent_block_id?: string;
-  type: string;
-  content: any;
-  pos: number;
-  created_by: string;
-  created_at: string;
-  updated_at: string;
-}
+import { Block } from '@/types/block';
 
-export interface BlockCreateParams {
-  type: string;
-  content?: any;
-  parentBlockId?: string;
-}
+export type { Block };
 
-export interface BlockUpdateParams {
-  type?: string;
-  content?: any;
-  pos?: number;
-  parent_block_id?: string;
-}
+export type BlockCreateParams = Partial<Omit<Block, 'id' | 'created_time' | 'last_edited_time'>>;
 
-export interface BlockOperationResult<T = any> {
+export type BlockUpdateParams = Partial<Omit<Block, 'id' | 'workspace_id' | 'created_time' | 'created_by'>>;
+
+export interface BlockOperationResult<T> {
   data: T | null;
   error: string | null;
 }

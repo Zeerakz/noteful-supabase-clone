@@ -1,18 +1,17 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Block, BlockCreateParams, BlockUpdateParams, BlockOperationResult } from './types';
-import { blockCreationService } from './useBlockCreation';
 
-export function useBlockOperations(pageId?: string) {
+export function useBlockOperations(workspaceId?: string, parentId?: string | null) {
   const [blocks, setBlocks] = useState<Block[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
 
-  const fetchBlocks = async () => {
-    if (!user || !pageId) {
+  const fetchBlocks = useCallback(async () => {
+    if (!user || !workspaceId) {
       setBlocks([]);
       setLoading(false);
       return;
@@ -20,15 +19,26 @@ export function useBlockOperations(pageId?: string) {
 
     try {
       setLoading(true);
-      console.log('Fetching blocks for page:', pageId);
-      const { data, error } = await supabase
+      let query = supabase
         .from('blocks')
         .select('*')
-        .eq('page_id', pageId)
-        .order('pos', { ascending: true });
+        .eq('workspace_id', workspaceId)
+        .eq('archived', false);
+
+      if (parentId === undefined) {
+        // If parentId is undefined, don't fetch anything yet
+        setBlocks([]);
+        setLoading(false);
+        return;
+      } else if (parentId === null) {
+        query = query.is('parent_id', null);
+      } else {
+        query = query.eq('parent_id', parentId);
+      }
+
+      const { data, error } = await query.order('created_time', { ascending: true });
 
       if (error) throw error;
-      console.log('Fetched blocks:', data);
       setBlocks(data || []);
       setError(null);
     } catch (err) {
@@ -37,114 +47,105 @@ export function useBlockOperations(pageId?: string) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user, workspaceId, parentId]);
 
-  // Automatically fetch blocks when pageId or user changes
   useEffect(() => {
     fetchBlocks();
-  }, [pageId, user?.id]);
+  }, [fetchBlocks]);
 
-  const createBlock = async (type: string, content: any = {}, parentBlockId?: string): Promise<BlockOperationResult<Block>> => {
-    if (!user || !pageId) return { error: 'User not authenticated or page not selected', data: null };
+  const createBlock = async (params: BlockCreateParams): Promise<BlockOperationResult<Block>> => {
+    if (!user || !workspaceId) return { error: 'User not authenticated or workspace not selected', data: null };
 
     const optimisticId = `temp-${Date.now()}`;
-    
     try {
-      // Get the position for the new block
-      const nextPos = blockCreationService.getDefaultPosition(blocks, parentBlockId);
-      
-      // Get the initial content for the block type
-      const initialContent = blockCreationService.getInitialContent(type, content);
-
-      const newBlock: Block = {
-        id: optimisticId,
-        page_id: pageId,
-        parent_block_id: parentBlockId || null,
-        type,
-        content: initialContent,
-        pos: nextPos,
+      const newBlockData: Omit<Block, 'id'> = {
+        workspace_id: workspaceId,
+        parent_id: parentId === undefined ? null : parentId,
+        type: params.type || 'text',
+        properties: params.properties || {},
+        content: params.content || null,
+        created_time: new Date().toISOString(),
+        last_edited_time: new Date().toISOString(),
         created_by: user.id,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
+        last_edited_by: user.id,
+        archived: false,
+        in_trash: false,
+        ...params,
       };
 
-      setBlocks(prev => [...prev, newBlock].sort((a, b) => a.pos - b.pos));
+      const optimisticBlock = { ...newBlockData, id: optimisticId };
+      setBlocks(prev => [...prev, optimisticBlock]);
 
       const { data, error } = await supabase
         .from('blocks')
-        .insert([
-          {
-            page_id: pageId,
-            parent_block_id: parentBlockId || null,
-            type,
-            content: initialContent,
-            pos: nextPos,
-            created_by: user.id,
-          },
-        ])
+        .insert({
+          workspace_id: newBlockData.workspace_id,
+          parent_id: newBlockData.parent_id,
+          type: newBlockData.type,
+          properties: newBlockData.properties,
+          content: newBlockData.content,
+          created_by: user.id,
+          last_edited_by: user.id,
+        })
         .select()
         .single();
 
       if (error) throw error;
-      
-      setBlocks(prev => prev.map(block => 
-        block.id === optimisticId ? data : block
-      ));
-      
+
+      setBlocks(prev => prev.map(block => (block.id === optimisticId ? data : block)));
       return { data, error: null };
     } catch (err) {
       setBlocks(prev => prev.filter(block => block.id !== optimisticId));
-      const error = err instanceof Error ? err.message : 'Failed to create block';
-      return { data: null, error };
+      const errorMsg = err instanceof Error ? err.message : 'Failed to create block';
+      setError(errorMsg);
+      return { data: null, error: errorMsg };
     }
   };
 
   const updateBlock = async (id: string, updates: BlockUpdateParams): Promise<BlockOperationResult<Block>> => {
+    if (!user) return { error: 'User not authenticated', data: null };
+    
     try {
-      setBlocks(prev => prev.map(block => 
-        block.id === id 
-          ? { ...block, ...updates, updated_at: new Date().toISOString() }
-          : block
-      ));
+      setBlocks(prev =>
+        prev.map(block =>
+          block.id === id ? { ...block, ...updates, last_edited_time: new Date().toISOString() } : block
+        )
+      );
 
       const { data, error } = await supabase
         .from('blocks')
-        .update({ ...updates, updated_at: new Date().toISOString() })
+        .update({ ...updates, last_edited_by: user.id })
         .eq('id', id)
         .select()
         .single();
 
       if (error) throw error;
-      
-      setBlocks(prev => prev.map(block => 
-        block.id === id ? data : block
-      ));
-      
+
+      setBlocks(prev => prev.map(block => (block.id === id ? data : block)));
       return { data, error: null };
     } catch (err) {
-      await fetchBlocks();
-      const error = err instanceof Error ? err.message : 'Failed to update block';
-      return { data: null, error };
+      await fetchBlocks(); // Refetch to get correct state
+      const errorMsg = err instanceof Error ? err.message : 'Failed to update block';
+      setError(errorMsg);
+      return { data: null, error: errorMsg };
     }
   };
 
   const deleteBlock = async (id: string): Promise<BlockOperationResult<void>> => {
     try {
-      const originalBlocks = blocks;
+      const originalBlocks = [...blocks];
       setBlocks(prev => prev.filter(block => block.id !== id));
 
-      const { error } = await supabase
-        .from('blocks')
-        .delete()
-        .eq('id', id);
+      const { error } = await supabase.from('blocks').delete().eq('id', id);
 
       if (error) throw error;
-      
-      return { data: null, error: null };
+
+      return { data: undefined, error: null };
     } catch (err) {
       setBlocks(blocks);
-      const error = err instanceof Error ? err.message : 'Failed to delete block';
-      return { data: null, error };
+      const errorMsg = err instanceof Error ? err.message : 'Failed to delete block';
+      setError(errorMsg);
+      return { data: null, error: errorMsg };
     }
   };
 
@@ -153,7 +154,7 @@ export function useBlockOperations(pageId?: string) {
     setBlocks,
     loading,
     error,
-    fetchBlocks,
+    refetch: fetchBlocks,
     createBlock,
     updateBlock,
     deleteBlock,

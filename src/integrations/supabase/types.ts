@@ -11,51 +11,60 @@ export type Database = {
     Tables: {
       blocks: {
         Row: {
+          archived: boolean
           content: Json | null
-          created_at: string | null
-          created_by: string
+          created_by: string | null
+          created_time: string
           id: string
-          page_id: string
-          parent_block_id: string | null
-          pos: number
-          type: string
-          updated_at: string | null
+          in_trash: boolean
+          last_edited_by: string | null
+          last_edited_time: string
+          parent_id: string | null
+          properties: Json
+          type: Database["public"]["Enums"]["block_type_enum"]
+          workspace_id: string
         }
         Insert: {
+          archived?: boolean
           content?: Json | null
-          created_at?: string | null
-          created_by: string
+          created_by?: string | null
+          created_time?: string
           id?: string
-          page_id: string
-          parent_block_id?: string | null
-          pos?: number
-          type: string
-          updated_at?: string | null
+          in_trash?: boolean
+          last_edited_by?: string | null
+          last_edited_time?: string
+          parent_id?: string | null
+          properties?: Json
+          type: Database["public"]["Enums"]["block_type_enum"]
+          workspace_id: string
         }
         Update: {
+          archived?: boolean
           content?: Json | null
-          created_at?: string | null
-          created_by?: string
+          created_by?: string | null
+          created_time?: string
           id?: string
-          page_id?: string
-          parent_block_id?: string | null
-          pos?: number
-          type?: string
-          updated_at?: string | null
+          in_trash?: boolean
+          last_edited_by?: string | null
+          last_edited_time?: string
+          parent_id?: string | null
+          properties?: Json
+          type?: Database["public"]["Enums"]["block_type_enum"]
+          workspace_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "blocks_page_id_fkey"
-            columns: ["page_id"]
+            foreignKeyName: "blocks_parent_id_fkey"
+            columns: ["parent_id"]
             isOneToOne: false
-            referencedRelation: "pages"
+            referencedRelation: "blocks"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "blocks_parent_block_id_fkey"
-            columns: ["parent_block_id"]
+            foreignKeyName: "blocks_workspace_id_fkey"
+            columns: ["workspace_id"]
             isOneToOne: false
-            referencedRelation: "blocks"
+            referencedRelation: "workspaces"
             referencedColumns: ["id"]
           },
         ]
@@ -90,7 +99,7 @@ export type Database = {
             foreignKeyName: "comments_block_id_fkey"
             columns: ["block_id"]
             isOneToOne: false
-            referencedRelation: "blocks"
+            referencedRelation: "legacy_blocks"
             referencedColumns: ["id"]
           },
           {
@@ -346,11 +355,120 @@ export type Database = {
             foreignKeyName: "files_block_id_fkey"
             columns: ["block_id"]
             isOneToOne: false
-            referencedRelation: "blocks"
+            referencedRelation: "legacy_blocks"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "files_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      legacy_blocks: {
+        Row: {
+          content: Json | null
+          created_at: string | null
+          created_by: string
+          id: string
+          page_id: string
+          parent_block_id: string | null
+          pos: number
+          type: string
+          updated_at: string | null
+        }
+        Insert: {
+          content?: Json | null
+          created_at?: string | null
+          created_by: string
+          id?: string
+          page_id: string
+          parent_block_id?: string | null
+          pos?: number
+          type: string
+          updated_at?: string | null
+        }
+        Update: {
+          content?: Json | null
+          created_at?: string | null
+          created_by?: string
+          id?: string
+          page_id?: string
+          parent_block_id?: string | null
+          pos?: number
+          type?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "blocks_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: false
+            referencedRelation: "legacy_pages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blocks_parent_block_id_fkey"
+            columns: ["parent_block_id"]
+            isOneToOne: false
+            referencedRelation: "legacy_blocks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      legacy_pages: {
+        Row: {
+          created_at: string | null
+          created_by: string
+          database_id: string | null
+          id: string
+          order_index: number
+          parent_page_id: string | null
+          title: string
+          updated_at: string | null
+          workspace_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          created_by: string
+          database_id?: string | null
+          id?: string
+          order_index?: number
+          parent_page_id?: string | null
+          title: string
+          updated_at?: string | null
+          workspace_id: string
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string
+          database_id?: string | null
+          id?: string
+          order_index?: number
+          parent_page_id?: string | null
+          title?: string
+          updated_at?: string | null
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pages_database_id_fkey"
+            columns: ["database_id"]
+            isOneToOne: false
+            referencedRelation: "databases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pages_parent_page_id_fkey"
+            columns: ["parent_page_id"]
+            isOneToOne: false
+            referencedRelation: "legacy_pages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pages_workspace_id_fkey"
             columns: ["workspace_id"]
             isOneToOne: false
             referencedRelation: "workspaces"
@@ -401,65 +519,7 @@ export type Database = {
             foreignKeyName: "page_properties_page_id_fkey"
             columns: ["page_id"]
             isOneToOne: false
-            referencedRelation: "pages"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      pages: {
-        Row: {
-          created_at: string | null
-          created_by: string
-          database_id: string | null
-          id: string
-          order_index: number
-          parent_page_id: string | null
-          title: string
-          updated_at: string | null
-          workspace_id: string
-        }
-        Insert: {
-          created_at?: string | null
-          created_by: string
-          database_id?: string | null
-          id?: string
-          order_index?: number
-          parent_page_id?: string | null
-          title: string
-          updated_at?: string | null
-          workspace_id: string
-        }
-        Update: {
-          created_at?: string | null
-          created_by?: string
-          database_id?: string | null
-          id?: string
-          order_index?: number
-          parent_page_id?: string | null
-          title?: string
-          updated_at?: string | null
-          workspace_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "pages_database_id_fkey"
-            columns: ["database_id"]
-            isOneToOne: false
-            referencedRelation: "databases"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "pages_parent_page_id_fkey"
-            columns: ["parent_page_id"]
-            isOneToOne: false
-            referencedRelation: "pages"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "pages_workspace_id_fkey"
-            columns: ["workspace_id"]
-            isOneToOne: false
-            referencedRelation: "workspaces"
+            referencedRelation: "legacy_pages"
             referencedColumns: ["id"]
           },
         ]
@@ -497,7 +557,7 @@ export type Database = {
             foreignKeyName: "presence_page_id_fkey"
             columns: ["page_id"]
             isOneToOne: false
-            referencedRelation: "pages"
+            referencedRelation: "legacy_pages"
             referencedColumns: ["id"]
           },
         ]
@@ -584,7 +644,7 @@ export type Database = {
             foreignKeyName: "fk_property_file_attachments_page_id"
             columns: ["page_id"]
             isOneToOne: false
-            referencedRelation: "pages"
+            referencedRelation: "legacy_pages"
             referencedColumns: ["id"]
           },
           {
@@ -1038,6 +1098,22 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "editor" | "viewer"
+      block_type_enum:
+        | "page"
+        | "database"
+        | "text"
+        | "image"
+        | "heading_1"
+        | "heading_2"
+        | "heading_3"
+        | "todo_item"
+        | "bulleted_list_item"
+        | "numbered_list_item"
+        | "toggle_list"
+        | "code"
+        | "quote"
+        | "divider"
+        | "callout"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1154,6 +1230,23 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "editor", "viewer"],
+      block_type_enum: [
+        "page",
+        "database",
+        "text",
+        "image",
+        "heading_1",
+        "heading_2",
+        "heading_3",
+        "todo_item",
+        "bulleted_list_item",
+        "numbered_list_item",
+        "toggle_list",
+        "code",
+        "quote",
+        "divider",
+        "callout",
+      ],
     },
   },
 } as const
