@@ -1,17 +1,30 @@
 
 import React from 'react';
-import { useParams, Navigate } from 'react-router-dom';
+import { useParams, Navigate, useSearchParams, useNavigate } from 'react-router-dom';
 import { useWorkspaces } from '@/hooks/useWorkspaces';
 import { useDatabases } from '@/hooks/useDatabases';
 import { useToast } from '@/hooks/use-toast';
 import { DatabaseView } from '@/components/database/DatabaseView';
 import { AppLayoutWithSidebar } from '@/components/layout/AppLayoutWithSidebar';
+import { SidePeekPage } from '@/pages/SidePeekPage';
 
 export function DatabasePage() {
   const { workspaceId, databaseId } = useParams<{ workspaceId: string; databaseId: string }>();
   const { workspaces, loading: workspacesLoading } = useWorkspaces();
   const { databases, loading: databasesLoading } = useDatabases(workspaceId);
   const { toast } = useToast();
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+
+  const peekPageId = searchParams.get('peek');
+
+  const handlePeekOpenChange = (open: boolean) => {
+    if (!open) {
+      const newParams = new URLSearchParams(searchParams);
+      newParams.delete('peek');
+      navigate({ search: newParams.toString() }, { replace: true });
+    }
+  };
 
   if (workspacesLoading || databasesLoading) {
     return (
@@ -68,6 +81,13 @@ export function DatabasePage() {
           <DatabaseView workspaceId={workspaceId} />
         </div>
       </div>
+      {peekPageId && (
+        <SidePeekPage
+          pageId={peekPageId}
+          onOpenChange={handlePeekOpenChange}
+        />
+      )}
     </AppLayoutWithSidebar>
   );
 }
+
