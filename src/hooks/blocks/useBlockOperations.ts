@@ -40,7 +40,7 @@ export function useBlockOperations(workspaceId?: string, parentId?: string | nul
 
       if (error) throw error;
       
-      const sortedData = ((data as Block[]) || []).sort((a, b) => (a.pos || 0) - (b.pos || 0));
+      const sortedData = ((data as any as Block[]) || []).sort((a, b) => (a.pos || 0) - (b.pos || 0));
       setBlocks(sortedData);
 
       setError(null);

@@ -24,9 +24,9 @@ export function useDatabaseFieldOperations(databaseId?: string, onFieldsChange?:
     if (!error) handleSuccess();
   }, [databaseId, handleSuccess]);
 
-  const deleteField = useCallback(async (field: DatabaseField) => {
+  const deleteField = useCallback(async (fieldId: string) => {
     if (!databaseId) return;
-    const { error } = await supabase.from('fields').delete().eq('id', field.id);
+    const { error } = await supabase.from('fields').delete().eq('id', fieldId);
     if (!error) handleSuccess();
   }, [databaseId, handleSuccess]);
 
