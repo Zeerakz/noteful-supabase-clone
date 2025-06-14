@@ -16,7 +16,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
-import { useNavigationState } from '@/contexts/NavigationStateContext';
 import { Page } from '@/hooks/usePages';
 import { cn } from '@/lib/utils';
 
@@ -27,13 +26,11 @@ interface PageTreeItemProps {
   onDelete: (pageId: string) => void;
   index: number;
   focusedItemId?: string;
-  currentItemId?: string;
   onKeyDown?: (e: React.KeyboardEvent, itemId: string) => void;
+  onToggleExpanded?: (pageId: string) => void;
+  isExpanded?: boolean;
   level?: number;
   onNavigationItemSelect?: () => void;
-  // Accessibility state functions from centralized state
-  isFocused?: (itemId: string) => boolean;
-  isCurrent?: (itemId: string) => boolean;
 }
 
 export function PageTreeItem({
@@ -43,21 +40,16 @@ export function PageTreeItem({
   onDelete,
   index,
   focusedItemId,
-  currentItemId,
   onKeyDown,
+  onToggleExpanded,
+  isExpanded = false,
   level = 0,
   onNavigationItemSelect,
-  isFocused,
-  isCurrent,
 }: PageTreeItemProps) {
   const navigate = useNavigate();
-  const { toggleExpanded, isExpanded } = useNavigationState();
-  
   const subPages = pages.filter(p => p.parent_page_id === page.id);
   const hasChildren = subPages.length > 0;
-  const expanded = isExpanded(page.id);
-  const focused = isFocused ? isFocused(page.id) : focusedItemId === page.id;
-  const current = isCurrent ? isCurrent(page.id) : currentItemId === page.id;
+  const isFocused = focusedItemId === page.id;
 
   const handleNavigate = () => {
     navigate(`/workspace/${workspaceId}/page/${page.id}`);
@@ -68,7 +60,7 @@ export function PageTreeItem({
     e.preventDefault();
     e.stopPropagation();
     if (hasChildren) {
-      toggleExpanded(page.id);
+      onToggleExpanded?.(page.id);
     }
   };
 
@@ -93,13 +85,11 @@ export function PageTreeItem({
         >
           <SidebarMenuItem
             role="treeitem"
-            aria-expanded={hasChildren ? expanded : undefined}
+            aria-expanded={hasChildren ? isExpanded : undefined}
             aria-level={level + 1}
-            aria-current={current ? 'page' : undefined}
-            data-tree-item-id={page.id}
             className={cn(
               "group relative",
-              focused && "ring-2 ring-ring ring-offset-2 rounded-md"
+              isFocused && "ring-2 ring-ring ring-offset-2 rounded-md"
             )}
             style={{ paddingLeft: `${level * 16}px` }}
           >
@@ -108,7 +98,7 @@ export function PageTreeItem({
               onKeyDown={handleKeyDown}
               className="w-full justify-start text-left pr-8"
               data-active={window.location.pathname === `/workspace/${workspaceId}/page/${page.id}`}
-              tabIndex={focused ? 0 : -1}
+              tabIndex={isFocused ? 0 : -1}
             >
               <div {...provided.dragHandleProps} className="flex items-center gap-1 min-w-0 flex-1">
                 {hasChildren ? (
@@ -117,10 +107,9 @@ export function PageTreeItem({
                     size="sm"
                     onClick={handleToggle}
                     className="h-4 w-4 p-0 hover:bg-transparent"
-                    aria-label={expanded ? "Collapse" : "Expand"}
-                    tabIndex={-1}
+                    aria-label={isExpanded ? "Collapse" : "Expand"}
                   >
-                    {expanded ? (
+                    {isExpanded ? (
                       <ChevronDown className="h-3 w-3" />
                     ) : (
                       <ChevronRight className="h-3 w-3" />
@@ -153,7 +142,7 @@ export function PageTreeItem({
             </DropdownMenu>
           </SidebarMenuItem>
 
-          {hasChildren && expanded && (
+          {hasChildren && isExpanded && (
             <Droppable droppableId={`sub-${page.id}`} type="page">
               {(provided) => (
                 <SidebarMenu ref={provided.innerRef} {...provided.droppableProps}>
@@ -166,12 +155,11 @@ export function PageTreeItem({
                       onDelete={onDelete}
                       index={subIndex}
                       focusedItemId={focusedItemId}
-                      currentItemId={currentItemId}
                       onKeyDown={onKeyDown}
+                      onToggleExpanded={onToggleExpanded}
+                      isExpanded={isExpanded}
                       level={level + 1}
                       onNavigationItemSelect={onNavigationItemSelect}
-                      isFocused={isFocused}
-                      isCurrent={isCurrent}
                     />
                   ))}
                   {provided.placeholder}

@@ -1,7 +1,6 @@
 
 import React from 'react';
 import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
-import { NavigationStateProvider } from '@/contexts/NavigationStateContext';
 import { PagesSidebar } from '@/components/sidebar/PagesSidebar';
 import { RailSidebar } from '@/components/sidebar/RailSidebar';
 import { Separator } from '@/components/ui/separator';
@@ -48,91 +47,89 @@ export function AppLayoutWithSidebar({ children, breadcrumbs }: AppLayoutWithSid
   }, [isRailMode, isRailExpanded, collapseRail]);
 
   return (
-    <NavigationStateProvider>
-      <SidebarProvider>
-        <div className="min-h-screen max-h-screen flex w-full overflow-hidden">
-          {/* Skip to content link - first focusable element */}
-          <SkipToContent />
-          
-          {/* Desktop/Tablet Sidebar */}
-          {!isMobile && (
-            <>
-              {isRailMode ? (
-                <div className={cn(
-                  "relative z-30 transition-all duration-300",
-                  isRailExpanded && "w-64"
-                )}>
-                  {isRailExpanded ? (
-                    <div className="absolute inset-0 bg-background border-r shadow-lg">
-                      <PagesSidebar onNavigationItemSelect={handleNavigationItemSelect} />
-                    </div>
-                  ) : (
-                    <RailSidebar 
-                      onNavigationItemSelect={handleNavigationItemSelect}
-                      onExpand={expandRail}
-                    />
-                  )}
-                </div>
-              ) : (
-                <PagesSidebar onNavigationItemSelect={handleNavigationItemSelect} />
-              )}
-            </>
-          )}
-          
-          {/* Mobile Navigation Drawer */}
-          <MobileNavigationDrawer
-            isOpen={mobileDrawerOpen}
-            onOpenChange={setMobileDrawerOpen}
-          >
-            <PagesSidebar onNavigationItemSelect={handleNavigationItemSelect} />
-          </MobileNavigationDrawer>
-
-          <SidebarInset className={cn(
-            "flex flex-col h-screen overflow-hidden transition-all duration-300",
-            isRailMode && isRailExpanded && "ml-0"
-          )}>
-            <header className={cn(
-              "flex h-16 shrink-0 items-center gap-2 border-b px-4",
-              "bg-background border-border"
-            )}>
-              {/* Mobile hamburger or desktop sidebar trigger */}
-              {isMobile ? (
-                <MobileNavigationToggle 
-                  onToggle={() => setMobileDrawerOpen(true)}
-                />
-              ) : !isRailMode ? (
-                <SidebarTrigger className={cn(
-                  "-ml-1 sidebar-trigger sidebar-focus-ring",
-                  "hover:bg-sidebar-accent focus-visible:bg-sidebar-accent"
-                )} />
-              ) : null}
-              
-              <Separator orientation="vertical" className="mr-2 h-4 bg-sidebar-border" />
-              <div className="ml-auto">
-                <div className="sidebar-focus-ring">
-                  <DarkModeToggle />
-                </div>
+    <SidebarProvider>
+      <div className="min-h-screen max-h-screen flex w-full overflow-hidden">
+        {/* Skip to content link - first focusable element */}
+        <SkipToContent />
+        
+        {/* Desktop/Tablet Sidebar */}
+        {!isMobile && (
+          <>
+            {isRailMode ? (
+              <div className={cn(
+                "relative z-30 transition-all duration-300",
+                isRailExpanded && "w-64"
+              )}>
+                {isRailExpanded ? (
+                  <div className="absolute inset-0 bg-background border-r shadow-lg">
+                    <PagesSidebar onNavigationItemSelect={handleNavigationItemSelect} />
+                  </div>
+                ) : (
+                  <RailSidebar 
+                    onNavigationItemSelect={handleNavigationItemSelect}
+                    onExpand={expandRail}
+                  />
+                )}
               </div>
-            </header>
-            <main 
-              id="main-content" 
-              className="flex-1 min-h-0 overflow-hidden"
-              role="main"
-              aria-label="Main content"
-            >
-              {children}
-            </main>
-          </SidebarInset>
+            ) : (
+              <PagesSidebar onNavigationItemSelect={handleNavigationItemSelect} />
+            )}
+          </>
+        )}
+        
+        {/* Mobile Navigation Drawer */}
+        <MobileNavigationDrawer
+          isOpen={mobileDrawerOpen}
+          onOpenChange={setMobileDrawerOpen}
+        >
+          <PagesSidebar onNavigationItemSelect={handleNavigationItemSelect} />
+        </MobileNavigationDrawer>
 
-          {/* Overlay for rail expanded state */}
-          {isRailMode && isRailExpanded && (
-            <div 
-              className="fixed inset-0 bg-black/20 z-20 md:hidden"
-              onClick={collapseRail}
-            />
-          )}
-        </div>
-      </SidebarProvider>
-    </NavigationStateProvider>
+        <SidebarInset className={cn(
+          "flex flex-col h-screen overflow-hidden transition-all duration-300",
+          isRailMode && isRailExpanded && "ml-0"
+        )}>
+          <header className={cn(
+            "flex h-16 shrink-0 items-center gap-2 border-b px-4",
+            "bg-background border-border"
+          )}>
+            {/* Mobile hamburger or desktop sidebar trigger */}
+            {isMobile ? (
+              <MobileNavigationToggle 
+                onToggle={() => setMobileDrawerOpen(true)}
+              />
+            ) : !isRailMode ? (
+              <SidebarTrigger className={cn(
+                "-ml-1 sidebar-trigger sidebar-focus-ring",
+                "hover:bg-sidebar-accent focus-visible:bg-sidebar-accent"
+              )} />
+            ) : null}
+            
+            <Separator orientation="vertical" className="mr-2 h-4 bg-sidebar-border" />
+            <div className="ml-auto">
+              <div className="sidebar-focus-ring">
+                <DarkModeToggle />
+              </div>
+            </div>
+          </header>
+          <main 
+            id="main-content" 
+            className="flex-1 min-h-0 overflow-hidden"
+            role="main"
+            aria-label="Main content"
+          >
+            {children}
+          </main>
+        </SidebarInset>
+
+        {/* Overlay for rail expanded state */}
+        {isRailMode && isRailExpanded && (
+          <div 
+            className="fixed inset-0 bg-black/20 z-20 md:hidden"
+            onClick={collapseRail}
+          />
+        )}
+      </div>
+    </SidebarProvider>
   );
 }
