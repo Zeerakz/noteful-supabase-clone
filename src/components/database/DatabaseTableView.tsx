@@ -1,15 +1,10 @@
 
-import React, { useState, useEffect } from 'react';
-import { useDatabaseTableView } from '@/hooks/useDatabaseTableView';
+import React, { useState } from 'react';
+import { useDatabaseTableData } from '@/hooks/useDatabaseTableData';
 import { DatabaseTableViewContent } from './table/DatabaseTableViewContent';
 import { GroupedTableView } from './grouping/GroupedTableView';
 import { ManagePropertiesModal } from './fields/ManagePropertiesModal';
-import { useOptimisticDatabaseFields } from '@/hooks/useOptimisticDatabaseFields';
-import { useEnhancedDatabaseFieldOperations } from '@/hooks/useEnhancedDatabaseFieldOperations';
-import { useMultiLevelGrouping } from '@/hooks/useMultiLevelGrouping';
-import { createMultiLevelGroups } from '@/utils/multiLevelGrouping';
 import { useColumnResizing } from './table/hooks/useColumnResizing';
-import { useUserProfiles } from '@/hooks/useUserProfiles';
 import { DatabaseField } from '@/types/database';
 import { FilterGroup } from '@/types/filters';
 import { SortRule } from '@/components/database/SortingModal';
@@ -41,44 +36,12 @@ export function DatabaseTableView({
   collapsedGroups = [],
   onToggleGroupCollapse
 }: DatabaseTableViewProps) {
-  const [enablePagination, setEnablePagination] = useState(false);
-  const [itemsPerPage, setItemsPerPage] = useState(50);
   const [showManageProperties, setShowManageProperties] = useState(false);
 
-  // Get user profiles for people field resolution
-  const { userProfiles } = useUserProfiles(workspaceId);
-
-  // Use optimistic fields hook with both databaseId and workspaceId
   const {
-    fields: optimisticFields,
-    optimisticCreateField,
-    optimisticUpdateField,
-    optimisticDeleteField,
-    optimisticReorderFields,
-    revertOptimisticChanges,
-  } = useOptimisticDatabaseFields(databaseId, workspaceId);
-
-  // Enhanced field operations with optimistic updates
-  const fieldOperations = useEnhancedDatabaseFieldOperations({
-    databaseId,
-    onOptimisticCreate: optimisticCreateField,
-    onOptimisticUpdate: optimisticUpdateField,
-    onOptimisticDelete: optimisticDeleteField,
-    onOptimisticReorder: optimisticReorderFields,
-    onRevert: revertOptimisticChanges,
-    onFieldsChange,
-  });
-
-  // Use optimistic fields or fallback to props
-  const fieldsToUse = optimisticFields.length > 0 ? optimisticFields : propFields;
-
-  // Ensure all fields have the database_id property
-  const fieldsWithDatabaseId = fieldsToUse.map(field => ({
-    ...field,
-    database_id: field.database_id || databaseId
-  }));
-
-  const {
+    userProfiles,
+    fieldsToUse,
+    fieldOperations,
     pagesWithProperties,
     pagesLoading,
     pagesError,
@@ -89,18 +52,22 @@ export function DatabaseTableView({
     handlePropertyUpdate,
     pagination,
     totalPages,
-  } = useDatabaseTableView({
+    itemsPerPage,
+    handleItemsPerPageChange,
+    handleFieldReorder,
+    groupedData,
+    hasGrouping,
+  } = useDatabaseTableData({
     databaseId,
     workspaceId,
+    fields: propFields,
     filterGroup,
-    fields: fieldsWithDatabaseId,
     sortRules,
-    enablePagination,
-    itemsPerPage,
-    enableVirtualScrolling: false
+    onFieldsChange,
+    groupingConfig,
+    collapsedGroups,
   });
 
-  // Column resizing functionality
   const {
     getColumnWidth,
     updateColumnWidth,
@@ -111,7 +78,7 @@ export function DatabaseTableView({
       checkbox: 48,
       title: 280,
       actions: 64,
-      ...fieldsWithDatabaseId.reduce((acc, field) => ({
+      ...fieldsToUse.reduce((acc, field) => ({
         ...acc,
         [field.id]: 200
       }), {})
@@ -120,66 +87,25 @@ export function DatabaseTableView({
     maxWidth: 600
   });
 
-  const handleItemsPerPageChange = (newItemsPerPage: number) => {
-    setItemsPerPage(newItemsPerPage);
-  };
-
-  const handleFieldReorder = async (draggedFieldId: string, targetFieldId: string, position: 'before' | 'after') => {
-    const currentFields = [...fieldsWithDatabaseId];
-    const draggedIndex = currentFields.findIndex(f => f.id === draggedFieldId);
-    const targetIndex = currentFields.findIndex(f => f.id === targetFieldId);
-    
-    if (draggedIndex === -1 || targetIndex === -1) return;
-
-    // Remove dragged field
-    const [draggedField] = currentFields.splice(draggedIndex, 1);
-    
-    // Insert at new position
-    const insertIndex = position === 'before' ? targetIndex : targetIndex + 1;
-    currentFields.splice(insertIndex, 0, draggedField);
-
-    // Update positions
-    const reorderedFields = currentFields.map((field, index) => ({
-      ...field,
-      pos: index
-    }));
-
-    // Use optimistic field operations
-    await fieldOperations.reorderFields(reorderedFields);
-  };
-
-  // Create grouped data if grouping is configured
-  const groupedData = groupingConfig && groupingConfig.levels.length > 0
-    ? createMultiLevelGroups(
-        pagesWithProperties,
-        fieldsWithDatabaseId,
-        groupingConfig,
-        collapsedGroups
-      )
-    : [];
-
-  const hasGrouping = groupingConfig && groupingConfig.levels.length > 0;
-
-  // Render grouped table view if grouping is active
   if (hasGrouping && groupedData.length > 0) {
     return (
       <>
         <GroupedTableView
           groups={groupedData}
-          fields={fieldsWithDatabaseId}
+          fields={fieldsToUse}
           onToggleGroupCollapse={onToggleGroupCollapse || (() => {})}
           onTitleUpdate={handleTitleUpdate}
           onPropertyUpdate={handlePropertyUpdate}
           workspaceId={workspaceId}
           getColumnWidth={getColumnWidth}
           userProfiles={userProfiles}
-          allFields={fieldsWithDatabaseId}
+          allFields={fieldsToUse}
         />
 
         <ManagePropertiesModal
           open={showManageProperties}
           onOpenChange={setShowManageProperties}
-          fields={fieldsWithDatabaseId}
+          fields={fieldsToUse}
           workspaceId={workspaceId}
           onFieldsReorder={fieldOperations.reorderFields}
           onFieldUpdate={fieldOperations.updateField}
@@ -191,12 +117,11 @@ export function DatabaseTableView({
     );
   }
 
-  // Render standard table view
   return (
     <>
       <DatabaseTableViewContent
         pagesWithProperties={pagesWithProperties}
-        fields={fieldsWithDatabaseId}
+        fields={fieldsToUse}
         pagesLoading={pagesLoading}
         pagesError={pagesError}
         onCreateRow={handleCreateRow}
@@ -220,13 +145,13 @@ export function DatabaseTableView({
         onItemsPerPageChange={handleItemsPerPageChange}
         onShowManageProperties={() => setShowManageProperties(true)}
         userProfiles={userProfiles}
-        allFields={fieldsWithDatabaseId}
+        allFields={fieldsToUse}
       />
 
       <ManagePropertiesModal
         open={showManageProperties}
         onOpenChange={setShowManageProperties}
-        fields={fieldsWithDatabaseId}
+        fields={fieldsToUse}
         workspaceId={workspaceId}
         onFieldsReorder={fieldOperations.reorderFields}
         onFieldUpdate={fieldOperations.updateField}
