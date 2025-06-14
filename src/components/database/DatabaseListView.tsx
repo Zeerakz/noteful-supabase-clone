@@ -8,6 +8,7 @@ import { createMultiLevelGroups } from '@/utils/multiLevelGrouping';
 import { DatabaseField } from '@/types/database';
 import { FilterGroup } from '@/types/filters';
 import { SortRule } from '@/components/database/SortingModal';
+import { Block } from '@/types/block';
 
 interface DatabaseListViewProps {
   databaseId: string;
@@ -24,7 +25,7 @@ interface DatabaseListViewProps {
 interface PageWithProperties {
   pageId: string;
   title: string;
-  properties: Record<string, string>;
+  properties: Record<string, any>;
 }
 
 export function DatabaseListView({ 
@@ -60,18 +61,18 @@ export function DatabaseListView({
   );
 
   // Enhanced handlers with optimistic updates
-  const handleOptimisticFieldEdit = (pageId: string, fieldId: string, value: string) => {
+  const handleOptimisticFieldEdit = (pageId: string, fieldId: string, value: any) => {
     optimisticUpdateProperty({ pageId, fieldId, value });
     handleFieldEdit(pageId, fieldId, value);
   };
 
   const handleOptimisticTitleEdit = (pageId: string, title: string) => {
-    optimisticUpdatePage({ pageId, updates: { title } });
+    optimisticUpdatePage({ pageId, updates: { properties: { title } } });
     handleTitleEdit(pageId, title);
   };
 
   const handleOptimisticCreateEntry = async () => {
-    optimisticCreatePage({ title: 'Untitled' });
+    optimisticCreatePage({ type: 'page', properties: { title: 'Untitled' } } as Partial<Block>);
     await handleCreateEntry();
   };
 
@@ -82,14 +83,14 @@ export function DatabaseListView({
     if (page.page_properties && Array.isArray(page.page_properties)) {
       page.page_properties.forEach((prop: any) => {
         if (prop.field_id && prop.value !== undefined) {
-          properties[prop.field_id] = prop.value || '';
+          properties[prop.field_id] = prop.value;
         }
       });
     }
     
     return {
       pageId: page.id,
-      title: page.title,
+      title: page.properties?.title || 'Untitled',
       properties,
     };
   });

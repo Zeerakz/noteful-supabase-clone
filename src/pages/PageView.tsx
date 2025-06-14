@@ -19,9 +19,9 @@ function PageViewContent() {
   const { pageData, loading: pageLoading, error: pageError, retry: retryPage } = usePageData(pageId);
   const { properties, loading: propertiesLoading, error: propertiesError, updateProperty, retry: retryProperties } = useStablePageProperties(pageId);
   const { userProfiles } = useUserProfiles(pageData?.workspace?.id);
-  const { fields } = useDatabaseFields(pageData?.database_id || '', pageData?.workspace?.id || '');
+  const { fields, loading: fieldsLoading } = useDatabaseFields(pageData?.database_id);
 
-  const handlePropertyUpdate = async (fieldId: string, value: string) => {
+  const handlePropertyUpdate = async (fieldId: string, value: any) => {
     try {
       console.log('🔄 Updating property:', { fieldId, value });
       const result = await updateProperty(fieldId, value);
@@ -50,7 +50,7 @@ function PageViewContent() {
   };
 
   // Loading state
-  if (pageLoading) {
+  if (pageLoading || propertiesLoading || fieldsLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-lg">Loading page...</div>
@@ -84,9 +84,9 @@ function PageViewContent() {
 
   // Convert properties array to Record<string, string> format
   const propertiesRecord = properties.reduce((acc, property) => {
-    acc[property.field_id] = property.value || '';
+    acc[property.field_id] = property.value;
     return acc;
-  }, {} as Record<string, string>);
+  }, {} as Record<string, any>);
 
   return (
     <div className="min-h-screen bg-background">
@@ -102,7 +102,7 @@ function PageViewContent() {
               Back
             </Button>
             <div>
-              <h1 className="text-xl font-semibold">{pageData.title}</h1>
+              <h1 className="text-xl font-semibold">{pageData.properties?.title || 'Untitled'}</h1>
               <p className="text-sm text-muted-foreground">in {pageData.workspace.name}</p>
             </div>
           </div>

@@ -1,5 +1,5 @@
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useParams, Navigate, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Edit2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -32,6 +32,13 @@ export function PageEditor() {
   const { blocks, hasOptimisticChanges: hasBlockChanges } = useEnhancedBlocks(pageId!);
   const { updatePage, hasOptimisticChanges: hasPageChanges } = useEnhancedPages(workspaceId);
 
+  useEffect(() => {
+    if (pageData) {
+      setTitleValue(pageData.properties?.title || 'Untitled');
+    }
+  }, [pageData]);
+
+
   // Now handle conditional rendering after all hooks are called
   if (!workspaceId || !pageId) {
     return <Navigate to="/" replace />;
@@ -61,7 +68,7 @@ export function PageEditor() {
   };
 
   const startEditingTitle = () => {
-    setTitleValue(page.title);
+    setTitleValue(page.properties?.title || 'Untitled');
     setIsEditingTitle(true);
     // Focus the input after it renders
     setTimeout(() => {
@@ -80,12 +87,12 @@ export function PageEditor() {
       return;
     }
 
-    if (titleValue.trim() === page.title) {
+    if (titleValue.trim() === (page.properties?.title || 'Untitled')) {
       setIsEditingTitle(false);
       return;
     }
 
-    const { error } = await updatePage(page.id, { title: titleValue.trim() });
+    const { error } = await updatePage(page.id, { properties: { ...page.properties, title: titleValue.trim() } });
     
     if (!error) {
       setIsEditingTitle(false);
@@ -93,7 +100,7 @@ export function PageEditor() {
   };
 
   const handleTitleCancel = () => {
-    setTitleValue(page.title);
+    setTitleValue(page.properties?.title || 'Untitled');
     setIsEditingTitle(false);
   };
 
@@ -139,7 +146,7 @@ export function PageEditor() {
                     </div>
                   ) : (
                     <div className="flex items-center gap-2 group">
-                      <h1 className="text-xl font-semibold">{page.title}</h1>
+                      <h1 className="text-xl font-semibold">{page.properties?.title || 'Untitled'}</h1>
                       {isEditable && (
                         <Button
                           variant="ghost"
@@ -165,6 +172,7 @@ export function PageEditor() {
                   <SaveAsTemplateDialog
                     pageId={page.id}
                     workspaceId={workspaceId!}
+                    pageTitle={page.properties?.title || 'Untitled'}
                     blocks={blocks}
                   />
                 )}

@@ -19,7 +19,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Page } from '@/hooks/usePages';
+import { Page } from '@/types/page';
 import { useAuth } from '@/contexts/AuthContext';
 import { ContentType, ContentTypeUtils } from '@/types/contentTypes';
 import { ContentTypeIcon } from '@/components/content-types/ContentTypeIcon';
@@ -44,7 +44,7 @@ export function PageTreeItem({ page, pages, workspaceId, onDelete, level = 0, in
   const navigate = useNavigate();
   const { user } = useAuth();
   
-  const childPages = pages.filter(p => p.parent_page_id === page.id);
+  const childPages = pages.filter(p => p.parent_id === page.id);
   const hasChildren = childPages.length > 0;
   const isOwner = page.created_by === user?.id;
 
@@ -56,7 +56,7 @@ export function PageTreeItem({ page, pages, workspaceId, onDelete, level = 0, in
   // Only show content type icons for first-level items (level 0)
   const shouldShowContentTypeIcon = level === 0;
   const contentType = shouldShowContentTypeIcon 
-    ? (page.database_id ? ContentType.DATABASE : ContentType.PAGE)
+    ? (page.type === 'database' ? ContentType.DATABASE : ContentType.PAGE)
     : null;
 
   const handleNavigate = () => {
@@ -109,7 +109,7 @@ export function PageTreeItem({ page, pages, workspaceId, onDelete, level = 0, in
       >
         <div className="flex items-center gap-2 w-full">
           {getItemIcon()}
-          <span className="truncate flex-1">{page.title}</span>
+          <span className="truncate flex-1">{page.properties?.title || 'Untitled'}</span>
           {showDepthWarning && (
             <TooltipProvider>
               <Tooltip>
@@ -171,7 +171,7 @@ export function PageTreeItem({ page, pages, workspaceId, onDelete, level = 0, in
               {isExpanded && hasChildren && canAddChildren && (
                 <Droppable droppableId={`sub-${page.id}`} type="page">
                   {(provided) => (
-                    <ul role="group" aria-label={`${page.title} sub-pages`}>
+                    <ul role="group" aria-label={`${page.properties?.title || 'Untitled'} sub-pages`}>
                       <SidebarMenuSub ref={provided.innerRef} {...provided.droppableProps}>
                         {childPages.map((childPage, childIndex) => (
                           <PageTreeItem
@@ -191,7 +191,7 @@ export function PageTreeItem({ page, pages, workspaceId, onDelete, level = 0, in
                 </Droppable>
               )}
               {isExpanded && hasChildren && !canAddChildren && (
-                <ul role="group" aria-label={`${page.title} sub-pages`}>
+                <ul role="group" aria-label={`${page.properties?.title || 'Untitled'} sub-pages`}>
                   <SidebarMenuSub>
                     {childPages.map((childPage, childIndex) => (
                       <PageTreeItem
@@ -234,7 +234,7 @@ export function PageTreeItem({ page, pages, workspaceId, onDelete, level = 0, in
             >
               <div className="flex items-center gap-2 w-full">
                 {getItemIcon()}
-                <span className="truncate flex-1">{page.title}</span>
+                <span className="truncate flex-1">{page.properties?.title || 'Untitled'}</span>
                 {showDepthWarning && (
                   <TooltipProvider>
                     <Tooltip>
@@ -285,7 +285,7 @@ export function PageTreeItem({ page, pages, workspaceId, onDelete, level = 0, in
             {isExpanded && hasChildren && canAddChildren && (
               <Droppable droppableId={`sub-${page.id}`} type="page">
                 {(provided) => (
-                  <ul role="group" aria-label={`${page.title} sub-pages`}>
+                  <ul role="group" aria-label={`${page.properties?.title || 'Untitled'} sub-pages`}>
                     <SidebarMenuSub ref={provided.innerRef} {...provided.droppableProps}>
                       {childPages.map((childPage, childIndex) => (
                         <PageTreeItem
@@ -305,7 +305,7 @@ export function PageTreeItem({ page, pages, workspaceId, onDelete, level = 0, in
               </Droppable>
             )}
             {isExpanded && hasChildren && !canAddChildren && (
-              <ul role="group" aria-label={`${page.title} sub-pages`}>
+              <ul role="group" aria-label={`${page.properties?.title || 'Untitled'} sub-pages`}>
                 <SidebarMenuSub>
                   {childPages.map((childPage, childIndex) => (
                     <PageTreeItem

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -50,7 +49,7 @@ export function RelationFieldEditor({
   }, [value, pages]);
 
   const filteredPages = pages.filter(page =>
-    page.title.toLowerCase().includes(searchTerm.toLowerCase())
+    (page.properties?.title || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const handlePageSelect = (pageId: string) => {
@@ -96,13 +95,7 @@ export function RelationFieldEditor({
   };
 
   const getDisplayText = (page: Page) => {
-    // Use the display_property setting if available, otherwise use title
-    if (settings.display_property && settings.display_property !== 'title') {
-      // In a full implementation, you would fetch the property value
-      // For now, just use the title
-      return page.title;
-    }
-    return page.title;
+    return page.properties?.title || 'Untitled';
   };
 
   const isPageSelected = (pageId: string) => {
@@ -219,7 +212,7 @@ export function RelationFieldEditor({
                           <div className="flex-1 min-w-0">
                             <div className="font-medium truncate">{getDisplayText(page)}</div>
                             <div className="text-xs opacity-70 truncate">
-                              Created {new Date(page.created_at).toLocaleDateString()}
+                              Created {new Date(page.created_time).toLocaleDateString()}
                             </div>
                           </div>
                           {isSelected && (

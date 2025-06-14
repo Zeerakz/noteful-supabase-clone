@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -38,7 +39,7 @@ export function useBlockOperations(workspaceId?: string, parentId?: string | nul
       const { data, error } = await query.order('pos', { ascending: true });
 
       if (error) throw error;
-      setBlocks(data || []);
+      setBlocks((data as Block[]) || []);
       setError(null);
     } catch (err) {
       console.error('Error fetching blocks:', err);
@@ -93,8 +94,8 @@ export function useBlockOperations(workspaceId?: string, parentId?: string | nul
 
       if (error) throw error;
 
-      setBlocks(prev => prev.map(block => (block.id === optimisticId ? data : block)));
-      return { data, error: null };
+      setBlocks(prev => prev.map(block => (block.id === optimisticId ? (data as Block) : block)));
+      return { data: data as Block, error: null };
     } catch (err) {
       setBlocks(prev => prev.filter(block => block.id !== optimisticId));
       const errorMsg = err instanceof Error ? err.message : 'Failed to create block';
@@ -115,15 +116,15 @@ export function useBlockOperations(workspaceId?: string, parentId?: string | nul
 
       const { data, error } = await supabase
         .from('blocks')
-        .update({ ...updates, last_edited_by: user.id })
+        .update({ ...(updates as any), last_edited_by: user.id })
         .eq('id', id)
         .select()
         .single();
 
       if (error) throw error;
 
-      setBlocks(prev => prev.map(block => (block.id === id ? data : block)));
-      return { data, error: null };
+      setBlocks(prev => prev.map(block => (block.id === id ? (data as Block) : block)));
+      return { data: data as Block, error: null };
     } catch (err) {
       await fetchBlocks(); // Refetch to get correct state
       const errorMsg = err instanceof Error ? err.message : 'Failed to update block';

@@ -15,6 +15,7 @@ import { useEnhancedPages } from '@/hooks/useEnhancedPages';
 import { useToast } from '@/hooks/use-toast';
 import { PageTreeItem } from './PageTreeItem';
 import { validateDragAndDrop } from '@/utils/navigationConstraints';
+import { Page } from '@/types/page';
 
 interface WorkspacePagesGroupProps {
   workspaceId: string;
@@ -22,10 +23,10 @@ interface WorkspacePagesGroupProps {
 }
 
 export function WorkspacePagesGroup({ workspaceId, workspaceName }: WorkspacePagesGroupProps) {
-  const { pages, updatePageHierarchy, deletePage, hasOptimisticChanges, loading } = useEnhancedPages(workspaceId);
+  const { pages, updatePageHierarchy, deletePage, hasOptimisticChanges, loading, updatePage } = useEnhancedPages(workspaceId);
   const { toast } = useToast();
 
-  const topLevelPages = pages.filter(page => !page.parent_page_id);
+  const topLevelPages = pages.filter(page => !page.parent_id);
 
   const handleDragEnd = async (result: DropResult) => {
     if (!result.destination) return;
@@ -82,7 +83,7 @@ export function WorkspacePagesGroup({ workspaceId, workspaceName }: WorkspacePag
     const page = pages.find(p => p.id === pageId);
     if (!page) return;
 
-    if (!confirm(`Are you sure you want to delete "${page.title}"? This action cannot be undone.`)) {
+    if (!confirm(`Are you sure you want to delete "${page.properties?.title || 'Untitled'}"? This action cannot be undone.`)) {
       return;
     }
 

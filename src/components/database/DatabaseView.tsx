@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useParams } from 'react-router-dom';
 import { useDatabaseViewSelector } from '@/hooks/useDatabaseViewSelector';
@@ -98,8 +99,8 @@ export function DatabaseView({ workspaceId }: DatabaseViewProps) {
       onToggleGroupCollapse={toggleGroupCollapse}
       onFieldsReorder={reorderFields}
       onFieldUpdate={updateField}
-      onFieldDuplicate={duplicateField}
-      onFieldDelete={deleteField}
+      onFieldDuplicate={(field) => duplicateField(field.id)}
+      onFieldDelete={(field) => deleteField(field.id)}
       onFieldCreate={createField}
       onFieldsChange={refetchFields}
     />
