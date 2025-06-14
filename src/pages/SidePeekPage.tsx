@@ -11,6 +11,7 @@ import {
 import { usePageData } from '@/hooks/usePageData';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
+import { PageBlocks } from '@/components/blocks/PageBlocks';
 
 interface SidePeekPageProps {
   pageId?: string;
@@ -50,7 +51,7 @@ export function SidePeekPage({ pageId: pageIdFromProp, onOpenChange: onOpenChang
             <Skeleton className="h-8 w-3/4" />
             <Skeleton className="h-4 w-1/2" />
           </SheetHeader>
-          <div className="py-8">
+          <div className="mt-8 flex-grow overflow-y-auto">
             <div className="space-y-2">
               <Skeleton className="h-4 w-full" />
               <Skeleton className="h-4 w-full" />
@@ -68,7 +69,7 @@ export function SidePeekPage({ pageId: pageIdFromProp, onOpenChange: onOpenChang
             <SheetTitle>Error</SheetTitle>
             <SheetDescription>Could not load the page.</SheetDescription>
           </SheetHeader>
-          <div className="py-8">
+          <div className="mt-8 flex-grow overflow-y-auto">
             <p className="text-destructive mb-4">{error}</p>
             <Button onClick={retry}>Try Again</Button>
           </div>
@@ -85,8 +86,8 @@ export function SidePeekPage({ pageId: pageIdFromProp, onOpenChange: onOpenChang
               In workspace: {pageData.workspace.name}
             </SheetDescription>
           </SheetHeader>
-          <div className="py-8">
-            <p>Placeholder for the main content of the peeked page.</p>
+          <div className="mt-8 flex-grow overflow-y-auto pr-6 -mr-6">
+            <PageBlocks pageId={pageData.id} isEditable={false} />
           </div>
         </>
       );
@@ -97,7 +98,7 @@ export function SidePeekPage({ pageId: pageIdFromProp, onOpenChange: onOpenChang
         <SheetHeader>
           <SheetTitle>Page Not Found</SheetTitle>
         </SheetHeader>
-        <div className="py-8">
+        <div className="mt-8 flex-grow overflow-y-auto">
           <p>The requested page could not be found.</p>
         </div>
       </>
@@ -106,7 +107,7 @@ export function SidePeekPage({ pageId: pageIdFromProp, onOpenChange: onOpenChang
 
   return (
     <Sheet open={isOpen} onOpenChange={handleOpenChange}>
-      <SheetContent className="w-[clamp(50vw,_800px,_90vw)] sm:w-[clamp(50vw,_800px,_90vw)] sm:max-w-none">
+      <SheetContent className="w-[clamp(50vw,_800px,_90vw)] sm:w-[clamp(50vw,_800px,_90vw)] sm:max-w-none flex flex-col">
         {renderContent()}
       </SheetContent>
     </Sheet>
