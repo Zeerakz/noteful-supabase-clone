@@ -30,6 +30,7 @@ export interface WorkspaceMembership {
 
 export function useWorkspaces() {
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
+  const [currentWorkspace, setCurrentWorkspace] = useState<Workspace | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { user, loading: authLoading } = useAuth();
@@ -38,6 +39,7 @@ export function useWorkspaces() {
     if (!user) {
       console.log('No user authenticated, clearing workspaces and stopping load');
       setWorkspaces([]);
+      setCurrentWorkspace(null);
       setLoading(false);
       setError(null);
       return;
@@ -61,12 +63,28 @@ export function useWorkspaces() {
       
       console.log('✅ Workspaces fetched successfully:', data?.length || 0);
       setWorkspaces(data || []);
+      
+      // Set current workspace if not already set and we have workspaces
+      if (data && data.length > 0 && !currentWorkspace) {
+        setCurrentWorkspace(data[0]);
+      }
     } catch (err) {
       console.error('💥 Failed to fetch workspaces:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch workspaces');
       setWorkspaces([]);
+      setCurrentWorkspace(null);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const switchWorkspace = (workspaceId: string) => {
+    const workspace = workspaces.find(w => w.id === workspaceId);
+    if (workspace) {
+      setCurrentWorkspace(workspace);
+      console.log('🔄 Switched to workspace:', workspace.name);
+    } else {
+      console.warn('⚠️ Workspace not found:', workspaceId);
     }
   };
 
@@ -91,6 +109,11 @@ export function useWorkspaces() {
       // Refresh workspaces list
       await fetchWorkspaces();
       
+      // Switch to the newly created workspace
+      if (data) {
+        setCurrentWorkspace(data);
+      }
+      
       return { data, error: null };
     } catch (err) {
       const error = err instanceof Error ? err.message : 'Failed to create workspace';
@@ -108,6 +131,11 @@ export function useWorkspaces() {
         .single();
 
       if (error) throw error;
+      
+      // Update current workspace if it's the one being updated
+      if (currentWorkspace && currentWorkspace.id === id && data) {
+        setCurrentWorkspace(data);
+      }
       
       // Refresh workspaces list
       await fetchWorkspaces();
@@ -127,6 +155,11 @@ export function useWorkspaces() {
         .eq('id', id);
 
       if (error) throw error;
+      
+      // If deleting current workspace, clear it
+      if (currentWorkspace && currentWorkspace.id === id) {
+        setCurrentWorkspace(null);
+      }
       
       // Refresh workspaces list
       await fetchWorkspaces();
@@ -169,6 +202,7 @@ export function useWorkspaces() {
 
   return {
     workspaces,
+    currentWorkspace,
     loading: loading || authLoading, // Show loading while auth is loading OR workspaces are loading
     error,
     fetchWorkspaces,
@@ -176,5 +210,6 @@ export function useWorkspaces() {
     updateWorkspace,
     deleteWorkspace,
     inviteUserToWorkspace,
+    switchWorkspace,
   };
 }
