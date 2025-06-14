@@ -1,4 +1,3 @@
-
 import { usePages } from '@/hooks/usePages';
 import { useOptimisticPages } from '@/hooks/useOptimisticPages';
 import { useCallback } from 'react';
@@ -42,7 +41,7 @@ export function useEnhancedPages(workspaceId?: string) {
 
     // Optimistic update
     const tempId = optimisticCreatePage({
-      title,
+      properties: { title },
       parent_page_id: parentPageId,
       workspace_id: workspaceId,
     });
@@ -104,8 +103,20 @@ export function useEnhancedPages(workspaceId?: string) {
       }
     }
 
+    // Transform updates for the block structure
+    const blockUpdates: Partial<Block> = {};
+    if (updates.title !== undefined) {
+      blockUpdates.properties = { title: updates.title };
+    }
+    if (updates.parent_page_id !== undefined) {
+      blockUpdates.parent_id = updates.parent_page_id;
+    }
+    if (updates.order_index !== undefined) {
+      blockUpdates.pos = updates.order_index;
+    }
+
     // Optimistic update
-    optimisticUpdatePage(id, updates);
+    optimisticUpdatePage(id, blockUpdates);
 
     try {
       const { data, error } = await updatePage(id, updates);

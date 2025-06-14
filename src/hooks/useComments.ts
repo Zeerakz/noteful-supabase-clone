@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -87,7 +86,7 @@ export function useComments(blockId?: string) {
               const pageUrl = `${window.location.origin}/workspace/${blockData.workspace_id}/page/${blockData.parent_id}`;
               
               // Call notifyMention with the list of mentioned emails
-              await notifyMention(mentionedEmails, body, pageData.properties?.title || 'Untitled', pageUrl);
+              await notifyMention(mentionedEmails, body, (pageData.properties as any)?.title || 'Untitled', pageUrl);
             }
           }
         } catch (mentionError) {

@@ -1,4 +1,3 @@
-
 import { useBlockOperations } from '@/hooks/blocks/useBlockOperations';
 import { useOptimisticBlocks } from '@/hooks/useOptimisticBlocks';
 import { useCallback } from 'react';
@@ -6,7 +5,7 @@ import { Block, BlockUpdateParams } from '@/hooks/blocks/types';
 import { useToast } from '@/hooks/use-toast';
 
 export function useEnhancedBlocks(pageId?: string) {
-  const { blocks, loading, error, createBlock, updateBlock, deleteBlock, fetchBlocks } = useBlockOperations(pageId);
+  const { blocks, loading, error, createBlock, updateBlock, deleteBlock, refetch: fetchBlocks } = useBlockOperations(pageId);
   const { toast } = useToast();
 
   const {
@@ -26,14 +25,14 @@ export function useEnhancedBlocks(pageId?: string) {
     // Optimistic update
     const tempId = optimisticCreateBlock({
       page_id: pageId,
-      type,
+      type: type as any,
       content,
       parent_block_id: parentBlockId,
       pos: Date.now(),
     });
 
     try {
-      const { data, error } = await createBlock(type, content, parentBlockId);
+      const { data, error } = await createBlock({ type: type as any, content, parent_id: parentBlockId });
       
       if (error) {
         // Revert optimistic update on error

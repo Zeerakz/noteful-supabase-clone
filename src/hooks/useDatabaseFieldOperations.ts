@@ -71,12 +71,18 @@ export function useDatabaseFieldOperations(databaseId?: string, onFieldsChange?:
 
   const reorderFields = useCallback(async (fields: DatabaseField[]) => {
     if (!databaseId) return;
-    const updates = fields.map((field, index) => ({
-      id: field.id,
-      pos: index,
-    }));
-    const { error } = await supabase.from('fields').upsert(updates);
-    if (!error) handleSuccess();
+    const updates = fields.map((field, index) => 
+        supabase.from('fields').update({ pos: index }).eq('id', field.id)
+    );
+    
+    const results = await Promise.all(updates);
+    const firstError = results.find(result => result.error);
+
+    if (!firstError) {
+        handleSuccess();
+    } else {
+        console.error('Failed to reorder fields:', firstError.error.message);
+    }
   }, [databaseId, handleSuccess]);
 
   return {

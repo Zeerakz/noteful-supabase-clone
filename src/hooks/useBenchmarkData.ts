@@ -1,7 +1,7 @@
-
 import { useState, useCallback } from 'react';
 import { DatabaseField } from '@/types/database';
 import { supabase } from '@/integrations/supabase/client';
+import { Block } from './blocks/types';
 
 interface BenchmarkConfig {
   rowCount: number;
@@ -205,21 +205,26 @@ export function useBenchmarkData() {
     for (let batch = 0; batch < batches; batch++) {
       const batchStartTime = performance.now();
       const currentBatchSize = Math.min(batchSize, rowCount - (batch * batchSize));
-      const pages = [];
-      const properties = [];
+      const blocks: Omit<Block, 'id' | 'created_time' | 'last_edited_time'>[] = [];
+      const properties: any[] = [];
 
-      // Generate pages for this batch
+      // Generate blocks for this batch
       for (let i = 0; i < currentBatchSize; i++) {
         const pageIndex = (batch * batchSize) + i;
         const pageId = `test_page_${pageIndex}`;
         
-        pages.push({
+        blocks.push({
           id: pageId,
-          title: `Test Page ${pageIndex + 1}`,
-          database_id: databaseId,
+          properties: { title: `Test Page ${pageIndex + 1}`, database_id: databaseId },
           workspace_id: 'test_workspace',
           created_by: 'benchmark',
-          order_index: pageIndex
+          pos: pageIndex,
+          type: 'page',
+          parent_id: null,
+          content: null,
+          archived: false,
+          in_trash: false,
+          last_edited_by: 'benchmark',
         });
 
         // Generate properties for each field
@@ -269,14 +274,14 @@ export function useBenchmarkData() {
         });
       }
 
-      // Insert batch of pages
+      // Insert batch of blocks
       try {
-        const { error: pagesError } = await supabase
-          .from('pages')
-          .insert(pages);
+        const { error: blocksError } = await supabase
+          .from('blocks')
+          .insert(blocks.map(b => ({...b, id: undefined}))); // Let db generate UUID
 
-        if (pagesError) {
-          console.error(`Error inserting pages batch ${batch}:`, pagesError);
+        if (blocksError) {
+          console.error(`Error inserting blocks batch ${batch}:`, blocksError);
           continue;
         }
 
@@ -329,18 +334,12 @@ export function useBenchmarkData() {
       console.log('Measuring query performance...');
       const queryStartTime = performance.now();
       
-      const { data: pages, error } = await supabase
-        .from('pages')
-        .select(`
-          *,
-          page_properties (
-            field_id,
-            value,
-            computed_value
-          )
-        `)
-        .eq('database_id', testDbId)
-        .limit(1000); // Test with first 1000 rows for query performance
+      const { data: blocksData, error } = await supabase
+        .from('blocks')
+        .select(`*`)
+        .eq('properties->>database_id', testDbId)
+        .eq('type', 'page')
+        .limit(1000);
 
       const queryTime = performance.now() - queryStartTime;
 
@@ -353,14 +352,10 @@ export function useBenchmarkData() {
       const renderStartTime = performance.now();
       
       // Simulate data processing that would happen during render
-      const processedData = pages?.map(page => {
-        const properties: Record<string, string> = {};
-        if (page.page_properties) {
-          page.page_properties.forEach((prop: any) => {
-            properties[prop.field_id] = prop.value || prop.computed_value || '';
-          });
-        }
-        return { ...page, properties };
+      const processedData = blocksData?.map(block => {
+        // In a real scenario, you'd fetch page_properties here separately if needed.
+        // For benchmark, we just simulate the mapping.
+        return { ...block, properties: block.properties };
       }) || [];
 
       const renderTime = performance.now() - renderStartTime;
@@ -463,14 +458,15 @@ export function useBenchmarkData() {
     if (!testDatabaseId) return;
 
     try {
-      // First, get all page IDs for this database
-      const { data: pages } = await supabase
-        .from('pages')
+      // First, get all block IDs for this database
+      const { data: blocks } = await supabase
+        .from('blocks')
         .select('id')
-        .eq('database_id', testDatabaseId);
+        .eq('properties->>database_id', testDatabaseId)
+        .eq('type', 'page');
 
-      if (pages && pages.length > 0) {
-        const pageIds = pages.map(page => page.id);
+      if (blocks && blocks.length > 0) {
+        const pageIds = blocks.map(block => block.id);
         
         // Delete page properties for these pages
         await supabase
@@ -479,11 +475,12 @@ export function useBenchmarkData() {
           .in('page_id', pageIds);
       }
 
-      // Delete pages
+      // Delete blocks
       await supabase
-        .from('pages')
+        .from('blocks')
         .delete()
-        .eq('database_id', testDatabaseId);
+        .eq('properties->>database_id', testDatabaseId)
+        .eq('type', 'page');
 
       console.log('Test data cleaned up successfully');
     } catch (error) {
