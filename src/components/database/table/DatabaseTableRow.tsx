@@ -4,6 +4,7 @@ import { TableCell, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { MoreHorizontal, Trash2, ChevronDown, ChevronRight, GripVertical } from 'lucide-react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -56,9 +57,23 @@ export function DatabaseTableRow({
   userProfiles = [],
   allFields = []
 }: DatabaseTableRowProps) {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [isDeleting, setIsDeleting] = useState(false);
 
   const isAnyColumnResizing = resizingFields.size > 0;
+
+  const handleTitleClick = (e: React.MouseEvent) => {
+    // Prevent navigation when clicking on an input, button, or other interactive element.
+    // This allows inline editing to work without triggering navigation.
+    const target = e.target as HTMLElement;
+    if (target.closest('input, button, a, textarea, [role="checkbox"]')) {
+      return;
+    }
+    const newParams = new URLSearchParams(searchParams);
+    newParams.set('peek', page.id);
+    navigate({ search: newParams.toString() }, { replace: true });
+  };
 
   const handleDelete = async () => {
     if (isDeleting) return;
@@ -109,15 +124,19 @@ export function DatabaseTableRow({
 
       {/* Title Cell */}
       <TableCell 
-        className="p-3 border-r border-border/5"
+        className="p-3 border-r border-border/5 cursor-pointer"
         style={{ width: `${getColumnWidth('title')}px` }}
+        onClick={handleTitleClick}
       >
         <div className="flex items-center gap-2">
           {hasSubItems && (
             <Button
               variant="ghost"
               size="sm"
-              onClick={handleToggleExpand}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleToggleExpand();
+              }}
               className={`
                 h-6 w-6 p-0 transition-all duration-200 ease-out
                 hover:bg-muted/50
