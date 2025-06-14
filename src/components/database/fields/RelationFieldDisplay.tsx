@@ -1,9 +1,9 @@
-
 import React, { useState, useEffect } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { RelationFieldSettings } from '@/types/database';
 import { Page } from '@/types/page';
 import { supabase } from '@/integrations/supabase/client';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
 interface RelationFieldDisplayProps {
   value: string | string[] | null;
@@ -13,6 +13,15 @@ interface RelationFieldDisplayProps {
 export function RelationFieldDisplay({ value, settings }: RelationFieldDisplayProps) {
   const [relatedPages, setRelatedPages] = useState<Page[]>([]);
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
+  const handleOpenPeek = (e: React.MouseEvent, pageId: string) => {
+    e.stopPropagation();
+    const newParams = new URLSearchParams(searchParams);
+    newParams.set('peek', pageId);
+    navigate({ search: newParams.toString() }, { replace: true });
+  };
 
   useEffect(() => {
     const fetchRelatedPages = async () => {
@@ -53,8 +62,6 @@ export function RelationFieldDisplay({ value, settings }: RelationFieldDisplayPr
   }
 
   const getDisplayText = (page: Page) => {
-    // For now, just use the page title
-    // In a full implementation, you would use the display_property setting
     return page.title;
   };
 
@@ -69,7 +76,12 @@ export function RelationFieldDisplay({ value, settings }: RelationFieldDisplayPr
   return (
     <div className="flex flex-wrap gap-1">
       {relatedPages.map((page) => (
-        <Badge key={page.id} variant="outline" className="text-xs">
+        <Badge
+          key={page.id}
+          variant="outline"
+          className="text-xs cursor-pointer hover:bg-accent"
+          onClick={(e) => handleOpenPeek(e, page.id)}
+        >
           {getDisplayText(page)}
         </Badge>
       ))}
