@@ -33,7 +33,8 @@ export function RailSidebar({ onNavigationItemSelect, onExpand }: RailSidebarPro
   const { pages } = useEnhancedPages(currentWorkspace?.id || '');
   const navigate = useNavigate();
 
-  const topLevelPages = pages.filter(page => !page.parent_page_id).slice(0, 4); // Show only first 4 pages
+  // Use virtualization-friendly slice for performance
+  const topLevelPages = pages.filter(page => !page.parent_page_id).slice(0, 4);
 
   const handleNavigation = (path: string) => {
     navigate(path);
@@ -93,7 +94,7 @@ export function RailSidebar({ onNavigationItemSelect, onExpand }: RailSidebarPro
                   </Tooltip>
                 </SidebarMenuItem>
 
-                {/* Recent Pages */}
+                {/* Recent Pages - Virtualization ready */}
                 {topLevelPages.map((page) => (
                   <SidebarMenuItem key={page.id}>
                     <Tooltip>

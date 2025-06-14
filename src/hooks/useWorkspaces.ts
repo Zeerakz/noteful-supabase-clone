@@ -1,5 +1,6 @@
 
 import { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { InvitationService, InviteUserRequest } from '@/services/invitationService';
@@ -34,6 +35,8 @@ export function useWorkspaces() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { user, loading: authLoading } = useAuth();
+  const navigate = useNavigate();
+  const params = useParams();
 
   const fetchWorkspaces = async () => {
     if (!user) {
@@ -63,10 +66,24 @@ export function useWorkspaces() {
       
       console.log('✅ Workspaces fetched successfully:', data?.length || 0);
       setWorkspaces(data || []);
-      
-      // Set current workspace if not already set and we have workspaces
-      if (data && data.length > 0 && !currentWorkspace) {
-        setCurrentWorkspace(data[0]);
+
+      // Set current workspace based on URL param or default to first workspace
+      if (data && data.length > 0) {
+        const workspaceId = params.workspaceId;
+        if (workspaceId) {
+          const workspace = data.find(w => w.id === workspaceId);
+          if (workspace) {
+            setCurrentWorkspace(workspace);
+          } else {
+            // If workspace ID in URL doesn't exist, default to first workspace
+            setCurrentWorkspace(data[0]);
+          }
+        } else {
+          // No workspace ID in URL, default to first workspace
+          setCurrentWorkspace(data[0]);
+        }
+      } else {
+        setCurrentWorkspace(null);
       }
     } catch (err) {
       console.error('💥 Failed to fetch workspaces:', err);
@@ -82,9 +99,10 @@ export function useWorkspaces() {
     const workspace = workspaces.find(w => w.id === workspaceId);
     if (workspace) {
       setCurrentWorkspace(workspace);
-      console.log('🔄 Switched to workspace:', workspace.name);
-    } else {
-      console.warn('⚠️ Workspace not found:', workspaceId);
+      // Navigate to the workspace if not already there
+      if (params.workspaceId !== workspaceId) {
+        navigate(`/workspace/${workspaceId}`);
+      }
     }
   };
 
@@ -109,11 +127,6 @@ export function useWorkspaces() {
       // Refresh workspaces list
       await fetchWorkspaces();
       
-      // Switch to the newly created workspace
-      if (data) {
-        setCurrentWorkspace(data);
-      }
-      
       return { data, error: null };
     } catch (err) {
       const error = err instanceof Error ? err.message : 'Failed to create workspace';
@@ -131,11 +144,6 @@ export function useWorkspaces() {
         .single();
 
       if (error) throw error;
-      
-      // Update current workspace if it's the one being updated
-      if (currentWorkspace && currentWorkspace.id === id && data) {
-        setCurrentWorkspace(data);
-      }
       
       // Refresh workspaces list
       await fetchWorkspaces();
@@ -155,11 +163,6 @@ export function useWorkspaces() {
         .eq('id', id);
 
       if (error) throw error;
-      
-      // If deleting current workspace, clear it
-      if (currentWorkspace && currentWorkspace.id === id) {
-        setCurrentWorkspace(null);
-      }
       
       // Refresh workspaces list
       await fetchWorkspaces();
@@ -200,16 +203,26 @@ export function useWorkspaces() {
     }
   }, [user, authLoading]);
 
+  // Update current workspace when URL params change
+  useEffect(() => {
+    if (workspaces.length > 0 && params.workspaceId) {
+      const workspace = workspaces.find(w => w.id === params.workspaceId);
+      if (workspace && (!currentWorkspace || currentWorkspace.id !== workspace.id)) {
+        setCurrentWorkspace(workspace);
+      }
+    }
+  }, [params.workspaceId, workspaces, currentWorkspace]);
+
   return {
     workspaces,
     currentWorkspace,
     loading: loading || authLoading, // Show loading while auth is loading OR workspaces are loading
     error,
     fetchWorkspaces,
+    switchWorkspace,
     createWorkspace,
     updateWorkspace,
     deleteWorkspace,
     inviteUserToWorkspace,
-    switchWorkspace,
   };
 }
