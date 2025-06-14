@@ -85,13 +85,20 @@ export const relationPropertyType: PropertyTypeDefinition<RelationPropertyConfig
     />
   ),
   
-  FieldEditor: ({ value, config, onChange, field, workspaceId, pageId }) => (
+  FieldEditor: ({ value, config, onChange, workspaceId, pageId }) => (
     <RelationFieldEditor
       value={value}
       onChange={onChange}
-      field={field}
+      settings={{
+        target_database_id: config.targetDatabaseId,
+        display_property: config.displayProperty,
+        allow_multiple: config.allowMultiple,
+        bidirectional: config.bidirectional,
+        related_property_name: config.relatedPropertyName,
+      }}
       workspaceId={workspaceId || ''}
-      pageId={pageId || ''}
+      isMultiple={config.allowMultiple || false}
+      showBacklink={config.bidirectional || false}
     />
   ),
 
