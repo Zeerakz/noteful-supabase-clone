@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -300,6 +301,32 @@
     line-height: calc(var(--grid-4x) * 1);
   }
 
+  /* Custom active state for SidebarMenuButton in PageTreeItem */
+  /* This targets the button used in PageTreeItem and similar contexts */
+  .sidebar-menu-button[data-active="true"] {
+    background-color: hsl(var(--sidebar-accent));
+    color: hsl(var(--sidebar-accent-foreground));
+    border-radius: var(--radius); /* e.g., 0.5rem */
+    border-bottom: none; /* Remove any previous border styling for active state */
+    font-weight: 600; /* Make text slightly bolder for active item */
+  }
+
+  /* Ensure hover state on active item doesn't look different from active state */
+  .sidebar-menu-button[data-active="true"]:hover {
+    background-color: hsl(var(--sidebar-accent)); 
+    color: hsl(var(--sidebar-accent-foreground));
+  }
+  
+  /* Remove default focus ring from SidebarMenuButton when it's active and also focused, 
+     as the background provides strong indication. Or, ensure focus ring is compatible.
+     For now, we rely on the :focus-visible styles applied by shadcn/ui which are generally good.
+     If custom focus styling is needed for the active state:
+  .sidebar-menu-button[data-active="true"]:focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+  }
+  */
+
   /* High contrast mode support with enhanced visibility */
   @media (prefers-contrast: high) {
     :root {
@@ -327,6 +354,16 @@
         0 0 0 4px hsl(var(--primary)),
         0 0 0 8px hsl(var(--primary) / 0.3);
     }
+
+    .sidebar-menu-button[data-active="true"] {
+      background-color: hsl(var(--sidebar-primary)); /* Use primary for high contrast active */
+      color: hsl(var(--sidebar-primary-foreground));
+      border: 1px solid hsl(var(--sidebar-foreground)); /* Add border for more definition */
+    }
+    .sidebar-menu-button[data-active="true"]:hover {
+      background-color: hsl(var(--sidebar-primary));
+      color: hsl(var(--sidebar-primary-foreground));
+    }
   }
 
   /* Screen reader only content */
@@ -353,3 +390,4 @@
     white-space: normal;
   }
 }
+
