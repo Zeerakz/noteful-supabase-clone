@@ -210,7 +210,7 @@ export function useDatabaseTableView({
     if (!user) return;
     optimisticUpdateProperty(pageId, fieldId, value);
     try {
-      await propertyUpdateMutation.mutateAsync({ pageId, fieldId, value, userId: user.id });
+      await propertyUpdateMutation.mutateAsync({ pageId, fieldId, value });
     } catch (error) {
       toast({ title: "Error", description: "Failed to update property", variant: "destructive" });
     }
