@@ -1,8 +1,8 @@
-import React, { useMemo, useState, useRef } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+
+import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
-import { useVirtualizer } from '@tanstack/react-virtual';
-import { DragDropContext, Droppable, DropResult } from 'react-beautiful-dnd';
+import { DragDropContext } from 'react-beautiful-dnd';
 import {
   SidebarGroup,
   SidebarGroupContent,
@@ -12,23 +12,16 @@ import {
   SidebarMenuButton,
 } from '@/components/ui/sidebar';
 import { useEnhancedPages } from '@/hooks/useEnhancedPages';
-import { useToast } from '@/hooks/use-toast';
 import { useTreeViewKeyboardNavigation } from '@/hooks/useTreeViewKeyboardNavigation';
-import { PageTreeItem } from './PageTreeItem';
-import { validateDragAndDrop } from '@/utils/navigationConstraints';
-import { Page } from '@/hooks/usePages';
+import { usePagesExpansion } from '@/hooks/usePagesExpansion';
+import { useVirtualizedPages } from '@/hooks/useVirtualizedPages';
+import { usePagesDragDrop } from '@/hooks/usePagesDragDrop';
+import { VirtualizedPagesList } from './VirtualizedPagesList';
 
 interface VirtualizedWorkspacePagesGroupProps {
   workspaceId: string;
   workspaceName: string;
   onNavigationItemSelect?: () => void;
-}
-
-interface FlattenedPageItem {
-  page: Page;
-  level: number;
-  index: number;
-  isVisible: boolean;
 }
 
 export function VirtualizedWorkspacePagesGroup({ 
@@ -37,99 +30,16 @@ export function VirtualizedWorkspacePagesGroup({
   onNavigationItemSelect 
 }: VirtualizedWorkspacePagesGroupProps) {
   const { pages, updatePageHierarchy, deletePage, hasOptimisticChanges, loading } = useEnhancedPages(workspaceId);
-  const { toast } = useToast();
   const navigate = useNavigate();
-  const location = useLocation();
-  const [expandedPages, setExpandedPages] = useState<Set<string>>(new Set());
-  const parentRef = useRef<HTMLDivElement>(null);
 
-  // Auto-expand pages that contain the currently active page
-  React.useEffect(() => {
-    const currentPath = location.pathname;
-    const pageIdMatch = currentPath.match(/\/workspace\/[^/]+\/page\/([^/]+)/);
-    
-    if (pageIdMatch) {
-      const currentPageId = pageIdMatch[1];
-      const currentPage = pages.find(p => p.id === currentPageId);
-      
-      if (currentPage) {
-        // Expand all parent pages up to the root
-        const expandParents = (page: Page) => {
-          if (page.parent_page_id) {
-            setExpandedPages(prev => new Set(prev.add(page.parent_page_id!)));
-            const parentPage = pages.find(p => p.id === page.parent_page_id);
-            if (parentPage) {
-              expandParents(parentPage);
-            }
-          }
-        };
-        expandParents(currentPage);
-      }
-    }
-  }, [location.pathname, pages]);
-
-  // Flatten the page tree for virtualization
-  const flattenedPages = useMemo(() => {
-    const flattenPages = (pages: Page[], parentId: string | null = null, level: number = 0): FlattenedPageItem[] => {
-      const result: FlattenedPageItem[] = [];
-      const filteredPages = pages.filter(page => page.parent_page_id === parentId);
-      
-      filteredPages.forEach((page, index) => {
-        result.push({
-          page,
-          level,
-          index,
-          isVisible: true
-        });
-        
-        // If page is expanded, add its children
-        if (expandedPages.has(page.id)) {
-          const children = flattenPages(pages, page.id, level + 1);
-          result.push(...children);
-        }
-      });
-      
-      return result;
-    };
-    
-    return flattenPages(pages);
-  }, [pages, expandedPages]);
-
-  // Convert flattened pages to tree items for keyboard navigation
-  const treeItems = useMemo(() => {
-    return flattenedPages.map(({ page, level }) => ({
-      id: page.id,
-      parentId: page.parent_page_id,
-      hasChildren: pages.some(p => p.parent_page_id === page.id),
-      isExpanded: expandedPages.has(page.id),
-      level,
-    }));
-  }, [flattenedPages, pages, expandedPages]);
-
-  // Initialize virtualizer
-  const virtualizer = useVirtualizer({
-    count: flattenedPages.length,
-    getScrollElement: () => parentRef.current,
-    estimateSize: () => 36, // Estimated height per item in pixels
-    overscan: 10, // Render 10 extra items outside viewport for smooth scrolling
-  });
+  const { expandedPages, handleToggleExpanded } = usePagesExpansion(pages);
+  const { flattenedPages, treeItems } = useVirtualizedPages(pages, expandedPages);
+  const { handleDragEnd } = usePagesDragDrop({ workspaceId, pages, updatePageHierarchy });
 
   // Keyboard navigation handlers
   const handleNavigate = (pageId: string) => {
     navigate(`/workspace/${workspaceId}/page/${pageId}`);
     onNavigationItemSelect?.();
-  };
-
-  const handleToggleExpanded = (pageId: string) => {
-    setExpandedPages(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(pageId)) {
-        newSet.delete(pageId);
-      } else {
-        newSet.add(pageId);
-      }
-      return newSet;
-    });
   };
 
   const handleActivate = (pageId: string) => {
@@ -141,62 +51,12 @@ export function VirtualizedWorkspacePagesGroup({
     focusedItemId,
     containerRef,
     handleKeyDown,
-    focusItem,
   } = useTreeViewKeyboardNavigation({
     items: treeItems,
     onNavigate: handleNavigate,
     onToggleExpanded: handleToggleExpanded,
     onActivate: handleActivate,
   });
-
-  const handleDragEnd = async (result: DropResult) => {
-    if (!result.destination) return;
-
-    const { draggableId, source, destination } = result;
-    
-    // Parse destination droppable ID to get parent info
-    const isTopLevel = destination.droppableId === `workspace-${workspaceId}`;
-    const newParentId = isTopLevel ? null : destination.droppableId.replace('sub-', '');
-    
-    // If dropped in the same position, do nothing
-    if (
-      source.droppableId === destination.droppableId &&
-      source.index === destination.index
-    ) {
-      return;
-    }
-
-    // Validate the drag and drop operation against depth constraints
-    const validation = validateDragAndDrop(pages, draggableId, newParentId, destination.index);
-    
-    if (!validation.isValid) {
-      toast({
-        title: "Cannot move page",
-        description: validation.error,
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const { error } = await updatePageHierarchy(
-      draggableId,
-      newParentId,
-      destination.index
-    );
-
-    if (error) {
-      toast({
-        title: "Error",
-        description: error,
-        variant: "destructive",
-      });
-    } else {
-      toast({
-        title: "Success",
-        description: "Page moved successfully!",
-      });
-    }
-  };
 
   const handleDeletePage = async (pageId: string) => {
     const page = pages.find(p => p.id === pageId);
@@ -246,74 +106,31 @@ export function VirtualizedWorkspacePagesGroup({
         </SidebarGroupLabel>
         <SidebarGroupContent>
           <DragDropContext onDragEnd={handleDragEnd}>
-            <Droppable droppableId={`workspace-${workspaceId}`} type="page">
-              {(provided) => (
-                <nav aria-label={`${workspaceName} pages navigation`} ref={containerRef}>
-                  <ul role="group" aria-label={`${workspaceName} pages`}>
-                    <SidebarMenu ref={provided.innerRef} {...provided.droppableProps}>
-                      {flattenedPages.length === 0 ? (
-                        <SidebarMenuItem>
-                          <SidebarMenuButton className="text-muted-foreground" disabled>
-                            <span>No pages yet</span>
-                          </SidebarMenuButton>
-                        </SidebarMenuItem>
-                      ) : (
-                        <div
-                          ref={parentRef}
-                          style={{
-                            height: '400px', // Fixed height for scrollable area
-                            overflow: 'auto',
-                          }}
-                        >
-                          <div
-                            style={{
-                              height: `${virtualizer.getTotalSize()}px`,
-                              width: '100%',
-                              position: 'relative',
-                            }}
-                          >
-                            {virtualizer.getVirtualItems().map((virtualItem) => {
-                              const flattenedPage = flattenedPages[virtualItem.index];
-                              if (!flattenedPage) return null;
-                              
-                              return (
-                                <div
-                                  key={virtualItem.key}
-                                  style={{
-                                    position: 'absolute',
-                                    top: 0,
-                                    left: 0,
-                                    width: '100%',
-                                    height: `${virtualItem.size}px`,
-                                    transform: `translateY(${virtualItem.start}px)`,
-                                  }}
-                                >
-                                  <PageTreeItem
-                                    key={flattenedPage.page.id}
-                                    page={flattenedPage.page}
-                                    pages={pages}
-                                    workspaceId={workspaceId}
-                                    onDelete={handleDeletePage}
-                                    index={flattenedPage.index}
-                                    focusedItemId={focusedItemId}
-                                    onKeyDown={handleKeyDown}
-                                    onToggleExpanded={handleToggleExpanded}
-                                    isExpanded={expandedPages.has(flattenedPage.page.id)}
-                                    level={flattenedPage.level}
-                                    onNavigationItemSelect={onNavigationItemSelect}
-                                  />
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      )}
-                      {provided.placeholder}
-                    </SidebarMenu>
-                  </ul>
-                </nav>
-              )}
-            </Droppable>
+            <nav aria-label={`${workspaceName} pages navigation`} ref={containerRef}>
+              <ul role="group" aria-label={`${workspaceName} pages`}>
+                {flattenedPages.length === 0 ? (
+                  <SidebarMenu>
+                    <SidebarMenuItem>
+                      <SidebarMenuButton className="text-muted-foreground" disabled>
+                        <span>No pages yet</span>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  </SidebarMenu>
+                ) : (
+                  <VirtualizedPagesList
+                    workspaceId={workspaceId}
+                    flattenedPages={flattenedPages}
+                    pages={pages}
+                    expandedPages={expandedPages}
+                    focusedItemId={focusedItemId}
+                    onKeyDown={handleKeyDown}
+                    onToggleExpanded={handleToggleExpanded}
+                    onDeletePage={handleDeletePage}
+                    onNavigationItemSelect={onNavigationItemSelect}
+                  />
+                )}
+              </ul>
+            </nav>
           </DragDropContext>
         </SidebarGroupContent>
       </SidebarGroup>
