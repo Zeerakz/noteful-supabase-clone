@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Page } from '@/types/page';
+import { Block } from '@/types/block';
 import { errorHandler } from '@/utils/errorHandler';
 
-interface PageData extends Page {
+interface PageData extends Block {
   workspace: {
     id: string;
     name: string;
@@ -64,10 +64,7 @@ export function usePageData(pageId?: string): UsePageDataResult {
       if (mountedRef.current) {
         const properties = data.properties as { title?: string };
         console.log('✅ Page data loaded successfully:', properties?.title);
-        setPageData({
-          ...data,
-          workspace: data.workspace as { id: string; name: string }
-        });
+        setPageData(data as PageData);
       }
     } catch (err) {
       if (signal?.aborted) return;

@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback } from 'react';
 import { DatabaseField, PageProperty } from '@/types/database';
 import { DatabaseTableHeader } from './DatabaseTableHeader';
@@ -19,9 +20,10 @@ interface PageWithProperties {
   created_by: string;
   created_at: string;
   updated_at: string;
-  parent_page_id: string | null;
-  order_index: number;
+  parent_id: string | null;
+  pos: number;
   properties: Record<string, string>;
+  rawPage: any; // Using any for rawPage to avoid deep type issues
 }
 
 interface PaginationInfo {

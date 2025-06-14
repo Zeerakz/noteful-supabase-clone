@@ -12,7 +12,7 @@ import { createMultiLevelGroups } from '@/utils/multiLevelGrouping';
 import { DatabaseField } from '@/types/database';
 import { FilterGroup } from '@/types/filters';
 import { SortRule } from '@/components/database/SortingModal';
-import { Page } from '@/types/page';
+import { Block } from '@/types/block';
 
 interface UseDatabaseTableDataProps {
   databaseId: string;
@@ -36,7 +36,7 @@ interface PageWithProperties {
   parent_id: string | null;
   pos: number;
   properties: Record<string, any>;
-  rawPage: Page;
+  rawPage: Block;
 }
 
 export function useDatabaseTableData({
@@ -101,11 +101,9 @@ export function useDatabaseTableData({
   const pagesWithProperties: PageWithProperties[] = useMemo(() => {
     return pages.map(page => {
       const pageProperties: Record<string, any> = {};
-      if (page.page_properties && Array.isArray(page.page_properties)) {
-        page.page_properties.forEach((prop) => {
-          if (prop.field_id && prop.value !== undefined) {
-            pageProperties[prop.field_id] = prop.value || '';
-          }
+      if (page.properties && typeof page.properties === 'object') {
+        Object.entries(page.properties).forEach(([key, value]) => {
+          pageProperties[key] = value;
         });
       }
       return {
@@ -151,7 +149,7 @@ export function useDatabaseTableData({
       const previousData = queryClient.getQueryData(queryKey);
       queryClient.setQueryData(queryKey, (old: any) => ({
         ...old,
-        data: old?.data?.filter((p: Page) => p.id !== pageId) || []
+        data: old?.data?.filter((p: Block) => p.id !== pageId) || []
       }));
       return { previousData };
     },
@@ -181,7 +179,7 @@ export function useDatabaseTableData({
       const previousData = queryClient.getQueryData(queryKey);
       queryClient.setQueryData(queryKey, (old: any) => ({
         ...old,
-        data: old?.data?.map((p: Page) => p.id === pageId ? { ...p, properties: {...p.properties, title: newTitle}, last_edited_time: new Date().toISOString() } : p) || []
+        data: old?.data?.map((p: Block) => p.id === pageId ? { ...p, properties: {...p.properties, title: newTitle}, last_edited_time: new Date().toISOString() } : p) || []
       }));
       return { previousData };
     },
@@ -212,24 +210,10 @@ export function useDatabaseTableData({
             if (!old?.data) return old;
             return {
                 ...old,
-                data: old.data.map((page: Page) => {
+                data: old.data.map((page: Block) => {
                     if (page.id !== pageId) return page;
-                    const newProperties = [...(page.page_properties || [])];
-                    const propIndex = newProperties.findIndex(p => p.field_id === fieldId);
-                    if (propIndex > -1) {
-                        newProperties[propIndex] = { ...newProperties[propIndex], value };
-                    } else {
-                        newProperties.push({
-                            id: `temp-${Date.now()}`,
-                            page_id: pageId,
-                            field_id: fieldId,
-                            value,
-                            created_by: user?.id || '',
-                            created_at: new Date().toISOString(),
-                            updated_at: new Date().toISOString(),
-                        });
-                    }
-                    return { ...page, page_properties: newProperties, last_edited_time: new Date().toISOString() };
+                    const newProperties = { ...page.properties, [fieldId]: value };
+                    return { ...page, properties: newProperties, last_edited_time: new Date().toISOString() };
                 })
             };
         });

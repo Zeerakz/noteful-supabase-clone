@@ -1,6 +1,6 @@
 
 import { useState, useCallback } from 'react';
-import { Block } from '@/hooks/blocks/types';
+import { Block } from '@/types/block';
 
 interface OptimisticBlockUpdate {
   id: string;
@@ -31,14 +31,18 @@ export function useOptimisticBlocks({ blocks }: UseOptimisticBlocksProps) {
     const tempId = `temp-block-${Date.now()}-${Math.random()}`;
     const optimisticBlock: Block = {
       id: tempId,
-      page_id: blockData.page_id || '',
-      parent_block_id: blockData.parent_block_id || null,
+      workspace_id: blockData.workspace_id || '',
       type: blockData.type || 'text',
+      parent_id: blockData.parent_id || null,
+      properties: blockData.properties || {},
       content: blockData.content || {},
-      pos: blockData.pos || Date.now(),
-      created_by: blockData.created_by || '',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
+      pos: blockData.pos ?? Date.now(),
+      created_time: new Date().toISOString(),
+      last_edited_time: new Date().toISOString(),
+      created_by: blockData.created_by || null,
+      last_edited_by: null,
+      archived: false,
+      in_trash: false,
       ...blockData,
     };
 
@@ -51,7 +55,7 @@ export function useOptimisticBlocks({ blocks }: UseOptimisticBlocksProps) {
       const newMap = new Map(prev);
       newMap.set(blockId, {
         id: blockId,
-        updates: { ...updates, updated_at: new Date().toISOString() },
+        updates: { ...updates, last_edited_time: new Date().toISOString() },
         timestamp: Date.now(),
       });
       return newMap;
