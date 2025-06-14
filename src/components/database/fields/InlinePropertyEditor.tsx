@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import {
   DropdownMenu,
@@ -43,7 +42,7 @@ export function InlinePropertyEditor({
           side="right"
           align="center"
           sideOffset={4}
-          className="w-48 z-50"
+          className="w-48"
           collisionPadding={8}
         >
           <DropdownMenuItem disabled>

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { TableCell, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
@@ -196,7 +195,6 @@ export function DatabaseTableRow({
             side="right" 
             align="center" 
             sideOffset={4}
-            className="bg-popover shadow-lg z-50"
             collisionPadding={8}
           >
             <DropdownMenuItem

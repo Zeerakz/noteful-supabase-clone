@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { MoreHorizontal, Trash2 } from 'lucide-react';
 import {
@@ -31,7 +30,7 @@ export function PageTreeItemActions({ onDelete }: PageTreeItemActionsProps) {
         side="right"
         align="center"
         sideOffset={8}
-        className="w-48 z-50 bg-popover border shadow-md"
+        className="w-48"
         collisionPadding={8}
       >
         <DropdownMenuItem
