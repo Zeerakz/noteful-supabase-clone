@@ -1,9 +1,18 @@
+
 import React, { useState, useEffect } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { RelationFieldSettings } from '@/types/database';
 import { Page } from '@/types/page';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { Eye } from 'lucide-react';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 interface RelationFieldDisplayProps {
   value: string | string[] | null;
@@ -65,26 +74,33 @@ export function RelationFieldDisplay({ value, settings }: RelationFieldDisplayPr
     return page.title;
   };
 
-  if (relatedPages.length === 1) {
-    return (
-      <Badge variant="outline" className="text-xs">
-        {getDisplayText(relatedPages[0])}
-      </Badge>
-    );
-  }
-
   return (
-    <div className="flex flex-wrap gap-1">
-      {relatedPages.map((page) => (
-        <Badge
-          key={page.id}
-          variant="outline"
-          className="text-xs cursor-pointer hover:bg-accent"
-          onClick={(e) => handleOpenPeek(e, page.id)}
-        >
-          {getDisplayText(page)}
-        </Badge>
-      ))}
-    </div>
+    <TooltipProvider>
+      <div className="flex flex-wrap gap-2 items-center">
+        {relatedPages.map((page) => (
+          <div key={page.id} className="flex items-center gap-1">
+            <Badge variant="outline" className="text-xs">
+              {getDisplayText(page)}
+            </Badge>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6"
+                  onClick={(e) => handleOpenPeek(e, page.id)}
+                  aria-label={`Open ${getDisplayText(page)}`}
+                >
+                  <Eye className="h-4 w-4 text-muted-foreground" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Open page</p>
+              </TooltipContent>
+            </Tooltip>
+          </div>
+        ))}
+      </div>
+    </TooltipProvider>
   );
 }
