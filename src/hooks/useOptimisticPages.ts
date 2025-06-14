@@ -1,21 +1,20 @@
-
 import { useState, useCallback } from 'react';
-import { Page } from '@/types/page';
+import { Block } from '@/types/block';
 
 interface OptimisticPageUpdate {
   id: string;
-  updates: Partial<Page>;
+  updates: Partial<Block>;
   timestamp: number;
 }
 
 interface UseOptimisticPagesProps {
-  pages: Page[];
-  onServerUpdate?: (pages: Page[]) => void;
+  pages: Block[];
+  onServerUpdate?: (pages: Block[]) => void;
 }
 
 export function useOptimisticPages({ pages, onServerUpdate }: UseOptimisticPagesProps) {
   const [optimisticUpdates, setOptimisticUpdates] = useState<Map<string, OptimisticPageUpdate>>(new Map());
-  const [optimisticCreations, setOptimisticCreations] = useState<Page[]>([]);
+  const [optimisticCreations, setOptimisticCreations] = useState<Block[]>([]);
   const [optimisticDeletions, setOptimisticDeletions] = useState<Set<string>>(new Set());
 
   // Apply optimistic updates to the pages list
@@ -31,29 +30,32 @@ export function useOptimisticPages({ pages, onServerUpdate }: UseOptimisticPages
       return !pages.some(realPage => 
         realPage.id === optimisticPage.id || // Direct ID match (for when server returns same ID)
         (
-          realPage.title === optimisticPage.title && 
+          (realPage.properties as any)?.title === (optimisticPage.properties as any)?.title && 
           realPage.workspace_id === optimisticPage.workspace_id &&
-          realPage.parent_page_id === optimisticPage.parent_page_id &&
-          Math.abs(new Date(realPage.created_at).getTime() - new Date(optimisticPage.created_at).getTime()) < 5000 // Within 5 seconds
+          realPage.parent_id === optimisticPage.parent_id &&
+          Math.abs(new Date(realPage.created_time).getTime() - new Date(optimisticPage.created_time).getTime()) < 5000 // Within 5 seconds
         )
       );
     }))
-    .sort((a, b) => a.order_index - b.order_index);
+    .sort((a, b) => a.pos - b.pos);
 
-  const optimisticCreatePage = useCallback((pageData: Partial<Page>) => {
+  const optimisticCreatePage = useCallback((pageData: Partial<Block>) => {
     const tempId = `temp-${Date.now()}-${Math.random()}`;
     const now = new Date().toISOString();
-    const optimisticPage: Page = {
+    const optimisticPage: Block = {
       id: tempId,
-      title: pageData.title || 'Untitled',
+      type: 'page',
       workspace_id: pageData.workspace_id || '',
+      parent_id: pageData.parent_id || null,
+      properties: pageData.properties || { title: 'Untitled' },
+      content: pageData.content || {},
+      pos: pageData.pos ?? Date.now(),
+      created_time: now,
+      last_edited_time: now,
       created_by: pageData.created_by || '',
-      created_at: now,
-      updated_at: now,
-      parent_page_id: pageData.parent_page_id || null,
-      order_index: pageData.order_index || Date.now(),
-      database_id: pageData.database_id || null,
-      ...pageData,
+      last_edited_by: null,
+      archived: false,
+      in_trash: false,
     };
 
     setOptimisticCreations(prev => [...prev, optimisticPage]);
@@ -68,12 +70,12 @@ export function useOptimisticPages({ pages, onServerUpdate }: UseOptimisticPages
     return tempId;
   }, []);
 
-  const optimisticUpdatePage = useCallback((pageId: string, updates: Partial<Page>) => {
+  const optimisticUpdatePage = useCallback((pageId: string, updates: Partial<Block>) => {
     setOptimisticUpdates(prev => {
       const newMap = new Map(prev);
       newMap.set(pageId, {
         id: pageId,
-        updates: { ...updates, updated_at: new Date().toISOString() },
+        updates: { ...updates, last_edited_time: new Date().toISOString() },
         timestamp: Date.now(),
       });
       return newMap;
@@ -125,15 +127,15 @@ export function useOptimisticPages({ pages, onServerUpdate }: UseOptimisticPages
     });
   }, []);
 
-  const clearOptimisticCreationByMatch = useCallback((realPage: Page) => {
+  const clearOptimisticCreationByMatch = useCallback((realPage: Block) => {
     setOptimisticCreations(prev => prev.filter(optimisticPage => {
       // Remove optimistic pages that match the real page
       // Use the same matching logic as in optimisticPages calculation
       return !(
-        optimisticPage.title === realPage.title && 
+        (optimisticPage.properties as any)?.title === (realPage.properties as any)?.title && 
         optimisticPage.workspace_id === realPage.workspace_id &&
-        optimisticPage.parent_page_id === realPage.parent_page_id &&
-        Math.abs(new Date(realPage.created_at).getTime() - new Date(optimisticPage.created_at).getTime()) < 5000
+        optimisticPage.parent_id === realPage.parent_id &&
+        Math.abs(new Date(realPage.created_time).getTime() - new Date(optimisticPage.created_time).getTime()) < 5000
       );
     }));
   }, []);

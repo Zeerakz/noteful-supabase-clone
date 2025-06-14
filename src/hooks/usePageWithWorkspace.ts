@@ -1,10 +1,10 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Page } from '@/types/page';
+import { Block } from '@/types/block';
 import { errorHandler } from '@/utils/errorHandler';
 
-interface PageWithWorkspace extends Page {
+interface PageWithWorkspace extends Block {
   workspace: {
     id: string;
     name: string;
@@ -34,19 +34,20 @@ export function usePageWithWorkspace(pageId?: string, workspacesLoading?: boolea
       
       // Prevent duplicate fetches
       if (fetchedPageIdRef.current === pageId) return;
-      fetchedPageIdRef.current = pageId;
+      
 
       try {
         setLoading(true);
         setError(null);
+        fetchedPageIdRef.current = pageId;
         
         console.log('📄 Fetching page with workspace for pageId:', pageId);
         
         const { data: pageData, error } = await supabase
-          .from('pages')
+          .from('blocks')
           .select(`
             *,
-            workspaces!inner (
+            workspace:workspaces!inner (
               id,
               name
             )
@@ -62,11 +63,9 @@ export function usePageWithWorkspace(pageId?: string, workspacesLoading?: boolea
           setError('Failed to fetch page');
           setPageWithWorkspace(null);
         } else if (pageData) {
-          console.log('✅ Page fetched successfully:', pageData.title);
-          setPageWithWorkspace({
-            ...pageData,
-            workspace: pageData.workspaces
-          });
+          const properties = pageData.properties as { title?: string };
+          console.log('✅ Page fetched successfully:', properties?.title);
+          setPageWithWorkspace(pageData as PageWithWorkspace);
         }
       } catch (err) {
         console.error('💥 Error fetching page with workspace:', err);

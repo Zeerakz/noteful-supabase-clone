@@ -1,26 +1,17 @@
-
 import { supabase } from '@/integrations/supabase/client';
-import { Page } from '@/types/page';
+import { Block } from '@/types/block';
 
 export function usePageHierarchy() {
   const updatePageHierarchy = async (
     workspaceId: string,
-    pages: Page[],
+    pages: Block[],
     pageId: string, 
     newParentId: string | null, 
     newIndex: number
   ): Promise<{ error: string | null }> => {
     try {
       // First, get all pages that need to be reordered in the target parent
-      const { data: siblingPagesData } = await supabase
-        .from('blocks')
-        .select('*')
-        .eq('workspace_id', workspaceId)
-        .eq('type', 'page')
-        .eq('parent_id', newParentId || pageId) // This is tricky, Supabase can't do IS NULL on .eq
-        .order('pos', { ascending: true });
-        
-      let siblingPages: Page[];
+      let siblingPages: Block[];
       if (newParentId === null) {
           const { data: topLevelPages, error } = await supabase
             .from('blocks')
@@ -30,7 +21,7 @@ export function usePageHierarchy() {
             .is('parent_id', null)
             .order('pos', { ascending: true });
           if(error) throw error;
-          siblingPages = topLevelPages as Page[];
+          siblingPages = topLevelPages as Block[];
       } else {
         const { data: childPages, error } = await supabase
             .from('blocks')
@@ -40,7 +31,7 @@ export function usePageHierarchy() {
             .eq('parent_id', newParentId)
             .order('pos', { ascending: true });
         if(error) throw error;
-        siblingPages = childPages as Page[];
+        siblingPages = childPages as Block[];
       }
 
       if (!siblingPages) throw new Error('Failed to fetch sibling pages');
@@ -52,7 +43,7 @@ export function usePageHierarchy() {
       const filteredPages = siblingPages.filter(p => p.id !== pageId);
       
       // Create a properly typed copy of the moving page for ordering
-      const movingPageForOrdering: Page = {
+      const movingPageForOrdering: Block = {
         ...movingPage,
         parent_id: newParentId,
       };
@@ -75,11 +66,12 @@ export function usePageHierarchy() {
 
       // Update order indices for all affected pages
       const updates = filteredPages.map((page, index) => {
-        if (page.pos !== index) {
+        if (page.pos !== index || page.id === pageId) { // Force update for the moved page
           return supabase
             .from('blocks')
             .update({ 
               pos: index,
+              parent_id: page.id === pageId ? newParentId : page.parent_id,
               last_edited_time: new Date().toISOString()
             })
             .eq('id', page.id);
@@ -88,7 +80,9 @@ export function usePageHierarchy() {
       }).filter(Boolean);
 
       if (updates.length > 0) {
-        await Promise.all(updates);
+        const results = await Promise.all(updates);
+        const firstError = results.find(r => r.error);
+        if (firstError) throw firstError.error;
       }
       
       return { error: null };

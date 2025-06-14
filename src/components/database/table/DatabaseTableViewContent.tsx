@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback } from 'react';
 import { DatabaseField, PageProperty } from '@/types/database';
 import { DatabaseTableHeader } from './DatabaseTableHeader';
@@ -22,7 +21,7 @@ interface PageWithProperties {
   updated_at: string;
   parent_id: string | null;
   pos: number;
-  properties: Record<string, string>;
+  properties: Record<string, any>;
   rawPage: any; // Using any for rawPage to avoid deep type issues
 }
 

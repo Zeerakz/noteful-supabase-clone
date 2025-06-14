@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -7,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { RelationFieldSettings } from '@/types/database';
 import { useDatabasePages } from '@/hooks/useDatabasePages';
-import { Page } from '@/types/page';
+import { Block } from '@/types/block';
 import { Plus, X, Search, Link, ExternalLink } from 'lucide-react';
 
 interface RelationFieldEditorProps {
@@ -31,7 +32,7 @@ export function RelationFieldEditor({
 }: RelationFieldEditorProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedPages, setSelectedPages] = useState<Page[]>([]);
+  const [selectedPages, setSelectedPages] = useState<Block[]>([]);
   const [localBacklink, setLocalBacklink] = useState(showBacklink);
 
   const { pages, loading } = useDatabasePages(settings.target_database_id, workspaceId);
@@ -49,7 +50,7 @@ export function RelationFieldEditor({
   }, [value, pages]);
 
   const filteredPages = pages.filter(page =>
-    (page.properties?.title || '').toLowerCase().includes(searchTerm.toLowerCase())
+    ((page.properties as any)?.title || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const handlePageSelect = (pageId: string) => {
@@ -94,8 +95,8 @@ export function RelationFieldEditor({
     }
   };
 
-  const getDisplayText = (page: Page) => {
-    return page.properties?.title || 'Untitled';
+  const getDisplayText = (page: Block) => {
+    return (page.properties as any)?.title || 'Untitled';
   };
 
   const isPageSelected = (pageId: string) => {
@@ -247,7 +248,7 @@ export function RelationFieldEditor({
             <Checkbox
               id="show-backlink"
               checked={localBacklink}
-              onCheckedChange={handleBacklinkToggle}
+              onCheckedChange={(checked) => handleBacklinkToggle(Boolean(checked))}
             />
             <Label 
               htmlFor="show-backlink" 

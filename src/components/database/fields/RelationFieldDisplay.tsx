@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { RelationFieldSettings } from '@/types/database';
-import { Page } from '@/types/page';
+import { Block } from '@/types/block';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -20,7 +20,7 @@ interface RelationFieldDisplayProps {
 }
 
 export function RelationFieldDisplay({ value, settings }: RelationFieldDisplayProps) {
-  const [relatedPages, setRelatedPages] = useState<Page[]>([]);
+  const [relatedPages, setRelatedPages] = useState<Block[]>([]);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -50,7 +50,7 @@ export function RelationFieldDisplay({ value, settings }: RelationFieldDisplayPr
           .eq('type', 'page');
 
         if (error) throw error;
-        setRelatedPages(data as Page[] || []);
+        setRelatedPages(data as Block[] || []);
       } catch (err) {
         console.error('Error fetching related pages:', err);
         setRelatedPages([]);
@@ -70,8 +70,8 @@ export function RelationFieldDisplay({ value, settings }: RelationFieldDisplayPr
     return <span className="text-muted-foreground">—</span>;
   }
 
-  const getDisplayText = (page: Page) => {
-    return page.properties?.title || 'Untitled';
+  const getDisplayText = (page: Block) => {
+    return (page.properties as any)?.title || 'Untitled';
   };
 
   return (

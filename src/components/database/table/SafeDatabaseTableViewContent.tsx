@@ -5,6 +5,7 @@ import { DatabaseTableViewContent } from './DatabaseTableViewContent';
 import { errorHandler } from '@/utils/errorHandler';
 import { DatabaseField } from '@/types/database';
 import { SortRule } from '@/components/database/SortingModal';
+import { Block } from '@/types/block';
 
 interface PageWithProperties {
   id: string;
@@ -14,9 +15,10 @@ interface PageWithProperties {
   created_by: string;
   created_at: string;
   updated_at: string;
-  parent_page_id: string | null;
-  order_index: number;
-  properties: Record<string, string>;
+  parent_id: string | null;
+  pos: number;
+  properties: Record<string, any>;
+  rawPage: Block;
 }
 
 interface PaginationInfo {
