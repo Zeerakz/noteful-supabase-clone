@@ -164,6 +164,10 @@ export function useDatabaseTableData({
     }
   });
 
+  const handleDeleteRow = useCallback(async (pageId: string) => {
+    await deleteRowMutation(pageId);
+  }, [deleteRowMutation]);
+
   const { mutateAsync: titleUpdateMutation } = useMutation({
     mutationFn: ({ pageId, newTitle }: { pageId: string, newTitle: string }) => PageService.updatePage(pageId, { title: newTitle }),
     onMutate: async ({ pageId, newTitle }) => {
@@ -185,6 +189,10 @@ export function useDatabaseTableData({
       queryClient.invalidateQueries({ queryKey });
     }
   });
+
+  const handleTitleUpdate = useCallback(async (pageId: string, newTitle: string) => {
+    await titleUpdateMutation({ pageId, newTitle });
+  }, [titleUpdateMutation]);
 
   const { mutate: propertyUpdateMutation } = useMutation({
     mutationFn: ({ pageId, fieldId, value }: { pageId: string, fieldId: string, value: string }) => {
@@ -232,6 +240,10 @@ export function useDatabaseTableData({
     }
   });
 
+  const handlePropertyUpdate = useCallback((pageId: string, fieldId: string, value: string) => {
+    propertyUpdateMutation({ pageId, fieldId, value });
+  }, [propertyUpdateMutation]);
+
   const groupedData = useMemo(() => {
     return groupingConfig && groupingConfig.levels.length > 0
       ? createMultiLevelGroups(
@@ -278,9 +290,9 @@ export function useDatabaseTableData({
     pagesError,
     refetchPages,
     handleCreateRow,
-    handleDeleteRow: deleteRowMutation,
-    handleTitleUpdate: titleUpdateMutation,
-    handlePropertyUpdate: propertyUpdateMutation,
+    handleDeleteRow,
+    handleTitleUpdate,
+    handlePropertyUpdate,
     pagination: null, // Simplified for now
     totalPages: enablePagination ? Math.ceil(pages.length / itemsPerPage) : 1,
     itemsPerPage,
