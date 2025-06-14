@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { DatabaseField } from '@/types/database';
 import { PropertyType } from '@/types/property';
 import { DatabaseFieldService } from '@/services/database/databaseFieldService';
@@ -16,7 +16,7 @@ export function useDatabaseFields(databaseId: string, workspaceId: string) {
     { maxRetries: 3, baseDelay: 1000 }
   );
 
-  const fetchFields = async () => {
+  const fetchFields = useCallback(async () => {
     if (!databaseId) {
       setLoading(false);
       return;
@@ -42,14 +42,46 @@ export function useDatabaseFields(databaseId: string, workspaceId: string) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [databaseId, executeWithRetry]);
 
   // Get field operations
   const fieldOperations = useDatabaseFieldOperations(databaseId, fetchFields);
 
   useEffect(() => {
     fetchFields();
-  }, [databaseId, executeWithRetry]);
+  }, [fetchFields]);
+
+  // Temporarily added to create a test relation field for demonstration
+  useEffect(() => {
+    const createTestRelationField = async () => {
+      // Check if a field with this name already exists to avoid duplicates
+      const fieldExists = fields.some(f => f.name === 'Test Relation');
+      
+      if (!fieldExists) {
+        console.log(`Attempting to create 'Test Relation' field in database ${databaseId}...`);
+        try {
+          await fieldOperations.createField({
+            name: 'Test Relation',
+            type: 'relation',
+            settings: {
+              targetDatabaseId: databaseId, // Self-referencing relation
+              allowMultiple: true,
+              bidirectional: false,
+              displayProperty: 'title',
+            },
+          });
+          console.log('Successfully triggered creation of Test Relation field.');
+        } catch (e) {
+            console.error("Failed to create test relation field:", e);
+        }
+      }
+    };
+
+    // Run this only after the initial field fetch is complete
+    if (!loading && !error && databaseId) {
+      createTestRelationField();
+    }
+  }, [loading, error, fields, databaseId, fieldOperations]);
 
   return {
     fields,
