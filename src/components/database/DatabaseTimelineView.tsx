@@ -6,7 +6,7 @@ import { DatabaseField } from '@/types/database';
 import { FilterGroup } from '@/types/filters';
 import { SortRule } from './SortingModal';
 import { useTimelineData } from '@/hooks/database/useTimelineData';
-import { useFilteredDatabasePages } from '@/hooks/useFilteredDatabasePages';
+import { useFilteredDatabasePagesQuery } from '@/hooks/useFilteredDatabasePagesQuery';
 
 interface DatabaseTimelineViewProps {
   databaseId: string;
@@ -28,7 +28,7 @@ export function DatabaseTimelineView({
   onFieldsChange
 }: DatabaseTimelineViewProps) {
   // Get filtered pages data
-  const { pages, loading, error } = useFilteredDatabasePages({
+  const { pages, loading, error } = useFilteredDatabasePagesQuery({
     databaseId,
     filterGroup,
     fields,

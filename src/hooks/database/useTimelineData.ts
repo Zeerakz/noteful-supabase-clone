@@ -1,10 +1,6 @@
-
 import { useState, useEffect, useMemo } from 'react';
 import { DatabaseField } from '@/types/database';
-import { FilterGroup } from '@/types/filters';
-import { SortRule } from '@/components/database/SortingModal';
 import { TimelineItem, TimelineViewMode } from '@/components/database/timeline/types';
-import { useFilteredDatabasePages } from '@/hooks/useFilteredDatabasePages';
 import { addDays, subDays, startOfMonth, endOfMonth, startOfWeek, endOfWeek } from 'date-fns';
 
 interface UseTimelineDataProps {

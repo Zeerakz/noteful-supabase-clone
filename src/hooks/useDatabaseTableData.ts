@@ -1,4 +1,3 @@
-
 import { useState, useMemo, useCallback } from 'react';
 import { useQueryClient, useMutation } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
@@ -132,7 +131,7 @@ export function useDatabaseTableData({
     },
     onSuccess: () => {
       toast({ title: "Success", description: "New row created." });
-      queryClient.invalidateQueries({ queryKey: ['database-pages', databaseId] });
+      queryClient.invalidateQueries({ queryKey });
     },
     onError: (error: Error) => {
       toast({ title: "Error", description: error.message || "Failed to create row.", variant: "destructive" });
@@ -143,7 +142,7 @@ export function useDatabaseTableData({
     await createRowMutation({ title: 'Untitled' });
   }, [createRowMutation]);
   
-  const { mutate: handleDeleteRow } = useMutation({
+  const { mutateAsync: deleteRowMutation } = useMutation({
     mutationFn: (pageId: string) => PageService.deletePage(pageId),
     onMutate: async (pageId: string) => {
       await queryClient.cancelQueries({ queryKey });
@@ -165,7 +164,7 @@ export function useDatabaseTableData({
     }
   });
 
-  const { mutate: handleTitleUpdate } = useMutation({
+  const { mutateAsync: titleUpdateMutation } = useMutation({
     mutationFn: ({ pageId, newTitle }: { pageId: string, newTitle: string }) => PageService.updatePage(pageId, { title: newTitle }),
     onMutate: async ({ pageId, newTitle }) => {
       await queryClient.cancelQueries({ queryKey });
@@ -187,7 +186,7 @@ export function useDatabaseTableData({
     }
   });
 
-  const { mutate: handlePropertyUpdate } = useMutation({
+  const { mutate: propertyUpdateMutation } = useMutation({
     mutationFn: ({ pageId, fieldId, value }: { pageId: string, fieldId: string, value: string }) => {
         if (!user) throw new Error('User not authenticated');
         return PagePropertyService.upsertPageProperty(pageId, fieldId, value, user.id);
@@ -279,9 +278,9 @@ export function useDatabaseTableData({
     pagesError,
     refetchPages,
     handleCreateRow,
-    handleDeleteRow: (pageId: string) => handleDeleteRow(pageId),
-    handleTitleUpdate: (pageId: string, newTitle: string) => handleTitleUpdate({ pageId, newTitle }),
-    handlePropertyUpdate: (pageId: string, fieldId: string, value: string) => handlePropertyUpdate({ pageId, fieldId, value }),
+    handleDeleteRow: deleteRowMutation,
+    handleTitleUpdate: titleUpdateMutation,
+    handlePropertyUpdate: propertyUpdateMutation,
     pagination: null, // Simplified for now
     totalPages: enablePagination ? Math.ceil(pages.length / itemsPerPage) : 1,
     itemsPerPage,

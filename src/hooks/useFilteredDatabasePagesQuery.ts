@@ -73,6 +73,7 @@ export function useFilteredDatabasePagesQuery({
     pages: query.data?.data || [],
     loading: query.isPending,
     error: query.error ? (query.error as Error).message : (query.data?.error || null),
-    refetch
+    refetch,
+    queryKey,
   };
 }

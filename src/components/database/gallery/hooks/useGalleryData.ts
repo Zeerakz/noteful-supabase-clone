@@ -1,12 +1,17 @@
 
 import { useState, useEffect, useMemo } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
-import { useFilteredDatabasePages } from '@/hooks/useFilteredDatabasePages';
 import { DatabaseField } from '@/types/database';
+import { useFilteredDatabasePagesQuery } from '@/hooks/useFilteredDatabasePagesQuery';
 import { FilterGroup } from '@/types/filters';
 import { SortRule } from '@/components/database/SortingModal';
-import { supabase } from '@/integrations/supabase/client';
-import { PageWithProperties } from '../types';
+import { getPublicUrl } from '@/utils/fileUtils';
+
+interface PageWithProperties {
+  id: string;
+  title: string;
+  properties: Record<string, any>;
+  coverUrl?: string;
+}
 
 interface UseGalleryDataProps {
   databaseId: string;
@@ -21,108 +26,64 @@ export function useGalleryData({
   fields,
   filterGroup,
   sortRules,
-  coverFieldId
+  coverFieldId,
 }: UseGalleryDataProps) {
-  const { user } = useAuth();
-  const [mediaUrls, setMediaUrls] = useState<Record<string, string>>({});
-
-  const {
-    pages,
-    loading: pagesLoading,
-    error: pagesError,
-    refetch: refetchPages
-  } = useFilteredDatabasePages({
+  const { pages, loading, error, refetch } = useFilteredDatabasePagesQuery({
     databaseId,
     filterGroup,
     fields,
-    sortRules
+    sortRules,
   });
 
-  // Transform pages data and identify media
-  const pagesWithProperties: PageWithProperties[] = useMemo(() => {
-    return pages.map(page => {
-      const properties: Record<string, string> = {};
-      const pageProperties = (page as any).page_properties || [];
-      
-      pageProperties.forEach((prop: any) => {
-        properties[prop.field_id] = prop.value || '';
-      });
+  const [mediaUrls, setMediaUrls] = useState<Record<string, string>>({});
 
-      // Find cover media based on selected cover field
-      let mediaUrl: string | undefined;
-      let mediaType: 'image' | 'file' | undefined;
-      let fileName: string | undefined;
+  const pagesWithProperties = useMemo<PageWithProperties[]>(() => {
+    return pages.map((page) => ({
+      id: page.id,
+      title: page.title,
+      properties: page.page_properties?.reduce((acc, prop) => {
+        acc[prop.field_id] = prop.value;
+        return acc;
+      }, {} as Record<string, any>) || {},
+    }));
+  }, [pages]);
 
-      if (coverFieldId) {
-        const value = properties[coverFieldId];
-        if (value) {
-          const field = fields.find(f => f.id === coverFieldId);
-          if (field?.type === 'file_attachment') {
-            mediaType = 'file';
-            fileName = value;
-            mediaUrl = value;
-          } else if (field?.type === 'image') {
-            mediaType = 'image';
-            mediaUrl = value;
-          }
-        }
-      }
-
-      return {
-        id: page.id,
-        title: page.title,
-        properties,
-        mediaUrl,
-        mediaType,
-        fileName,
-      };
-    });
-  }, [pages, fields, coverFieldId]);
-
-  // Generate signed URLs for images when needed
   useEffect(() => {
-    const generateSignedUrls = async () => {
-      const urlPromises = pagesWithProperties
-        .filter(page => page.mediaType === 'image' && page.mediaUrl && !mediaUrls[page.id])
-        .map(async (page) => {
-          try {
-            const { data, error } = await supabase.storage
-              .from('planna_uploads')
-              .createSignedUrl(page.mediaUrl!, 3600);
-
-            if (data?.signedUrl && !error) {
-              return { pageId: page.id, url: data.signedUrl };
+    if (coverFieldId) {
+      const fetchMediaUrls = async () => {
+        const urls: Record<string, string> = {};
+        for (const page of pagesWithProperties) {
+          const coverValue = page.properties[coverFieldId];
+          if (coverValue && typeof coverValue === 'string') {
+            try {
+              const filePaths = JSON.parse(coverValue);
+              if (Array.isArray(filePaths) && filePaths.length > 0) {
+                const url = getPublicUrl(filePaths[0].path);
+                if (url) {
+                  urls[page.id] = url;
+                }
+              }
+            } catch (e) {
+              // Not a JSON array, treat as single path
+              const url = getPublicUrl(coverValue);
+              if (url) {
+                urls[page.id] = url;
+              }
             }
-          } catch (error) {
-            console.warn('Failed to generate signed URL for page:', page.id, error);
           }
-          return null;
-        });
-
-      const results = await Promise.all(urlPromises);
-      const newUrls: Record<string, string> = {};
-      
-      results.forEach(result => {
-        if (result) {
-          newUrls[result.pageId] = result.url;
         }
-      });
+        setMediaUrls(urls);
+      };
 
-      if (Object.keys(newUrls).length > 0) {
-        setMediaUrls(prev => ({ ...prev, ...newUrls }));
-      }
-    };
-
-    if (pagesWithProperties.length > 0) {
-      generateSignedUrls();
+      fetchMediaUrls();
     }
-  }, [pagesWithProperties, mediaUrls]);
+  }, [pagesWithProperties, coverFieldId]);
 
   return {
     pagesWithProperties,
     mediaUrls,
-    loading: pagesLoading,
-    error: pagesError,
-    refetch: refetchPages
+    loading,
+    error,
+    refetch,
   };
 }
