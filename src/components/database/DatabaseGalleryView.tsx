@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { DatabaseField } from '@/types/database';
 import { FilterGroup } from '@/types/filters';
@@ -114,7 +113,6 @@ export function DatabaseGalleryView({
           selectedPages={selectedPages}
           onPageSelect={handlePageSelect}
           onPageEdit={handlePageEdit}
-          onPageView={handlePageView}
           onPageDelete={(pageId) => handlePageDelete(pageId, refetch)}
         />
       )}

@@ -9,6 +9,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { DatabaseField } from '@/types/database';
 import { PageWithProperties, GalleryCardSize } from './types';
 import { cn } from '@/lib/utils';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
 interface GalleryCardProps {
   page: PageWithProperties;
@@ -22,7 +23,6 @@ interface GalleryCardProps {
   isSelected: boolean;
   onSelect: (selected: boolean) => void;
   onEdit: () => void;
-  onView: () => void;
   onDelete: () => void;
 }
 
@@ -34,10 +34,25 @@ export function GalleryCard({
   isSelected,
   onSelect,
   onEdit,
-  onView,
   onDelete,
 }: GalleryCardProps) {
   const [isHovered, setIsHovered] = useState(false);
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
+  const handleOpenPeek = () => {
+    const newParams = new URLSearchParams(searchParams);
+    newParams.set('peek', page.id);
+    navigate({ search: newParams.toString() }, { replace: true });
+  };
+
+  const handleCardClick = (e: React.MouseEvent) => {
+    const target = e.target as HTMLElement;
+    if (target.closest('button, a, [role="checkbox"], [data-radix-dropdown-menu-content], input, textarea')) {
+      return;
+    }
+    handleOpenPeek();
+  };
 
   const getFieldName = (fieldId: string) => {
     const field = fields.find(f => f.id === fieldId);
@@ -108,13 +123,14 @@ export function GalleryCard({
   return (
     <Card
       className={cn(
-        "group relative overflow-hidden transition-all duration-200",
+        "group relative overflow-hidden transition-all duration-200 cursor-pointer",
         getCardSizeClasses(),
         isSelected && "ring-2 ring-primary",
         isHovered && "shadow-lg"
       )}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
+      onClick={handleCardClick}
     >
       {/* Selection Checkbox */}
       <div className="absolute top-2 left-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -131,7 +147,7 @@ export function GalleryCard({
           <Button
             size="sm"
             variant="secondary"
-            onClick={onView}
+            onClick={(e) => { e.stopPropagation(); handleOpenPeek(); }}
             className="h-8 w-8 p-0 bg-background/80 backdrop-blur-sm hover:bg-background/90"
           >
             <Eye className="h-4 w-4" />
@@ -139,7 +155,7 @@ export function GalleryCard({
           <Button
             size="sm"
             variant="secondary"
-            onClick={onEdit}
+            onClick={(e) => { e.stopPropagation(); onEdit(); }}
             className="h-8 w-8 p-0 bg-background/80 backdrop-blur-sm hover:bg-background/90"
           >
             <Edit className="h-4 w-4" />
@@ -150,12 +166,13 @@ export function GalleryCard({
                 size="sm"
                 variant="secondary"
                 className="h-8 w-8 p-0 bg-background/80 backdrop-blur-sm hover:bg-background/90"
+                onClick={(e) => e.stopPropagation()}
               >
                 <MoreHorizontal className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={onView}>
+            <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+              <DropdownMenuItem onClick={handleOpenPeek}>
                 <Eye className="h-4 w-4 mr-2" />
                 View
               </DropdownMenuItem>

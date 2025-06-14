@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { cn } from '@/lib/utils';
 import { DatabaseField } from '@/types/database';
@@ -14,7 +13,6 @@ interface GalleryContentProps {
   selectedPages: Set<string>;
   onPageSelect: (pageId: string, selected: boolean) => void;
   onPageEdit: (pageId: string) => void;
-  onPageView: (pageId: string) => void;
   onPageDelete: (pageId: string) => void;
 }
 
@@ -26,7 +24,6 @@ export function GalleryContent({
   selectedPages,
   onPageSelect,
   onPageEdit,
-  onPageView,
   onPageDelete
 }: GalleryContentProps) {
   const getGridColumns = () => {
@@ -52,7 +49,6 @@ export function GalleryContent({
       isSelected={selectedPages.has(page.id)}
       onSelect={(selected) => onPageSelect(page.id, selected)}
       onEdit={() => onPageEdit(page.id)}
-      onView={() => onPageView(page.id)}
       onDelete={() => onPageDelete(page.id)}
     />
   ));
