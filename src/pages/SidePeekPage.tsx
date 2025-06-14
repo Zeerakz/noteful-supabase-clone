@@ -1,6 +1,4 @@
-
 import React from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
 import {
   Sheet,
   SheetContent,
@@ -12,6 +10,7 @@ import { usePageData } from '@/hooks/usePageData';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { PageBlocks } from '@/components/blocks/PageBlocks';
+import { useSidePeek } from '@/hooks/useSidePeek';
 
 interface SidePeekPageProps {
   pageId?: string;
@@ -19,11 +18,7 @@ interface SidePeekPageProps {
 }
 
 export function SidePeekPage({ pageId: pageIdFromProp, onOpenChange: onOpenChangeFromProp }: SidePeekPageProps) {
-  const location = useLocation();
-  const navigate = useNavigate();
-
-  const queryParams = new URLSearchParams(location.search);
-  const pageIdFromUrl = queryParams.get('peek');
+  const { peekId: pageIdFromUrl, closePeek } = useSidePeek();
 
   const pageId = pageIdFromProp || pageIdFromUrl;
 
@@ -36,9 +31,7 @@ export function SidePeekPage({ pageId: pageIdFromProp, onOpenChange: onOpenChang
 
     if (!open) {
       if (pageIdFromUrl && !pageIdFromProp) {
-        const newParams = new URLSearchParams(location.search);
-        newParams.delete('peek');
-        navigate({ search: newParams.toString() }, { replace: true });
+        closePeek();
       }
     }
   };
