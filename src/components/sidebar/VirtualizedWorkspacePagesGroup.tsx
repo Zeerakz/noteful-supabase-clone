@@ -72,7 +72,7 @@ export function VirtualizedWorkspacePagesGroup({
   if (loading) {
     return (
       <li role="treeitem" aria-expanded="false">
-        <SidebarGroup>
+        <SidebarGroup data-testid="workspace-group-loading">
           <SidebarGroupLabel className="flex items-center justify-between">
             <span className="truncate flex items-center gap-2">
               {workspaceName}
@@ -95,7 +95,7 @@ export function VirtualizedWorkspacePagesGroup({
 
   return (
     <li role="treeitem" aria-expanded="true">
-      <SidebarGroup>
+      <SidebarGroup data-testid="workspace-group">
         <SidebarGroupLabel className="flex items-center justify-between">
           <span className="truncate flex items-center gap-2">
             {workspaceName}

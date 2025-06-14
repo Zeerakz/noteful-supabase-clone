@@ -52,6 +52,7 @@ export function VirtualizedPagesList({
         <SidebarMenu ref={provided.innerRef} {...provided.droppableProps}>
           <div
             ref={parentRef}
+            data-testid="virtualized-pages-list"
             style={{
               height: '400px', // Fixed height for scrollable area
               overflow: 'auto',

@@ -19,7 +19,10 @@ export function PageTreeItemActions({ onDelete }: PageTreeItemActionsProps) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <SidebarMenuAction className="data-[state=open]:bg-sidebar-accent">
+        <SidebarMenuAction 
+          className="data-[state=open]:bg-sidebar-accent"
+          data-testid="more-options"
+        >
           <MoreHorizontal className="h-4 w-4" />
           <span className="sr-only">Page options</span>
         </SidebarMenuAction>
@@ -28,6 +31,7 @@ export function PageTreeItemActions({ onDelete }: PageTreeItemActionsProps) {
         <DropdownMenuItem
           onClick={onDelete}
           className="text-destructive focus:text-destructive"
+          data-testid="delete-option"
         >
           <Trash2 className="h-4 w-4 mr-2" />
           Delete
