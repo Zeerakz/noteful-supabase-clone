@@ -1,4 +1,3 @@
-
 export interface BaseProperty {
   id: string;
   name: string;
@@ -29,7 +28,12 @@ export type PropertyType =
   | 'rating'
   | 'progress'
   | 'currency'
-  | 'button';
+  | 'button'
+  | 'created_time'
+  | 'created_by'
+  | 'last_edited_time'
+  | 'last_edited_by'
+  | 'id';
 
 // Base config interface that all property configs extend
 export interface BasePropertyConfig {
