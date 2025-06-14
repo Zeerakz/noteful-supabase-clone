@@ -19,18 +19,33 @@ export function useStablePageProperties(pageId?: string): UseStablePagePropertie
   const channelRef = useRef<any>(null);
   const mountedRef = useRef(true);
   const lastPageIdRef = useRef<string | null>(null);
+  const isCleaningUpRef = useRef<boolean>(false);
 
   const cleanup = useCallback(() => {
+    if (isCleaningUpRef.current) {
+      console.log('🧹 Cleanup already in progress, skipping...');
+      return;
+    }
+
+    isCleaningUpRef.current = true;
+
     if (channelRef.current) {
       try {
         console.log('🧹 Cleaning up page properties subscription');
-        channelRef.current.unsubscribe();
-        supabase.removeChannel(channelRef.current);
+        const channel = channelRef.current;
+        
+        // Reset refs before cleanup to prevent race conditions
+        channelRef.current = null;
+        
+        // Now safely cleanup the channel
+        channel.unsubscribe();
+        supabase.removeChannel(channel);
       } catch (err) {
-        console.warn('Warning during subscription cleanup:', err);
+        console.warn('Warning during page properties cleanup:', err);
       }
-      channelRef.current = null;
     }
+
+    isCleaningUpRef.current = false;
   }, []);
 
   const fetchProperties = useCallback(async () => {
@@ -117,11 +132,12 @@ export function useStablePageProperties(pageId?: string): UseStablePagePropertie
         }
       );
 
+      // Store channel reference before subscribing
+      channelRef.current = channel;
+
       channel.subscribe((status) => {
         console.log('📡 Properties subscription status:', status);
       });
-
-      channelRef.current = channel;
     } catch (err) {
       console.error('❌ Failed to setup properties subscription:', err);
     }

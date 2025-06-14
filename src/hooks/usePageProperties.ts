@@ -12,6 +12,7 @@ export function usePageProperties(pageId?: string) {
   const { user } = useAuth();
   const channelRef = useRef<any>(null);
   const isSubscribedRef = useRef<boolean>(false);
+  const isCleaningUpRef = useRef<boolean>(false);
 
   const fetchProperties = async () => {
     if (!pageId) {
@@ -61,16 +62,31 @@ export function usePageProperties(pageId?: string) {
   };
 
   const cleanup = () => {
+    if (isCleaningUpRef.current) {
+      console.log('Page properties cleanup already in progress, skipping...');
+      return;
+    }
+
+    isCleaningUpRef.current = true;
+
     if (channelRef.current && isSubscribedRef.current) {
       try {
         console.log('Cleaning up page properties channel subscription');
-        supabase.removeChannel(channelRef.current);
+        const channel = channelRef.current;
+        
+        // Reset refs before cleanup to prevent race conditions
+        channelRef.current = null;
         isSubscribedRef.current = false;
+        
+        // Now safely cleanup the channel
+        channel.unsubscribe();
+        supabase.removeChannel(channel);
       } catch (error) {
-        console.warn('Error removing page properties channel:', error);
+        console.warn('Error during page properties cleanup:', error);
       }
-      channelRef.current = null;
     }
+
+    isCleaningUpRef.current = false;
   };
 
   useEffect(() => {
@@ -125,6 +141,9 @@ export function usePageProperties(pageId?: string) {
       }
     );
 
+    // Store channel reference before subscribing
+    channelRef.current = channel;
+
     // Subscribe only once and track status
     channel.subscribe((status) => {
       console.log('Page properties subscription status:', status);
@@ -132,10 +151,12 @@ export function usePageProperties(pageId?: string) {
         isSubscribedRef.current = true;
       } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
         isSubscribedRef.current = false;
+        // Only reset channel ref if this is still the current channel
+        if (channelRef.current === channel) {
+          channelRef.current = null;
+        }
       }
     });
-
-    channelRef.current = channel;
 
     return cleanup;
   }, [pageId]);

@@ -17,6 +17,7 @@ export function useYjsDocument({ pageId, onContentChange }: YjsDocumentOptions) 
   const isLocalUpdateRef = useRef(false);
   const isSubscribedRef = useRef<boolean>(false);
   const pageIdRef = useRef<string>(pageId);
+  const isCleaningUpRef = useRef<boolean>(false);
 
   // Create a shared text object for the document content
   const ytext = ydoc.getText('content');
@@ -80,18 +81,32 @@ export function useYjsDocument({ pageId, onContentChange }: YjsDocumentOptions) 
   }, [ytext]);
 
   const cleanup = useCallback(() => {
+    if (isCleaningUpRef.current) {
+      console.log('Y.js cleanup already in progress, skipping...');
+      return;
+    }
+
+    isCleaningUpRef.current = true;
+
     if (channelRef.current && isSubscribedRef.current) {
       try {
         console.log('Cleaning up Y.js channel subscription');
-        channelRef.current.unsubscribe();
-        supabase.removeChannel(channelRef.current);
+        const channel = channelRef.current;
+        
+        // Reset refs before cleanup to prevent race conditions
+        channelRef.current = null;
         isSubscribedRef.current = false;
+        setIsConnected(false);
+        
+        // Now safely cleanup the channel
+        channel.unsubscribe();
+        supabase.removeChannel(channel);
       } catch (error) {
-        console.warn('Error removing Y.js channel:', error);
+        console.warn('Error during Y.js channel cleanup:', error);
       }
-      channelRef.current = null;
-      setIsConnected(false);
     }
+
+    isCleaningUpRef.current = false;
   }, []);
 
   // Set up Y.js update listener
@@ -142,22 +157,25 @@ export function useYjsDocument({ pageId, onContentChange }: YjsDocumentOptions) 
         if (updatePageId === pageId && userId !== user.id) {
           applyRemoteUpdate(deltaBlob, userId);
         }
-      })
-      .subscribe((status) => {
-        console.log('Y.js channel status:', status, 'for channel:', channelName);
-        if (status === 'SUBSCRIBED') {
-          isSubscribedRef.current = true;
-          setIsConnected(true);
-        } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
-          isSubscribedRef.current = false;
-          setIsConnected(false);
-          if (channelRef.current === channel) {
-            channelRef.current = null;
-          }
-        }
       });
 
+    // Store channel reference before subscribing
     channelRef.current = channel;
+
+    channel.subscribe((status) => {
+      console.log('Y.js channel status:', status, 'for channel:', channelName);
+      if (status === 'SUBSCRIBED') {
+        isSubscribedRef.current = true;
+        setIsConnected(true);
+      } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
+        isSubscribedRef.current = false;
+        setIsConnected(false);
+        // Only reset channel ref if this is still the current channel
+        if (channelRef.current === channel) {
+          channelRef.current = null;
+        }
+      }
+    });
 
     return cleanup;
   }, [user, pageId, applyRemoteUpdate, cleanup]);
