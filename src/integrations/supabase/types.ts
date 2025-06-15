@@ -288,7 +288,6 @@ export type Database = {
           settings: Json | null
           type: string
           updated_at: string | null
-          visibility_setting: Database["public"]["Enums"]["property_visibility"]
         }
         Insert: {
           created_at?: string | null
@@ -300,7 +299,6 @@ export type Database = {
           settings?: Json | null
           type: string
           updated_at?: string | null
-          visibility_setting?: Database["public"]["Enums"]["property_visibility"]
         }
         Update: {
           created_at?: string | null
@@ -312,7 +310,6 @@ export type Database = {
           settings?: Json | null
           type?: string
           updated_at?: string | null
-          visibility_setting?: Database["public"]["Enums"]["property_visibility"]
         }
         Relationships: []
       }
@@ -488,45 +485,30 @@ export type Database = {
           created_at: string | null
           created_by: string
           field_id: string
-          field_order: number
           id: string
-          metadata: Json
           page_id: string
           updated_at: string | null
           value: string | null
-          visibility_setting:
-            | Database["public"]["Enums"]["property_visibility"]
-            | null
         }
         Insert: {
           computed_value?: string | null
           created_at?: string | null
           created_by: string
           field_id: string
-          field_order?: number
           id?: string
-          metadata?: Json
           page_id: string
           updated_at?: string | null
           value?: string | null
-          visibility_setting?:
-            | Database["public"]["Enums"]["property_visibility"]
-            | null
         }
         Update: {
           computed_value?: string | null
           created_at?: string | null
           created_by?: string
           field_id?: string
-          field_order?: number
           id?: string
-          metadata?: Json
           page_id?: string
           updated_at?: string | null
           value?: string | null
-          visibility_setting?:
-            | Database["public"]["Enums"]["property_visibility"]
-            | null
         }
         Relationships: [
           {
@@ -1092,10 +1074,6 @@ export type Database = {
         Args: { workspace_uuid: string }
         Returns: undefined
       }
-      remove_properties_from_page: {
-        Args: { p_page_id: string; p_database_id: string }
-        Returns: undefined
-      }
       user_can_edit_workspace: {
         Args: { target_workspace_id: string; user_id: string }
         Returns: boolean
@@ -1143,7 +1121,6 @@ export type Database = {
         | "quote"
         | "divider"
         | "callout"
-      property_visibility: "always_show" | "always_hide" | "show_when_not_empty"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1276,11 +1253,6 @@ export const Constants = {
         "quote",
         "divider",
         "callout",
-      ],
-      property_visibility: [
-        "always_show",
-        "always_hide",
-        "show_when_not_empty",
       ],
     },
   },

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { DatabaseField } from '@/types/database';
 import { useDatabaseFields } from '@/hooks/useDatabaseFields';
@@ -20,6 +21,7 @@ export function useOptimisticDatabaseFields(databaseId: string) {
       database_id: databaseId,
       settings: field.settings || {},
       pos: optimisticFields.length,
+      visibility_setting: 'show_when_not_empty',
       created_by: '',
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
