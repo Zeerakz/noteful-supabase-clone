@@ -139,20 +139,22 @@ export async function duplicatePage(
 
     // 4. Create copies of the blocks for the new page
     if (originalBlocks && originalBlocks.length > 0) {
-      const newBlocksData = originalBlocks.map(block => {
-        const { id, created_time, last_edited_time, created_by, last_edited_by, workspace_id, parent_id, ...rest } = block;
-        return {
-          ...rest,
-          parent_id: newPage.id,
-          workspace_id: newPage.workspace_id,
-          created_by: userId,
-          last_edited_by: userId,
-        };
-      });
+      const newBlocksData = originalBlocks.map(block => ({
+        type: block.type,
+        properties: block.properties as Record<string, any>,
+        content: block.content as Record<string, any> | null,
+        pos: block.pos,
+        archived: block.archived,
+        in_trash: block.in_trash,
+        parent_id: newPage.id,
+        workspace_id: newPage.workspace_id,
+        created_by: userId,
+        last_edited_by: userId,
+      }));
 
       const { error: insertBlocksError } = await supabase
         .from('blocks')
-        .insert(newBlocksData as any);
+        .insert(newBlocksData);
 
       if (insertBlocksError) {
         // Clean up the created page if block creation fails
