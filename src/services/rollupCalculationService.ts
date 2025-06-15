@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { DatabaseField, RollupFieldSettings, RelationFieldSettings } from '@/types/database';
 
@@ -71,11 +70,11 @@ export class RollupCalculationService {
       if (settings.rollup_property === 'title') {
         // Rolling up page titles
         const { data: relatedPages } = await supabase
-          .from('pages')
-          .select('title')
+          .from('blocks')
+          .select('properties')
           .in('id', relatedPageIds);
 
-        propertyValues = relatedPages?.map(p => p.title) || [];
+        propertyValues = relatedPages?.map(p => (p.properties as any)?.title).filter(Boolean) || [];
       } else {
         // Rolling up a specific field property
         const { data: relatedProperties } = await supabase
@@ -116,125 +115,108 @@ export class RollupCalculationService {
     if (values.length === 0) {
       return this.getDefaultValue(aggregationType);
     }
-
+    
     switch (aggregationType) {
-      case 'count':
+      case 'count': // This is handled earlier, but for completeness
         return values.length.toString();
-
       case 'sum':
-        if (propertyId === 'count') {
-          return values.length.toString();
-        }
-        const numericValues = values.map(v => parseFloat(v)).filter(v => !isNaN(v));
-        const sum = numericValues.reduce((acc, val) => acc + val, 0);
-        return sum.toString();
-
+        return values.reduce((sum, v) => sum + (parseFloat(v) || 0), 0).toString();
       case 'average':
-        const avgValues = values.map(v => parseFloat(v)).filter(v => !isNaN(v));
-        if (avgValues.length === 0) return '0';
-        const average = avgValues.reduce((acc, val) => acc + val, 0) / avgValues.length;
-        return average.toFixed(2);
-
+        const sum = values.reduce((s, v) => s + (parseFloat(v) || 0), 0);
+        return (sum / values.length).toString();
       case 'min':
         const minValues = values.map(v => parseFloat(v)).filter(v => !isNaN(v));
-        if (minValues.length === 0) return '0';
-        return Math.min(...minValues).toString();
-
+        return minValues.length > 0 ? Math.min(...minValues).toString() : '';
       case 'max':
         const maxValues = values.map(v => parseFloat(v)).filter(v => !isNaN(v));
-        if (maxValues.length === 0) return '0';
-        return Math.max(...maxValues).toString();
-
+        return maxValues.length > 0 ? Math.max(...maxValues).toString() : '';
       case 'earliest':
-        const earliestDates = values.map(v => new Date(v)).filter(d => !isNaN(d.getTime()));
-        if (earliestDates.length === 0) return '';
-        const earliest = new Date(Math.min(...earliestDates.map(d => d.getTime())));
-        return earliest.toISOString().split('T')[0]; // Return date only
-
+        const dates = values.map(v => new Date(v).getTime()).filter(t => !isNaN(t));
+        return dates.length > 0 ? new Date(Math.min(...dates)).toISOString() : '';
       case 'latest':
-        const latestDates = values.map(v => new Date(v)).filter(d => !isNaN(d.getTime()));
-        if (latestDates.length === 0) return '';
-        const latest = new Date(Math.max(...latestDates.map(d => d.getTime())));
-        return latest.toISOString().split('T')[0]; // Return date only
-
+        const latestDates = values.map(v => new Date(v).getTime()).filter(t => !isNaN(t));
+        return latestDates.length > 0 ? new Date(Math.max(...latestDates)).toISOString() : '';
       default:
-        return values.length.toString();
+        return '';
     }
   }
 
   /**
-   * Get default value for aggregation type when no data is available
+   * Get default value for an aggregation type
    */
   private static getDefaultValue(aggregationType: string): string {
     switch (aggregationType) {
       case 'count':
-        return '0';
       case 'sum':
-      case 'average':
-      case 'min':
-      case 'max':
         return '0';
-      case 'earliest':
-      case 'latest':
-        return '';
       default:
-        return '0';
+        return '';
     }
   }
 
   /**
-   * Bulk recalculate rollup values for all pages in a database
+   * Update computed property value in the database
    */
-  static async recalculateRollupsForDatabase(
-    databaseId: string,
-    rollupFields: DatabaseField[],
+  private static async updateComputedProperty(
+    pageId: string,
+    fieldId: string,
+    value: string | null
+  ): Promise<{ error?: string }> {
+    if (value === null) return {};
+
+    const { error } = await supabase
+      .from('page_properties')
+      .update({ computed_value: value })
+      .eq('page_id', pageId)
+      .eq('field_id', fieldId);
+
+    if (error) {
+      console.error('Error updating computed property:', error);
+      return { error: error.message };
+    }
+    return {};
+  }
+
+  /**
+   * Recalculate all rollup fields for a specific page
+   */
+  static async recalculateAllForPage(
+    pageId: string,
     allFields: DatabaseField[]
-  ): Promise<{ success: boolean; error?: string }> {
-    try {
-      // Get all pages in the database
-      const { data: pages } = await supabase
-        .from('pages')
-        .select('id')
-        .eq('database_id', databaseId);
+  ): Promise<void> {
+    const rollupFields = allFields.filter(f => f.type === 'rollup');
+    for (const field of rollupFields) {
+      const newValue = await this.calculateRollupValue(pageId, field, allFields);
+      if (newValue.value !== null) {
+        await this.updateComputedProperty(pageId, field.id, newValue.value);
+      }
+    }
+  }
 
-      if (!pages) return { success: true };
+  /**
+   * Recalculate a single rollup field for all pages in a database
+   */
+  static async recalculateFieldForAllPages(
+    fieldId: string,
+    databaseId: string,
+    allFields: DatabaseField[]
+  ): Promise<void> {
+    const rollupField = allFields.find(f => f.id === fieldId);
+    if (!rollupField || rollupField.type !== 'rollup') return;
+    
+    const { data: pages } = await supabase
+      .from('blocks')
+      .select('id')
+      .eq('type', 'page')
+      .eq('properties->>database_id', databaseId);
 
-      // Recalculate each rollup field for each page
+    if (pages) {
       for (const page of pages) {
-        for (const rollupField of rollupFields) {
-          const { value, error } = await this.calculateRollupValue(
-            page.id,
-            rollupField,
-            allFields
-          );
-
-          if (error) {
-            console.error(`Error calculating rollup for page ${page.id}, field ${rollupField.id}:`, error);
-            continue;
-          }
-
-          // Update the computed value
-          await supabase
-            .from('page_properties')
-            .upsert({
-              page_id: page.id,
-              field_id: rollupField.id,
-              computed_value: value,
-              value: '', // Rollup fields don't have user-entered values
-              created_by: rollupField.created_by
-            }, {
-              onConflict: 'page_id,field_id'
-            });
+        const newValue = await this.calculateRollupValue(page.id, rollupField, allFields);
+        if (newValue.value !== null) {
+          await this.updateComputedProperty(page.id, fieldId, String(newValue.value));
         }
       }
-
-      return { success: true };
-    } catch (error) {
-      console.error('Error recalculating rollups:', error);
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Recalculation failed' 
-      };
     }
   }
 }

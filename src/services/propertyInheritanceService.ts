@@ -30,7 +30,8 @@ export class PropertyInheritanceService {
       const { data: fields, error: fieldsError } = await DatabaseFieldService.fetchDatabaseFields(databaseId);
       
       if (fieldsError || !fields) {
-        throw new Error(fieldsError || 'Failed to fetch database fields');
+        const errorMessage = typeof fieldsError === 'string' ? fieldsError : fieldsError?.message;
+        throw new Error(errorMessage || 'Failed to fetch database fields');
       }
 
       // Get existing properties for the page to avoid overwriting
@@ -122,7 +123,8 @@ export class PropertyInheritanceService {
       const { data: fields, error: fieldsError } = await DatabaseFieldService.fetchDatabaseFields(databaseId);
       
       if (fieldsError || !fields) {
-        throw new Error(fieldsError || 'Failed to fetch database fields');
+        const errorMessage = typeof fieldsError === 'string' ? fieldsError : fieldsError?.message;
+        throw new Error(errorMessage || 'Failed to fetch database fields');
       }
 
       // Delete properties that correspond to database fields
@@ -162,9 +164,10 @@ export class PropertyInheritanceService {
     try {
       // Get all pages in the database
       const { data: pages, error: pagesError } = await supabase
-        .from('pages')
+        .from('blocks')
         .select('id')
-        .eq('database_id', databaseId);
+        .eq('type', 'page')
+        .eq('properties->>database_id', databaseId);
 
       if (pagesError) {
         throw new Error(pagesError.message);
