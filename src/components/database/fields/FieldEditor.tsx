@@ -109,6 +109,29 @@ export function FieldEditor({
           autoFocus
         />
       );
+    
+    case 'status':
+      return (
+        <SelectFieldEditor
+          value={value}
+          onChange={onChange}
+          settings={field.settings}
+        />
+      );
+
+    case 'people':
+      // The value is expected to be a JSON string of user objects.
+      // A proper people picker would be needed for a better UX.
+      return (
+        <input
+          type="text"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="w-full px-2 py-1 bg-transparent border-none outline-none text-foreground"
+          placeholder='Edit as JSON: [{"id": "...", "name": "..."}]'
+          autoFocus
+        />
+      );
 
     case 'select':
       return (

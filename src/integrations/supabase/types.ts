@@ -260,22 +260,7 @@ export type Database = {
           id?: string
           source_field_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "field_dependencies_dependent_field_id_fkey"
-            columns: ["dependent_field_id"]
-            isOneToOne: false
-            referencedRelation: "fields"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "field_dependencies_source_field_id_fkey"
-            columns: ["source_field_id"]
-            isOneToOne: false
-            referencedRelation: "fields"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       fields: {
         Row: {
@@ -286,8 +271,11 @@ export type Database = {
           name: string
           pos: number
           settings: Json | null
-          type: string
+          type: Database["public"]["Enums"]["property_type_enum"]
           updated_at: string | null
+          visibility_setting:
+            | Database["public"]["Enums"]["property_visibility"]
+            | null
         }
         Insert: {
           created_at?: string | null
@@ -297,8 +285,11 @@ export type Database = {
           name: string
           pos?: number
           settings?: Json | null
-          type: string
+          type: Database["public"]["Enums"]["property_type_enum"]
           updated_at?: string | null
+          visibility_setting?:
+            | Database["public"]["Enums"]["property_visibility"]
+            | null
         }
         Update: {
           created_at?: string | null
@@ -308,10 +299,21 @@ export type Database = {
           name?: string
           pos?: number
           settings?: Json | null
-          type?: string
+          type?: Database["public"]["Enums"]["property_type_enum"]
           updated_at?: string | null
+          visibility_setting?:
+            | Database["public"]["Enums"]["property_visibility"]
+            | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fields_database_id_fkey"
+            columns: ["database_id"]
+            isOneToOne: false
+            referencedRelation: "databases"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       files: {
         Row: {
@@ -636,13 +638,6 @@ export type Database = {
           workspace_id?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "fk_property_file_attachments_field_id"
-            columns: ["field_id"]
-            isOneToOne: false
-            referencedRelation: "fields"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "fk_property_file_attachments_page_id"
             columns: ["page_id"]
@@ -1074,6 +1069,10 @@ export type Database = {
         Args: { workspace_uuid: string }
         Returns: undefined
       }
+      remove_properties_from_page: {
+        Args: { p_page_id: string; p_database_id: string }
+        Returns: undefined
+      }
       user_can_edit_workspace: {
         Args: { target_workspace_id: string; user_id: string }
         Returns: boolean
@@ -1121,6 +1120,30 @@ export type Database = {
         | "quote"
         | "divider"
         | "callout"
+      property_type_enum:
+        | "text"
+        | "number"
+        | "select"
+        | "multi_select"
+        | "status"
+        | "date"
+        | "people"
+        | "file_attachment"
+        | "checkbox"
+        | "url"
+        | "email"
+        | "phone"
+        | "relation"
+        | "rollup"
+        | "formula"
+        | "button"
+        | "image"
+        | "created_time"
+        | "created_by"
+        | "last_edited_time"
+        | "last_edited_by"
+        | "id"
+      property_visibility: "always_show" | "always_hide" | "show_when_not_empty"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1253,6 +1276,35 @@ export const Constants = {
         "quote",
         "divider",
         "callout",
+      ],
+      property_type_enum: [
+        "text",
+        "number",
+        "select",
+        "multi_select",
+        "status",
+        "date",
+        "people",
+        "file_attachment",
+        "checkbox",
+        "url",
+        "email",
+        "phone",
+        "relation",
+        "rollup",
+        "formula",
+        "button",
+        "image",
+        "created_time",
+        "created_by",
+        "last_edited_time",
+        "last_edited_by",
+        "id",
+      ],
+      property_visibility: [
+        "always_show",
+        "always_hide",
+        "show_when_not_empty",
       ],
     },
   },

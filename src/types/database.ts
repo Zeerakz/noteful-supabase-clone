@@ -14,7 +14,7 @@ export interface DatabaseField {
   id: string;
   database_id: string;
   name: string;
-  type: string;
+  type: FieldType;
   settings?: any;
   pos: number;
   created_by: string;
@@ -112,7 +112,9 @@ export type FieldType =
   | 'last_edited_time'
   | 'last_edited_by'
   | 'id'
-  | 'button';
+  | 'button'
+  | 'status'
+  | 'people';
 
 // Settings types for complex fields
 export interface FormulaFieldSettings {
