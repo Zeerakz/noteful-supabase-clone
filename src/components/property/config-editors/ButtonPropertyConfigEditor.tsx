@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { ButtonPropertyConfig, ButtonAction, CreatePageWithTemplateConfig, UpdatePagesConfig, OpenLinkConfig } from '@/types/property/configs/button';
 import { DatabaseField, Database } from '@/types/database';
@@ -14,6 +13,8 @@ import { useDatabaseFields } from '@/hooks/useDatabaseFields';
 import { useDatabases } from '@/hooks/useDatabases';
 import { ComplexFilterModal } from '@/components/database/filters/ComplexFilterModal';
 import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
+import { ComplexFilter } from '@/types/filters';
+import { createEmptyFilterGroup } from '@/utils/filterUtils';
 
 interface ButtonPropertyConfigEditorProps {
   config: ButtonPropertyConfig;
@@ -125,11 +126,17 @@ export function ButtonPropertyConfigEditor({
                       <>
                         <Button variant="outline" onClick={() => setEditingFilterForAction(action.id)}>Edit Filter</Button>
                         <ComplexFilterModal
-                          isOpen={editingFilterForAction === action.id}
+                          open={editingFilterForAction === action.id}
                           onOpenChange={(isOpen) => !isOpen && setEditingFilterForAction(null)}
-                          filter={updateConfig.filter}
-                          onFilterChange={(newFilter) => updateAction(action.id, { config: { ...updateConfig, filter: newFilter }})}
-                          databaseFields={dbFields}
+                          filterGroup={updateConfig.filter?.rootGroup || createEmptyFilterGroup()}
+                          onFilterGroupChange={(newFilterGroup) => {
+                            const newComplexFilter: ComplexFilter = {
+                              id: updateConfig.filter?.id || crypto.randomUUID(),
+                              rootGroup: newFilterGroup,
+                            };
+                            updateAction(action.id, { config: { ...updateConfig, filter: newComplexFilter } });
+                          }}
+                          fields={dbFields}
                         />
                       </>
                     )}
