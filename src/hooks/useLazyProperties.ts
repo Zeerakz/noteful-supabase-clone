@@ -48,7 +48,7 @@ export function useLazyProperties({ pageIds, fields, enabled = true }: UseLazyPr
       if (!error && data) {
         const properties: Record<string, string> = {};
         data.forEach((prop: any) => {
-          properties[prop.field_id] = prop.value || '';
+          properties[prop.property_id] = prop.value || '';
         });
 
         console.log('useLazyProperties: Properties loaded successfully', { pageId, propertyCount: Object.keys(properties).length });

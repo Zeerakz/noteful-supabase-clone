@@ -45,10 +45,10 @@ export class DatabaseQueryService {
 
       // 3. Combine pages with their properties
       const pagesWithProperties = pages.map(page => {
-        const pageProperties = properties?.filter(p => p.page_id === page.id) || [];
+        const propertyValues = properties?.filter(p => p.page_id === page.id) || [];
         return {
           ...page,
-          page_properties: pageProperties.map(({ property_id, value }) => ({ property_id, value }))
+          property_values: propertyValues.map(({ property_id, value }) => ({ property_id, value }))
         };
       });
 
@@ -80,11 +80,11 @@ export class DatabaseQueryService {
       const aProperties: Record<string, string> = {};
       const bProperties: Record<string, string> = {};
       
-      (a.page_properties || []).forEach((prop: any) => {
+      (a.property_values || []).forEach((prop: any) => {
         aProperties[prop.property_id] = prop.value || '';
       });
       
-      (b.page_properties || []).forEach((prop: any) => {
+      (b.property_values || []).forEach((prop: any) => {
         bProperties[prop.property_id] = prop.value || '';
       });
 
