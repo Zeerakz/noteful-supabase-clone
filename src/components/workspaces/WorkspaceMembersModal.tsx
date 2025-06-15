@@ -2,7 +2,7 @@
 import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { GroupsManagementTab } from './GroupsManagementTab';
+import { MembersManagementTab } from './MembersManagementTab';
 
 interface WorkspaceMembersModalProps {
   workspaceId: string;
@@ -19,22 +19,16 @@ export function WorkspaceMembersModal({ workspaceId, isOpen, onClose }: Workspac
         <DialogHeader>
           <DialogTitle>Settings & Members</DialogTitle>
           <DialogDescription>
-            Manage workspace members, groups, and settings.
+            Manage workspace members and pending invitations.
           </DialogDescription>
         </DialogHeader>
         <div className="flex-grow overflow-hidden">
-          <Tabs defaultValue="groups" className="h-full flex flex-col">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="members">Members</TabsTrigger>
-              <TabsTrigger value="groups">Groups</TabsTrigger>
+          <Tabs defaultValue="members" className="h-full flex flex-col">
+            <TabsList className="grid w-full grid-cols-1">
+              <TabsTrigger value="members">Members & Invitations</TabsTrigger>
             </TabsList>
             <TabsContent value="members" className="flex-grow overflow-auto p-4">
-              <div className="text-center text-muted-foreground p-8">
-                Member management coming soon.
-              </div>
-            </TabsContent>
-            <TabsContent value="groups" className="flex-grow overflow-auto p-4">
-              <GroupsManagementTab workspaceId={workspaceId} />
+              <MembersManagementTab workspaceId={workspaceId} />
             </TabsContent>
           </Tabs>
         </div>

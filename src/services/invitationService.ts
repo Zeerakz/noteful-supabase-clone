@@ -1,10 +1,11 @@
 
 import { supabase } from '@/integrations/supabase/client';
+import { WorkspaceRole } from '@/types/db';
 
 export interface InviteUserRequest {
   email: string;
   workspaceId: string;
-  roleName: 'admin' | 'editor' | 'viewer';
+  role: WorkspaceRole;
   workspaceName: string;
   inviterName: string;
 }
@@ -17,6 +18,7 @@ export class InvitationService {
       });
 
       if (error) throw error;
+      if (data.error) throw new Error(data.error);
 
       return { error: null, success: true };
     } catch (err) {
@@ -27,71 +29,91 @@ export class InvitationService {
     }
   }
 
-  static async getWorkspaceMemberships(workspaceId: string) {
+  static async getWorkspaceMembers(workspaceId: string) {
     try {
       const { data, error } = await supabase
-        .from('workspace_membership')
+        .from('workspace_members')
         .select(`
           id,
           user_id,
-          status,
-          invited_at,
-          accepted_at,
-          roles:role_id (
-            role_name,
-            description
+          role,
+          created_at,
+          profiles (
+            full_name,
+            email,
+            avatar_url
           )
         `)
         .eq('workspace_id', workspaceId)
-        .order('invited_at', { ascending: false });
+        .order('created_at', { ascending: false });
 
       if (error) throw error;
       return { data: data || [], error: null };
     } catch (err) {
       return { 
         data: null, 
-        error: err instanceof Error ? err.message : 'Failed to fetch memberships' 
+        error: err instanceof Error ? err.message : 'Failed to fetch members' 
       };
     }
   }
 
-  static async updateMembershipStatus(
-    membershipId: string, 
-    status: 'accepted' | 'declined'
-  ): Promise<{ error: string | null }> {
+  static async getPendingInvitations(workspaceId: string) {
     try {
-      const updateData = {
-        status,
-        ...(status === 'accepted' && { accepted_at: new Date().toISOString() })
-      };
-
-      const { error } = await supabase
-        .from('workspace_membership')
-        .update(updateData)
-        .eq('id', membershipId);
+      const { data, error } = await supabase
+        .from('invitations')
+        .select('*')
+        .eq('workspace_id', workspaceId)
+        .order('created_at', { ascending: false });
 
       if (error) throw error;
-      return { error: null };
+      return { data: data || [], error: null };
     } catch (err) {
-      return { 
-        error: err instanceof Error ? err.message : 'Failed to update membership status' 
+      return {
+        data: null,
+        error: err instanceof Error ? err.message : 'Failed to fetch invitations'
       };
     }
   }
 
-  static async removeMembership(membershipId: string): Promise<{ error: string | null }> {
+  static async cancelInvitation(invitationId: string): Promise<{ error: string | null }> {
     try {
       const { error } = await supabase
-        .from('workspace_membership')
+        .from('invitations')
         .delete()
-        .eq('id', membershipId);
+        .eq('id', invitationId);
+      
+      if (error) throw error;
+      return { error: null };
+    } catch (err) {
+      return { error: err instanceof Error ? err.message : 'Failed to cancel invitation' };
+    }
+  }
+
+  static async removeMember(memberId: string): Promise<{ error: string | null }> {
+    try {
+      const { error } = await supabase
+        .from('workspace_members')
+        .delete()
+        .eq('id', memberId);
 
       if (error) throw error;
       return { error: null };
     } catch (err) {
-      return { 
-        error: err instanceof Error ? err.message : 'Failed to remove membership' 
-      };
+      return { error: err instanceof Error ? err.message : 'Failed to remove member' };
+    }
+  }
+
+  static async updateMemberRole(memberId: string, role: WorkspaceRole): Promise<{ error: string | null }> {
+    try {
+      const { error } = await supabase
+        .from('workspace_members')
+        .update({ role })
+        .eq('id', memberId);
+      
+      if (error) throw error;
+      return { error: null };
+    } catch (err) {
+      return { error: err instanceof Error ? err.message : 'Failed to update role' };
     }
   }
 }

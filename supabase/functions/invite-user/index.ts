@@ -8,25 +8,23 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+type WorkspaceRole = 'owner' | 'admin' | 'member' | 'guest';
+
 interface InviteUserRequest {
   email: string;
   workspaceId: string;
-  roleName: 'admin' | 'editor' | 'viewer';
+  role: WorkspaceRole;
   workspaceName: string;
   inviterName: string;
 }
 
 const handler = async (req: Request): Promise<Response> => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   if (req.method !== 'POST') {
-    return new Response('Method not allowed', { 
-      status: 405, 
-      headers: corsHeaders 
-    });
+    return new Response('Method not allowed', { status: 405, headers: corsHeaders });
   }
 
   try {
@@ -34,168 +32,98 @@ const handler = async (req: Request): Promise<Response> => {
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
-
     const resend = new Resend(Deno.env.get('RESEND_API_KEY'));
 
-    const { 
-      email, 
-      workspaceId, 
-      roleName, 
-      workspaceName, 
-      inviterName 
-    }: InviteUserRequest = await req.json();
+    const { email, workspaceId, role, workspaceName, inviterName }: InviteUserRequest = await req.json();
 
-    console.log('Processing invitation for:', email, 'to workspace:', workspaceName);
-
-    // Get the role ID for the specified role name
-    const { data: role, error: roleError } = await supabase
-      .from('roles')
-      .select('id')
-      .eq('role_name', roleName)
-      .single();
-
-    if (roleError || !role) {
-      throw new Error(`Role '${roleName}' not found`);
+    if (!email || !workspaceId || !role) {
+      return new Response(JSON.stringify({ error: 'Missing required fields' }), { status: 400 });
     }
 
-    // Check if user already exists in auth.users
-    const { data: existingUsers, error: userCheckError } = await supabase.auth.admin.listUsers();
-    
-    if (userCheckError) {
-      throw new Error('Failed to check existing users');
-    }
-
-    const existingUser = existingUsers.users.find(user => user.email === email);
-    let userId: string;
-
-    if (existingUser) {
-      userId = existingUser.id;
-      
-      // Check if user is already a member of this workspace
-      const { data: existingMembership, error: membershipCheckError } = await supabase
-        .from('workspace_membership')
-        .select('id, status')
-        .eq('user_id', userId)
+    // Check if user exists and is already a member
+    const { data: userProfile } = await supabase.from('profiles').select('id').eq('email', email).single();
+    if (userProfile) {
+      const { data: member } = await supabase
+        .from('workspace_members')
+        .select('id')
         .eq('workspace_id', workspaceId)
+        .eq('user_id', userProfile.id)
         .single();
-
-      if (membershipCheckError && membershipCheckError.code !== 'PGRST116') {
-        throw new Error('Failed to check existing membership');
+      if (member) {
+        return new Response(JSON.stringify({ error: 'User is already a member of this workspace' }), { status: 409 });
       }
-
-      if (existingMembership) {
-        return new Response(
-          JSON.stringify({ 
-            error: `User is already ${existingMembership.status === 'accepted' ? 'a member of' : 'invited to'} this workspace`,
-            success: false 
-          }),
-          {
-            status: 400,
-            headers: {
-              'Content-Type': 'application/json',
-              ...corsHeaders,
-            },
-          }
-        );
-      }
-    } else {
-      // Create a placeholder user entry for the invitation
-      // In a real implementation, you might want to handle this differently
-      // For now, we'll create the membership with a placeholder and update it when they sign up
-      userId = crypto.randomUUID();
     }
 
-    // Create pending workspace membership
-    const { error: membershipError } = await supabase
-      .from('workspace_membership')
-      .insert({
-        user_id: userId,
-        workspace_id: workspaceId,
-        role_id: role.id,
-        status: 'pending',
-        invited_at: new Date().toISOString()
-      });
-
-    if (membershipError) {
-      throw new Error(`Failed to create membership: ${membershipError.message}`);
+    // Check if there is already a pending invitation
+    const { data: existingInvite } = await supabase
+      .from('invitations')
+      .select('id')
+      .eq('workspace_id', workspaceId)
+      .eq('email', email)
+      .single();
+    if (existingInvite) {
+      return new Response(JSON.stringify({ error: 'An invitation has already been sent to this email address' }), { status: 409 });
     }
 
-    // Generate invitation link
-    const inviteUrl = `${Deno.env.get('SUPABASE_URL')?.replace('/supabase', '') || 'http://localhost:3000'}/invite/${workspaceId}?email=${encodeURIComponent(email)}&role=${roleName}`;
+    // Create invitation
+    const token = crypto.randomUUID();
+    const { data: authUser, error: authError } = await supabase.auth.getUser();
+    if (authError) throw authError;
 
-    // Send invitation email
-    const emailResponse = await resend.emails.send({
+    const { error: insertError } = await supabase.from('invitations').insert({
+      workspace_id: workspaceId,
+      email: email,
+      role: role,
+      token: token,
+      invited_by: authUser.user.id,
+    });
+
+    if (insertError) {
+      throw new Error(`Failed to create invitation record: ${insertError.message}`);
+    }
+
+    const appUrl = (Deno.env.get('SUPABASE_URL') ?? 'http://localhost:3000').replace('/supabase', '');
+    const inviteUrl = `${appUrl}/accept-invite?token=${token}`;
+
+    const { data: emailData, error: emailError } = await resend.emails.send({
       from: "Knowledge File <notifications@resend.dev>",
       to: [email],
       subject: `You're invited to join ${workspaceName}`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
           <h2 style="color: #333; margin-bottom: 20px;">You're invited to collaborate!</h2>
-          
           <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
             <p style="margin: 0 0 10px 0; color: #666;">
-              <strong>${inviterName}</strong> has invited you to join <strong>"${workspaceName}"</strong> as a <strong>${roleName}</strong>.
-            </p>
-            <p style="margin: 0; color: #666;">
-              Accept this invitation to start collaborating on pages, databases, and more.
+              <strong>${inviterName}</strong> has invited you to join <strong>"${workspaceName}"</strong> as a <strong>${role}</strong>.
             </p>
           </div>
-          
           <div style="text-align: center; margin: 30px 0;">
-            <a href="${inviteUrl}" 
-               style="background-color: #007bff; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
+            <a href="${inviteUrl}" style="background-color: #007bff; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
               Accept Invitation
             </a>
           </div>
-          
-          <div style="background-color: #fff3cd; padding: 15px; border-radius: 4px; border-left: 4px solid #ffc107; margin: 20px 0;">
-            <p style="margin: 0; color: #856404; font-size: 14px;">
-              <strong>New to Knowledge File?</strong> Don't worry! Clicking the link above will guide you through creating your account.
-            </p>
-          </div>
-          
-          <hr style="margin: 30px 0; border: none; border-top: 1px solid #eee;">
-          
           <p style="color: #666; font-size: 14px; text-align: center; margin: 0;">
-            This invitation was sent by ${inviterName}. If you weren't expecting this invitation, you can safely ignore this email.
+            If you weren't expecting this invitation, you can safely ignore this email.
           </p>
         </div>
       `,
     });
 
-    console.log('Invitation email sent successfully:', emailResponse);
+    if (emailError) {
+      throw new Error(`Failed to send email: ${JSON.stringify(emailError)}`);
+    }
 
-    return new Response(
-      JSON.stringify({ 
-        success: true, 
-        message: 'Invitation sent successfully',
-        messageId: emailResponse.data?.id 
-      }),
-      {
-        status: 200,
-        headers: {
-          'Content-Type': 'application/json',
-          ...corsHeaders,
-        },
-      }
-    );
+    return new Response(JSON.stringify({ success: true, message: 'Invitation sent' }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      status: 200,
+    });
 
   } catch (error: any) {
-    console.error('Error sending invitation:', error);
-    
-    return new Response(
-      JSON.stringify({ 
-        error: error.message || 'Failed to send invitation',
-        success: false 
-      }),
-      {
-        status: 500,
-        headers: { 
-          'Content-Type': 'application/json', 
-          ...corsHeaders 
-        },
-      }
-    );
+    console.error('Invitation Error:', error);
+    return new Response(JSON.stringify({ error: error.message }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      status: 500,
+    });
   }
 };
 

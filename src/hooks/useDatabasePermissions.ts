@@ -33,41 +33,17 @@ export function useDatabasePermissions(workspaceId: string) {
         return;
       }
 
+      setLoading(true);
       try {
-        // Check if user is workspace owner
-        const { data: workspace } = await supabase
-          .from('workspaces')
-          .select('owner_user_id')
-          .eq('id', workspaceId)
-          .single();
-
-        if (workspace?.owner_user_id === user.id) {
-          setPermissions({
-            canEditContent: true,
-            canModifySchema: true,
-            canManageViews: true,
-            canDeleteRows: true,
-            canAddRows: true,
-            permissionLevel: 'full_access'
-          });
-          setLoading(false);
-          return;
-        }
-
-        // Check workspace membership and role
-        const { data: membership } = await supabase
-          .from('workspace_membership')
-          .select(`
-            role_id,
-            roles (role_name)
-          `)
+        const { data: member, error } = await supabase
+          .from('workspace_members')
+          .select('role')
           .eq('workspace_id', workspaceId)
           .eq('user_id', user.id)
-          .eq('status', 'accepted')
           .single();
 
-        if (!membership) {
-          // No access
+        if (error || !member) {
+          // No access or error, default to least privilege
           setPermissions({
             canEditContent: false,
             canModifySchema: false,
@@ -76,13 +52,15 @@ export function useDatabasePermissions(workspaceId: string) {
             canAddRows: false,
             permissionLevel: 'view_only'
           });
-          setLoading(false);
+          if(error && error.code !== 'PGRST116') { // PGRST116: no rows returned
+              console.error('Error checking permissions:', error);
+          }
           return;
         }
 
-        const roleName = (membership as any).roles?.role_name;
+        const role = member.role;
 
-        if (roleName === 'admin') {
+        if (role === 'owner' || role === 'admin') {
           setPermissions({
             canEditContent: true,
             canModifySchema: true,
@@ -91,7 +69,7 @@ export function useDatabasePermissions(workspaceId: string) {
             canAddRows: true,
             permissionLevel: 'full_access'
           });
-        } else if (roleName === 'editor') {
+        } else if (role === 'member') {
           setPermissions({
             canEditContent: true,
             canModifySchema: false,
@@ -100,8 +78,7 @@ export function useDatabasePermissions(workspaceId: string) {
             canAddRows: true,
             permissionLevel: 'can_edit_content'
           });
-        } else {
-          // viewer or any other role
+        } else { // guest
           setPermissions({
             canEditContent: false,
             canModifySchema: false,
@@ -113,7 +90,6 @@ export function useDatabasePermissions(workspaceId: string) {
         }
       } catch (error) {
         console.error('Error checking permissions:', error);
-        // Default to no permissions on error
         setPermissions({
           canEditContent: false,
           canModifySchema: false,

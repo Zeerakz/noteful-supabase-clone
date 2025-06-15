@@ -1,8 +1,8 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { InvitationService, InviteUserRequest } from '@/services/invitationService';
+import { InvitationService } from '@/services/invitationService';
+import type { InviteUserRequest } from '@/services/invitationService';
 
 export interface Workspace {
   id: string;
@@ -14,20 +14,6 @@ export interface Workspace {
   updated_at: string;
 }
 
-export interface WorkspaceMembership {
-  id: string;
-  user_id: string;
-  workspace_id: string;
-  role_id: number;
-  invited_at: string;
-  accepted_at?: string;
-  status: 'pending' | 'accepted' | 'declined';
-  roles?: {
-    role_name: string;
-    description?: string;
-  };
-}
-
 export function useWorkspaces() {
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [loading, setLoading] = useState(true);
@@ -36,7 +22,6 @@ export function useWorkspaces() {
 
   const fetchWorkspaces = async () => {
     if (!user) {
-      console.log('No user authenticated, clearing workspaces and stopping load');
       setWorkspaces([]);
       setLoading(false);
       setError(null);
@@ -46,23 +31,19 @@ export function useWorkspaces() {
     try {
       setLoading(true);
       setError(null);
-      console.log('🏢 Fetching workspaces for user:', user.id);
       
       const { data, error } = await supabase
-        .from('workspaces')
-        .select('*')
-        .eq('owner_user_id', user.id)
-        .order('created_at', { ascending: false });
+        .from('workspace_members')
+        .select('workspaces(*)')
+        .eq('user_id', user.id);
 
       if (error) {
-        console.error('❌ Error fetching workspaces:', error);
         throw error;
       }
       
-      console.log('✅ Workspaces fetched successfully:', data?.length || 0);
-      setWorkspaces(data || []);
+      const userWorkspaces = data?.map(item => (item as any).workspaces).filter(Boolean) as Workspace[];
+      setWorkspaces(userWorkspaces || []);
     } catch (err) {
-      console.error('💥 Failed to fetch workspaces:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch workspaces');
       setWorkspaces([]);
     } finally {
@@ -88,7 +69,6 @@ export function useWorkspaces() {
 
       if (error) throw error;
       
-      // Refresh workspaces list
       await fetchWorkspaces();
       
       return { data, error: null };
@@ -109,7 +89,6 @@ export function useWorkspaces() {
 
       if (error) throw error;
       
-      // Refresh workspaces list
       await fetchWorkspaces();
       
       return { data, error: null };
@@ -128,7 +107,6 @@ export function useWorkspaces() {
 
       if (error) throw error;
       
-      // Refresh workspaces list
       await fetchWorkspaces();
       
       return { error: null };
@@ -141,7 +119,7 @@ export function useWorkspaces() {
   const inviteUserToWorkspace = async (
     workspaceId: string,
     email: string,
-    roleName: 'admin' | 'editor' | 'viewer'
+    role: 'admin' | 'member' | 'guest'
   ) => {
     if (!user) return { error: 'User not authenticated' };
 
@@ -151,7 +129,7 @@ export function useWorkspaces() {
     const request: InviteUserRequest = {
       email,
       workspaceId,
-      roleName,
+      role,
       workspaceName: workspace.name,
       inviterName: user.email || 'Someone'
     };
@@ -161,7 +139,6 @@ export function useWorkspaces() {
   };
 
   useEffect(() => {
-    // Only fetch workspaces when authentication is complete
     if (!authLoading) {
       fetchWorkspaces();
     }
@@ -169,7 +146,7 @@ export function useWorkspaces() {
 
   return {
     workspaces,
-    loading: loading || authLoading, // Show loading while auth is loading OR workspaces are loading
+    loading: loading || authLoading,
     error,
     fetchWorkspaces,
     createWorkspace,

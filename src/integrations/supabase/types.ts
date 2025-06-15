@@ -490,6 +490,44 @@ export type Database = {
           },
         ]
       }
+      invitations: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          invited_by: string | null
+          role: Database["public"]["Enums"]["workspace_role"]
+          token: string
+          workspace_id: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          invited_by?: string | null
+          role: Database["public"]["Enums"]["workspace_role"]
+          token: string
+          workspace_id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          invited_by?: string | null
+          role?: Database["public"]["Enums"]["workspace_role"]
+          token?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invitations_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       legacy_blocks: {
         Row: {
           content: Json | null
@@ -828,27 +866,6 @@ export type Database = {
           },
         ]
       }
-      roles: {
-        Row: {
-          created_at: string | null
-          description: string | null
-          id: number
-          role_name: string
-        }
-        Insert: {
-          created_at?: string | null
-          description?: string | null
-          id?: number
-          role_name: string
-        }
-        Update: {
-          created_at?: string | null
-          description?: string | null
-          id?: number
-          role_name?: string
-        }
-        Relationships: []
-      }
       saved_database_views: {
         Row: {
           created_at: string
@@ -1083,44 +1100,31 @@ export type Database = {
           },
         ]
       }
-      workspace_membership: {
+      workspace_members: {
         Row: {
-          accepted_at: string | null
+          created_at: string
           id: string
-          invited_at: string | null
-          role_id: number
-          status: string | null
+          role: Database["public"]["Enums"]["workspace_role"]
           user_id: string
           workspace_id: string
         }
         Insert: {
-          accepted_at?: string | null
+          created_at?: string
           id?: string
-          invited_at?: string | null
-          role_id: number
-          status?: string | null
+          role: Database["public"]["Enums"]["workspace_role"]
           user_id: string
           workspace_id: string
         }
         Update: {
-          accepted_at?: string | null
+          created_at?: string
           id?: string
-          invited_at?: string | null
-          role_id?: number
-          status?: string | null
+          role?: Database["public"]["Enums"]["workspace_role"]
           user_id?: string
           workspace_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "workspace_membership_role_id_fkey"
-            columns: ["role_id"]
-            isOneToOne: false
-            referencedRelation: "roles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "workspace_membership_workspace_id_fkey"
+            foreignKeyName: "workspace_members_workspace_id_fkey"
             columns: ["workspace_id"]
             isOneToOne: false
             referencedRelation: "workspaces"
@@ -1180,6 +1184,14 @@ export type Database = {
         Args: { p_page_id: string; p_database_id: string; p_user_id: string }
         Returns: undefined
       }
+      check_workspace_membership: {
+        Args: {
+          p_workspace_id: string
+          p_user_id: string
+          p_required_roles?: Database["public"]["Enums"]["workspace_role"][]
+        }
+        Returns: boolean
+      }
       cleanup_old_presence: {
         Args: Record<PropertyKey, never>
         Returns: undefined
@@ -1201,10 +1213,6 @@ export type Database = {
       get_inherited_block_permission: {
         Args: { p_block_id: string; p_user_id: string }
         Returns: Database["public"]["Enums"]["block_permission_level"]
-      }
-      get_user_workspace_role: {
-        Args: { workspace_uuid: string; user_uuid: string }
-        Returns: string
       }
       global_search: {
         Args: { search_query: string; user_workspace_id?: string }
@@ -1243,26 +1251,6 @@ export type Database = {
       remove_properties_from_page: {
         Args: { p_page_id: string; p_database_id: string }
         Returns: undefined
-      }
-      user_can_edit_workspace: {
-        Args: { target_workspace_id: string; user_id: string }
-        Returns: boolean
-      }
-      user_has_workspace_access: {
-        Args: { target_workspace_id: string; user_id: string }
-        Returns: boolean
-      }
-      user_has_workspace_access_with_role: {
-        Args: {
-          target_workspace_id: string
-          user_id: string
-          required_role?: string
-        }
-        Returns: boolean
-      }
-      user_is_workspace_admin: {
-        Args: { target_workspace_id: string; user_id: string }
-        Returns: boolean
       }
       validate_formula_field_settings: {
         Args: { settings: Json }
@@ -1318,6 +1306,7 @@ export type Database = {
         | "last_edited_by"
         | "id"
       property_visibility: "always_show" | "always_hide" | "show_when_not_empty"
+      workspace_role: "owner" | "admin" | "member" | "guest"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1483,6 +1472,7 @@ export const Constants = {
         "always_hide",
         "show_when_not_empty",
       ],
+      workspace_role: ["owner", "admin", "member", "guest"],
     },
   },
 } as const
