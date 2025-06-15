@@ -1,5 +1,4 @@
 
-```typescript
 import React, { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -21,25 +20,22 @@ export function AcceptInvite() {
   const token = searchParams.get('token');
 
   useEffect(() => {
-    if (authLoading) {
-      setStatus('loading');
-      return;
-    }
-    
-    if (!token) {
-      setError('No invitation token provided.');
-      setStatus('error');
-      return;
-    }
+    const processInvitation = async () => {
+      if (!token) {
+        setError('No invitation token provided.');
+        setStatus('error');
+        return;
+      }
 
-    if (user) {
-      setStatus('loading');
-      InvitationService.acceptInvitation(token)
-        .then(({ data, error }) => {
-          if (error) {
-            setError(error);
+      if (user) {
+        setStatus('loading');
+        try {
+          const { data, error: serviceError } = await InvitationService.acceptInvitation(token);
+
+          if (serviceError) {
+            setError(serviceError);
             setStatus('error');
-            toast({ title: 'Error accepting invitation', description: error, variant: 'destructive' });
+            toast({ title: 'Error accepting invitation', description: serviceError, variant: 'destructive' });
           } else if (data && data.success) {
             setStatus('success');
             toast({ title: 'Success!', description: data.message });
@@ -50,10 +46,24 @@ export function AcceptInvite() {
             setStatus('error');
             toast({ title: 'Failed to join workspace', description: failureMessage, variant: 'destructive' });
           }
-        });
-    } else {
-      setStatus('idle');
+        } catch (e) {
+          const message = e instanceof Error ? e.message : 'An unexpected error occurred.';
+          setError(message);
+          setStatus('error');
+          toast({ title: 'Invitation Error', description: message, variant: 'destructive' });
+        }
+      } else {
+        setStatus('idle');
+      }
+    };
+
+    if (authLoading) {
+      setStatus('loading');
+      return;
     }
+    
+    processInvitation();
+    
   }, [user, authLoading, token, navigate, toast]);
 
   if (status === 'loading') {
@@ -110,4 +120,3 @@ export function AcceptInvite() {
 }
 
 export default AcceptInvite;
-```
