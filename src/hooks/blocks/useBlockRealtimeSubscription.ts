@@ -1,4 +1,3 @@
-
 import { useEffect, useRef, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -65,7 +64,7 @@ export function useBlockRealtimeSubscription({
         event: '*',
         schema: 'public',
         table: 'blocks',
-        filter: `page_id=eq.${pageId}`
+        filter: `parent_id=eq.${pageId}`
       },
       (payload) => {
         console.log('Realtime block update:', payload);
