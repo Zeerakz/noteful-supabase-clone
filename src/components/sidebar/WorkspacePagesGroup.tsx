@@ -1,8 +1,6 @@
-
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Loader2, Users, FolderLock, Database as DatabaseIcon } from 'lucide-react';
-import { DragDropContext, Droppable, DropResult } from 'react-beautiful-dnd';
+import { DragDropContext, DropResult } from 'react-beautiful-dnd';
+import { Loader2 } from 'lucide-react';
 import {
   SidebarGroup,
   SidebarGroupContent,
@@ -11,26 +9,18 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
 } from '@/components/ui/sidebar';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useEnhancedPages } from '@/hooks/useEnhancedPages';
 import { useTeamspaces } from '@/hooks/useTeamspaces';
 import { useDatabases } from '@/hooks/useDatabases';
 import { useToast } from '@/hooks/use-toast';
-import { PageTreeItem } from './PageTreeItem';
 import { validateDragAndDrop } from '@/utils/navigationConstraints';
 import { Block } from '@/types/block';
 import { Teamspace } from '@/types/teamspace';
 import { supabase } from '@/integrations/supabase/client';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Button } from '@/components/ui/button';
-import { MoreHorizontal, Settings } from 'lucide-react';
 import { TeamspaceSettingsModal } from '@/components/workspaces/TeamspaceSettingsModal';
-import { DatabaseListItem } from './DatabaseListItem';
+import { TeamspaceList } from './TeamspaceList';
+import { PrivatePagesList } from './PrivatePagesList';
+import { DatabaseList } from './DatabaseList';
 
 interface WorkspacePagesGroupProps {
   workspaceId: string;
@@ -44,7 +34,7 @@ export function WorkspacePagesGroup({ workspaceId, workspaceName }: WorkspacePag
   const { toast } = useToast();
   const [editingTeamspace, setEditingTeamspace] = useState<Teamspace | null>(null);
 
-  const loading = pagesLoading || teamspacesLoading || databasesLoading;
+  const loading = pagesLoading || teamspacesLoading;
 
   const privatePages = pages.filter(p => !p.teamspace_id && !p.parent_id);
   const teamspacePages = pages.reduce((acc, page) => {
@@ -184,127 +174,28 @@ export function WorkspacePagesGroup({ workspaceId, workspaceName }: WorkspacePag
         <SidebarGroupContent>
           <DragDropContext onDragEnd={handleDragEnd}>
             <div className="space-y-1">
-              {teamspaces.map(teamspace => (
-                <Collapsible key={teamspace.id} defaultOpen>
-                  <div className="group flex items-center pr-1">
-                    <CollapsibleTrigger className="w-full text-sm font-medium flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-muted flex-1">
-                      <Users className="h-4 w-4" />
-                      <span className="flex-1 text-left truncate">
-                        {teamspace.icon && <span className="mr-1.5">{teamspace.icon}</span>}
-                        {teamspace.name}
-                      </span>
-                    </CollapsibleTrigger>
-                     <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent>
-                        <DropdownMenuItem onClick={() => setEditingTeamspace(teamspace)}>
-                          <Settings className="mr-2 h-4 w-4" />
-                          <span>Settings</span>
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                  <CollapsibleContent>
-                    <Droppable droppableId={`teamspace-${teamspace.id}`} type="page">
-                      {(provided) => (
-                         <ul role="group" className="pt-1" aria-label={`${teamspace.name} pages`}>
-                           <SidebarMenu ref={provided.innerRef} {...provided.droppableProps}>
-                              {(teamspacePages[teamspace.id] || []).map((page, index) => (
-                                <PageTreeItem
-                                  key={page.id}
-                                  page={page}
-                                  pages={pages}
-                                  workspaceId={workspaceId}
-                                  onDelete={handleDeletePage}
-                                  index={index}
-                                />
-                              ))}
-                              {provided.placeholder}
-                              {(teamspacePages[teamspace.id] || []).length === 0 && (
-                                <SidebarMenuItem>
-                                  <div className="px-2 py-1 text-xs text-muted-foreground">No pages in this teamspace.</div>
-                                </SidebarMenuItem>
-                              )}
-                           </SidebarMenu>
-                         </ul>
-                      )}
-                    </Droppable>
-                  </CollapsibleContent>
-                </Collapsible>
-              ))}
-
-              <Collapsible defaultOpen>
-                  <CollapsibleTrigger className="w-full text-sm font-medium flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-muted">
-                    <FolderLock className="h-4 w-4" />
-                    <span className="flex-1 text-left truncate">Private</span>
-                  </CollapsibleTrigger>
-                  <CollapsibleContent>
-                    <Droppable droppableId={`private-${workspaceId}`} type="page">
-                      {(provided) => (
-                        <ul role="group" className="pt-1" aria-label="Private pages">
-                          <SidebarMenu ref={provided.innerRef} {...provided.droppableProps}>
-                            {privatePages.map((page, index) => (
-                              <PageTreeItem
-                                key={page.id}
-                                page={page}
-                                pages={pages}
-                                workspaceId={workspaceId}
-                                onDelete={handleDeletePage}
-                                index={index}
-                              />
-                            ))}
-                            {provided.placeholder}
-                            {privatePages.length === 0 && (
-                               <SidebarMenuItem>
-                                  <div className="px-2 py-1 text-xs text-muted-foreground">No private pages.</div>
-                                </SidebarMenuItem>
-                            )}
-                          </SidebarMenu>
-                        </ul>
-                      )}
-                    </Droppable>
-                  </CollapsibleContent>
-              </Collapsible>
+              <TeamspaceList
+                teamspaces={teamspaces}
+                teamspacePages={teamspacePages}
+                pages={pages}
+                workspaceId={workspaceId}
+                onDeletePage={handleDeletePage}
+                onEditTeamspace={setEditingTeamspace}
+              />
+              <PrivatePagesList
+                privatePages={privatePages}
+                pages={pages}
+                workspaceId={workspaceId}
+                onDeletePage={handleDeletePage}
+              />
             </div>
           </DragDropContext>
           
-          <div className="space-y-1 mt-2 border-t pt-2">
-            <Collapsible defaultOpen>
-                <CollapsibleTrigger className="w-full text-sm font-medium flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-muted">
-                  <DatabaseIcon className="h-4 w-4" />
-                  <span className="flex-1 text-left truncate">Databases</span>
-                </CollapsibleTrigger>
-                <CollapsibleContent>
-                  <ul role="group" className="pt-1" aria-label="Databases">
-                      <SidebarMenu>
-                          {databases.map((db) => (
-                              <DatabaseListItem
-                              key={db.id}
-                              database={db}
-                              onDelete={handleDeleteDatabase}
-                              />
-                          ))}
-                          {databases.length === 0 && !databasesLoading && (
-                              <SidebarMenuItem>
-                              <div className="px-2 py-1 text-xs text-muted-foreground">No databases.</div>
-                              </SidebarMenuItem>
-                          )}
-                          {databasesLoading && (
-                             <SidebarMenuItem>
-                              <div className="px-2 py-1 text-xs text-muted-foreground flex items-center gap-2">
-                                <Loader2 className="h-3 w-3 animate-spin"/> Loading...
-                              </div>
-                            </SidebarMenuItem>
-                          )}
-                      </SidebarMenu>
-                  </ul>
-                </CollapsibleContent>
-            </Collapsible>
-          </div>
+          <DatabaseList
+            databases={databases}
+            databasesLoading={databasesLoading}
+            onDeleteDatabase={handleDeleteDatabase}
+          />
 
         </SidebarGroupContent>
       </SidebarGroup>
