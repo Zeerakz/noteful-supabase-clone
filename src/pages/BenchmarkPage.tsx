@@ -5,12 +5,13 @@ import { PerformanceOptimizationPanel } from '@/components/database/optimization
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { TrendingUp, Zap, Target } from 'lucide-react';
+import { DatabaseField } from '@/types/database';
 
 export function BenchmarkPage() {
   // Mock data for demonstration
-  const mockFields = [
+  const mockFields: DatabaseField[] = [
     { id: '1', name: 'Title', type: 'text', database_id: 'test', pos: 0, created_by: 'test', created_at: '', updated_at: '' },
-    { id: '2', name: 'Status', type: 'select', database_id: 'test', pos: 1, created_by: 'test', created_at: '', updated_at: '' },
+    { id: '2', name: 'Status', type: 'status', database_id: 'test', pos: 1, created_by: 'test', created_at: '', updated_at: '' },
     { id: '3', name: 'Due Date', type: 'date', database_id: 'test', pos: 2, created_by: 'test', created_at: '', updated_at: '' },
     { id: '4', name: 'Priority', type: 'formula', database_id: 'test', pos: 3, created_by: 'test', created_at: '', updated_at: '' },
     { id: '5', name: 'Related Tasks', type: 'relation', database_id: 'test', pos: 4, created_by: 'test', created_at: '', updated_at: '' },

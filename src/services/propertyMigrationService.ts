@@ -133,7 +133,7 @@ export class PropertyMigrationService {
       const { error: fieldUpdateError } = await supabase
         .from('fields')
         .update({
-          type: newType,
+          type: newType as any,
           settings: newSettings || {},
           updated_at: new Date().toISOString()
         })

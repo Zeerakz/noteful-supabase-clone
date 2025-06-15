@@ -66,7 +66,7 @@ export function FieldDisplay({
   const fieldNameLower = field.name.toLowerCase();
   
   // Date fields - check both type and name patterns
-  if (field.type === 'date' || fieldNameLower.includes('date') || 
+  if (field.type === 'date' || field.type === 'datetime' || fieldNameLower.includes('date') || 
       fieldNameLower.includes('due') || fieldNameLower.includes('deadline') ||
       fieldNameLower.includes('created') || fieldNameLower.includes('updated')) {
     return <DateFieldDisplay value={value} showIcon={true} />;
@@ -134,7 +134,7 @@ export function FieldDisplay({
         />
       );
 
-    case 'date':
+    case 'datetime':
       return <DateFieldDisplay value={value} showIcon={true} />;
 
     case 'relation':

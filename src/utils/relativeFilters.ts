@@ -1,4 +1,3 @@
-
 import { FilterRule } from '@/types/filters';
 import { DatabaseField } from '@/types/database';
 
@@ -40,6 +39,6 @@ export function resolveFilterGroupMeFilters(
 
 export function getPersonFieldOptions(fields: DatabaseField[]): Array<{ id: string; name: string }> {
   return fields
-    .filter(field => field.type === 'person' || field.type === 'people')
+    .filter(field => field.type === 'people')
     .map(field => ({ id: field.id, name: field.name }));
 }
