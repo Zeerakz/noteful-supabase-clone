@@ -42,7 +42,7 @@ const handler = async (req: Request): Promise<Response> => {
       p_token: token,
       p_user_id: user.id,
       p_user_email: user.email,
-    }).single();
+    });
     
     if (rpcError) throw rpcError;
     
