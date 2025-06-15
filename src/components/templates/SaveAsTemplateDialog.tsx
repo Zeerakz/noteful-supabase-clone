@@ -12,14 +12,22 @@ interface SaveAsTemplateDialogProps {
   pageId: string;
   workspaceId: string;
   blocks: any[];
+  title: string;
   children?: React.ReactNode;
 }
 
-export function SaveAsTemplateDialog({ pageId, workspaceId, blocks, children }: SaveAsTemplateDialogProps) {
+export function SaveAsTemplateDialog({ pageId, workspaceId, blocks, title, children }: SaveAsTemplateDialogProps) {
   const [templateName, setTemplateName] = useState('');
   const [isOpen, setIsOpen] = useState(false);
   const { createTemplate } = useTemplates(workspaceId);
   const { toast } = useToast();
+
+  const handleOpenChange = (open: boolean) => {
+    if (open) {
+      setTemplateName(title || '');
+    }
+    setIsOpen(open);
+  };
 
   const handleSaveAsTemplate = async () => {
     if (!templateName.trim()) return;
@@ -65,7 +73,7 @@ export function SaveAsTemplateDialog({ pageId, workspaceId, blocks, children }: 
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         {children || (
           <Button variant="outline" size="sm" className="gap-2">

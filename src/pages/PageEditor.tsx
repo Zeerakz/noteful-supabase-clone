@@ -91,7 +91,7 @@ export function PageEditor() {
       return;
     }
 
-    const { error } = await updatePage(page.id, { properties: { ...page.properties, title: titleValue.trim() } });
+    const { error } = await updatePage(page.id, { title: titleValue.trim() });
     
     if (!error) {
       setIsEditingTitle(false);
