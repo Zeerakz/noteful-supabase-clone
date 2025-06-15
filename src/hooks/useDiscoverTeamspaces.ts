@@ -1,5 +1,4 @@
 
-```typescript
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { TeamspaceService } from '@/services/teamspaceService';
@@ -34,4 +33,3 @@ export function useDiscoverTeamspaces(workspaceId: string) {
 
   return { teamspaces, loading, refresh: fetchTeamspaces };
 }
-```

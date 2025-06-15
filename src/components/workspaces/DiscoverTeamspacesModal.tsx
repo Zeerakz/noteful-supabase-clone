@@ -1,5 +1,4 @@
 
-```typescript
 import React from 'react';
 import {
   Dialog,
@@ -101,4 +100,3 @@ export function DiscoverTeamspacesModal({ isOpen, onClose, onTeamspaceJoined, wo
     </Dialog>
   );
 }
-```

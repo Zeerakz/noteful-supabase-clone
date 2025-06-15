@@ -1,5 +1,4 @@
 
-```typescript
 export type TeamspaceAccessLevel = 'public' | 'private';
 export type TeamspaceMemberRole = 'admin' | 'member';
 
@@ -31,4 +30,3 @@ export interface TeamspaceMember {
     avatar_url: string | null;
   } | null;
 }
-```
