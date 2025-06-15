@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
@@ -15,7 +14,7 @@ import { useEnhancedPages } from '@/hooks/useEnhancedPages';
 import { useToast } from '@/hooks/use-toast';
 import { PageTreeItem } from './PageTreeItem';
 import { validateDragAndDrop } from '@/utils/navigationConstraints';
-import { Page } from '@/types/page';
+import { Block } from '@/types/block';
 
 interface WorkspacePagesGroupProps {
   workspaceId: string;
@@ -83,7 +82,7 @@ export function WorkspacePagesGroup({ workspaceId, workspaceName }: WorkspacePag
     const page = pages.find(p => p.id === pageId);
     if (!page) return;
 
-    if (!confirm(`Are you sure you want to delete "${page.properties?.title || 'Untitled'}"? This action cannot be undone.`)) {
+    if (!confirm(`Are you sure you want to delete "${(page.properties as any)?.title || 'Untitled'}"? This action cannot be undone.`)) {
       return;
     }
 

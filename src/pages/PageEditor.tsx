@@ -86,12 +86,12 @@ export function PageEditor() {
       return;
     }
 
-    if (titleValue.trim() === (page.properties?.title || 'Untitled')) {
+    if (titleValue.trim() === ((page.properties as any)?.title || 'Untitled')) {
       setIsEditingTitle(false);
       return;
     }
 
-    const { error } = await updatePage(page.id, { title: titleValue.trim() });
+    const { error } = await updatePage(page.id, { properties: { ...page.properties, title: titleValue.trim() } });
     
     if (!error) {
       setIsEditingTitle(false);
@@ -99,7 +99,7 @@ export function PageEditor() {
   };
 
   const handleTitleCancel = () => {
-    setTitleValue(page.properties?.title || 'Untitled');
+    setTitleValue((page.properties as any)?.title || 'Untitled');
     setIsEditingTitle(false);
   };
 
@@ -145,7 +145,7 @@ export function PageEditor() {
                     </div>
                   ) : (
                     <div className="flex items-center gap-2 group">
-                      <h1 className="text-xl font-semibold">{page.properties?.title || 'Untitled'}</h1>
+                      <h1 className="text-xl font-semibold">{(page.properties as any)?.title || 'Untitled'}</h1>
                       {isEditable && (
                         <Button
                           variant="ghost"
@@ -171,7 +171,7 @@ export function PageEditor() {
                   <SaveAsTemplateDialog
                     pageId={page.id}
                     workspaceId={workspaceId!}
-                    pageTitle={page.properties?.title || 'Untitled'}
+                    title={(page.properties as any)?.title || 'Untitled'}
                     blocks={blocks}
                   />
                 )}

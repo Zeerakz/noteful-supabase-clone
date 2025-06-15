@@ -1,4 +1,3 @@
-
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { DatabaseFieldService } from '@/services/database/databaseFieldService';
@@ -47,7 +46,7 @@ export function useEnhancedDatabaseFieldOperations({
         field
       );
       
-      if (error) throw new Error(error);
+      if (error) throw new Error(error.message);
       
       // Success - let the server sync handle the real data
       onFieldsChange?.();
@@ -74,7 +73,7 @@ export function useEnhancedDatabaseFieldOperations({
     try {
       const { error } = await DatabaseFieldService.updateDatabaseField(fieldId, updates);
       
-      if (error) throw new Error(error);
+      if (error) throw new Error(error.message);
       
       onFieldsChange?.();
     } catch (error) {
@@ -95,7 +94,7 @@ export function useEnhancedDatabaseFieldOperations({
     try {
       const { error } = await DatabaseFieldService.deleteDatabaseField(fieldId);
       
-      if (error) throw new Error(error);
+      if (error) throw new Error(error.message);
       
       onFieldsChange?.();
       
@@ -148,7 +147,7 @@ export function useEnhancedDatabaseFieldOperations({
 
     const duplicatedField = {
       name: `${field.name} (Copy)`,
-      type: field.type,
+      type: field.type as PropertyType,
       settings: field.settings
     };
 
@@ -162,7 +161,7 @@ export function useEnhancedDatabaseFieldOperations({
         duplicatedField
       );
       
-      if (error) throw new Error(error);
+      if (error) throw new Error(error.message);
       
       onFieldsChange?.();
       

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -57,7 +56,7 @@ export function useFileAttachment(blockId: string, pageId: string) {
 
     // Get workspace_id from the block's page
     const { data: pageData, error: pageError } = await supabase
-      .from('pages')
+      .from('blocks')
       .select('workspace_id')
       .eq('id', pageId)
       .single();

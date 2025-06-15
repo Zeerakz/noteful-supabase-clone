@@ -1,3 +1,4 @@
+
 import React from 'react';
 import {
   Sheet,
@@ -74,13 +75,13 @@ export function SidePeekPage({ pageId: pageIdFromProp, onOpenChange: onOpenChang
       return (
         <>
           <SheetHeader>
-            <SheetTitle>{pageData.title}</SheetTitle>
+            <SheetTitle>{(pageData.properties as any)?.title || 'Untitled'}</SheetTitle>
             <SheetDescription>
               In workspace: {pageData.workspace.name}
             </SheetDescription>
           </SheetHeader>
           <div className="mt-8 flex-grow overflow-y-auto pr-6 -mr-6">
-            <PageBlocks pageId={pageData.id} isEditable={false} />
+            <PageBlocks pageId={pageData.id} workspaceId={pageData.workspace.id} isEditable={false} />
           </div>
         </>
       );
