@@ -26,7 +26,12 @@ export class PagePropertyService {
     fieldId: string,
     value: string,
     userId: string,
-    computedValue?: string
+    options?: {
+      computedValue?: string;
+      visibilitySetting?: 'always_show' | 'always_hide' | 'show_when_not_empty';
+      fieldOrder?: number;
+      metadata?: any;
+    }
   ): Promise<{ data: PageProperty | null; error: string | null }> {
     try {
       const updateData: any = {
@@ -37,9 +42,20 @@ export class PagePropertyService {
         updated_at: new Date().toISOString(),
       };
 
-      // Include computed_value if provided
-      if (computedValue !== undefined) {
-        updateData.computed_value = computedValue;
+      // Include optional values if provided
+      if (options) {
+        if (options.computedValue !== undefined) {
+          updateData.computed_value = options.computedValue;
+        }
+        if (options.visibilitySetting) {
+          updateData.visibility_setting = options.visibilitySetting;
+        }
+        if (options.fieldOrder !== undefined) {
+          updateData.field_order = options.fieldOrder;
+        }
+        if (options.metadata) {
+          updateData.metadata = options.metadata;
+        }
       }
 
       const { data, error } = await supabase
