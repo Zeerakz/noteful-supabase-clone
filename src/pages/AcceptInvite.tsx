@@ -78,12 +78,15 @@ export function AcceptInvite() {
   }
 
   if (!user && !authLoading) {
+    if (token) {
+      localStorage.setItem('pending_invitation_token', token);
+    }
     return (
       <div className="min-h-screen flex items-center justify-center bg-background p-4">
         <Card className="w-full max-w-md">
           <CardHeader>
             <CardTitle>Accept Your Invitation</CardTitle>
-            <CardDescription>You've been invited to join a workspace. Please sign in or create an account to accept. After signing in, please return to this page to complete the process.</CardDescription>
+            <CardDescription>You've been invited to join a workspace. Please sign in or create an account to accept. After signing in, you will be automatically redirected to complete the invitation.</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
              <Button asChild>

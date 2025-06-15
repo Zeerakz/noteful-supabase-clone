@@ -10,7 +10,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { Mail, RefreshCw, AlertCircle } from 'lucide-react';
 
-export function AuthForm() {
+export function AuthForm({ defaultTab = 'signin' }: { defaultTab?: 'signin' | 'signup' }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -21,6 +21,16 @@ export function AuthForm() {
   const { toast } = useToast();
   const navigate = useNavigate();
 
+  const handleSuccessfulAuth = () => {
+    const storedToken = localStorage.getItem('pending_invitation_token');
+    if (storedToken) {
+      localStorage.removeItem('pending_invitation_token');
+      navigate(`/accept-invite?token=${storedToken}`);
+    } else {
+      navigate('/', { replace: true });
+    }
+  };
+
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -29,7 +39,7 @@ export function AuthForm() {
     
     if (error) {
       console.error('Sign in error details:', error);
-      if (error.message.includes('Email not confirmed') || error.message.includes('signup_disabled')) {
+      if (error.message.includes('Email not confirmed')) {
         setNeedsConfirmation(true);
         setConfirmationEmail(email);
         toast({
@@ -49,8 +59,7 @@ export function AuthForm() {
         title: "Success",
         description: "Successfully signed in!",
       });
-      // Navigate to main app after successful sign in
-      navigate('/', { replace: true });
+      handleSuccessfulAuth();
     }
     
     setLoading(false);
@@ -89,8 +98,7 @@ export function AuthForm() {
         title: "Success",
         description: "Account created and signed in!",
       });
-      // Navigate to main app after successful sign up
-      navigate('/', { replace: true });
+      handleSuccessfulAuth();
     }
     
     setLoading(false);
@@ -192,7 +200,7 @@ export function AuthForm() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue="signin" className="space-y-4">
+          <Tabs defaultValue={defaultTab} className="space-y-4">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="signin">Sign In</TabsTrigger>
               <TabsTrigger value="signup">Sign Up</TabsTrigger>
