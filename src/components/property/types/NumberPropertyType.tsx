@@ -79,6 +79,47 @@ const NumberFieldDisplay: React.FC<{
           </span>
         </div>
       );
+
+    case 'ring':
+      const ringValue = Math.min(Math.max(numValue, config.min || 0), config.max || 100);
+      const ringPercentage = config.max ? (ringValue / config.max) * 100 : ringValue;
+      const radius = 12;
+      const circumference = 2 * Math.PI * radius;
+      const strokeDashoffset = circumference - (ringPercentage / 100) * circumference;
+
+      return (
+        <div className="flex items-center gap-2">
+          <svg className="w-8 h-8" viewBox="0 0 32 32">
+            <circle
+              className="text-muted"
+              strokeWidth="3"
+              stroke="currentColor"
+              fill="transparent"
+              r={radius}
+              cx="16"
+              cy="16"
+            />
+            <circle
+              className="text-primary"
+              strokeWidth="3"
+              strokeDasharray={circumference}
+              strokeDashoffset={strokeDashoffset}
+              strokeLinecap="round"
+              stroke="currentColor"
+              fill="transparent"
+              r={radius}
+              cx="16"
+              cy="16"
+              style={{ transform: 'rotate(-90deg)', transformOrigin: '50% 50%' }}
+            />
+          </svg>
+          {config.showPercentage && (
+            <span className="text-xs text-muted-foreground font-mono">
+              {`${Math.round(ringPercentage)}%`}
+            </span>
+          )}
+        </div>
+      );
     
     case 'plain':
     default:

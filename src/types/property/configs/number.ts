@@ -10,6 +10,6 @@ export interface NumberPropertyConfig extends BasePropertyConfig {
   prefix?: string;
   suffix?: string;
   defaultValue?: number;
-  displayAs?: 'plain' | 'currency' | 'percentage' | 'progress';
+  displayAs?: 'plain' | 'currency' | 'percentage' | 'progress' | 'ring';
   showPercentage?: boolean;
 }

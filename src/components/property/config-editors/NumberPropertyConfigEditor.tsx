@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { NumberPropertyConfig } from '@/types/property';
 import { Label } from '@/components/ui/label';
@@ -26,7 +25,7 @@ export function NumberPropertyConfigEditor({ config, onConfigChange }: NumberPro
         <Label htmlFor="displayAs">Display Format</Label>
         <Select 
           value={numberConfig.displayAs || 'plain'} 
-          onValueChange={(value) => updateConfig({ displayAs: value as 'plain' | 'currency' | 'percentage' | 'progress' })}
+          onValueChange={(value) => updateConfig({ displayAs: value as 'plain' | 'currency' | 'percentage' | 'progress' | 'ring' })}
         >
           <SelectTrigger>
             <SelectValue />
@@ -36,6 +35,7 @@ export function NumberPropertyConfigEditor({ config, onConfigChange }: NumberPro
             <SelectItem value="currency">Currency</SelectItem>
             <SelectItem value="percentage">Percentage</SelectItem>
             <SelectItem value="progress">Progress Bar</SelectItem>
+            <SelectItem value="ring">Progress Ring</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -133,7 +133,7 @@ export function NumberPropertyConfigEditor({ config, onConfigChange }: NumberPro
         </>
       )}
 
-      {numberConfig.displayAs === 'progress' && (
+      {(numberConfig.displayAs === 'progress' || numberConfig.displayAs === 'ring') && (
         <>
           <Separator />
           <div className="flex items-center space-x-2">
@@ -142,7 +142,7 @@ export function NumberPropertyConfigEditor({ config, onConfigChange }: NumberPro
               checked={numberConfig.showPercentage || false}
               onCheckedChange={(checked) => updateConfig({ showPercentage: checked as boolean })}
             />
-            <Label htmlFor="showPercentage">Show percentage in progress bar</Label>
+            <Label htmlFor="showPercentage">Show percentage value</Label>
           </div>
         </>
       )}
