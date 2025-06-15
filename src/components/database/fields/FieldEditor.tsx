@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { DatabaseField } from '@/types/database';
 import { SelectFieldEditor } from './SelectFieldEditor';
@@ -186,6 +187,8 @@ export function FieldEditor({
           workspaceId={workspaceId}
           isMultiple={field.settings?.allowMultiple || false}
           showBacklink={field.settings?.bidirectional || false}
+          pageId={pageId}
+          field={field}
         />
       );
 
