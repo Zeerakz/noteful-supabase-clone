@@ -23,6 +23,7 @@ import {
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import { WorkspaceRole } from '@/types/db';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface MembersManagementTabProps {
   workspaceId: string;
@@ -40,9 +41,14 @@ const getInitials = (name?: string | null) => {
 export function MembersManagementTab({ workspaceId }: MembersManagementTabProps) {
   const { members, invitations, loading, refresh, updateMemberRole } = useWorkspaceMembers(workspaceId);
   const { inviteUserToWorkspace } = useWorkspaces();
+  const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
   const { register, handleSubmit, reset, control, formState: { errors } } = useForm<InviteFormInputs>();
+
+  const currentUserMembership = members.find(m => m.user_id === user?.id);
+  const userRole = currentUserMembership?.role;
+  const canManageMembers = userRole === 'owner' || userRole === 'admin';
 
   const onSubmit: SubmitHandler<InviteFormInputs> = async (data) => {
     setIsSubmitting(true);
@@ -91,44 +97,46 @@ export function MembersManagementTab({ workspaceId }: MembersManagementTabProps)
 
   return (
     <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Invite New Member</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit(onSubmit)} className="flex items-start gap-2">
-            <div className="flex-grow">
-              <Input
-                {...register('email', { required: 'Email is required', pattern: { value: /^\S+@\S+$/i, message: 'Invalid email address' } })}
-                placeholder="email@example.com"
-                className={errors.email ? 'border-red-500' : ''}
+      {canManageMembers && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Invite New Member</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit(onSubmit)} className="flex items-start gap-2">
+              <div className="flex-grow">
+                <Input
+                  {...register('email', { required: 'Email is required', pattern: { value: /^\S+@\S+$/i, message: 'Invalid email address' } })}
+                  placeholder="email@example.com"
+                  className={errors.email ? 'border-red-500' : ''}
+                />
+                {errors.email && <p className="text-xs text-red-500 mt-1">{errors.email.message}</p>}
+              </div>
+              <Controller
+                name="role"
+                control={control}
+                defaultValue="member"
+                render={({ field }) => (
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <SelectTrigger className="w-[120px]">
+                      <SelectValue placeholder="Role" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="member">Member</SelectItem>
+                      <SelectItem value="admin">Admin</SelectItem>
+                      <SelectItem value="guest">Guest</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
               />
-              {errors.email && <p className="text-xs text-red-500 mt-1">{errors.email.message}</p>}
-            </div>
-            <Controller
-              name="role"
-              control={control}
-              defaultValue="member"
-              render={({ field }) => (
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                  <SelectTrigger className="w-[120px]">
-                    <SelectValue placeholder="Role" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="member">Member</SelectItem>
-                    <SelectItem value="admin">Admin</SelectItem>
-                    <SelectItem value="guest">Guest</SelectItem>
-                  </SelectContent>
-                </Select>
-              )}
-            />
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? <Loader2 className="mr-2 animate-spin" /> : <Send className="mr-2" />}
-              Invite
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? <Loader2 className="mr-2 animate-spin" /> : <Send className="mr-2" />}
+                Invite
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      )}
 
       {loading && <div className="text-center p-4">Loading members...</div>}
 
@@ -148,7 +156,7 @@ export function MembersManagementTab({ workspaceId }: MembersManagementTabProps)
                     <p className="text-sm text-muted-foreground capitalize">{member.role}</p>
                   </div>
                 </div>
-                {member.role !== 'owner' ? (
+                {canManageMembers && member.role !== 'owner' ? (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8"><MoreHorizontal /></Button></DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
@@ -170,7 +178,9 @@ export function MembersManagementTab({ workspaceId }: MembersManagementTabProps)
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
-                ) : <span className="text-sm text-muted-foreground pr-4">Owner</span>}
+                ) : (
+                  <span className="text-sm text-muted-foreground pr-4 capitalize">{member.role}</span>
+                )}
               </div>
             ))}
           </div>
@@ -188,7 +198,9 @@ export function MembersManagementTab({ workspaceId }: MembersManagementTabProps)
                     <p className="text-sm text-muted-foreground capitalize">{invite.role}</p>
                   </div>
                 </div>
-                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleCancelInvitation(invite)}><Trash2 /></Button>
+                {canManageMembers && (
+                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleCancelInvitation(invite)}><Trash2 /></Button>
+                )}
               </div>
             ))}
           </div>

@@ -55,6 +55,26 @@ const handler = async (req: Request): Promise<Response> => {
     if (!email || !workspaceId || !role) {
       return new Response(JSON.stringify({ error: 'Missing required fields' }), { status: 400, headers: corsHeaders });
     }
+    
+    // Check if the inviter has permission
+    const { data: inviterMembership, error: inviterError } = await supabase
+      .from('workspace_members')
+      .select('role')
+      .eq('user_id', user.id)
+      .eq('workspace_id', workspaceId)
+      .single();
+
+    if (inviterError) {
+      console.error('Inviter permission check error:', inviterError);
+      return new Response(JSON.stringify({ error: `Database error: ${inviterError.message}` }), { status: 500, headers: corsHeaders });
+    }
+
+    if (!inviterMembership || !['owner', 'admin'].includes(inviterMembership.role)) {
+      return new Response(JSON.stringify({ error: 'You must be an owner or admin to invite new members.' }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     // Check if user exists and is already a member (case-insensitive check)
     const { data: userProfile, error: profileError } = await supabase.from('profiles').select('id').ilike('email', email).maybeSingle();
