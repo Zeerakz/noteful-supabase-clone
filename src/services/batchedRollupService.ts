@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { DatabaseField, RollupFieldSettings, RelationFieldSettings } from '@/types/database';
 
@@ -168,10 +167,10 @@ export class BatchedRollupService {
 
     // Batch fetch all relation values
     const { data: relationValues } = await supabase
-      .from('page_properties')
-      .select('page_id, field_id, value')
+      .from('property_values')
+      .select('page_id, property_id, value')
       .in('page_id', pageIds)
-      .in('field_id', relationFieldIds);
+      .in('property_id', relationFieldIds);
 
     if (!relationValues) {
       return requests.map(r => ({
@@ -201,10 +200,10 @@ export class BatchedRollupService {
     let targetPropertyValues: any[] = [];
     if (allRelatedPageIds.size > 0 && targetPropertyIds.some(id => id !== 'title' && id !== 'count')) {
       const { data } = await supabase
-        .from('page_properties')
-        .select('page_id, field_id, value')
+        .from('property_values')
+        .select('page_id, property_id, value')
         .in('page_id', Array.from(allRelatedPageIds))
-        .in('field_id', targetPropertyIds.filter(id => id !== 'title' && id !== 'count'));
+        .in('property_id', targetPropertyIds.filter(id => id !== 'title' && id !== 'count'));
       
       targetPropertyValues = data || [];
     }
@@ -228,7 +227,7 @@ export class BatchedRollupService {
         
         // Get relation value for this page
         const relationValue = relationValues.find(
-          rv => rv.page_id === request.pageId && rv.field_id === settings.relation_field_id
+          rv => rv.page_id === request.pageId && rv.property_id === settings.relation_field_id
         )?.value;
 
         if (!relationValue) {
@@ -272,7 +271,7 @@ export class BatchedRollupService {
           propertyValues = targetPropertyValues
             .filter(p => 
               relatedPageIds.includes(p.page_id) && 
-              p.field_id === settings.rollup_property
+              p.property_id === settings.rollup_property
             )
             .map(p => p.value)
             .filter(Boolean);

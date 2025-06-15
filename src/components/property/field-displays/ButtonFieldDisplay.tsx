@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { ButtonPropertyConfig, CreatePageWithTemplateConfig, SetPropertyValueConfig, OpenLinkConfig } from '@/types/property/configs/button';
 import { Button } from '@/components/ui/button';
@@ -6,7 +5,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { ChevronDown, ExternalLink, Plus, Edit } from 'lucide-react';
 import { useTemplates } from '@/hooks/useTemplates';
 import { useAuth } from '@/contexts/AuthContext';
-import { PagePropertyService } from '@/services/pagePropertyService';
+import { PropertyValueService } from '@/services/propertyValueService';
 import { toast } from '@/hooks/use-toast';
 
 interface ButtonFieldDisplayProps {
@@ -57,7 +56,7 @@ export function ButtonFieldDisplay({
           if (pageId && user) {
             const propertyConfig = action.config as SetPropertyValueConfig;
             const targetPageId = propertyConfig.targetPageId || pageId;
-            const { error } = await PagePropertyService.upsertPageProperty(
+            const { error } = await PropertyValueService.upsertPropertyValue(
               targetPageId,
               propertyConfig.targetFieldId,
               propertyConfig.value,

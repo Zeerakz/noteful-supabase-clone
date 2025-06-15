@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { FileAttachmentPropertyConfig } from '@/types/property';
 import { FileUploadDropzone } from './FileUploadDropzone';
@@ -154,7 +153,7 @@ export function FileAttachmentFieldEditor({
           .from('property_file_attachments')
           .insert({
             page_id: pageId,
-            field_id: field.id,
+            property_id: field.id,
             filename: uniqueFilename,
             original_filename: file.name,
             file_size: file.size,
