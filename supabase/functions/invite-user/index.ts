@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient, User } from "https://esm.sh/@supabase/supabase-js@2.50.0";
 import { Resend } from "npm:resend@2.0.0";
@@ -100,7 +99,7 @@ const handler = async (req: Request): Promise<Response> => {
     const inviteUrl = `${appUrl}/accept-invite?token=${token}`;
 
     const { data: emailData, error: emailError } = await resend.emails.send({
-      from: "Knowledge File <notifications@resend.dev>",
+      from: "Knowledge File <onboarding@resend.dev>",
       to: [email],
       subject: `You're invited to join ${workspaceName}`,
       html: `
@@ -124,7 +123,8 @@ const handler = async (req: Request): Promise<Response> => {
     });
 
     if (emailError) {
-      throw new Error(`Failed to send email: ${JSON.stringify(emailError)}`);
+      console.error('Resend email error:', emailError);
+      throw new Error(`Failed to send email: ${emailError.message}`);
     }
 
     return new Response(JSON.stringify({ success: true, message: 'Invitation sent' }), {
