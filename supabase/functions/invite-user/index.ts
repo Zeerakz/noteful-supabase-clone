@@ -165,8 +165,9 @@ const handler = async (req: Request): Promise<Response> => {
     });
 
     if (emailError) {
-      // Check for the specific Resend validation error for unverified domains
-      if (emailError.name === 'validation_error' && emailError.message.includes('verify a domain')) {
+      const err = emailError as any;
+      // More robustly check for the specific Resend validation error for unverified domains
+      if (err?.name === 'validation_error' && typeof err?.message === 'string' && err.message.includes('verify a domain')) {
         console.warn('Resend domain not verified. Invitation email not sent.');
         console.log(`TESTING FALLBACK: Invitation link for ${email} is: ${inviteUrl}`);
         
@@ -183,7 +184,7 @@ const handler = async (req: Request): Promise<Response> => {
       } else {
         console.error('Resend email error:', emailError);
         // For other email errors, we still throw to be caught by the main catch block
-        throw new Error(`Failed to send email: ${emailError.message}`);
+        throw new Error(`Failed to send email: ${err?.message || 'An unknown error occurred with the email service.'}`);
       }
     }
 
