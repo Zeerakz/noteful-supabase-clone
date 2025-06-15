@@ -7,7 +7,7 @@ import { useEnhancedUpdatePageHierarchy } from './mutations/useEnhancedUpdatePag
 
 interface UseEnhancedPageMutationsProps {
   workspaceId?: string;
-  createPage: (title: string, parentId?: string) => Promise<{ data: Block | null; error: string | null }>;
+  createPage: (title: string, parentId?: string, databaseId?: string) => Promise<{ data?: Block | null; error: string | null }>;
   updatePage: (id: string, updates: Partial<Block>) => Promise<{ data: Block | null; error: string | null }>;
   deletePage: (id: string) => Promise<{ error: string | null }>;
   updatePageHierarchy: (pageId: string, newParentId: string | null, newIndex: number) => Promise<{ error: string | null }>;

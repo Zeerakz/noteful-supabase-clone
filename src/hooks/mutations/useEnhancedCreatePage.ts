@@ -6,7 +6,7 @@ import { canNestPage } from '@/utils/navigationConstraints';
 
 interface UseEnhancedCreatePageProps {
   workspaceId?: string;
-  createPage: (title: string, parentId?: string) => Promise<{ data: Block | null; error: string | null }>;
+  createPage: (title: string, parentId?: string, databaseId?: string) => Promise<{ data?: Block | null; error: string | null }>;
   optimisticPages: Block[];
   optimisticCreatePage: (pageData: Partial<Block>) => string;
   clearOptimisticCreation: (tempId: string) => void;
@@ -23,8 +23,8 @@ export function useEnhancedCreatePage({
 }: UseEnhancedCreatePageProps) {
   const { toast } = useToast();
 
-  const enhancedCreatePage = useCallback(async (title: string, parentPageId?: string) => {
-    if (!workspaceId) return { error: 'Workspace not selected' };
+  const enhancedCreatePage = useCallback(async (title: string, parentPageId?: string, databaseId?: string) => {
+    if (!workspaceId) return { data: null, error: 'Workspace not selected' };
 
     if (parentPageId) {
       const validation = canNestPage(optimisticPages, 'new-page', parentPageId);
@@ -34,14 +34,14 @@ export function useEnhancedCreatePage({
           description: validation.reason,
           variant: "destructive",
         });
-        return { error: validation.reason };
+        return { data: null, error: validation.reason };
       }
     }
 
-    console.log('Creating page optimistically:', { title, parentPageId, workspaceId });
+    console.log('Creating page optimistically:', { title, parentPageId, workspaceId, databaseId });
 
     const tempId = optimisticCreatePage({
-      properties: { title },
+      properties: { title, ...(databaseId && { database_id: databaseId }) },
       parent_id: parentPageId,
       workspace_id: workspaceId,
       type: 'page',
@@ -50,7 +50,7 @@ export function useEnhancedCreatePage({
     console.log('Created optimistic page with tempId:', tempId);
 
     try {
-      const { data, error } = await createPage(title, parentPageId);
+      const { data, error } = await createPage(title, parentPageId, databaseId);
       
       if (error) {
         console.error('Server page creation failed:', error);
