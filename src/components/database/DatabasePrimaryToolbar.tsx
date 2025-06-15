@@ -1,7 +1,6 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Plus, Settings, Filter, SortAsc, Eye, Grid3x3 } from 'lucide-react';
+import { Plus, Settings, Filter, SortAsc } from 'lucide-react';
 import { ManagePropertiesModal } from './fields/ManagePropertiesModal';
 import { FilterModal } from './FilterModal';
 import { SortingModal } from './SortingModal';
@@ -73,36 +72,43 @@ export function DatabasePrimaryToolbar({
         <div className="h-4 w-px bg-border/20 mx-1" />
 
         {/* View Controls */}
-        <Button
-          onClick={() => setShowFilterModal(true)}
-          size="sm"
-          variant={activeFiltersCount > 0 ? "secondary" : "ghost"}
-          className="gap-2"
+        <PermissionGate
+          workspaceId={workspaceId}
+          requiredPermission="canManageViews"
         >
-          <Filter className="h-4 w-4" />
-          Filter
-          {activeFiltersCount > 0 && (
-            <span className="bg-primary text-primary-foreground text-xs px-1.5 py-0.5 rounded">
-              {activeFiltersCount}
-            </span>
-          )}
-        </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              onClick={() => setShowFilterModal(true)}
+              size="sm"
+              variant={activeFiltersCount > 0 ? "secondary" : "ghost"}
+              className="gap-2"
+            >
+              <Filter className="h-4 w-4" />
+              Filter
+              {activeFiltersCount > 0 && (
+                <span className="bg-primary text-primary-foreground text-xs px-1.5 py-0.5 rounded">
+                  {activeFiltersCount}
+                </span>
+              )}
+            </Button>
 
-        <Button
-          onClick={() => setShowSortModal(true)}
-          size="sm"
-          variant={activeSortsCount > 0 ? "secondary" : "ghost"}
-          className="gap-2"
-        >
-          <SortAsc className="h-4 w-4" />
-          Sort
-          {activeSortsCount > 0 && (
-            <span className="bg-primary text-primary-foreground text-xs px-1.5 py-0.5 rounded">
-              {activeSortsCount}
-            </span>
-          )}
-        </Button>
-
+            <Button
+              onClick={() => setShowSortModal(true)}
+              size="sm"
+              variant={activeSortsCount > 0 ? "secondary" : "ghost"}
+              className="gap-2"
+            >
+              <SortAsc className="h-4 w-4" />
+              Sort
+              {activeSortsCount > 0 && (
+                <span className="bg-primary text-primary-foreground text-xs px-1.5 py-0.5 rounded">
+                  {activeSortsCount}
+                </span>
+              )}
+            </Button>
+          </div>
+        </PermissionGate>
+        
         <div className="h-4 w-px bg-border/20 mx-1" />
 
         {/* Properties Management */}
