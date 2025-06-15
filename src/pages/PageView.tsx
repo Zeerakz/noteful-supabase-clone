@@ -83,9 +83,9 @@ function PageViewContent() {
   // Show properties section if this page belongs to a database
   const showProperties = pageData.properties.database_id && fields.length > 0;
 
-  // Convert properties array to Record<string, string> format
+  // Convert properties array to Record<string, any> format
   const propertiesRecord = properties.reduce((acc, property) => {
-    acc[property.field_id] = property.value;
+    acc[property.property_id] = property.value ?? property.computed_value;
     return acc;
   }, {} as Record<string, any>);
 

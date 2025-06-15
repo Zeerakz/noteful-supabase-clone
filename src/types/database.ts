@@ -150,3 +150,8 @@ export interface SelectFieldSettings {
     color?: string;
   }[];
 }
+
+/**
+ * @deprecated PageProperty has been renamed to PropertyValue. This is for backward compatibility.
+ */
+export type PageProperty = PropertyValue;

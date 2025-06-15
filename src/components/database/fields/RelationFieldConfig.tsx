@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { RelationFieldSettings, DatabaseField } from '@/types/database';
 import { useDatabases } from '@/hooks/useDatabases';
-import { DatabaseService } from '@/services/databaseService';
+import { DatabaseFieldService } from '@/services/database/databaseFieldService';
 import { Link, ArrowLeftRight, Settings, AlertCircle } from 'lucide-react';
 
 interface RelationFieldConfigProps {
@@ -55,10 +55,10 @@ export function RelationFieldConfig({
       }
 
       try {
-        const { data, error } = await DatabaseService.fetchDatabaseFields(targetDatabaseId);
-        if (error) throw new Error(error);
+        const { data, error } = await DatabaseFieldService.fetchDatabaseFields(targetDatabaseId);
+        if (error) throw new Error(String(error.message || error));
         
-        const fields = data || [];
+        const fields = data as DatabaseField[] || [];
         setTargetFields(fields);
         
         // Find existing relation fields that might cause conflicts

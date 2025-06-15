@@ -34,7 +34,7 @@ export function useKanbanData({
       try {
         const { data, error } = await DatabaseFieldService.fetchDatabaseFields(databaseId);
         if (error) throw new Error(error.message);
-        setFields(data || []);
+        setFields(data as DatabaseField[] || []);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to fetch fields');
       }
