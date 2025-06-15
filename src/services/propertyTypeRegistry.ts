@@ -1,4 +1,3 @@
-
 import { propertyRegistry, PropertyTypeDefinition } from '@/types/propertyRegistry';
 import { errorHandler } from '@/utils/errorHandler';
 
@@ -14,6 +13,9 @@ import { datePropertyType } from '@/components/property/types/DatePropertyType';
 import { selectPropertyType, multiSelectPropertyType } from '@/components/property/types/SelectPropertyType';
 import { relationPropertyType } from '@/components/property/types/RelationPropertyType';
 import { unsupportedPropertyType } from '@/components/property/types/UnsupportedPropertyType';
+import { urlPropertyType } from '@/components/property/types/UrlPropertyType';
+import { emailPropertyType } from '@/components/property/types/EmailPropertyType';
+import { phonePropertyType } from '@/components/property/types/PhonePropertyType';
 
 const allPropertyTypes: { definition: PropertyTypeDefinition<any>; name: string }[] = [
   { definition: textPropertyType, name: 'text' },
@@ -27,6 +29,9 @@ const allPropertyTypes: { definition: PropertyTypeDefinition<any>; name: string 
   { definition: selectPropertyType, name: 'select' },
   { definition: multiSelectPropertyType, name: 'multi_select' },
   { definition: relationPropertyType, name: 'relation' },
+  { definition: urlPropertyType, name: 'url' },
+  { definition: emailPropertyType, name: 'email' },
+  { definition: phonePropertyType, name: 'phone' },
   { definition: unsupportedPropertyType, name: 'unsupported' },
 ];
 
