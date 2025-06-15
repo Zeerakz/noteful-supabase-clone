@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { BlockPermissionGrant, GrantablePermissionLevel } from '@/types/permissions';
 
@@ -12,11 +13,11 @@ export const PermissionService = {
     if (!data) return { data: [], error: null };
 
     const formattedData: BlockPermissionGrant[] = data
-      .filter((p): p is Omit<typeof p, 'permission_level'> & { permission_level: GrantablePermissionLevel | null } => p.permission_level !== null && p.permission_level !== 'none')
+      .filter((p): p is Omit<typeof p, 'permission_level'> & { permission_level: GrantablePermissionLevel } => p.permission_level !== null)
       .map(p => ({
         id: p.permission_id!,
         block_id: blockId,
-        permission_level: p.permission_level as GrantablePermissionLevel,
+        permission_level: p.permission_level,
         grantee_type: p.grantee_type as 'user' | 'group',
         user_id: p.grantee_type === 'user' ? p.grantee_id : null,
         group_id: p.grantee_type === 'group' ? p.grantee_id : null,
