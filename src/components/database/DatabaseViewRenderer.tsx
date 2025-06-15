@@ -26,6 +26,7 @@ interface DatabaseViewRendererProps {
   collapsedGroups: string[];
   onToggleGroupCollapse: (groupKey: string) => void;
   onFieldsChange: () => void;
+  onFieldCreate?: (field: { name: string; type: any; settings?: any }) => Promise<void>;
 }
 
 export function DatabaseViewRenderer({
@@ -39,7 +40,8 @@ export function DatabaseViewRenderer({
   groupingConfig,
   collapsedGroups,
   onToggleGroupCollapse,
-  onFieldsChange
+  onFieldsChange,
+  onFieldCreate,
 }: DatabaseViewRendererProps) {
   const commonProps = {
     databaseId,
@@ -62,7 +64,7 @@ export function DatabaseViewRenderer({
     case 'calendar':
       return <DatabaseCalendarView {...commonProps} />;
     case 'kanban':
-      return <DatabaseKanbanView {...commonProps} />;
+      return <DatabaseKanbanView {...commonProps} onFieldCreate={onFieldCreate} />;
     case 'timeline':
       return <DatabaseTimelineView {...sortableViewProps} />;
     case 'gallery':

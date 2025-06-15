@@ -1,5 +1,6 @@
+
 import React from 'react';
-import { Kanban } from 'lucide-react';
+import { Kanban, Plus } from 'lucide-react';
 import { DragDropContext } from 'react-beautiful-dnd';
 import { DatabaseField } from '@/types/database';
 import { FilterGroup } from '@/types/filters';
@@ -9,6 +10,8 @@ import { KanbanViewHeader } from './kanban/KanbanViewHeader';
 import { useKanbanData } from './kanban/hooks/useKanbanData';
 import { useKanbanFieldSelection } from './kanban/hooks/useKanbanFieldSelection';
 import { useKanbanDragDrop } from './kanban/hooks/useKanbanDragDrop';
+import { Button } from '@/components/ui/button';
+import { statusPropertyType } from '@/components/property/types/StatusPropertyType';
 
 interface DatabaseKanbanViewProps {
   databaseId: string;
@@ -16,6 +19,7 @@ interface DatabaseKanbanViewProps {
   fields?: DatabaseField[];
   filterGroup?: FilterGroup;
   sortRules?: SortRule[];
+  onFieldCreate?: (field: { name: string; type: string; settings?: any; }) => Promise<void>;
 }
 
 export function DatabaseKanbanView({ 
@@ -23,7 +27,8 @@ export function DatabaseKanbanView({
   workspaceId, 
   fields = [],
   filterGroup,
-  sortRules = []
+  sortRules = [],
+  onFieldCreate,
 }: DatabaseKanbanViewProps) {
   const {
     selectedField,
@@ -54,6 +59,19 @@ export function DatabaseKanbanView({
     setPages
   });
 
+  const handleAddStatusField = async () => {
+    if (!onFieldCreate) return;
+    try {
+      await onFieldCreate({
+        name: 'Status',
+        type: 'status',
+        settings: statusPropertyType.getDefaultConfig(),
+      });
+    } catch (error) {
+      console.error("Failed to create status field", error);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -82,9 +100,12 @@ export function DatabaseKanbanView({
           <p className="text-muted-foreground mb-4">
             Kanban view requires at least one select or status field in your database to group by.
           </p>
-          <p className="text-sm text-muted-foreground">
-            Add a select or status field to your database to use the kanban view.
-          </p>
+          {onFieldCreate && (
+            <Button onClick={handleAddStatusField}>
+              <Plus className="mr-2 h-4 w-4" />
+              Add a Status Property
+            </Button>
+          )}
         </div>
       </div>
     );

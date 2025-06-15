@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { DatabaseHeader } from './DatabaseHeader';
 import { DatabaseViewRenderer } from './DatabaseViewRenderer';
@@ -135,6 +134,7 @@ export function DatabaseViewContainer({
           collapsedGroups={collapsedGroups}
           onToggleGroupCollapse={onToggleGroupCollapse}
           onFieldsChange={onFieldsChange}
+          onFieldCreate={onFieldCreate}
         />
       </div>
     </div>
