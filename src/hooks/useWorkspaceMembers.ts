@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { InvitationService } from '@/services/invitationService';
 import { WorkspaceMember, PendingInvitation } from '@/types/workspace';
@@ -49,5 +48,23 @@ export function useWorkspaceMembers(workspaceId?: string) {
     return { error: null };
   };
 
-  return { members, invitations, loading, refresh: fetchMembersAndInvites, updateMemberRole };
+  const removeMember = async (memberId: string) => {
+    const { error } = await InvitationService.removeMember(memberId);
+    if (error) {
+      return { error };
+    }
+    await fetchMembersAndInvites();
+    return { error: null };
+  };
+
+  const cancelInvitation = async (invitationId: string) => {
+    const { error } = await InvitationService.cancelInvitation(invitationId);
+    if (error) {
+      return { error };
+    }
+    await fetchMembersAndInvites();
+    return { error: null };
+  };
+
+  return { members, invitations, loading, refresh: fetchMembersAndInvites, updateMemberRole, removeMember, cancelInvitation };
 }

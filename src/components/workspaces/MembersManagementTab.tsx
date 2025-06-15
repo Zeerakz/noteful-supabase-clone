@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useForm, SubmitHandler, Controller } from 'react-hook-form';
 import { useWorkspaceMembers, WorkspaceMember, PendingInvitation } from '@/hooks/useWorkspaceMembers';
@@ -10,7 +9,16 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Send, Trash2, Mail, Loader2, MoreHorizontal } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { InvitationService } from '@/services/invitationService';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -39,12 +47,15 @@ const getInitials = (name?: string | null) => {
 };
 
 export function MembersManagementTab({ workspaceId }: MembersManagementTabProps) {
-  const { members, invitations, loading, refresh, updateMemberRole } = useWorkspaceMembers(workspaceId);
+  const { members, invitations, loading, refresh, updateMemberRole, removeMember, cancelInvitation } = useWorkspaceMembers(workspaceId);
   const { inviteUserToWorkspace } = useWorkspaces();
   const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
   const { register, handleSubmit, reset, control, formState: { errors } } = useForm<InviteFormInputs>();
+  
+  const [memberToRemove, setMemberToRemove] = useState<WorkspaceMember | null>(null);
+  const [invitationToCancel, setInvitationToCancel] = useState<PendingInvitation | null>(null);
 
   const currentUserMembership = members.find(m => m.user_id === user?.id);
   const userRole = currentUserMembership?.role;
@@ -73,26 +84,26 @@ export function MembersManagementTab({ workspaceId }: MembersManagementTabProps)
     }
   };
 
-  const handleRemoveMember = async (member: WorkspaceMember) => {
-    if (!confirm(`Are you sure you want to remove ${member.profiles?.email} from the workspace?`)) return;
-    const { error } = await InvitationService.removeMember(member.id);
+  const confirmRemoveMember = async () => {
+    if (!memberToRemove) return;
+    const { error } = await removeMember(memberToRemove.id);
     if (error) {
       toast({ title: 'Error removing member', description: error, variant: 'destructive' });
     } else {
       toast({ title: 'Member removed' });
-      refresh();
     }
+    setMemberToRemove(null);
   };
 
-  const handleCancelInvitation = async (invitation: PendingInvitation) => {
-    if (!confirm(`Are you sure you want to cancel the invitation for ${invitation.email}?`)) return;
-    const { error } = await InvitationService.cancelInvitation(invitation.id);
+  const confirmCancelInvitation = async () => {
+    if (!invitationToCancel) return;
+    const { error } = await cancelInvitation(invitationToCancel.id);
     if (error) {
       toast({ title: 'Error canceling invitation', description: error, variant: 'destructive' });
     } else {
       toast({ title: 'Invitation canceled' });
-      refresh();
     }
+    setInvitationToCancel(null);
   };
 
   return (
@@ -173,7 +184,7 @@ export function MembersManagementTab({ workspaceId }: MembersManagementTabProps)
                         </DropdownMenuPortal>
                       </DropdownMenuSub>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem className="text-destructive focus:bg-destructive/10" onClick={() => handleRemoveMember(member)}>
+                      <DropdownMenuItem className="text-destructive focus:bg-destructive/10" onClick={() => setMemberToRemove(member)}>
                         <Trash2 className="mr-2" /> Remove from workspace
                       </DropdownMenuItem>
                     </DropdownMenuContent>
@@ -199,13 +210,53 @@ export function MembersManagementTab({ workspaceId }: MembersManagementTabProps)
                   </div>
                 </div>
                 {canManageMembers && (
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleCancelInvitation(invite)}><Trash2 /></Button>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => setInvitationToCancel(invite)}><Trash2 /></Button>
                 )}
               </div>
             ))}
           </div>
         </>
       )}
+      
+      <AlertDialog open={!!memberToRemove} onOpenChange={(open) => !open && setMemberToRemove(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove Member</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to remove {memberToRemove?.profiles?.email || 'this member'} from the workspace?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmRemoveMember}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Remove Member
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={!!invitationToCancel} onOpenChange={(open) => !open && setInvitationToCancel(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cancel Invitation</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to cancel the invitation for {invitationToCancel?.email}?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmCancelInvitation}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Cancel Invitation
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
