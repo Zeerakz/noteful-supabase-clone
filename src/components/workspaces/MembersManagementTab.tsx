@@ -1,6 +1,5 @@
-
 import React, { useState } from 'react';
-import { useForm, SubmitHandler } from 'react-hook-form';
+import { useForm, SubmitHandler, Controller } from 'react-hook-form';
 import { useWorkspaceMembers, WorkspaceMember, PendingInvitation } from '@/hooks/useWorkspaceMembers';
 import { useWorkspaces } from '@/hooks/useWorkspaces';
 import { Button } from '@/components/ui/button';
@@ -36,7 +35,7 @@ export function MembersManagementTab({ workspaceId }: MembersManagementTabProps)
   const { inviteUserToWorkspace } = useWorkspaces();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<InviteFormInputs>();
+  const { register, handleSubmit, reset, control, formState: { errors } } = useForm<InviteFormInputs>();
 
   const onSubmit: SubmitHandler<InviteFormInputs> = async (data) => {
     setIsSubmitting(true);
@@ -168,6 +167,3 @@ export function MembersManagementTab({ workspaceId }: MembersManagementTabProps)
     </div>
   );
 }
-
-// Need to import Controller from react-hook-form
-import { Controller } from 'react-hook-form';

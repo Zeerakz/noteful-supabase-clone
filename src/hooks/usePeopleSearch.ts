@@ -27,19 +27,17 @@ export function usePeopleSearch(workspaceId?: string) {
       // For large workspaces, we should implement pagination or server-side search
       // For now, we'll do a simple client-side search with limits
       let searchQuery = supabase
-        .from('workspace_membership')
+        .from('workspace_members')
         .select(`
           user_id,
-          role_id,
-          roles:role_id (role_name),
-          profiles:user_id (
+          role,
+          profiles (
             id,
             email,
             full_name,
             avatar_url
           )
         `)
-        .eq('status', 'accepted')
         .limit(50); // Limit results for performance
 
       if (workspaceId) {
@@ -68,7 +66,7 @@ export function usePeopleSearch(workspaceId?: string) {
 
           // Filter by allowed roles if specified
           if (allowedRoles && allowedRoles.length > 0) {
-            const userRole = membership.roles?.role_name;
+            const userRole = membership.role;
             return allowedRoles.includes(userRole);
           }
 
@@ -79,8 +77,8 @@ export function usePeopleSearch(workspaceId?: string) {
           email: membership.profiles.email,
           name: membership.profiles.full_name,
           avatar_url: membership.profiles.avatar_url,
-          role: membership.roles?.role_name,
-          isGuest: false
+          role: membership.role,
+          isGuest: membership.role === 'guest',
         }));
 
       setResults(filteredUsers);
