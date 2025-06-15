@@ -5,6 +5,8 @@ import { FormulaFieldConfig } from './FormulaFieldConfig';
 import { RollupFieldConfig } from './RollupFieldConfig';
 import { RelationFieldConfig } from './RelationFieldConfig';
 import { SelectFieldConfig } from './SelectFieldConfig';
+import { NumberPropertyConfigEditor } from '@/components/property/config-editors/NumberPropertyConfigEditor';
+import { NumberPropertyConfig } from '@/types/property';
 
 interface FieldConfigurationPanelProps {
   fieldType: FieldType;
@@ -60,6 +62,14 @@ export function FieldConfigurationPanel({
           />
         );
       
+      case 'number':
+        return (
+          <NumberPropertyConfigEditor
+            config={settings as NumberPropertyConfig}
+            onConfigChange={onSettingsChange}
+          />
+        );
+
       default:
         return null;
     }
