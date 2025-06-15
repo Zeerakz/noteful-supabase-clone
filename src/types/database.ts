@@ -17,7 +17,6 @@ export interface DatabaseField {
   type: string;
   settings?: any;
   pos: number;
-  visibility_setting: 'always_show' | 'always_hide' | 'show_when_not_empty';
   created_by: string;
   created_at: string;
   updated_at: string;
@@ -39,9 +38,6 @@ export interface PageProperty {
   field_id: string;
   value?: string;
   computed_value?: string;
-  visibility_setting?: 'always_show' | 'always_hide' | 'show_when_not_empty';
-  field_order: number;
-  metadata: any;
   created_by: string;
   created_at: string;
   updated_at: string;

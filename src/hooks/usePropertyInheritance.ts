@@ -1,15 +1,15 @@
 
-import { useState, useContext } from 'react';
+import { useState } from 'react';
 import { PropertyInheritanceService } from '@/services/propertyInheritanceService';
 import { useToast } from '@/components/ui/use-toast';
-import { AuthContext } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/AuthContext';
 
 export function usePropertyInheritance() {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
-  const { user } = useContext(AuthContext);
+  const { user } = useAuth();
 
-  const applyInheritance = async (pageId: string, databaseId: string) => {
+  const applyDatabaseInheritance = async (pageId: string, databaseId: string) => {
     if (!user) {
       toast({
         variant: 'destructive',
@@ -20,7 +20,7 @@ export function usePropertyInheritance() {
     }
 
     setLoading(true);
-    const { error } = await PropertyInheritanceService.applyInheritance(pageId, databaseId, user.id);
+    const { error } = await PropertyInheritanceService.applyDatabaseInheritance(pageId, databaseId, user.id);
     setLoading(false);
 
     if (error) {
@@ -39,5 +39,5 @@ export function usePropertyInheritance() {
     return { success: true };
   };
 
-  return { loading, applyInheritance };
+  return { loading, applyDatabaseInheritance };
 }
