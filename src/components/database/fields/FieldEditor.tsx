@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { DatabaseField } from '@/types/database';
 import { SelectFieldEditor } from './SelectFieldEditor';
@@ -8,6 +9,10 @@ import { SystemPropertyEditor } from '@/components/property/field-editors/System
 import { ButtonFieldEditor } from '@/components/property/field-editors/ButtonFieldEditor';
 import { isSystemProperty } from '@/types/systemProperties';
 import { StatusFieldEditor } from '@/components/property/field-editors/StatusFieldEditor';
+import { BasicInputFieldEditor } from './editors/BasicInputFieldEditor';
+import { CheckboxFieldEditor } from './editors/CheckboxFieldEditor';
+import { PeopleFieldEditor } from './editors/PeopleFieldEditor';
+import { FormulaFieldDisplay } from './editors/FormulaFieldDisplay';
 
 interface FieldEditorProps {
   field: DatabaseField;
@@ -62,11 +67,7 @@ export function FieldEditor({
 
   // Handle formula fields - they are computed and read-only
   if (field.type === 'formula') {
-    return (
-      <div className="text-sm text-muted-foreground italic">
-        {computedValue || 'Formula not calculated'}
-      </div>
-    );
+    return <FormulaFieldDisplay computedValue={computedValue} />;
   }
 
   // Handle button fields
@@ -89,26 +90,10 @@ export function FieldEditor({
     case 'email':
     case 'phone':
     case 'url':
-      return (
-        <input
-          type={field.type === 'number' ? 'number' : field.type === 'email' ? 'email' : 'text'}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          className="w-full px-2 py-1 bg-transparent border-none outline-none text-foreground"
-          autoFocus
-        />
-      );
+      return <BasicInputFieldEditor type={field.type} value={value} onChange={onChange} />;
 
     case 'checkbox':
-      return (
-        <input
-          type="checkbox"
-          checked={value === 'true'}
-          onChange={(e) => onChange(e.target.checked ? 'true' : 'false')}
-          className="rounded"
-          autoFocus
-        />
-      );
+      return <CheckboxFieldEditor value={value} onChange={onChange} />;
     
     case 'status':
       return (
@@ -123,18 +108,7 @@ export function FieldEditor({
       );
 
     case 'people':
-      // The value is expected to be a JSON string of user objects.
-      // A proper people picker would be needed for a better UX.
-      return (
-        <input
-          type="text"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          className="w-full px-2 py-1 bg-transparent border-none outline-none text-foreground"
-          placeholder='Edit as JSON: [{"id": "...", "name": "..."}]'
-          autoFocus
-        />
-      );
+      return <PeopleFieldEditor value={value} onChange={onChange} />;
 
     case 'select':
       return (
@@ -156,32 +130,11 @@ export function FieldEditor({
       );
 
     case 'date':
-      return (
-        <DateFieldEditor
-          value={value}
-          onChange={onChange}
-        />
-      );
+      return <DateFieldEditor value={value} onChange={onChange} />;
 
     case 'relation':
-      const handleRelationChange = (newValue: string | string[] | null) => {
-        if (newValue === null) {
-          onChange('');
-        } else if (Array.isArray(newValue)) {
-          onChange(newValue.join(','));
-        } else {
-          onChange(newValue);
-        }
-      };
-
-      const relationValue = value ? (
-        field.settings?.allowMultiple ? value.split(',').filter(Boolean) : value
-      ) : null;
-
       return (
         <RelationFieldEditor
-          value={relationValue}
-          onChange={handleRelationChange}
           settings={field.settings}
           workspaceId={workspaceId}
           isMultiple={field.settings?.allowMultiple || false}
@@ -192,14 +145,6 @@ export function FieldEditor({
       );
 
     default:
-      return (
-        <input
-          type="text"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          className="w-full px-2 py-1 bg-transparent border-none outline-none text-foreground"
-          autoFocus
-        />
-      );
+      return <BasicInputFieldEditor type="text" value={value} onChange={onChange} />;
   }
 }

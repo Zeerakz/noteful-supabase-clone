@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
@@ -11,8 +10,6 @@ import { SelectedRelationItems } from './relation/SelectedRelationItems';
 import { RelationSelectorDialogContent } from './relation/RelationSelectorDialogContent';
 
 interface RelationFieldEditorProps {
-  value: string | string[] | null; // This will be ignored
-  onChange: (value: string | string[] | null) => void; // This will not be called
   settings: RelationFieldSettings;
   workspaceId: string;
   isMultiple?: boolean;
