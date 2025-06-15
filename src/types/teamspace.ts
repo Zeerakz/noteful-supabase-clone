@@ -7,6 +7,7 @@ export interface Teamspace {
   workspace_id: string;
   name: string;
   description: string | null;
+  icon: string | null;
   created_by: string;
   created_at: string;
   updated_at: string;

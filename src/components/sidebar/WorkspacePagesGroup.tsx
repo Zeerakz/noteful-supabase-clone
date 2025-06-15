@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Loader2, Users, FolderLock } from 'lucide-react';
 import { DragDropContext, Droppable, DropResult } from 'react-beautiful-dnd';
@@ -18,7 +18,17 @@ import { useToast } from '@/hooks/use-toast';
 import { PageTreeItem } from './PageTreeItem';
 import { validateDragAndDrop } from '@/utils/navigationConstraints';
 import { Block } from '@/types/block';
+import { Teamspace } from '@/types/teamspace';
 import { supabase } from '@/integrations/supabase/client';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Button } from '@/components/ui/button';
+import { MoreHorizontal, Settings } from 'lucide-react';
+import { TeamspaceSettingsModal } from '@/components/workspaces/TeamspaceSettingsModal';
 
 interface WorkspacePagesGroupProps {
   workspaceId: string;
@@ -29,6 +39,7 @@ export function WorkspacePagesGroup({ workspaceId, workspaceName }: WorkspacePag
   const { pages, updatePageHierarchy, deletePage, hasOptimisticChanges, loading: pagesLoading, fetchPages } = useEnhancedPages(workspaceId);
   const { teamspaces, loading: teamspacesLoading } = useTeamspaces(workspaceId);
   const { toast } = useToast();
+  const [editingTeamspace, setEditingTeamspace] = useState<Teamspace | null>(null);
 
   const loading = pagesLoading || teamspacesLoading;
 
@@ -160,10 +171,28 @@ export function WorkspacePagesGroup({ workspaceId, workspaceName }: WorkspacePag
             <div className="space-y-1">
               {teamspaces.map(teamspace => (
                 <Collapsible key={teamspace.id} defaultOpen>
-                  <CollapsibleTrigger className="w-full text-sm font-medium flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-muted">
-                    <Users className="h-4 w-4" />
-                    <span className="flex-1 text-left truncate">{teamspace.name}</span>
-                  </CollapsibleTrigger>
+                  <div className="group flex items-center pr-1">
+                    <CollapsibleTrigger className="w-full text-sm font-medium flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-muted flex-1">
+                      <Users className="h-4 w-4" />
+                      <span className="flex-1 text-left truncate">
+                        {teamspace.icon && <span className="mr-1.5">{teamspace.icon}</span>}
+                        {teamspace.name}
+                      </span>
+                    </CollapsibleTrigger>
+                     <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent>
+                        <DropdownMenuItem onClick={() => setEditingTeamspace(teamspace)}>
+                          <Settings className="mr-2 h-4 w-4" />
+                          <span>Settings</span>
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
                   <CollapsibleContent>
                     <Droppable droppableId={`teamspace-${teamspace.id}`} type="page">
                       {(provided) => (
@@ -229,6 +258,13 @@ export function WorkspacePagesGroup({ workspaceId, workspaceName }: WorkspacePag
           </DragDropContext>
         </SidebarGroupContent>
       </SidebarGroup>
+      {editingTeamspace && (
+        <TeamspaceSettingsModal
+          teamspace={editingTeamspace}
+          isOpen={!!editingTeamspace}
+          onClose={() => setEditingTeamspace(null)}
+        />
+      )}
     </li>
   );
 }

@@ -43,6 +43,14 @@ export function useTeamspaces(workspaceId: string) {
     return { data };
   };
 
+  const updateTeamspace = async (teamspaceId: string, updates: Partial<Pick<Teamspace, 'name' | 'description' | 'icon'>>) => {
+    const { data, error } = await TeamspaceService.updateTeamspace(teamspaceId, updates);
+    if (error) return { error };
+    
+    await fetchTeamspaces();
+    return { data };
+  };
+
   const getTeamspaceMembers = TeamspaceService.getTeamspaceMembers;
 
   const addMemberToTeamspace = TeamspaceService.addMemberToTeamspace;
@@ -54,6 +62,7 @@ export function useTeamspaces(workspaceId: string) {
       loading, 
       fetchTeamspaces, 
       createTeamspace,
+      updateTeamspace,
       getTeamspaceMembers,
       addMemberToTeamspace,
       removeMemberFromTeamspace

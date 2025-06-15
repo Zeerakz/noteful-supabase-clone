@@ -13,6 +13,21 @@ export const TeamspaceService = {
     return { data: data as Teamspace[], error: null };
   },
 
+  async updateTeamspace(
+    teamspaceId: string,
+    updates: Partial<Pick<Teamspace, 'name' | 'description' | 'icon'>>
+  ): Promise<{ data: Teamspace | null, error: string | null }> {
+    const { data, error } = await supabase
+      .from('teamspaces')
+      .update(updates)
+      .eq('id', teamspaceId)
+      .select()
+      .single();
+
+    if (error) return { data: null, error: error.message };
+    return { data: data as Teamspace, error: null };
+  },
+
   async getDiscoverableTeamspaces(workspaceId: string, userId: string): Promise<{ data: DiscoverableTeamspace[] | null, error: string | null }> {
     const { data, error } = await supabase.rpc('get_discoverable_teamspaces', {
       p_workspace_id: workspaceId,
