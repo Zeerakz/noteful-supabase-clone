@@ -2,7 +2,7 @@
 export interface SchemaAuditLog {
   id: string;
   database_id: string;
-  field_id?: string;
+  property_id?: string;
   change_type: 'field_created' | 'field_updated' | 'field_deleted' | 'field_renamed' | 'database_created' | 'database_deleted';
   old_values?: any;
   new_values?: any;

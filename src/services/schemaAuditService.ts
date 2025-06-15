@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { SchemaAuditLog, BreakingChange } from '@/types/schemaAudit';
 
@@ -66,7 +65,7 @@ export class SchemaAuditService {
     
     // Find the creation log for this field
     const creationLog = auditLogs.find(log => 
-      log.field_id === fieldId && 
+      log.property_id === fieldId && 
       log.change_type === 'field_created'
     );
     
@@ -87,11 +86,11 @@ export class SchemaAuditService {
     const config = this.getBreakingChangeConfig();
     const sameDayThreshold = 8 * 60 * 60 * 1000; // 8 hours in ms
     
-    if (!deletionLog.field_id) return false;
+    if (!deletionLog.property_id) return false;
     
     // Find the creation log for this field
     const creationLog = auditLogs.find(log => 
-      log.field_id === deletionLog.field_id && 
+      log.property_id === deletionLog.property_id && 
       log.change_type === 'field_created'
     );
     
@@ -127,7 +126,7 @@ export class SchemaAuditService {
     auditLogs.forEach(log => {
       if (log.change_type === 'field_deleted') {
         // Smart filtering for field deletions
-        const isRecentField = this.isRecentlyCreatedField(log.field_id!, auditLogs);
+        const isRecentField = this.isRecentlyCreatedField(log.property_id!, auditLogs);
         const isQuickDel = this.isQuickDeletion(log, auditLogs);
         const hasRecentActivity = this.hasRecentDevelopmentActivity(auditLogs);
         
@@ -156,7 +155,7 @@ export class SchemaAuditService {
         // Only treat as breaking change if it's not just a cosmetic change
         if (oldName && newName && !this.isCosmeticNameChange(oldName, newName)) {
           // Check if this is a recently created field
-          const isRecentField = this.isRecentlyCreatedField(log.field_id!, auditLogs);
+          const isRecentField = this.isRecentlyCreatedField(log.property_id!, auditLogs);
           const severity = isRecentField ? 'low' : 'high';
           
           breakingChanges.push({
@@ -171,7 +170,7 @@ export class SchemaAuditService {
         }
       } else if (log.change_type === 'field_updated' && log.old_values?.type !== log.new_values?.type) {
         // Check if this is a recently created field
-        const isRecentField = this.isRecentlyCreatedField(log.field_id!, auditLogs);
+        const isRecentField = this.isRecentlyCreatedField(log.property_id!, auditLogs);
         const severity = isRecentField ? 'low' : 'medium';
         
         breakingChanges.push({
