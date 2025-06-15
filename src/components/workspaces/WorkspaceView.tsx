@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useWorkspaces } from '@/hooks/useWorkspaces';
@@ -7,7 +6,7 @@ import { useDatabases } from '@/hooks/useDatabases';
 import { useGlobalSearch } from '@/hooks/useGlobalSearch';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, FileText, Database, Bookmark, Search, MoreHorizontal, Trash2 } from 'lucide-react';
+import { Plus, FileText, Database, Bookmark, Search, MoreHorizontal, Trash2, Settings } from 'lucide-react';
 import { DatabaseWizard } from '@/components/database/DatabaseWizard';
 import {
   DropdownMenu,
@@ -28,6 +27,7 @@ import {
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { AppLayoutWithSidebar } from '@/components/layout/AppLayoutWithSidebar';
+import { WorkspaceMembersModal } from './WorkspaceMembersModal';
 
 export function WorkspaceView() {
   const { workspaceId } = useParams<{ workspaceId: string }>();
@@ -38,6 +38,7 @@ export function WorkspaceView() {
   const { openSearch } = useGlobalSearch();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [databaseToDelete, setDatabaseToDelete] = useState<{ id: string; name: string } | null>(null);
+  const [membersModalOpen, setMembersModalOpen] = useState(false);
   const { toast } = useToast();
 
   const workspace = workspaces?.find(w => w.id === workspaceId);
@@ -149,6 +150,9 @@ export function WorkspaceView() {
             <Button onClick={handleCreatePage} className="gap-2">
               <Plus className="h-4 w-4" />
               New Page
+            </Button>
+            <Button variant="ghost" size="icon" onClick={() => setMembersModalOpen(true)}>
+              <Settings className="h-4 w-4" />
             </Button>
           </div>
         </div>
@@ -285,6 +289,11 @@ export function WorkspaceView() {
           </AlertDialogContent>
         </AlertDialog>
       </div>
+      <WorkspaceMembersModal 
+        workspaceId={workspaceId!}
+        isOpen={membersModalOpen}
+        onClose={() => setMembersModalOpen(false)}
+      />
     </AppLayoutWithSidebar>
   );
 }
