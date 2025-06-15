@@ -23,6 +23,7 @@ export type BlockType =
 export interface Block {
   id: string;
   workspace_id: string;
+  teamspace_id: string | null;
   type: BlockType;
   parent_id: string | null;
   properties: Record<string, any>;

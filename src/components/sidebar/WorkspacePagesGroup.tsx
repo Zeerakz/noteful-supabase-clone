@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Loader2, Users, FolderLock } from 'lucide-react';
@@ -5,6 +6,7 @@ import { DragDropContext, Droppable, DropResult } from 'react-beautiful-dnd';
 import {
   SidebarGroup,
   SidebarGroupContent,
+  SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
