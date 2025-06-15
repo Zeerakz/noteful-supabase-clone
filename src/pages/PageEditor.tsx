@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { useParams, Navigate, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Edit2 } from 'lucide-react';
@@ -14,6 +15,9 @@ import { usePresence } from '@/hooks/usePresence';
 import { useEnhancedBlocks } from '@/hooks/useEnhancedBlocks';
 import { useToast } from '@/hooks/use-toast';
 import { useBlockPermissions } from '@/hooks/useBlockPermissions';
+
+// Import to register the new property type
+import '@/components/property/types/AiAutofillPropertyType';
 
 export function PageEditor() {
   const { workspaceId, pageId } = useParams<{ workspaceId: string; pageId: string }>();

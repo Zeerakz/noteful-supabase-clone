@@ -35,6 +35,7 @@ export type PropertyType =
   | 'last_edited_time'
   | 'last_edited_by'
   | 'id'
+  | 'ai_autofill'
   | 'unsupported';
 
 // Base config interface that all property configs extend
@@ -64,7 +65,8 @@ export type PropertyConfig =
   | RatingPropertyConfig
   | ProgressPropertyConfig
   | CurrencyPropertyConfig
-  | ButtonPropertyConfig;
+  | ButtonPropertyConfig
+  | AiAutofillPropertyConfig;
 
 // Forward declare all config interfaces (will be imported from specific files)
 import type { TextPropertyConfig } from './configs/text';
@@ -86,3 +88,4 @@ import type { RatingPropertyConfig } from './configs/rating';
 import type { ProgressPropertyConfig } from './configs/progress';
 import type { CurrencyPropertyConfig } from './configs/currency';
 import type { ButtonPropertyConfig } from './configs/button';
+import type { AiAutofillPropertyConfig } from './configs/aiAutofill';
