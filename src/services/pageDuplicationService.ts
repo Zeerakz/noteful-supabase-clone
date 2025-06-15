@@ -1,16 +1,16 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { Block } from '@/types/block';
+import { Block, BlockType } from '@/types/block';
 import { blockCreationService } from '@/hooks/blocks/useBlockCreation';
 
 export class PageDuplicationService {
   static async duplicatePage(
     originalPageId: string,
     userId: string
-  ): Promise<{ data: Block | null; error: string | null }> {
+  ): Promise<{ data: Block | null; error:string | null }> {
     try {
       // Fetch the original page
-      const { data: originalPage, error: pageError } = await supabase
+      const { data: originalPageData, error: pageError } = await supabase
         .from('blocks')
         .select('*')
         .eq('id', originalPageId)
@@ -18,15 +18,23 @@ export class PageDuplicationService {
         .single();
 
       if (pageError) throw pageError;
-      if (!originalPage) return { data: null, error: 'Original page not found' };
+      if (!originalPageData) return { data: null, error: 'Original page not found' };
+      
+      const originalPage = originalPageData as Block;
 
       // Create new page with "Copy of" prefix
-      const { data: newPage, error: newPageError } = await supabase
+      const originalProperties = (originalPage.properties || {}) as Record<string, any>;
+      const newPageProperties = {
+        ...originalProperties,
+        title: `Copy of ${originalProperties.title || 'Untitled'}`,
+      };
+
+      const { data: newPageData, error: newPageError } = await supabase
         .from('blocks')
         .insert({
             workspace_id: originalPage.workspace_id,
             parent_id: originalPage.parent_id,
-            properties: { ...originalPage.properties, title: `Copy of ${originalPage.properties?.title || 'Untitled'}`},
+            properties: newPageProperties,
             content: originalPage.content,
             type: 'page',
             created_by: userId,
@@ -39,9 +47,11 @@ export class PageDuplicationService {
         .single();
 
       if (newPageError) throw newPageError;
+      
+      const newPage = newPageData as Block;
 
       // Fetch and duplicate direct child blocks
-      const { data: originalBlocks, error: blocksError } = await supabase
+      const { data: originalBlocksData, error: blocksError } = await supabase
         .from('blocks')
         .select('*')
         .eq('parent_id', originalPageId)
@@ -49,9 +59,8 @@ export class PageDuplicationService {
 
       if (blocksError) throw blocksError;
 
-      if (originalBlocks && originalBlocks.length > 0) {
-        // This simplified logic duplicates direct children.
-        // A more robust implementation would handle deep nesting recursively.
+      if (originalBlocksData && originalBlocksData.length > 0) {
+        const originalBlocks = originalBlocksData as Block[];
         const blocksToInsert = originalBlocks.map((block: Block) => {
           let clonedContent = block.content;
           try {
@@ -73,7 +82,7 @@ export class PageDuplicationService {
           };
         });
 
-        await supabase.from('blocks').insert(blocksToInsert as any);
+        await supabase.from('blocks').insert(blocksToInsert);
       }
 
       return { data: newPage, error: null };

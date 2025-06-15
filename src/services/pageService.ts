@@ -1,23 +1,36 @@
 import { supabase } from '@/integrations/supabase/client';
-import { Page, PageCreateRequest, PageUpdateRequest } from '@/types/page';
+import { Block } from '@/types/block';
 import { PropertyInheritanceService } from '@/services/propertyInheritanceService';
 
+// Define specific types for page creation and updates for clarity
+export interface PageCreateRequest {
+  properties: {
+    title: string;
+    database_id?: string;
+  };
+  parent_id?: string;
+}
+
+export type PageUpdateRequest = Partial<Omit<Block, 'id' | 'created_time' | 'last_edited_time' | 'created_by' | 'workspace_id'>>;
+
+
 export class PageService {
-  static async fetchPages(workspaceId: string): Promise<{ data: Page[] | null; error: string | null }> {
+  static async fetchPages(workspaceId: string): Promise<{ data: Block[] | null; error: string | null }> {
     try {
-      // Validate workspaceId
       if (!workspaceId || workspaceId === 'null' || workspaceId === 'undefined') {
         throw new Error('Invalid workspace ID');
       }
 
       const { data, error } = await supabase
-        .from('pages')
+        .from('blocks')
         .select('*')
         .eq('workspace_id', workspaceId)
-        .order('order_index', { ascending: true });
+        .eq('type', 'page')
+        .is('in_trash', false)
+        .order('pos', { ascending: true });
 
       if (error) throw error;
-      return { data: data || [], error: null };
+      return { data: (data as Block[]) || [], error: null };
     } catch (err) {
       return { 
         data: null, 
@@ -26,21 +39,21 @@ export class PageService {
     }
   }
 
-  static async fetchDatabasePages(databaseId: string): Promise<{ data: Page[] | null; error: string | null }> {
+  static async fetchDatabasePages(databaseId: string): Promise<{ data: Block[] | null; error: string | null }> {
     try {
-      // Validate databaseId
       if (!databaseId || databaseId === 'null' || databaseId === 'undefined') {
         throw new Error('Invalid database ID');
       }
 
       const { data, error } = await supabase
-        .from('pages')
+        .from('blocks')
         .select('*')
-        .eq('database_id', databaseId)
-        .order('created_at', { ascending: false });
+        .eq('properties->>database_id', databaseId)
+        .eq('type', 'page')
+        .order('created_time', { ascending: false });
 
       if (error) throw error;
-      return { data: data || [], error: null };
+      return { data: (data as Block[]) || [], error: null };
     } catch (err) {
       return { 
         data: null, 
@@ -74,8 +87,8 @@ export class PageService {
   static async createPage(
     workspaceId: string, 
     userId: string, 
-    { title, parentPageId, databaseId }: PageCreateRequest
-  ): Promise<{ data: Page | null; error: string | null }> {
+    pageDetails: PageCreateRequest
+  ): Promise<{ data: Block | null; error: string | null }> {
     try {
       // Validate required parameters
       if (!workspaceId || workspaceId === 'null' || workspaceId === 'undefined') {
@@ -84,62 +97,36 @@ export class PageService {
       if (!userId || userId === 'null' || userId === 'undefined') {
         throw new Error('Invalid user ID');
       }
-      if (!title || title.trim() === '') {
+      if (!pageDetails.properties.title || pageDetails.properties.title.trim() === '') {
         throw new Error('Title is required');
       }
 
-      // Validate optional UUIDs
-      if (parentPageId && (parentPageId === 'null' || parentPageId === 'undefined')) {
-        parentPageId = undefined;
-      }
-      if (databaseId && (databaseId === 'null' || databaseId === 'undefined')) {
-        databaseId = undefined;
-      }
+      // Get the next position
+      const { data: existingPages, error: posError } = await supabase
+        .from('blocks')
+        .select('pos')
+        .eq('workspace_id', workspaceId)
+        .eq('parent_id', pageDetails.parent_id || null)
+        .is('properties->>database_id', null)
+        .order('pos', { ascending: false })
+        .limit(1);
 
-      // Get the next order index for this parent or database
-      let nextOrderIndex = 0;
-      
-      if (databaseId) {
-        // For database pages, order by creation time (newest first)
-        const { data: existingPages } = await supabase
-          .from('pages')
-          .select('order_index')
-          .eq('database_id', databaseId)
-          .order('order_index', { ascending: false })
-          .limit(1);
+      if (posError) throw posError;
 
-        nextOrderIndex = existingPages && existingPages.length > 0 
-          ? existingPages[0].order_index + 1 
-          : 0;
-      } else {
-        // For regular pages, maintain hierarchy order
-        const { data: existingPages } = await supabase
-          .from('pages')
-          .select('order_index')
-          .eq('workspace_id', workspaceId)
-          .eq('parent_page_id', parentPageId || null)
-          .is('database_id', null)
-          .order('order_index', { ascending: false })
-          .limit(1);
-
-        nextOrderIndex = existingPages && existingPages.length > 0 
-          ? existingPages[0].order_index + 1 
-          : 0;
-      }
+      const nextPos = existingPages && existingPages.length > 0 ? existingPages[0].pos + 1 : 0;
 
       const insertData = {
         workspace_id: workspaceId,
-        parent_page_id: parentPageId || null,
-        database_id: databaseId || null,
-        title: title.trim(),
+        parent_id: pageDetails.parent_id || null,
+        properties: pageDetails.properties,
+        type: 'page' as const,
         created_by: userId,
-        order_index: nextOrderIndex,
+        last_edited_by: userId,
+        pos: nextPos,
       };
 
-      console.log('Inserting page with data:', insertData);
-
       const { data, error } = await supabase
-        .from('pages')
+        .from('blocks')
         .insert([insertData])
         .select()
         .single();
@@ -149,23 +136,19 @@ export class PageService {
         throw error;
       }
 
-      console.log('Page created successfully:', data);
+      const newPage = data as Block;
+      console.log('Page created successfully:', newPage);
 
       // If page is created in a database, apply property inheritance
-      if (data && databaseId) {
-        const inheritanceResult = await PropertyInheritanceService.applyDatabaseInheritance(
-          data.id,
-          databaseId,
+      if (newPage && newPage.properties?.database_id) {
+        await PropertyInheritanceService.applyDatabaseInheritance(
+          newPage.id,
+          newPage.properties.database_id,
           userId
         );
-
-        if (!inheritanceResult.success) {
-          console.warn('Property inheritance failed:', inheritanceResult.error);
-          // Don't fail the page creation, just log the warning
-        }
       }
 
-      return { data, error: null };
+      return { data: newPage, error: null };
     } catch (err) {
       console.error('Page creation error:', err);
       return { 
@@ -178,98 +161,56 @@ export class PageService {
   static async updatePage(
     pageId: string, 
     updates: PageUpdateRequest
-  ): Promise<{ data: Page | null; error: string | null }> {
+  ): Promise<{ data: Block | null; error: string | null }> {
     try {
-      // Validate pageId
       if (!pageId || pageId === 'null' || pageId === 'undefined') {
         throw new Error('Invalid page ID');
       }
 
-      // Clean up null values in updates - properly handle optional properties
-      const cleanUpdates: Partial<PageUpdateRequest> = {};
-      
-      // Only include properties that are actually being updated
-      if (updates.title !== undefined) {
-        cleanUpdates.title = updates.title === 'null' || updates.title === 'undefined' ? undefined : updates.title;
-      }
-      
-      if (updates.parent_page_id !== undefined) {
-        cleanUpdates.parent_page_id = updates.parent_page_id === 'null' || updates.parent_page_id === 'undefined' ? null : updates.parent_page_id;
-      }
-      
-      if (updates.database_id !== undefined) {
-        cleanUpdates.database_id = updates.database_id === 'null' || updates.database_id === 'undefined' ? null : updates.database_id;
-      }
-      
-      if (updates.order_index !== undefined) {
-        cleanUpdates.order_index = updates.order_index;
-      }
+      const finalUpdates: PageUpdateRequest = {
+        ...updates,
+        last_edited_time: new Date().toISOString(),
+      };
 
-      // Get the current page data to check for database changes
       const { data: currentPage, error: fetchError } = await supabase
-        .from('pages')
-        .select('*')
+        .from('blocks')
+        .select('properties, created_by')
         .eq('id', pageId)
         .single();
 
       if (fetchError) throw fetchError;
 
       const { data, error } = await supabase
-        .from('pages')
-        .update({ ...cleanUpdates, updated_at: new Date().toISOString() })
+        .from('blocks')
+        .update(finalUpdates)
         .eq('id', pageId)
         .select()
         .single();
 
       if (error) throw error;
+      
+      const updatedPage = data as Block;
 
       // Handle database inheritance when database_id changes
-      if (cleanUpdates.database_id !== undefined && currentPage) {
-        const oldDatabaseId = currentPage.database_id;
-        const newDatabaseId = cleanUpdates.database_id;
+      if (updates.properties && currentPage) {
+        const oldDatabaseId = (currentPage.properties as any)?.database_id;
+        const newDatabaseId = (updates.properties as any)?.database_id;
 
-        // If moving from standalone to database
-        if (!oldDatabaseId && newDatabaseId) {
-          const inheritanceResult = await PropertyInheritanceService.applyDatabaseInheritance(
-            pageId,
-            newDatabaseId,
-            currentPage.created_by
-          );
-
-          if (!inheritanceResult.success) {
-            console.warn('Property inheritance failed:', inheritanceResult.error);
+        if (newDatabaseId !== oldDatabaseId) {
+          if (oldDatabaseId) {
+            await PropertyInheritanceService.removeDatabaseInheritance(pageId, oldDatabaseId);
           }
-        }
-        // If moving from database to standalone
-        else if (oldDatabaseId && !newDatabaseId) {
-          const removalResult = await PropertyInheritanceService.removeDatabaseInheritance(
-            pageId,
-            oldDatabaseId
-          );
-
-          if (!removalResult.success) {
-            console.warn('Property inheritance removal failed:', removalResult.error);
-          }
-        }
-        // If moving between databases
-        else if (oldDatabaseId && newDatabaseId && oldDatabaseId !== newDatabaseId) {
-          // Remove old database properties
-          await PropertyInheritanceService.removeDatabaseInheritance(pageId, oldDatabaseId);
-          
-          // Apply new database properties
-          const inheritanceResult = await PropertyInheritanceService.applyDatabaseInheritance(
-            pageId,
-            newDatabaseId,
-            currentPage.created_by
-          );
-
-          if (!inheritanceResult.success) {
-            console.warn('Property inheritance failed:', inheritanceResult.error);
+          if (newDatabaseId) {
+            await PropertyInheritanceService.applyDatabaseInheritance(
+              pageId,
+              newDatabaseId,
+              currentPage.created_by
+            );
           }
         }
       }
 
-      return { data, error: null };
+      return { data: updatedPage, error: null };
     } catch (err) {
       return { 
         data: null, 
@@ -280,14 +221,10 @@ export class PageService {
 
   static async deletePage(pageId: string): Promise<{ error: string | null }> {
     try {
-      // Validate pageId
-      if (!pageId || pageId === 'null' || pageId === 'undefined') {
-        throw new Error('Invalid page ID');
-      }
-
+      // For now, we'll just mark as in_trash
       const { error } = await supabase
-        .from('pages')
-        .delete()
+        .from('blocks')
+        .update({ in_trash: true, last_edited_time: new Date().toISOString() })
         .eq('id', pageId);
 
       if (error) throw error;
