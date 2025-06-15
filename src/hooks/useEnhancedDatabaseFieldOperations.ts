@@ -1,7 +1,8 @@
+
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { DatabaseFieldService } from '@/services/database/databaseFieldService';
-import { DatabaseField } from '@/types/database';
+import { DatabaseField, FieldType } from '@/types/database';
 import { PropertyType } from '@/types/property';
 
 interface UseEnhancedDatabaseFieldOperationsProps {
@@ -36,14 +37,23 @@ export function useEnhancedDatabaseFieldOperations({
       return;
     }
 
+    if (field.type === 'unsupported') {
+      toast({
+        title: 'Invalid Field Type',
+        description: 'Cannot create a field with an unsupported type.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     // Optimistic update
-    const tempId = onOptimisticCreate(field);
+    const tempId = onOptimisticCreate(field as Partial<DatabaseField>);
 
     try {
       const { data, error } = await DatabaseFieldService.createDatabaseField(
         databaseId,
         user.id,
-        field
+        field as { name: string; type: FieldType; settings?: any }
       );
       
       if (error) throw new Error(error.message);
@@ -147,7 +157,7 @@ export function useEnhancedDatabaseFieldOperations({
 
     const duplicatedField = {
       name: `${field.name} (Copy)`,
-      type: field.type as PropertyType,
+      type: field.type,
       settings: field.settings
     };
 

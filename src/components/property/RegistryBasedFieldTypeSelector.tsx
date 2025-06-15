@@ -15,7 +15,6 @@ export function RegistryBasedFieldTypeSelector({
   onValueChange, 
   disabled 
 }: RegistryBasedFieldTypeSelectorProps) {
-  const allTypes = propertyRegistry.getAll();
   const categories = ['basic', 'advanced', 'computed', 'media', 'relationship'] as const;
   
   return (
@@ -25,7 +24,7 @@ export function RegistryBasedFieldTypeSelector({
       </SelectTrigger>
       <SelectContent>
         {categories.map(category => {
-          const typesInCategory = propertyRegistry.getAllByCategory(category);
+          const typesInCategory = propertyRegistry.getAllByCategory(category).filter(def => def.type !== 'unsupported');
           if (typesInCategory.length === 0) return null;
           
           return (

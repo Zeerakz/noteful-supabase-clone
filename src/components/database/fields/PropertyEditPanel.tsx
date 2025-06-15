@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { DatabaseField } from '@/types/database';
-import { PropertyType } from '@/types/property';
+import { PropertyType, FieldType } from '@/types/property';
 import { RegistryBasedFieldTypeSelector } from '@/components/property/RegistryBasedFieldTypeSelector';
 import { FieldConfigurationPanel } from './FieldConfigurationPanel';
 import { FieldVisibilitySettings } from './FieldVisibilitySettings';
@@ -43,7 +43,7 @@ export function PropertyEditPanel({
           <Label htmlFor="field-type">Property Type</Label>
           <RegistryBasedFieldTypeSelector
             value={editingField.type as PropertyType}
-            onValueChange={(type) => onFieldChange({ ...editingField, type })}
+            onValueChange={(type) => onFieldChange({ ...editingField, type: type as FieldType })}
             disabled={true}
           />
         </div>
