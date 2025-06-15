@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Block } from '@/types/block';
-import { PageService } from '@/services/pageService';
+import { PageService, PageCreateRequest } from '@/services/pageService';
 import { usePageHierarchy } from '@/hooks/usePageHierarchy';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -39,21 +39,20 @@ export function usePages(workspaceId?: string) {
   const createPage = async (title: string, parentId?: string, databaseId?: string) => {
     if (!user || !workspaceId) return { error: 'User not authenticated or workspace not selected' };
 
-    const properties: Record<string, any> = { title };
+    const properties: { title: string; database_id?: string; } = { title };
     if (databaseId) {
       properties.database_id = databaseId;
     }
 
-    const pageData: Partial<Block> = {
+    const pageDetails: PageCreateRequest = {
       properties,
       parent_id: parentId,
-      type: 'page',
     };
 
     const { data, error } = await PageService.createPage(
       workspaceId,
       user.id,
-      pageData
+      pageDetails
     );
     
     return { data, error };

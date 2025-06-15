@@ -11,7 +11,7 @@ export interface PageCreateRequest {
   parent_id?: string;
 }
 
-export type PageUpdateRequest = Partial<Omit<Block, 'id' | 'created_time' | 'last_edited_time' | 'created_by' | 'workspace_id'>>;
+export type PageUpdateRequest = Partial<Omit<Block, 'id' | 'created_time' | 'created_by' | 'workspace_id'>>;
 
 
 export class PageService {
@@ -182,7 +182,7 @@ export class PageService {
 
       const { data, error } = await supabase
         .from('blocks')
-        .update(finalUpdates)
+        .update(finalUpdates as any)
         .eq('id', pageId)
         .select()
         .single();

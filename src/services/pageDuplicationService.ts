@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Block, BlockType } from '@/types/block';
 import { blockCreationService } from '@/hooks/blocks/useBlockCreation';
@@ -82,7 +81,7 @@ export class PageDuplicationService {
           };
         });
 
-        await supabase.from('blocks').insert(blocksToInsert);
+        await supabase.from('blocks').insert(blocksToInsert as any);
       }
 
       return { data: newPage, error: null };

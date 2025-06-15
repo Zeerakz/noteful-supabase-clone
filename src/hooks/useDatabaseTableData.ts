@@ -125,7 +125,7 @@ export function useDatabaseTableData({
   const { mutateAsync: createRowMutation } = useMutation({
     mutationFn: async ({ title = 'Untitled' }: { title?: string }) => {
       if (!user) throw new Error('User not authenticated');
-      const { data, error } = await PageService.createPage(workspaceId, user.id, { title, database_id: databaseId });
+      const { data, error } = await PageService.createPage(workspaceId, user.id, { properties: { title, database_id: databaseId } });
       if (error) throw new Error(error);
       return data;
     },

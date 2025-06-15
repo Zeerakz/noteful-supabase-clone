@@ -91,10 +91,7 @@ export function PageEditor() {
       return;
     }
     
-    // The properties object needs to be spread to avoid losing other properties
-    const newProperties = { ...page.properties, title: titleValue.trim() };
-
-    const { error } = await updatePage(page.id, { properties: newProperties });
+    const { error } = await updatePage(page.id, { title: titleValue.trim() });
     
     if (!error) {
       setIsEditingTitle(false);

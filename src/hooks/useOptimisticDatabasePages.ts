@@ -1,8 +1,7 @@
-
 import { useQueryClient, useMutation } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { PageService } from '@/services/pageService';
+import { PageService, PageCreateRequest } from '@/services/pageService';
 import { useFilteredDatabasePagesQuery } from '@/hooks/useFilteredDatabasePagesQuery';
 import { useOptimisticPropertyUpdate } from '@/hooks/useOptimisticPropertyUpdate';
 import { DatabaseField } from '@/types/database';
@@ -51,8 +50,7 @@ export function useOptimisticDatabasePages({
   const createPageMutation = useMutation({
     mutationFn: (pageData: { title: string }) => {
       if (!user) throw new Error("User not authenticated");
-      const newPageData: Partial<Block> = {
-        type: 'page',
+      const newPageData: PageCreateRequest = {
         properties: {
           title: pageData.title || 'Untitled',
           database_id: databaseId
