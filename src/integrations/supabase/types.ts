@@ -1417,6 +1417,7 @@ export type Database = {
         | "divider"
         | "callout"
       grantee_type: "user" | "group"
+      permission_grantee_type: "user" | "group"
       presence_activity_enum: "editing" | "commenting" | "viewing"
       property_type_enum:
         | "text"
@@ -1586,6 +1587,7 @@ export const Constants = {
         "callout",
       ],
       grantee_type: ["user", "group"],
+      permission_grantee_type: ["user", "group"],
       presence_activity_enum: ["editing", "commenting", "viewing"],
       property_type_enum: [
         "text",
