@@ -1,4 +1,3 @@
-
 import { Property, PropertyType, PropertyConfig } from './property';
 import { ReactNode } from 'react';
 
@@ -34,6 +33,8 @@ export interface PropertyTypeDefinition<T extends PropertyConfig = PropertyConfi
     config: T;
     field?: any;
     pageId?: string;
+    onValueChange?: (value: any) => void;
+    inTable?: boolean;
   }>;
   
   FieldEditor: React.ComponentType<{
@@ -46,6 +47,7 @@ export interface PropertyTypeDefinition<T extends PropertyConfig = PropertyConfi
   }>;
   
   // Optional features
+  rendersEmpty?: boolean;
   isComputed?: boolean;
   dependencies?: string[]; // Field IDs this type depends on
   supportsFiltering?: boolean;
