@@ -78,20 +78,13 @@ export function DatabaseListView({
 
   // Transform pages data to expected format
   const pagesWithProperties: PageWithProperties[] = pages.map(page => {
-    const properties: Record<string, string> = {};
-    
-    if (page.page_properties && Array.isArray(page.page_properties)) {
-      page.page_properties.forEach((prop: any) => {
-        if (prop.field_id && prop.value !== undefined) {
-          properties[prop.field_id] = prop.value;
-        }
-      });
-    }
-    
+    // Properties are now directly on the page.properties object
+    const pageProps = (page.properties && typeof page.properties === 'object') ? page.properties : {};
+
     return {
       pageId: page.id,
-      title: page.properties?.title || 'Untitled',
-      properties,
+      title: pageProps?.title || 'Untitled',
+      properties: pageProps,
     };
   });
 

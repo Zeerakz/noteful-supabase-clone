@@ -1,4 +1,3 @@
-
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { PageService } from '@/services/pageService';
@@ -20,7 +19,7 @@ export function useListActions(databaseId: string, workspaceId: string, refetch:
 
   const handleTitleEdit = async (pageId: string, title: string) => {
     try {
-      const { error } = await PageService.updatePage(pageId, { title: title.trim() });
+      const { error } = await PageService.updatePage(pageId, { properties: { title: title.trim() } });
       if (error) {
         toast({
           title: "Error",
@@ -46,7 +45,7 @@ export function useListActions(databaseId: string, workspaceId: string, refetch:
       const { data, error } = await PageService.createPage(
         workspaceId,
         user.id,
-        { title: 'Untitled', databaseId }
+        { properties: { title: 'Untitled', database_id: databaseId } }
       );
       
       if (error) {

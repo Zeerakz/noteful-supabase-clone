@@ -64,7 +64,7 @@ export function useDatabaseTableData({
     optimisticDeleteField,
     optimisticReorderFields,
     revertOptimisticChanges,
-  } = useOptimisticDatabaseFields(databaseId, workspaceId);
+  } = useOptimisticDatabaseFields(databaseId);
 
   const fieldOperations = useEnhancedDatabaseFieldOperations({
     databaseId,
