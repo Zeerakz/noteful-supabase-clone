@@ -1363,7 +1363,12 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "editor" | "viewer"
-      block_permission_level: "view" | "comment" | "edit" | "full_access"
+      block_permission_level:
+        | "view"
+        | "comment"
+        | "edit"
+        | "full_access"
+        | "none"
       block_type_enum:
         | "page"
         | "database"
@@ -1525,7 +1530,13 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "editor", "viewer"],
-      block_permission_level: ["view", "comment", "edit", "full_access"],
+      block_permission_level: [
+        "view",
+        "comment",
+        "edit",
+        "full_access",
+        "none",
+      ],
       block_type_enum: [
         "page",
         "database",
