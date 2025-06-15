@@ -71,23 +71,44 @@ export function useTeamspaces(workspaceId: string) {
   };
 
   const getTeamspaceMembers = async (teamspaceId: string): Promise<{ data: TeamspaceMember[] | null, error: string | null }> => {
-    const { data, error } = await supabase
-        .from('teamspace_members')
-        .select(`
-            id,
-            teamspace_id,
-            user_id,
-            created_at,
-            profiles (
-                full_name,
-                email,
-                avatar_url
-            )
-        `)
-        .eq('teamspace_id', teamspaceId);
-    
-    if (error) return { data: null, error: error.message };
-    return { data: data as TeamspaceMember[], error: null };
+    const { data: membersData, error: membersError } = await supabase
+      .from('teamspace_members')
+      .select(`id, teamspace_id, user_id, created_at`)
+      .eq('teamspace_id', teamspaceId);
+
+    if (membersError) {
+      console.error('Error fetching teamspace members:', membersError);
+      return { data: null, error: membersError.message };
+    }
+    if (!membersData) return { data: [], error: null };
+
+    const userIds = membersData.map(m => m.user_id);
+    if (userIds.length === 0) {
+      return { data: [], error: null };
+    }
+
+    const { data: profilesData, error: profilesError } = await supabase
+      .from('profiles')
+      .select('id, full_name, email, avatar_url')
+      .in('id', userIds);
+
+    if (profilesError) {
+      console.error('Error fetching profiles for members:', profilesError);
+      return { data: null, error: profilesError.message };
+    }
+
+    const profilesMap = new Map(profilesData.map(p => [p.id, {
+      full_name: p.full_name,
+      email: p.email,
+      avatar_url: p.avatar_url,
+    }]));
+
+    const combinedData: TeamspaceMember[] = membersData.map(member => ({
+      ...member,
+      profiles: profilesMap.get(member.user_id) || null
+    }));
+
+    return { data: combinedData, error: null };
   };
 
   const addMemberToTeamspace = async (teamspaceId: string, userId: string) => {
