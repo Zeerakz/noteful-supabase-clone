@@ -1,55 +1,29 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { BlockPermissionGrant, GrantablePermissionLevel } from '@/types/permissions';
 
 export const PermissionService = {
   async getBlockPermissions(blockId: string): Promise<{ data: BlockPermissionGrant[] | null, error: string | null }> {
-    const { data: permissions, error } = await supabase
-      .from('block_permissions')
-      .select(`*`)
-      .eq('block_id', blockId);
+    const { data, error } = await supabase.rpc('get_page_sharers', { p_block_id: blockId });
 
     if (error) {
       console.error("Error fetching block permissions:", error);
       return { data: null, error: error.message };
     }
-    if (!permissions) return { data: [], error: null };
+    if (!data) return { data: [], error: null };
 
-    const userIds = permissions.filter(p => p.grantee_type === 'user' && p.user_id).map(p => p.user_id!);
-    const groupIds = permissions.filter(p => p.grantee_type === 'group' && p.group_id).map(p => p.group_id!);
-
-    const [profilesRes, groupsRes] = await Promise.all([
-        userIds.length > 0 ? supabase.from('profiles').select('id, full_name, avatar_url').in('id', userIds) : Promise.resolve({ data: [], error: null }),
-        groupIds.length > 0 ? supabase.from('groups').select('id, name').in('id', groupIds) : Promise.resolve({ data: [], error: null })
-    ]);
-    
-    if (profilesRes.error) return { data: null, error: profilesRes.error.message };
-    if (groupsRes.error) return { data: null, error: groupsRes.error.message };
-
-    const profilesMap = new Map<string, { full_name: string | null, avatar_url: string | null }>(
-      (profilesRes.data || []).map(p => [p.id, p])
-    );
-    const groupsMap = new Map<string, { name: string }>(
-      (groupsRes.data || []).map(g => [g.id, g])
-    );
-
-    const formattedData = permissions
-      .filter((p): p is Omit<typeof p, 'permission_level'> & { permission_level: GrantablePermissionLevel } => p.permission_level !== 'none')
-      .map(p => {
-        let grantee_name: string | undefined;
-        let grantee_avatar_url: string | undefined;
-
-        if (p.grantee_type === 'user' && p.user_id) {
-            const profile = profilesMap.get(p.user_id);
-            grantee_name = profile?.full_name || 'Unknown User';
-            grantee_avatar_url = profile?.avatar_url || undefined;
-        } else if (p.grantee_type === 'group' && p.group_id) {
-            const group = groupsMap.get(p.group_id);
-            grantee_name = group?.name || 'Unknown Group';
-        }
-
-        return { ...p, grantee_name, grantee_avatar_url } as BlockPermissionGrant;
-    });
+    const formattedData: BlockPermissionGrant[] = data
+      .filter((p): p is Omit<typeof p, 'permission_level'> & { permission_level: GrantablePermissionLevel | null } => p.permission_level !== null && p.permission_level !== 'none')
+      .map(p => ({
+        id: p.permission_id!,
+        block_id: blockId,
+        permission_level: p.permission_level as GrantablePermissionLevel,
+        grantee_type: p.grantee_type as 'user' | 'group',
+        user_id: p.grantee_type === 'user' ? p.grantee_id : null,
+        group_id: p.grantee_type === 'group' ? p.grantee_id : null,
+        granted_by: null, // This info is not returned by the function
+        grantee_name: p.grantee_name || (p.grantee_type === 'user' ? 'Unknown User' : 'Unknown Group'),
+        grantee_avatar_url: p.grantee_avatar_url || undefined,
+      }));
 
     return { data: formattedData, error: null };
   },

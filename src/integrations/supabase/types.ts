@@ -1329,6 +1329,10 @@ export type Database = {
         Args: { p_block_id: string; p_user_id: string }
         Returns: Database["public"]["Enums"]["block_permission_level"]
       }
+      get_page_sharers: {
+        Args: { p_block_id: string }
+        Returns: Database["public"]["CompositeTypes"]["page_sharer_info"][]
+      }
       get_user_final_block_permission: {
         Args: { p_block_id: string; p_user_id: string }
         Returns: Database["public"]["Enums"]["block_permission_level"]
@@ -1416,6 +1420,7 @@ export type Database = {
         | "quote"
         | "divider"
         | "callout"
+      grantable_permission_level: "view" | "comment" | "edit" | "full_access"
       grantee_type: "user" | "group"
       permission_grantee_type: "user" | "group"
       presence_activity_enum: "editing" | "commenting" | "viewing"
@@ -1448,7 +1453,18 @@ export type Database = {
       workspace_role: "owner" | "admin" | "member" | "guest"
     }
     CompositeTypes: {
-      [_ in never]: never
+      page_sharer_info: {
+        permission_id: string | null
+        grantee_id: string | null
+        grantee_type:
+          | Database["public"]["Enums"]["permission_grantee_type"]
+          | null
+        grantee_name: string | null
+        grantee_avatar_url: string | null
+        permission_level:
+          | Database["public"]["Enums"]["grantable_permission_level"]
+          | null
+      }
     }
   }
 }
@@ -1586,6 +1602,7 @@ export const Constants = {
         "divider",
         "callout",
       ],
+      grantable_permission_level: ["view", "comment", "edit", "full_access"],
       grantee_type: ["user", "group"],
       permission_grantee_type: ["user", "group"],
       presence_activity_enum: ["editing", "commenting", "viewing"],
