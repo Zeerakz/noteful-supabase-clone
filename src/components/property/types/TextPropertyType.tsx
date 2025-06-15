@@ -1,14 +1,13 @@
+
 import React from 'react';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
 import { PropertyTypeDefinition } from '@/types/propertyRegistry';
 import { TextPropertyConfig } from '@/types/property';
 import { TextPropertyConfigEditor } from '../config-editors/TextPropertyConfigEditor';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Type } from 'lucide-react';
+import { Type, WrapText } from 'lucide-react';
 
-// Display component for text fields with Markdown support
+// Display component for text fields
 const TextFieldDisplay: React.FC<{
   value: any;
   config: TextPropertyConfig;
@@ -17,51 +16,37 @@ const TextFieldDisplay: React.FC<{
   if (!value || value.trim() === '') {
     return <span className="text-muted-foreground">—</span>;
   }
-
+  
   const shouldWrap = config.wrapText || false;
-
-  if (inTable && !shouldWrap) {
+  const isMultiline = config.multiline && value.includes('\n');
+  
+  if (inTable && !shouldWrap && isMultiline) {
+    // Show truncated version with ellipsis for multiline content in tables
     const firstLine = value.split('\n')[0];
-    // A simple regex to strip markdown for a clean preview in non-wrapped table cells
-    const plainText = firstLine.replace(/([_*~`[\]()#+\-.!])/g, '');
-    const hasMoreContent = value.length > plainText.length || value.includes('\n');
-
+    const hasMoreLines = value.split('\n').length > 1;
+    
     return (
       <div className="flex items-center gap-1">
-        <span className="truncate text-foreground">{plainText.substring(0, 100)}</span>
-        {hasMoreContent && <span className="text-muted-foreground text-xs">...</span>}
+        <span className="truncate text-foreground">{firstLine}</span>
+        {hasMoreLines && (
+          <span className="text-muted-foreground text-xs">...</span>
+        )}
       </div>
     );
   }
-
+  
+  if (inTable && shouldWrap) {
+    return (
+      <div className={`text-foreground ${shouldWrap ? 'whitespace-pre-wrap break-words' : 'truncate'}`}>
+        {value}
+      </div>
+    );
+  }
+  
   return (
-    <div
-      className={`text-foreground ${
-        shouldWrap || !inTable ? 'whitespace-pre-wrap break-words' : 'truncate'
-      }`}
-    >
-      <ReactMarkdown
-        children={value}
-        remarkPlugins={[remarkGfm]}
-        components={{
-          a: ({ node, ...props }) => (
-            <a
-              {...props}
-              className="text-blue-500 hover:underline"
-              target="_blank"
-              rel="noopener noreferrer"
-            />
-          ),
-          code: ({ node, ...props }) => (
-            <code
-              {...props}
-              className="bg-muted text-muted-foreground px-1 py-0.5 rounded-sm text-sm font-mono"
-            />
-          ),
-          p: ({ node, ...props }) => <p {...props} className="m-0 p-0" />,
-        }}
-      />
-    </div>
+    <span className={`text-foreground ${isMultiline ? 'whitespace-pre-wrap' : ''}`}>
+      {value}
+    </span>
   );
 };
 
@@ -120,7 +105,7 @@ const TextFieldEditor: React.FC<{
 export const textPropertyType: PropertyTypeDefinition<TextPropertyConfig> = {
   type: 'text',
   label: 'Text',
-  description: 'Single or multi-line text with Markdown support',
+  description: 'Single or multi-line text',
   icon: <Type className="h-4 w-4" />,
   category: 'basic',
   
