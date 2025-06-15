@@ -1,6 +1,6 @@
 
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.50.0";
+import { createClient, User } from "https://esm.sh/@supabase/supabase-js@2.50.0";
 import { Resend } from "npm:resend@2.0.0";
 
 const corsHeaders = {
@@ -24,7 +24,7 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   if (req.method !== 'POST') {
-    return new Response('Method not allowed', { status: 405, headers: corsHeaders });
+    return new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405, headers: corsHeaders });
   }
 
   try {
@@ -34,10 +34,26 @@ const handler = async (req: Request): Promise<Response> => {
     );
     const resend = new Resend(Deno.env.get('RESEND_API_KEY'));
 
+    // Get user from JWT
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: 'Missing Authorization header' }), { status: 401, headers: corsHeaders });
+    }
+    const jwt = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: userError } = await supabase.auth.getUser(jwt);
+
+    if (userError) {
+      console.error('JWT user fetch error:', userError);
+      return new Response(JSON.stringify({ error: `Authentication error: ${userError.message}` }), { status: 401, headers: corsHeaders });
+    }
+    if (!user) {
+      return new Response(JSON.stringify({ error: 'User not found or invalid token' }), { status: 401, headers: corsHeaders });
+    }
+
     const { email, workspaceId, role, workspaceName, inviterName }: InviteUserRequest = await req.json();
 
     if (!email || !workspaceId || !role) {
-      return new Response(JSON.stringify({ error: 'Missing required fields' }), { status: 400 });
+      return new Response(JSON.stringify({ error: 'Missing required fields' }), { status: 400, headers: corsHeaders });
     }
 
     // Check if user exists and is already a member
@@ -50,7 +66,7 @@ const handler = async (req: Request): Promise<Response> => {
         .eq('user_id', userProfile.id)
         .single();
       if (member) {
-        return new Response(JSON.stringify({ error: 'User is already a member of this workspace' }), { status: 409 });
+        return new Response(JSON.stringify({ error: 'User is already a member of this workspace' }), { status: 409, headers: corsHeaders });
       }
     }
 
@@ -62,20 +78,18 @@ const handler = async (req: Request): Promise<Response> => {
       .eq('email', email)
       .single();
     if (existingInvite) {
-      return new Response(JSON.stringify({ error: 'An invitation has already been sent to this email address' }), { status: 409 });
+      return new Response(JSON.stringify({ error: 'An invitation has already been sent to this email address' }), { status: 409, headers: corsHeaders });
     }
 
     // Create invitation
     const token = crypto.randomUUID();
-    const { data: authUser, error: authError } = await supabase.auth.getUser();
-    if (authError) throw authError;
 
     const { error: insertError } = await supabase.from('invitations').insert({
       workspace_id: workspaceId,
       email: email,
       role: role,
       token: token,
-      invited_by: authUser.user.id,
+      invited_by: user.id,
     });
 
     if (insertError) {
