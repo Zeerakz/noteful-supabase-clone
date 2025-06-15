@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useForm, SubmitHandler, Controller } from 'react-hook-form';
 import { useWorkspaceMembers, WorkspaceMember, PendingInvitation } from '@/hooks/useWorkspaceMembers';
@@ -63,11 +64,24 @@ export function MembersManagementTab({ workspaceId }: MembersManagementTabProps)
 
   const onSubmit: SubmitHandler<InviteFormInputs> = async (data) => {
     setIsSubmitting(true);
-    const { error } = await inviteUserToWorkspace(workspaceId, data.email, data.role);
+    const { error, data: responseData } = await inviteUserToWorkspace(workspaceId, data.email, data.role);
     if (error) {
       toast({ title: 'Error sending invitation', description: error, variant: 'destructive' });
     } else {
-      toast({ title: 'Invitation sent successfully' });
+      if (responseData?.testing_fallback) {
+        toast({
+          variant: 'default',
+          title: 'Invitation Created (Testing Mode)',
+          description: 'Email could not be sent. Check browser console for the invite link.',
+          duration: 10000,
+        });
+        console.info(
+          `[TESTING] An invitation was created for ${data.email}. Because your Resend account has not been configured with a verified domain, the email could not be sent. You can use this link to test the invite flow:`,
+          responseData.invite_url
+        );
+      } else {
+        toast({ title: 'Invitation sent successfully' });
+      }
       reset();
       refresh();
     }

@@ -11,7 +11,7 @@ export interface InviteUserRequest {
 }
 
 export class InvitationService {
-  static async inviteUser(request: InviteUserRequest): Promise<{ error: string | null; success: boolean }> {
+  static async inviteUser(request: InviteUserRequest): Promise<{ error: string | null; success: boolean; data?: any }> {
     try {
       const { data, error } = await supabase.functions.invoke('invite-user', {
         body: request
@@ -20,7 +20,7 @@ export class InvitationService {
       if (error) throw error;
       if (data.error) throw new Error(data.error);
 
-      return { error: null, success: true };
+      return { error: null, success: true, data };
     } catch (err) {
       return { 
         error: err instanceof Error ? err.message : 'Failed to send invitation',

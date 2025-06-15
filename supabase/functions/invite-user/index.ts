@@ -165,8 +165,26 @@ const handler = async (req: Request): Promise<Response> => {
     });
 
     if (emailError) {
-      console.error('Resend email error:', emailError);
-      throw new Error(`Failed to send email: ${emailError.message}`);
+      // Check for the specific Resend validation error for unverified domains
+      if (emailError.name === 'validation_error' && emailError.message.includes('verify a domain')) {
+        console.warn('Resend domain not verified. Invitation email not sent.');
+        console.log(`TESTING FALLBACK: Invitation link for ${email} is: ${inviteUrl}`);
+        
+        // Return a special success response indicating the fallback was used
+        return new Response(JSON.stringify({ 
+          success: true, 
+          message: 'Invitation created, but email sending is disabled for unverified domains in Resend. Check function logs for the invite link to test.',
+          testing_fallback: true,
+          invite_url: inviteUrl 
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200,
+        });
+      } else {
+        console.error('Resend email error:', emailError);
+        // For other email errors, we still throw to be caught by the main catch block
+        throw new Error(`Failed to send email: ${emailError.message}`);
+      }
     }
 
     return new Response(JSON.stringify({ success: true, message: 'Invitation sent' }), {

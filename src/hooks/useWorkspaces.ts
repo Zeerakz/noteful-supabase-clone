@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -140,8 +141,8 @@ export function useWorkspaces() {
       inviterName: user.email || 'Someone'
     };
 
-    const { error, success } = await InvitationService.inviteUser(request);
-    return { error, success };
+    const { error, success, data } = await InvitationService.inviteUser(request);
+    return { error, success, data };
   };
 
   useEffect(() => {
