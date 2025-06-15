@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { DatabaseFieldService } from '@/services/database/databaseFieldService';
 import { DatabaseQueryService } from '@/services/database/databaseQueryService';
@@ -26,48 +25,40 @@ export function useKanbanData({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch database fields
   useEffect(() => {
-    const fetchFields = async () => {
-      if (!databaseId) return;
-      
-      try {
-        const { data, error } = await DatabaseFieldService.fetchDatabaseFields(databaseId);
-        if (error) throw new Error(error.message);
-        setFields(data as DatabaseField[] || []);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to fetch fields');
+    const fetchData = async () => {
+      if (!databaseId) {
+        setLoading(false);
+        return;
       }
-    };
-
-    fetchFields();
-  }, [databaseId]);
-
-  // Fetch pages with properties
-  useEffect(() => {
-    const fetchPages = async () => {
-      if (!databaseId) return;
       
       setLoading(true);
+      setError(null);
+
       try {
-        const { data, error } = await DatabaseQueryService.fetchDatabasePages(
+        // 1. Fetch fields first.
+        const { data: fetchedFields, error: fieldsError } = await DatabaseFieldService.fetchDatabaseFields(databaseId);
+        if (fieldsError) throw new Error(fieldsError.message);
+        
+        const currentFields = (fetchedFields as DatabaseField[] || []);
+        setFields(currentFields);
+
+        // 2. Then fetch pages using the fields.
+        const { data: pagesData, error: pagesError } = await DatabaseQueryService.fetchDatabasePages(
           databaseId,
           filterGroup,
-          fields,
+          currentFields,
           sortRules
         );
         
-        if (error) throw new Error(error);
+        if (pagesError) throw new Error(pagesError);
         
-        // Transform pages to include properties in the expected format
-        const transformedPages: PageWithProperties[] = (data || []).map((page: any) => {
+        // 3. Transform pages.
+        const transformedPages: PageWithProperties[] = (pagesData || []).map((page: any) => {
           const properties: Record<string, string> = {};
-          
-          // Convert page_properties array to a properties object
           (page.page_properties || []).forEach((prop: any) => {
             properties[prop.field_id] = prop.value || '';
           });
-          
           return {
             pageId: page.id,
             title: page.title || 'Untitled',
@@ -77,17 +68,16 @@ export function useKanbanData({
         });
         
         setPages(transformedPages);
+
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to fetch pages');
+        setError(err instanceof Error ? err.message : 'Failed to fetch data');
       } finally {
         setLoading(false);
       }
     };
 
-    if (fields.length > 0) {
-      fetchPages();
-    }
-  }, [databaseId, fields, filterGroup, sortRules]);
+    fetchData();
+  }, [databaseId, filterGroup, sortRules]);
 
   // Create columns based on selected field options
   useEffect(() => {
