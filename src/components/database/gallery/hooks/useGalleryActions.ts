@@ -16,7 +16,7 @@ export function useGalleryActions(workspaceId: string, databaseId: string) {
       const { data, error } = await PageService.createPage(
         workspaceId,
         user.id,
-        { title: 'Untitled', databaseId }
+        { properties: { title: 'Untitled', database_id: databaseId } }
       );
       
       if (error) {
