@@ -5,25 +5,21 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useOptimisticPropertyValueUpdate } from '@/hooks/useOptimisticPropertyValueUpdate';
 import { toast } from '@/hooks/use-toast';
 import { DatabaseField } from '@/types/database';
-import { PageWithProperties, KanbanColumn } from '../types';
+import { PageWithProperties } from '../types';
 
 interface UseKanbanDragDropProps {
   fields: DatabaseField[];
   pages: PageWithProperties[];
-  columns: KanbanColumn[];
   selectField: DatabaseField | null;
   databaseId: string;
-  setColumns: (columns: KanbanColumn[]) => void;
   setPages: React.Dispatch<React.SetStateAction<PageWithProperties[]>>;
 }
 
 export function useKanbanDragDrop({
   fields,
   pages,
-  columns,
   selectField,
   databaseId,
-  setColumns,
   setPages
 }: UseKanbanDragDropProps) {
   const { user } = useAuth();
@@ -46,71 +42,22 @@ export function useKanbanDragDrop({
     const sourceColumnId = source.droppableId;
     const destColumnId = destination.droppableId;
     
-    // Determine the new property value based on field type and destination column
-    let newValue = '';
-    if (destColumnId !== 'no-status') {
-      const destColumn = columns.find(col => col.id === destColumnId);
-      if (destColumn) {
-        if (selectField.type === 'status') {
-          // For status fields, use the column ID (which is the option ID)
-          newValue = destColumn.id;
-        } else {
-          // For select fields, use the column title (which is the option name)
-          newValue = destColumn.title;
-        }
-      }
-    }
-
-    // Find the page being moved
     const movedPage = pages.find(page => page.pageId === pageId);
     if (!movedPage) return;
 
+    let newValue = '';
+    if (selectField.type === 'select' || selectField.type === 'status') {
+      newValue = destColumnId === 'no-status' ? '' : destColumnId;
+    } else if (selectField.type === 'multi_select') {
+      // For multi-select, a simple approach is to set the value to the destination column
+      // A more complex implementation could modify the array of selections
+      newValue = destColumnId === 'no-status' ? '[]' : JSON.stringify([destColumnId]);
+    }
+
     // Store original state for rollback
-    const originalColumns = [...columns];
     const originalPages = [...pages];
 
-    // Optimistic update: Update local state immediately
-    const updatedColumns = columns.map(column => {
-      // Remove page from source column
-      if (column.id === sourceColumnId) {
-        return {
-          ...column,
-          pages: column.pages.filter(page => page.pageId !== pageId),
-        };
-      }
-      
-      // Add page to destination column at the correct position
-      if (column.id === destColumnId) {
-        const newPages = [...column.pages];
-        const updatedMovedPage = {
-          ...movedPage,
-          properties: {
-            ...movedPage.properties,
-            [selectField.id]: newValue,
-          },
-          pos: destination.index,
-        };
-        
-        newPages.splice(destination.index, 0, updatedMovedPage);
-        
-        // Update positions for all pages in the new arrangement
-        newPages.forEach((page, index) => {
-          page.pos = index;
-        });
-        
-        return {
-          ...column,
-          pages: newPages,
-        };
-      }
-
-      return column;
-    });
-
-    // Update local state optimistically
-    setColumns(updatedColumns);
-
-    // Update the moved page's properties in local state
+    // Optimistic update of pages. The columns will be re-calculated by the useEffect in useKanbanData.
     setPages(prevPages => prevPages.map(page => 
       page.pageId === pageId 
         ? {
@@ -119,7 +66,6 @@ export function useKanbanDragDrop({
               ...page.properties,
               [selectField.id]: newValue,
             },
-            pos: destination.index,
           }
         : page
     ));
@@ -135,7 +81,6 @@ export function useKanbanDragDrop({
         onError: (error) => {
           console.error('Failed to update property:', error);
           // Revert optimistic update on error
-          setColumns(originalColumns);
           setPages(originalPages);
           
           toast({
@@ -154,7 +99,7 @@ export function useKanbanDragDrop({
       }
     );
 
-  }, [selectField, user, columns, pages, setColumns, setPages, propertyUpdateMutation, fields, databaseId]);
+  }, [selectField, user, pages, setPages, propertyUpdateMutation, fields, databaseId]);
 
   return { handleDragEnd };
 }

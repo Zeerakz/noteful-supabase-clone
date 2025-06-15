@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Kanban } from 'lucide-react';
 import { DragDropContext } from 'react-beautiful-dnd';
@@ -50,10 +49,8 @@ export function DatabaseKanbanView({
   const { handleDragEnd } = useKanbanDragDrop({
     fields: allFields,
     pages,
-    columns,
     selectField: selectedField,
     databaseId,
-    setColumns,
     setPages
   });
 

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { DatabaseFieldService } from '@/services/database/databaseFieldService';
 import { DatabaseQueryService } from '@/services/database/databaseQueryService';
@@ -129,8 +130,18 @@ export function useKanbanData({
         .filter(page => {
           const fieldValue = page.properties[selectedField.id];
           if (column.id === 'no-status') {
-            return !fieldValue || fieldValue.trim() === '';
+            return !fieldValue || fieldValue.trim() === '' || fieldValue === '[]';
           }
+          
+          if (selectedField.type === 'multi_select') {
+            try {
+              const values = JSON.parse(fieldValue || '[]');
+              return Array.isArray(values) && values.includes(column.id);
+            } catch (e) {
+              return fieldValue === column.id;
+            }
+          }
+
           // The stored value is the option ID.
           return fieldValue === column.id;
         })
