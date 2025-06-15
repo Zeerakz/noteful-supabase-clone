@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { WorkspaceRole } from '@/types/db';
 
@@ -25,6 +24,24 @@ export class InvitationService {
       return { 
         error: err instanceof Error ? err.message : 'Failed to send invitation',
         success: false 
+      };
+    }
+  }
+
+  static async acceptInvitation(token: string): Promise<{ error: string | null; data?: any }> {
+    try {
+      const { data, error } = await supabase.functions.invoke('accept-invitation', {
+        body: { token }
+      });
+
+      if (error) throw error;
+      if (data.error) throw new Error(data.error);
+
+      return { error: null, data };
+    } catch (err) {
+      return { 
+        error: err instanceof Error ? err.message : 'Failed to accept invitation',
+        data: null 
       };
     }
   }
