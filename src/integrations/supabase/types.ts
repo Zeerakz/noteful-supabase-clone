@@ -1375,6 +1375,10 @@ export type Database = {
         Args: { p_page_id: string; p_database_id: string }
         Returns: undefined
       }
+      update_block_teamspace_recursive: {
+        Args: { p_block_id: string; p_teamspace_id: string }
+        Returns: undefined
+      }
       validate_formula_field_settings: {
         Args: { settings: Json }
         Returns: boolean
