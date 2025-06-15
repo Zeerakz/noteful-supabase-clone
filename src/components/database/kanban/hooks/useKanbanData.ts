@@ -51,19 +51,19 @@ export function useKanbanData({
           sortRules
         );
         
-        if (pagesError) throw new Error(pagesError);
+        if (pagesError) throw new Error(pagesError.message);
         
         // 3. Transform pages.
         const transformedPages: PageWithProperties[] = (pagesData || []).map((page: any) => {
           const properties: Record<string, string> = {};
-          (page.page_properties || []).forEach((prop: any) => {
-            properties[prop.field_id] = prop.value || '';
+          (page.property_values || []).forEach((prop: { property_id: string; value: string; }) => {
+            properties[prop.property_id] = prop.value || '';
           });
           return {
             pageId: page.id,
-            title: page.title || 'Untitled',
+            title: page.properties?.title || 'Untitled',
             properties,
-            pos: page.order_index || 0,
+            pos: page.pos || 0,
           };
         });
         

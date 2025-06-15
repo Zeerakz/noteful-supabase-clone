@@ -26,9 +26,13 @@ export function useKanbanDragDrop({
   const propertyUpdateMutation = useOptimisticPropertyValueUpdate(databaseId);
 
   const handleDragEnd = useCallback(async (result: DropResult) => {
+    console.log('[Kanban] DragEnd triggered', result);
     const { destination, source, draggableId } = result;
 
-    if (!destination || !selectField || !user) return;
+    if (!destination || !selectField || !user) {
+      console.warn('[Kanban] Drag aborted', { hasDestination: !!destination, hasSelectField: !!selectField, hasUser: !!user });
+      return;
+    }
 
     // If dropped in the same position, do nothing
     if (
@@ -43,7 +47,10 @@ export function useKanbanDragDrop({
     const destColumnId = destination.droppableId;
     
     const movedPage = pages.find(page => page.pageId === pageId);
-    if (!movedPage) return;
+    if (!movedPage) {
+      console.error('[Kanban] Dragged page not found in state', { pageId });
+      return;
+    }
 
     let newValue = '';
     if (selectField.type === 'select' || selectField.type === 'status') {
@@ -53,6 +60,8 @@ export function useKanbanDragDrop({
       // A more complex implementation could modify the array of selections
       newValue = destColumnId === 'no-status' ? '[]' : JSON.stringify([destColumnId]);
     }
+
+    console.log('[Kanban] Attempting to move card', { pageId, propertyId: selectField.id, newValue });
 
     // Store original state for rollback
     const originalPages = [...pages];
@@ -79,7 +88,7 @@ export function useKanbanDragDrop({
       },
       {
         onError: (error) => {
-          console.error('Failed to update property:', error);
+          console.error('[Kanban] Failed to update property via mutation:', error);
           // Revert optimistic update on error
           setPages(originalPages);
           
@@ -90,7 +99,7 @@ export function useKanbanDragDrop({
           });
         },
         onSuccess: () => {
-          console.log('Card moved successfully');
+          console.log('[Kanban] Card move mutation successful');
           toast({
             title: "Success",
             description: "Card moved successfully",
