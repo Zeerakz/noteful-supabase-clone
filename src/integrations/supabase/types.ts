@@ -813,10 +813,10 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "page_properties_page_id_fkey"
+            foreignKeyName: "property_values_page_id_fkey"
             columns: ["page_id"]
             isOneToOne: false
-            referencedRelation: "legacy_pages"
+            referencedRelation: "blocks"
             referencedColumns: ["id"]
           },
           {
