@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -87,30 +86,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signUp = async (email: string, password: string) => {
-    console.log('Attempting sign up for:', email);
-    
-    // Use the current origin for redirect
-    const redirectUrl = window.location.origin;
-    console.log('Redirect URL:', redirectUrl);
-    
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: redirectUrl,
-        data: {
-          email_confirm: true
-        }
-      }
+    console.log('Attempting custom sign up for:', email);
+
+    // Step 1: Call our new edge function to create a user that is already confirmed.
+    const { data: signupData, error: signupError } = await supabase.functions.invoke('custom-signup', {
+      body: { email, password }
     });
 
-    console.log('Sign up response:', { data, error });
+    if (signupError) {
+      console.error('Custom signup function invocation error:', signupError);
+      return { error: signupError, needsConfirmation: false };
+    }
 
-    // Check if user needs email confirmation
-    const needsConfirmation = data.user && !data.session;
-    console.log('Needs confirmation:', needsConfirmation);
+    if (signupData.error) {
+      console.error('Custom signup function execution error:', signupData.error);
+      return { error: new Error(signupData.error), needsConfirmation: false };
+    }
     
-    return { error, needsConfirmation };
+    console.log('Custom signup successful, user created. Now signing in automatically.');
+
+    // Step 2: Sign in the newly created user.
+    const { error: signinError } = await signIn(email, password);
+
+    if (signinError) {
+      console.error('Auto sign-in after custom signup failed:', signinError);
+      // This is an edge case. The account is created, but login fails.
+      // We can inform the user to try logging in manually.
+      return { error: new Error('Account created successfully. Please sign in to continue.'), needsConfirmation: true };
+    }
+    
+    console.log('Auto sign-in successful.');
+    // The user is created and signed in, no confirmation needed.
+    return { error: null, needsConfirmation: false };
   };
 
   const resendConfirmation = async (email: string) => {
