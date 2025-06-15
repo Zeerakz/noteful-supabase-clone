@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { DatabaseField } from '@/types/database';
 import { SelectFieldEditor } from './SelectFieldEditor';
@@ -8,6 +7,7 @@ import { RollupFieldDisplay } from './RollupFieldDisplay';
 import { SystemPropertyEditor } from '@/components/property/field-editors/SystemPropertyEditor';
 import { ButtonFieldEditor } from '@/components/property/field-editors/ButtonFieldEditor';
 import { isSystemProperty } from '@/types/systemProperties';
+import { StatusFieldEditor } from '@/components/property/field-editors/StatusFieldEditor';
 
 interface FieldEditorProps {
   field: DatabaseField;
@@ -112,10 +112,13 @@ export function FieldEditor({
     
     case 'status':
       return (
-        <SelectFieldEditor
+        <StatusFieldEditor
           value={value}
           onChange={onChange}
-          settings={field.settings}
+          config={field.settings}
+          field={field}
+          workspaceId={workspaceId}
+          pageId={pageId}
         />
       );
 

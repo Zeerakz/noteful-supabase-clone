@@ -6,7 +6,8 @@ import { RollupFieldConfig } from './RollupFieldConfig';
 import { RelationFieldConfig } from './RelationFieldConfig';
 import { SelectFieldConfig } from './SelectFieldConfig';
 import { NumberPropertyConfigEditor } from '@/components/property/config-editors/NumberPropertyConfigEditor';
-import { NumberPropertyConfig } from '@/types/property';
+import { NumberPropertyConfig, StatusPropertyConfig } from '@/types/property';
+import { StatusPropertyConfigEditor } from '@/components/property/config-editors/StatusPropertyConfigEditor';
 
 interface FieldConfigurationPanelProps {
   fieldType: FieldType;
@@ -62,6 +63,14 @@ export function FieldConfigurationPanel({
           />
         );
       
+      case 'status':
+        return (
+          <StatusPropertyConfigEditor
+            config={settings as StatusPropertyConfig}
+            onConfigChange={onSettingsChange}
+          />
+        );
+
       case 'number':
         return (
           <NumberPropertyConfigEditor
