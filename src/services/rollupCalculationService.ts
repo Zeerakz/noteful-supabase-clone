@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { DatabaseField, RollupFieldSettings, RelationFieldSettings } from '@/types/database';
 
@@ -29,24 +28,19 @@ export class RollupCalculationService {
         return { value: null, error: 'Target database not configured' };
       }
 
-      // Get the current page's relation value
-      const { data: currentPageProperty, error: relationValueError } = await supabase
-        .from('property_values')
-        .select('value')
-        .eq('page_id', pageId)
-        .eq('property_id', settings.relation_field_id)
-        .single();
+      // Get related page IDs from the page_relations table
+      const { data: relationData, error: relationError } = await supabase
+        .from('page_relations')
+        .select('to_page_id')
+        .eq('from_page_id', pageId)
+        .eq('relation_property_id', settings.relation_field_id);
+
+      if (relationError) {
+        return { value: null, error: relationError.message };
+      }
+
+      const relatedPageIds = relationData.map(r => r.to_page_id);
         
-      if(relationValueError) {
-        return { value: null, error: relationValueError.message };
-      }
-
-      if (!currentPageProperty?.value) {
-        return { value: this.getDefaultValue(settings.aggregation), error: null };
-      }
-
-      // Parse related page IDs
-      const relatedPageIds = currentPageProperty.value.split(',').filter(Boolean);
       if (relatedPageIds.length === 0) {
         return { value: this.getDefaultValue(settings.aggregation), error: null };
       }

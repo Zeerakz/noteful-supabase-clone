@@ -1,9 +1,13 @@
 
-import React from 'react';
-import { RollupPropertyConfig, Property } from '@/types/property';
+import React, { useState, useEffect } from 'react';
+import { RollupPropertyConfig, Property, PropertyType, RelationProperty } from '@/types/property';
+import { DatabaseField, FieldType } from '@/types/database';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { supabase } from '@/integrations/supabase/client';
+import { Calculator, Link, Target, AlertCircle } from 'lucide-react';
 
 interface RollupPropertyConfigEditorProps {
   config: any;
@@ -11,92 +15,169 @@ interface RollupPropertyConfigEditorProps {
   availableProperties?: Property[];
 }
 
+type AggregationType = 'sum' | 'count' | 'average' | 'min' | 'max' | 'earliest' | 'latest' | 'unique';
+
+interface PropertyOption {
+  id: string;
+  name: string;
+  type: PropertyType | FieldType | 'system';
+}
+
 export function RollupPropertyConfigEditor({ config, onConfigChange, availableProperties = [] }: RollupPropertyConfigEditorProps) {
   const rollupConfig = config as RollupPropertyConfig;
+
+  const [targetProperties, setTargetProperties] = useState<PropertyOption[]>([]);
+  const [selectedRelation, setSelectedRelation] = useState<RelationProperty | null>(null);
+
+  const relationProperties = availableProperties.filter(prop => prop.type === 'relation') as RelationProperty[];
+
+  useEffect(() => {
+    const fetchTargetProperties = async () => {
+      if (!rollupConfig.relationFieldId) {
+        setTargetProperties([]);
+        setSelectedRelation(null);
+        return;
+      }
+
+      const relation = relationProperties.find(p => p.id === rollupConfig.relationFieldId);
+      if (!relation) return;
+
+      setSelectedRelation(relation);
+      const targetDbId = relation.config.targetDatabaseId;
+
+      if (!targetDbId) {
+        setTargetProperties([]);
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from('database_properties')
+          .select('id, name, type')
+          .eq('database_id', targetDbId);
+
+        if (error) throw new Error(error.message);
+        
+        const fields = data as DatabaseField[];
+
+        const properties: PropertyOption[] = [
+          { id: 'count', name: 'Count of all related pages', type: 'system' },
+          ...(fields || []).map(field => ({
+            id: field.id,
+            name: field.name,
+            type: field.type,
+          })),
+        ];
+        setTargetProperties(properties);
+      } catch (err) {
+        console.error('Error fetching target database properties:', err);
+        setTargetProperties([]);
+      }
+    };
+
+    fetchTargetProperties();
+  }, [rollupConfig.relationFieldId, relationProperties]);
 
   const updateConfig = (updates: Partial<RollupPropertyConfig>) => {
     onConfigChange({ ...rollupConfig, ...updates });
   };
+  
+  const handleRelationChange = (value: string) => {
+    updateConfig({ relationFieldId: value, targetPropertyId: '' });
+  };
 
-  const relationProperties = availableProperties.filter(prop => prop.type === 'relation');
+  const getAvailableAggregations = (propertyType: PropertyOption['type']): { value: AggregationType; label: string }[] => {
+    switch (propertyType) {
+      case 'number':
+      case 'currency':
+      case 'progress':
+      case 'rating':
+        return [
+          { value: 'sum', label: 'Sum' },
+          { value: 'average', label: 'Average' },
+          { value: 'min', label: 'Minimum' },
+          { value: 'max', label: 'Maximum' },
+          { value: 'count', label: 'Count values' },
+          { value: 'unique', label: 'Count unique values' },
+        ];
+      case 'date':
+      case 'datetime':
+      case 'created_time':
+      case 'last_edited_time':
+        return [
+          { value: 'earliest', label: 'Earliest' },
+          { value: 'latest', label: 'Latest' },
+          { value: 'count', label: 'Count values' },
+        ];
+      case 'system': // 'Count of all related pages'
+        return [{ value: 'count', label: 'Count all' }];
+      default:
+        return [
+          { value: 'count', label: 'Count values' },
+          { value: 'unique', label: 'Count unique values' },
+        ];
+    }
+  };
+
+  const selectedProperty = targetProperties.find(p => p.id === rollupConfig.targetPropertyId);
+  const availableAggregations = selectedProperty ? getAvailableAggregations(selectedProperty.type) : [];
+
+  useEffect(() => {
+    if (selectedProperty && !availableAggregations.find(agg => agg.value === rollupConfig.aggregation)) {
+      updateConfig({ aggregation: availableAggregations[0]?.value || 'count' });
+    }
+  }, [selectedProperty, rollupConfig.aggregation]);
 
   return (
-    <div className="space-y-4">
-      <div className="space-y-2">
-        <Label htmlFor="relationField">Relation Field</Label>
-        <Select value={rollupConfig.relationFieldId || ''} onValueChange={(value) => updateConfig({ relationFieldId: value })}>
-          <SelectTrigger>
-            <SelectValue placeholder="Select a relation field" />
-          </SelectTrigger>
-          <SelectContent>
-            {relationProperties.map((property) => (
-              <SelectItem key={property.id} value={property.id}>
-                {property.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <p className="text-xs text-muted-foreground">
-          Select the relation field that connects to the target database.
-        </p>
-      </div>
+    <div className="space-y-6">
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm flex items-center gap-2"><Link className="h-4 w-4" />Step 1: Choose Relation</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Select value={rollupConfig.relationFieldId || ''} onValueChange={handleRelationChange}>
+            <SelectTrigger><SelectValue placeholder="Select a relation..." /></SelectTrigger>
+            <SelectContent>
+              {relationProperties.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          {relationProperties.length === 0 && (
+            <Alert className="mt-2"><AlertCircle className="h-4 w-4" /><AlertDescription>No relation properties found. Add a relation first.</AlertDescription></Alert>
+          )}
+        </CardContent>
+      </Card>
 
-      <div className="space-y-2">
-        <Label htmlFor="targetProperty">Target Property</Label>
-        <Select value={rollupConfig.targetPropertyId || ''} onValueChange={(value) => updateConfig({ targetPropertyId: value })}>
-          <SelectTrigger>
-            <SelectValue placeholder="Select target property" />
-          </SelectTrigger>
-          <SelectContent>
-            {/* This would be populated based on the selected relation field's target database */}
-            <SelectItem value="placeholder">Select relation field first</SelectItem>
-          </SelectContent>
-        </Select>
-        <p className="text-xs text-muted-foreground">
-          Select the property from the related database to aggregate.
-        </p>
-      </div>
+      {selectedRelation && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm flex items-center gap-2"><Target className="h-4 w-4" />Step 2: Choose Property</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Select value={rollupConfig.targetPropertyId || ''} onValueChange={(value) => updateConfig({ targetPropertyId: value })}>
+              <SelectTrigger><SelectValue placeholder="Select a property to roll up..." /></SelectTrigger>
+              <SelectContent>
+                {targetProperties.map(p => <SelectItem key={p.id} value={p.id}>{p.name} ({p.type})</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </CardContent>
+        </Card>
+      )}
 
-      <div className="space-y-2">
-        <Label htmlFor="aggregation">Aggregation Function</Label>
-        <Select value={rollupConfig.aggregation || 'count'} onValueChange={(value) => updateConfig({ aggregation: value as any })}>
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="count">Count</SelectItem>
-            <SelectItem value="sum">Sum</SelectItem>
-            <SelectItem value="average">Average</SelectItem>
-            <SelectItem value="min">Minimum</SelectItem>
-            <SelectItem value="max">Maximum</SelectItem>
-            <SelectItem value="earliest">Earliest (Date)</SelectItem>
-            <SelectItem value="latest">Latest (Date)</SelectItem>
-            <SelectItem value="unique">Count Unique</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
-      <div className="space-y-2">
-        <Label>Aggregation Examples</Label>
-        <div className="space-y-1 text-xs text-muted-foreground">
-          <div><strong>Count:</strong> Number of related records</div>
-          <div><strong>Sum:</strong> Total of all number values</div>
-          <div><strong>Average:</strong> Average of all number values</div>
-          <div><strong>Min/Max:</strong> Smallest/largest value</div>
-          <div><strong>Earliest/Latest:</strong> First/last date chronologically</div>
-        </div>
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="description">Description</Label>
-        <Textarea
-          id="description"
-          value={rollupConfig.description || ''}
-          onChange={(e) => updateConfig({ description: e.target.value })}
-          placeholder="Enter field description"
-          rows={2}
-        />
-      </div>
+      {selectedProperty && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm flex items-center gap-2"><Calculator className="h-4 w-4" />Step 3: Choose Calculation</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Select value={rollupConfig.aggregation || 'count'} onValueChange={(value) => updateConfig({ aggregation: value as AggregationType })}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {availableAggregations.map(agg => <SelectItem key={agg.value} value={agg.value}>{agg.label}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

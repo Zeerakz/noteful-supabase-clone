@@ -1,9 +1,10 @@
-import React, { useEffect, useState } from 'react';
+
+import React from 'react';
 import { DatabaseField } from '@/types/database';
-import { BatchedRollupService } from '@/services/batchedRollupService';
 import { Calculator, Loader2, AlertCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { useLazyRollupCalculation } from '@/hooks/useLazyRollupCalculation';
 
 interface RollupFieldDisplayProps {
   field: DatabaseField;
@@ -22,47 +23,26 @@ export function RollupFieldDisplay({
   allFields, 
   className = '' 
 }: RollupFieldDisplayProps) {
-  const [calculatedValue, setCalculatedValue] = useState<string | null>(computedValue || null);
-  const [isCalculating, setIsCalculating] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { 
+    value: calculatedValue, 
+    isLoading: isCalculating, 
+    error 
+  } = useLazyRollupCalculation({
+    pageId: pageId,
+    field: field,
+    allFields: allFields,
+    isVisible: true, // In this context, we assume it's always visible
+    priority: 'normal',
+  });
 
-  // Use the new batched service for calculations
-  useEffect(() => {
-    const calculateValue = async () => {
-      if (!pageId || !field.id || computedValue) return;
-
-      setIsCalculating(true);
-      setError(null);
-
-      try {
-        const { value: newValue, error: calcError } = await BatchedRollupService.queueRollupCalculation(
-          pageId,
-          field,
-          allFields
-        );
-
-        if (calcError) {
-          setError(calcError);
-        } else {
-          setCalculatedValue(newValue);
-        }
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Calculation failed');
-      } finally {
-        setIsCalculating(false);
-      }
-    };
-
-    calculateValue();
-  }, [pageId, field, allFields, computedValue]);
+  const displayValue = computedValue || calculatedValue;
 
   const formatDisplayValue = (val: string | null): string => {
-    if (!val) return '—';
+    if (val === null || val === undefined) return '—';
     
     // Try to parse as number for formatting
     const numValue = parseFloat(val);
     if (!isNaN(numValue)) {
-      // Format numbers nicely
       if (numValue === Math.floor(numValue)) {
         return numValue.toString();
       } else {
@@ -98,7 +78,7 @@ export function RollupFieldDisplay({
               ) : (
                 <>
                   <Calculator className="h-3 w-3 mr-1" />
-                  {formatDisplayValue(calculatedValue)}
+                  {formatDisplayValue(displayValue)}
                 </>
               )}
             </Badge>
@@ -114,9 +94,9 @@ export function RollupFieldDisplay({
                 <p className="text-muted-foreground">
                   Rollup calculation: {field.settings?.aggregation || 'unknown'}
                 </p>
-                {calculatedValue && (
+                {displayValue && (
                   <p className="font-mono text-xs mt-1">
-                    Raw value: {calculatedValue}
+                    Raw value: {displayValue}
                   </p>
                 )}
               </>
