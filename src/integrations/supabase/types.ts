@@ -1367,6 +1367,10 @@ export type Database = {
           rank: number
         }[]
       }
+      is_in_shared_workspace: {
+        Args: { user_to_check_id: string }
+        Returns: boolean
+      }
       is_small_workspace: {
         Args: { workspace_uuid: string }
         Returns: boolean
