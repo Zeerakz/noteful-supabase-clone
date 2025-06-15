@@ -1,5 +1,3 @@
-
-```typescript
 import React, { useState } from 'react';
 import { useForm, SubmitHandler, Controller } from 'react-hook-form';
 import { useTeamspaces, TeamspaceAccessLevel } from '@/hooks/useTeamspaces';
@@ -10,8 +8,8 @@ import { Plus, Loader2, Users, Lock, Unlock, Compass } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { TeamspaceMembersManager } from './TeamspaceMembersManager';
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Label } from "@/components/ui/label"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
 import { DiscoverTeamspacesModal } from './DiscoverTeamspacesModal';
 
 interface TeamspaceManagementTabProps {
@@ -149,4 +147,3 @@ export function TeamspaceManagementTab({ workspaceId }: TeamspaceManagementTabPr
     </div>
   );
 }
-```

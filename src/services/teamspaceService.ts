@@ -1,5 +1,3 @@
-
-```typescript
 import { supabase } from '@/integrations/supabase/client';
 import { Teamspace, TeamspaceMember, TeamspaceAccessLevel, TeamspaceMemberRole, DiscoverableTeamspace } from '@/types/teamspace';
 
@@ -111,4 +109,3 @@ export const TeamspaceService = {
       return { error: null };
   },
 };
-```
