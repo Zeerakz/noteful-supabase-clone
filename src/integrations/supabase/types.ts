@@ -1274,6 +1274,14 @@ export type Database = {
         Args: { p_block_id: string; p_user_id: string }
         Returns: boolean
       }
+      check_teamspace_membership_with_role: {
+        Args: {
+          p_teamspace_id: string
+          p_user_id: string
+          p_required_roles?: Database["public"]["Enums"]["teamspace_member_role"][]
+        }
+        Returns: boolean
+      }
       check_workspace_membership: {
         Args: {
           p_workspace_id: string
