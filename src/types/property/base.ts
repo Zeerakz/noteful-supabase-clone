@@ -33,7 +33,8 @@ export type PropertyType =
   | 'created_by'
   | 'last_edited_time'
   | 'last_edited_by'
-  | 'id';
+  | 'id'
+  | 'unsupported';
 
 // Base config interface that all property configs extend
 export interface BasePropertyConfig {

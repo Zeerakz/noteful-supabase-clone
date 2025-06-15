@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { Info } from 'lucide-react';
@@ -81,3 +80,32 @@ export function GentleError({
   );
 }
 
+interface GentleFieldErrorProps {
+  children: React.ReactNode;
+  error?: string;
+  suggestion?: string;
+  fieldName?: string;
+}
+
+export function GentleFieldError({
+  children,
+  error,
+  suggestion,
+  fieldName,
+}: GentleFieldErrorProps) {
+  if (!error) {
+    return <>{children}</>;
+  }
+
+  return (
+    <div className="space-y-1.5">
+      {children}
+      <GentleError
+        type="validation"
+        message={error}
+        suggestion={suggestion}
+        field={fieldName}
+      />
+    </div>
+  );
+}
