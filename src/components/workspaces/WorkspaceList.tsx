@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, Settings, Users, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -22,6 +21,12 @@ export function WorkspaceList() {
   const { user, signOut } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!loading && !error && workspaces.length === 1) {
+      navigate(`/workspace/${workspaces[0].id}`, { replace: true });
+    }
+  }, [workspaces, loading, error, navigate]);
 
   const handleCreateWorkspace = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -96,6 +101,15 @@ export function WorkspaceList() {
             <Button variant="outline" onClick={handleSignOut}>Sign Out</Button>
           </div>
         </div>
+      </div>
+    );
+  }
+
+  // If there's only one workspace, show a redirecting message while the effect runs.
+  if (workspaces.length === 1 && !loading && !error) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-lg">Redirecting to your workspace...</div>
       </div>
     );
   }
