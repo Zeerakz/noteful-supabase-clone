@@ -9,6 +9,54 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      block_permissions: {
+        Row: {
+          block_id: string
+          created_at: string | null
+          granted_by: string | null
+          grantee_type: Database["public"]["Enums"]["grantee_type"]
+          group_id: string | null
+          id: string
+          permission_level: Database["public"]["Enums"]["block_permission_level"]
+          user_id: string | null
+        }
+        Insert: {
+          block_id: string
+          created_at?: string | null
+          granted_by?: string | null
+          grantee_type: Database["public"]["Enums"]["grantee_type"]
+          group_id?: string | null
+          id?: string
+          permission_level: Database["public"]["Enums"]["block_permission_level"]
+          user_id?: string | null
+        }
+        Update: {
+          block_id?: string
+          created_at?: string | null
+          granted_by?: string | null
+          grantee_type?: Database["public"]["Enums"]["grantee_type"]
+          group_id?: string | null
+          id?: string
+          permission_level?: Database["public"]["Enums"]["block_permission_level"]
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "block_permissions_block_id_fkey"
+            columns: ["block_id"]
+            isOneToOne: false
+            referencedRelation: "blocks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "block_permissions_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       blocks: {
         Row: {
           archived: boolean
@@ -1177,6 +1225,7 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "editor" | "viewer"
+      block_permission_level: "view" | "comment" | "edit" | "full_access"
       block_type_enum:
         | "page"
         | "database"
@@ -1193,6 +1242,7 @@ export type Database = {
         | "quote"
         | "divider"
         | "callout"
+      grantee_type: "user" | "group"
       presence_activity_enum: "editing" | "commenting" | "viewing"
       property_type_enum:
         | "text"
@@ -1334,6 +1384,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "editor", "viewer"],
+      block_permission_level: ["view", "comment", "edit", "full_access"],
       block_type_enum: [
         "page",
         "database",
@@ -1351,6 +1402,7 @@ export const Constants = {
         "divider",
         "callout",
       ],
+      grantee_type: ["user", "group"],
       presence_activity_enum: ["editing", "commenting", "viewing"],
       property_type_enum: [
         "text",

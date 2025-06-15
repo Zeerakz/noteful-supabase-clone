@@ -13,6 +13,7 @@ import { useWorkspaces } from '@/hooks/useWorkspaces';
 import { usePresence } from '@/hooks/usePresence';
 import { useEnhancedBlocks } from '@/hooks/useEnhancedBlocks';
 import { useToast } from '@/hooks/use-toast';
+import { useBlockPermissions } from '@/hooks/useBlockPermissions';
 
 export function PageEditor() {
   const { workspaceId, pageId } = useParams<{ workspaceId: string; pageId: string }>();
@@ -30,6 +31,7 @@ export function PageEditor() {
   const { activeUsers, loading: presenceLoading } = usePresence(pageId);
   const { blocks, hasOptimisticChanges: hasBlockChanges } = useEnhancedBlocks(pageId, workspaceId);
   const { updatePage, hasOptimisticChanges: hasPageChanges } = useEnhancedPages(workspaceId);
+  const { permissions, loading: permissionsLoading } = useBlockPermissions(pageId, workspaceId);
 
   useEffect(() => {
     if (pageData) {
@@ -43,7 +45,7 @@ export function PageEditor() {
     return <Navigate to="/" replace />;
   }
 
-  if (pageLoading || workspacesLoading) {
+  if (pageLoading || workspacesLoading || permissionsLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-lg">Loading...</div>
@@ -60,7 +62,7 @@ export function PageEditor() {
 
   // For now, we'll assume users can edit if they have access to the page
   // This should be enhanced with proper role checking
-  const isEditable = true;
+  const isEditable = permissions.canEdit;
 
   const handleBack = () => {
     navigate(`/workspace/${workspaceId}`);
@@ -167,7 +169,7 @@ export function PageEditor() {
               
               <div className="flex items-center gap-3">
                 {/* Save as Template button */}
-                {blocks.length > 0 && (
+                {isEditable && blocks.length > 0 && (
                   <SaveAsTemplateDialog
                     pageId={page.id}
                     workspaceId={workspaceId!}

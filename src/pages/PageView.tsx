@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useParams, Navigate, useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
@@ -11,6 +10,7 @@ import { useStablePropertyValues } from '@/hooks/useStablePropertyValues';
 import { useUserProfiles } from '@/hooks/useUserProfiles';
 import { errorHandler } from '@/utils/errorHandler';
 import { ErrorBoundary } from '@/components/error/ErrorBoundary';
+import { useBlockPermissions } from '@/hooks/useBlockPermissions';
 
 function PageViewContent() {
   const { pageId } = useParams<{ pageId: string }>();
@@ -21,6 +21,7 @@ function PageViewContent() {
   const { properties, loading: propertiesLoading, error: propertiesError, updateProperty, retry: retryProperties } = useStablePropertyValues(pageId);
   const { userProfiles } = useUserProfiles(pageData?.workspace?.id);
   const { fields, loading: fieldsLoading } = useDatabaseFields(pageData?.properties.database_id);
+  const { permissions, loading: permissionsLoading } = useBlockPermissions(pageId, pageData?.workspace?.id);
 
   const handlePropertyUpdate = async (fieldId: string, value: any) => {
     try {
@@ -51,7 +52,7 @@ function PageViewContent() {
   };
 
   // Loading state
-  if (pageLoading || propertiesLoading || fieldsLoading) {
+  if (pageLoading || propertiesLoading || fieldsLoading || permissionsLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-lg">Loading page...</div>
@@ -88,6 +89,8 @@ function PageViewContent() {
     acc[property.property_id] = property.value ?? property.computed_value;
     return acc;
   }, {} as Record<string, any>);
+
+  const isEditable = permissions.canEdit;
 
   return (
     <div className="min-h-screen bg-background">
@@ -130,7 +133,7 @@ function PageViewContent() {
               pageId={pageData.id}
               workspaceId={pageData.workspace.id}
               onPropertyUpdate={handlePropertyUpdate}
-              isEditable={true}
+              isEditable={isEditable}
               pageData={pageData}
               userProfiles={userProfiles}
             />
@@ -151,7 +154,7 @@ function PageViewContent() {
             </div>
           }
         >
-          <BlockEditor pageId={pageData.id} isEditable={true} workspaceId={pageData.workspace.id} />
+          <BlockEditor pageId={pageData.id} isEditable={isEditable} workspaceId={pageData.workspace.id} />
         </ErrorBoundary>
       </div>
     </div>
