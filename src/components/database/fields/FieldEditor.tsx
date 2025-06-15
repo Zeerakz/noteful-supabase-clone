@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { DatabaseField } from '@/types/database';
 import { SelectFieldEditor } from './SelectFieldEditor';
