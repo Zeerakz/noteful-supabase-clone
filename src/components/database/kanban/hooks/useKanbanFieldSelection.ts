@@ -23,18 +23,18 @@ export function useKanbanFieldSelection({ fields }: UseKanbanFieldSelectionProps
 
   console.log('useKanbanFieldSelection: Valid select fields:', selectFields);
 
-  // Auto-select the first available field when fields change
+  // Auto-select the first available field when fields change, prioritizing status fields
   useEffect(() => {
-    if (selectFields.length > 0 && !selectedField) {
-      console.log('useKanbanFieldSelection: Auto-selecting first field:', selectFields[0]);
-      setSelectedField(selectFields[0]);
+    const isCurrentFieldValid = selectedField && selectFields.some(f => f.id === selectedField.id);
+
+    if (!isCurrentFieldValid && selectFields.length > 0) {
+      // Prioritize status field as default
+      const statusField = selectFields.find(f => f.type === 'status');
+      const defaultField = statusField || selectFields[0];
+      console.log('useKanbanFieldSelection: Auto-selecting default field:', defaultField);
+      setSelectedField(defaultField);
     } else if (selectFields.length === 0) {
-      console.log('useKanbanFieldSelection: No valid fields, clearing selection');
       setSelectedField(null);
-    } else if (selectedField && !selectFields.some(f => f.id === selectedField.id)) {
-      // If currently selected field is no longer available, select the first available one
-      console.log('useKanbanFieldSelection: Current field no longer valid, selecting new one:', selectFields[0]);
-      setSelectedField(selectFields[0] || null);
     }
   }, [selectFields, selectedField]);
 

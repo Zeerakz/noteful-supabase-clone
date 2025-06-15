@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { DatabaseFieldService } from '@/services/database/databaseFieldService';
 import { DatabaseQueryService } from '@/services/database/databaseQueryService';
@@ -98,31 +97,33 @@ export function useKanbanData({
 
     let options: Array<{ id: string; name: string; color?: string }> = [];
 
-    // Handle different field types
-    if (['select', 'multi_select'].includes(selectedField.type)) {
-      options = selectedField.settings?.options || [];
-    } else if (selectedField.type === 'status') {
-      // For status fields, flatten options from all groups
+    if (selectedField.type === 'status') {
+      // For status fields, flatten options from all groups to preserve order
       const groups = selectedField.settings?.groups || [];
       options = groups.flatMap((group: any) => group.options || []);
+    } else if (['select', 'multi_select'].includes(selectedField.type)) {
+      options = selectedField.settings?.options || [];
     }
 
     const defaultColumns: KanbanColumn[] = options.map((option: any) => ({
-      id: option.id || option.name?.toLowerCase().replace(/\s+/g, '-'),
-      title: option.name || option.id,
+      id: option.id,
+      title: option.name,
       color: option.color,
       pages: [],
     }));
 
     // Add "No Status" column for pages without a value
-    defaultColumns.unshift({
-      id: 'no-status',
-      title: 'No Status',
-      pages: [],
-    });
+    const finalColumns = [
+      {
+        id: 'no-status',
+        title: 'No Status',
+        pages: [],
+      },
+      ...defaultColumns,
+    ];
 
     // Group pages by selected field value and sort by position
-    const groupedColumns = defaultColumns.map(column => ({
+    const groupedColumns = finalColumns.map(column => ({
       ...column,
       pages: pages
         .filter(page => {
@@ -130,14 +131,8 @@ export function useKanbanData({
           if (column.id === 'no-status') {
             return !fieldValue || fieldValue.trim() === '';
           }
-          
-          // For status fields, match by option ID
-          if (selectedField.type === 'status') {
-            return fieldValue === column.id;
-          }
-          
-          // For select fields, match by option name or ID
-          return fieldValue === column.title || fieldValue === column.id;
+          // The stored value is the option ID.
+          return fieldValue === column.id;
         })
         .sort((a, b) => (a.pos || 0) - (b.pos || 0)),
     }));
