@@ -13,6 +13,7 @@ import { BasicInputFieldEditor } from './editors/BasicInputFieldEditor';
 import { CheckboxFieldEditor } from './editors/CheckboxFieldEditor';
 import { PeopleFieldEditor } from './editors/PeopleFieldEditor';
 import { FormulaFieldDisplay } from './editors/FormulaFieldDisplay';
+import { AiAutofillFieldEditor } from '@/components/property/field-editors/AiAutofillFieldEditor';
 
 interface FieldEditorProps {
   field: DatabaseField;
@@ -68,6 +69,17 @@ export function FieldEditor({
   // Handle formula fields - they are computed and read-only
   if (field.type === 'formula') {
     return <FormulaFieldDisplay computedValue={computedValue} />;
+  }
+  
+  if (field.type === 'ai_autofill') {
+    return (
+      <AiAutofillFieldEditor
+        value={value}
+        config={field.settings || {}}
+        onChange={onChange}
+        pageId={pageId}
+      />
+    );
   }
 
   // Handle button fields

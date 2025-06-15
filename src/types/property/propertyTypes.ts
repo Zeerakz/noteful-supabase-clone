@@ -18,6 +18,7 @@ import type { RatingPropertyConfig } from './configs/rating';
 import type { ProgressPropertyConfig } from './configs/progress';
 import type { CurrencyPropertyConfig } from './configs/currency';
 import type { ButtonPropertyConfig } from './configs/button';
+import type { AiAutofillPropertyConfig } from './configs/aiAutofill';
 
 // Typed property interfaces for each type
 export interface TextProperty extends BaseProperty {
@@ -125,6 +126,11 @@ export interface ButtonProperty extends BaseProperty {
   config: ButtonPropertyConfig;
 }
 
+export interface AiAutofillProperty extends BaseProperty {
+  type: 'ai_autofill';
+  config: AiAutofillPropertyConfig;
+}
+
 // Union type for all specific property types
 export type Property = 
   | TextProperty
@@ -147,4 +153,5 @@ export type Property =
   | RatingProperty
   | ProgressProperty
   | CurrencyProperty
-  | ButtonProperty;
+  | ButtonProperty
+  | AiAutofillProperty;

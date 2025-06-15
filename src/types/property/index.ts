@@ -25,3 +25,4 @@ export * from './configs/rating';
 export * from './configs/progress';
 export * from './configs/currency';
 export * from './configs/button';
+export * from './configs/aiAutofill';

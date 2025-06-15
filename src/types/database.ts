@@ -119,7 +119,8 @@ export type FieldType =
   | 'rich_text'
   | 'rating'
   | 'progress'
-  | 'currency';
+  | 'currency'
+  | 'ai_autofill';
 
 // Settings types for complex fields
 export interface FormulaFieldSettings {

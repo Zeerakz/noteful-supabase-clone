@@ -7,6 +7,8 @@ import { RelationFieldConfig } from './RelationFieldConfig';
 import { SelectFieldConfig } from './SelectFieldConfig';
 import { NumberPropertyConfigEditor } from '@/components/property/config-editors/NumberPropertyConfigEditor';
 import { NumberPropertyConfig, StatusPropertyConfig } from '@/types/property';
+import { AiAutofillPropertyConfig } from '@/types/property/configs/aiAutofill';
+import { AiAutofillPropertyConfigEditor } from '@/components/property/config-editors/AiAutofillPropertyConfigEditor';
 import { StatusPropertyConfigEditor } from '@/components/property/config-editors/StatusPropertyConfigEditor';
 
 interface FieldConfigurationPanelProps {
@@ -75,6 +77,14 @@ export function FieldConfigurationPanel({
         return (
           <NumberPropertyConfigEditor
             config={settings as NumberPropertyConfig}
+            onConfigChange={onSettingsChange}
+          />
+        );
+
+      case 'ai_autofill':
+        return (
+          <AiAutofillPropertyConfigEditor
+            config={settings as AiAutofillPropertyConfig}
             onConfigChange={onSettingsChange}
           />
         );
