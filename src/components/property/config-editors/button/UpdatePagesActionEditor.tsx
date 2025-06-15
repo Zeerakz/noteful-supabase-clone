@@ -1,6 +1,7 @@
 
 import React from 'react';
-import { ButtonAction, UpdatePagesConfig, ComplexFilter } from '@/types/property/configs/button';
+import { ButtonAction, UpdatePagesConfig } from '@/types/property/configs/button';
+import { ComplexFilter } from '@/types/filters';
 import { Database, DatabaseField } from '@/types/database';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
