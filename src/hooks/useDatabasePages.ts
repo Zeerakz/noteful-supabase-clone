@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Block } from '@/types/block';
@@ -18,7 +19,7 @@ export function useDatabasePages(databaseId: string, workspaceId: string) {
       setLoading(true);
       const { data, error } = await supabase
         .from('blocks')
-        .select('*')
+        .select('id, workspace_id, type, parent_id, properties, content, pos, created_time, last_edited_time, created_by, last_edited_by, archived, in_trash')
         .eq('type', 'page')
         .eq('properties->>database_id', databaseId)
         .order('created_time', { ascending: false });
@@ -53,6 +54,7 @@ export function useDatabasePages(databaseId: string, workspaceId: string) {
         last_edited_by: user.id,
         type: 'page',
         properties,
+        pos: 0,
       })
       .select()
       .single();
@@ -89,7 +91,7 @@ export function useDatabasePages(databaseId: string, workspaceId: string) {
 
     const { data, error } = await supabase
         .from('blocks')
-        .update(blockUpdates)
+        .update(blockUpdates as any)
         .eq('id', pageId)
         .select()
         .single();
@@ -164,7 +166,7 @@ export function useDatabasePages(databaseId: string, workspaceId: string) {
             page.id === updatedPage.id ? updatedPage : page
           ));
         } else if (payload.eventType === 'DELETE') {
-          const deletedPage = payload.old as Block;
+          const deletedPage = payload.old as Partial<Block> & { id: string };
           setPages(prev => prev.filter(page => page.id !== deletedPage.id));
         }
       }
