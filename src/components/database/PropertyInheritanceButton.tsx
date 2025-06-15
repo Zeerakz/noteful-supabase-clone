@@ -18,10 +18,10 @@ export function PropertyInheritanceButton({
   onSuccess,
   variant = 'outline'
 }: PropertyInheritanceButtonProps) {
-  const { loading, applyInheritance } = usePropertyInheritance();
+  const { loading, applyDatabaseInheritance } = usePropertyInheritance();
 
   const handleApplyInheritance = async () => {
-    const result = await applyInheritance(pageId, databaseId);
+    const result = await applyDatabaseInheritance(pageId, databaseId);
     if (result.success && onSuccess) {
       onSuccess();
     }

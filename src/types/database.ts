@@ -20,6 +20,7 @@ export interface DatabaseField {
   created_by: string;
   created_at: string;
   updated_at: string;
+  visibility_setting?: 'always_show' | 'always_hide' | 'show_when_not_empty';
 }
 
 export interface DatabaseCreateRequest {
