@@ -4,8 +4,8 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { RollupFieldSettings, DatabaseField, RelationFieldSettings } from '@/types/database';
-import { DatabaseService } from '@/services/databaseService';
+import { RollupFieldSettings, DatabaseField, RelationFieldSettings, FieldType } from '@/types/database';
+import { DatabaseFieldService } from '@/services/database/databaseFieldService';
 import { Calculator, Link, Target, AlertCircle } from 'lucide-react';
 
 interface EnhancedRollupFieldConfigProps {
@@ -20,7 +20,7 @@ type AggregationType = 'sum' | 'count' | 'average' | 'min' | 'max' | 'earliest' 
 interface PropertyOption {
   id: string;
   name: string;
-  type: string;
+  type: FieldType | 'system';
 }
 
 export function EnhancedRollupFieldConfig({ 
@@ -64,13 +64,13 @@ export function EnhancedRollupFieldConfig({
       setTargetDatabaseId(targetDbId);
 
       try {
-        const { data: fields, error } = await DatabaseService.fetchDatabaseFields(targetDbId);
-        if (error) throw new Error(error);
+        const { data, error } = await DatabaseFieldService.fetchDatabaseFields(targetDbId);
+        if (error) throw new Error(error.message);
+        const fields = data as DatabaseField[];
 
         const properties: PropertyOption[] = [
           // Built-in system properties
           { id: 'count', name: 'Count of records', type: 'system' },
-          { id: 'title', name: 'Title', type: 'text' },
           // Database fields
           ...(fields || []).map(field => ({
             id: field.id,
@@ -114,7 +114,7 @@ export function EnhancedRollupFieldConfig({
   };
 
   // Get available aggregations based on selected property type
-  const getAvailableAggregations = (propertyType: string): { value: AggregationType; label: string; description: string }[] => {
+  const getAvailableAggregations = (propertyType: PropertyOption['type']): { value: AggregationType; label: string; description: string }[] => {
     const allAggregations = [
       { value: 'count' as AggregationType, label: 'Count', description: 'Count the number of related records' },
       { value: 'sum' as AggregationType, label: 'Sum', description: 'Add up all numeric values' },
@@ -128,11 +128,16 @@ export function EnhancedRollupFieldConfig({
     // Filter aggregations based on property type
     switch (propertyType) {
       case 'number':
+      case 'currency':
+      case 'progress':
         return allAggregations.filter(agg => ['count', 'sum', 'average', 'min', 'max'].includes(agg.value));
       case 'date':
+      case 'datetime':
+      case 'created_time':
+      case 'last_edited_time':
         return allAggregations.filter(agg => ['count', 'earliest', 'latest'].includes(agg.value));
       case 'checkbox':
-        return allAggregations.filter(agg => ['count', 'sum'].includes(agg.value));
+        return allAggregations.filter(agg => ['count', 'sum'].includes(agg.value)); // sum of checked is useful
       case 'system':
         return allAggregations.filter(agg => ['count'].includes(agg.value));
       default:

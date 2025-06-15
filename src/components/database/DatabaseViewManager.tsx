@@ -65,8 +65,8 @@ export function DatabaseViewManager({
   const [duplicateViewName, setDuplicateViewName] = useState('');
 
   // Get currently visible field IDs - default to all fields if not set
-  const currentVisibleFieldIds = currentView?.visible_field_ids?.length ? 
-    currentView.visible_field_ids : 
+  const currentVisibleFieldIds = currentView?.visible_property_ids?.length ? 
+    currentView.visible_property_ids : 
     fields.map(f => f.id);
 
   const handleCreateView = async () => {
@@ -129,7 +129,7 @@ export function DatabaseViewManager({
 
   const handleVisibilityUpdate = (visibleFieldIds: string[]) => {
     if (currentView) {
-      onUpdateView(currentView.id, { visible_field_ids: visibleFieldIds });
+      onUpdateView(currentView.id, { visible_property_ids: visibleFieldIds });
     }
   };
 
@@ -180,8 +180,8 @@ export function DatabaseViewManager({
     JSON.stringify(parseViewFilters(currentView)) !== JSON.stringify(currentFilters) ||
     JSON.stringify(parseViewSorts(currentView)) !== JSON.stringify(currentSorts) ||
     currentView.view_type !== currentViewType ||
-    currentView.grouping_field_id !== groupingFieldId ||
-    JSON.stringify(currentView.visible_field_ids || []) !== JSON.stringify(currentVisibleFieldIds)
+    currentView.grouping_property_id !== groupingFieldId ||
+    JSON.stringify(currentView.visible_property_ids || []) !== JSON.stringify(currentVisibleFieldIds)
   );
 
   return (
@@ -275,8 +275,8 @@ export function DatabaseViewManager({
                     filters: JSON.stringify(currentFilters) as any,
                     sorts: JSON.stringify(currentSorts) as any,
                     view_type: currentViewType,
-                    grouping_field_id: groupingFieldId,
-                    visible_field_ids: currentVisibleFieldIds,
+                    grouping_property_id: groupingFieldId,
+                    visible_property_ids: currentVisibleFieldIds,
                   })}
                 >
                   <Copy className="h-4 w-4 mr-2" />

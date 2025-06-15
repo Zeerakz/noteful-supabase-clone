@@ -86,8 +86,8 @@ export interface SavedViewPermission {
 
 export interface FieldDependency {
   id: string;
-  source_field_id: string;
-  dependent_field_id: string;
+  source_property_id: string;
+  dependent_property_id: string;
   created_at: string;
 }
 

@@ -1,9 +1,7 @@
-
 import { useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { DatabaseField } from '@/types/database';
+import { DatabaseField, FieldType } from '@/types/database';
 import { useAuth } from '@/contexts/AuthContext';
-import { PropertyType } from '@/types/property';
 
 export function useDatabaseFieldOperations(databaseId?: string, onFieldsChange?: () => void) {
   const { user } = useAuth();
@@ -12,7 +10,7 @@ export function useDatabaseFieldOperations(databaseId?: string, onFieldsChange?:
     onFieldsChange?.();
   };
 
-  const createField = useCallback(async (field: { name: string; type: PropertyType; settings?: any; }) => {
+  const createField = useCallback(async (field: { name: string; type: FieldType; settings?: any; }) => {
     if (!databaseId || !user) return;
     const { error } = await supabase.from('database_properties').insert([{
       database_id: databaseId,

@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { SavedDatabaseView, SavedViewPermission } from '@/types/database';
 import { FilterGroup } from '@/types/filters';
@@ -35,9 +36,9 @@ export class SavedDatabaseViewService {
     viewType: string,
     filters: FilterGroup,
     sorts: SortRule[] = [],
-    groupingFieldId?: string,
+    groupingPropertyId?: string,
     description?: string,
-    visibleFieldIds?: string[]
+    visiblePropertyIds?: string[]
   ): Promise<{ data: SavedDatabaseView | null; error: string | null }> {
     try {
       const { data, error } = await supabase
@@ -51,9 +52,9 @@ export class SavedDatabaseViewService {
           view_type: viewType,
           filters: JSON.stringify(filters),
           sorts: JSON.stringify(sorts),
-          grouping_field_id: groupingFieldId,
+          grouping_property_id: groupingPropertyId,
           grouping_collapsed_groups: [],
-          visible_field_ids: visibleFieldIds || [],
+          visible_property_ids: visiblePropertyIds || [],
           is_shared: false,
           is_default: false,
           created_by: userId,
@@ -137,9 +138,9 @@ export class SavedDatabaseViewService {
           view_type: originalView.view_type,
           filters: originalView.filters,
           sorts: originalView.sorts,
-          grouping_field_id: originalView.grouping_field_id,
+          grouping_property_id: originalView.grouping_property_id,
           grouping_collapsed_groups: originalView.grouping_collapsed_groups,
-          visible_field_ids: originalView.visible_field_ids,
+          visible_property_ids: originalView.visible_property_ids,
           is_shared: false,
           is_default: false,
           created_by: originalView.user_id,

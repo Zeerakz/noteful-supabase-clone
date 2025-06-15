@@ -22,12 +22,12 @@ export function FieldVisibilityManager({
 }: FieldVisibilityManagerProps) {
   const [open, setOpen] = useState(false);
   const [localVisibleFields, setLocalVisibleFields] = useState<string[]>(
-    currentView?.visible_field_ids || []
+    currentView?.visible_property_ids || []
   );
 
-  // If current view doesn't have visible_field_ids set, default to all fields visible
-  const visibleFieldIds = currentView?.visible_field_ids?.length ? 
-    currentView.visible_field_ids : 
+  // If current view doesn't have visible_property_ids set, default to all fields visible
+  const visibleFieldIds = currentView?.visible_property_ids?.length ? 
+    currentView.visible_property_ids : 
     fields.map(f => f.id);
 
   const handleFieldToggle = (fieldId: string, visible: boolean) => {
