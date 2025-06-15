@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { DatabaseFieldService } from '@/services/database/databaseFieldService';
 import { DatabaseQueryService } from '@/services/database/databaseQueryService';
@@ -51,7 +52,7 @@ export function useKanbanData({
           sortRules
         );
         
-        if (pagesError) throw new Error(pagesError.message);
+        if (pagesError) throw new Error(pagesError as string);
         
         // 3. Transform pages.
         const transformedPages: PageWithProperties[] = (pagesData || []).map((page: any) => {
