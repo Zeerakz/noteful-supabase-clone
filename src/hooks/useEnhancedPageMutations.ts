@@ -1,3 +1,4 @@
+
 import { Block } from '@/types/block';
 import { useEnhancedCreatePage } from './mutations/useEnhancedCreatePage';
 import { useEnhancedUpdatePage } from './mutations/useEnhancedUpdatePage';
@@ -17,6 +18,7 @@ interface UseEnhancedPageMutationsProps {
   clearOptimisticUpdate: (pageId: string) => void;
   clearOptimisticCreation: (tempId: string) => void;
   clearOptimisticCreationByMatch: (realPage: Block) => void;
+  clearOptimisticDeletion: (pageId: string) => void;
   revertAllOptimisticChanges: () => void;
 }
 
@@ -33,6 +35,7 @@ export function useEnhancedPageMutations({
   clearOptimisticUpdate,
   clearOptimisticCreation,
   clearOptimisticCreationByMatch,
+  clearOptimisticDeletion,
   revertAllOptimisticChanges,
 }: UseEnhancedPageMutationsProps) {
   
@@ -57,6 +60,7 @@ export function useEnhancedPageMutations({
     deletePage,
     optimisticPages,
     optimisticDeletePage,
+    clearOptimisticDeletion,
     revertAllOptimisticChanges,
   });
 

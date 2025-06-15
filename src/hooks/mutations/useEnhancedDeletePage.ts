@@ -7,6 +7,7 @@ interface UseEnhancedDeletePageProps {
   deletePage: (id: string) => Promise<{ error: string | null }>;
   optimisticPages: Block[];
   optimisticDeletePage: (pageId: string) => void;
+  clearOptimisticDeletion: (pageId: string) => void;
   revertAllOptimisticChanges: () => void;
 }
 
@@ -14,6 +15,7 @@ export function useEnhancedDeletePage({
   deletePage,
   optimisticPages,
   optimisticDeletePage,
+  clearOptimisticDeletion,
   revertAllOptimisticChanges,
 }: UseEnhancedDeletePageProps) {
   const { toast } = useToast();
@@ -36,6 +38,7 @@ export function useEnhancedDeletePage({
       }
 
       console.log('Server page deletion successful');
+      clearOptimisticDeletion(id);
 
       toast({
         title: "Success",
@@ -53,7 +56,7 @@ export function useEnhancedDeletePage({
       });
       return { error: errorMessage };
     }
-  }, [optimisticPages, deletePage, optimisticDeletePage, revertAllOptimisticChanges, toast]);
+  }, [optimisticPages, deletePage, optimisticDeletePage, clearOptimisticDeletion, revertAllOptimisticChanges, toast]);
 
   return enhancedDeletePage;
 }
