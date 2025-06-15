@@ -6,19 +6,22 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { RelationFieldSettings } from '@/types/database';
+import { DatabaseField, RelationFieldSettings } from '@/types/database';
 import { useDatabasePages } from '@/hooks/useDatabasePages';
 import { Block } from '@/types/block';
 import { Plus, X, Search, Link, ExternalLink } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 interface RelationFieldEditorProps {
-  value: string | string[] | null;
-  onChange: (value: string | string[] | null) => void;
+  value: string | string[] | null; // This will be ignored, but kept for compatibility
+  onChange: (value: string | string[] | null) => void; // This will not be called
   settings: RelationFieldSettings;
   workspaceId: string;
   isMultiple?: boolean;
   showBacklink?: boolean;
   onBacklinkToggle?: (enabled: boolean) => void;
+  pageId: string;
+  field: DatabaseField;
 }
 
 export function RelationFieldEditor({ 
@@ -28,63 +31,119 @@ export function RelationFieldEditor({
   workspaceId, 
   isMultiple = false,
   showBacklink = false,
-  onBacklinkToggle
+  onBacklinkToggle,
+  pageId,
+  field
 }: RelationFieldEditorProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedPages, setSelectedPages] = useState<Block[]>([]);
+  const [relatedPageIds, setRelatedPageIds] = useState<string[]>([]);
+  const [loadingRelations, setLoadingRelations] = useState(true);
   const [localBacklink, setLocalBacklink] = useState(showBacklink);
 
-  const { pages, loading } = useDatabasePages(settings.target_database_id, workspaceId);
+  const { pages, loading: loadingTargetPages } = useDatabasePages(settings.target_database_id, workspaceId);
 
-  // Initialize selected pages based on current value
+  // Fetch initial related page IDs from the new page_relations table
   useEffect(() => {
-    if (!value || !pages.length) {
-      setSelectedPages([]);
+    const fetchRelations = async () => {
+      if (!pageId || !field.id) return;
+      setLoadingRelations(true);
+      try {
+        const { data, error } = await supabase
+          .from('page_relations')
+          .select('to_page_id')
+          .eq('from_page_id', pageId)
+          .eq('relation_property_id', field.id);
+
+        if (error) throw error;
+        
+        setRelatedPageIds(data.map(r => r.to_page_id));
+      } catch (err) {
+        console.error('Error fetching relations:', err);
+        setRelatedPageIds([]);
+      } finally {
+        setLoadingRelations(false);
+      }
+    };
+    fetchRelations();
+  }, [pageId, field.id]);
+
+  // Update selected pages based on fetched IDs
+  useEffect(() => {
+    if (loadingRelations || !pages.length) {
+      if (!loadingRelations) setSelectedPages([]);
       return;
     }
-
-    const valueArray = Array.isArray(value) ? value : [value];
-    const selected = pages.filter(page => valueArray.includes(page.id));
+    const selected = pages.filter(page => relatedPageIds.includes(page.id));
     setSelectedPages(selected);
-  }, [value, pages]);
+  }, [relatedPageIds, pages, loadingRelations]);
 
   const filteredPages = pages.filter(page =>
     ((page.properties as any)?.title || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handlePageSelect = (pageId: string) => {
-    const page = pages.find(p => p.id === pageId);
+  const handlePageSelect = async (selectedPageId: string) => {
+    const page = pages.find(p => p.id === selectedPageId);
     if (!page) return;
 
     if (isMultiple) {
-      const currentValues = Array.isArray(value) ? value : (value ? [value] : []);
-      if (currentValues.includes(pageId)) {
+      if (relatedPageIds.includes(selectedPageId)) {
         // Remove if already selected
-        const newValues = currentValues.filter(id => id !== pageId);
-        onChange(newValues.length > 0 ? newValues : null);
+        const { error } = await supabase
+          .from('page_relations')
+          .delete()
+          .match({ from_page_id: pageId, to_page_id: selectedPageId, relation_property_id: field.id });
+        if (!error) {
+          setRelatedPageIds(currentIds => currentIds.filter(id => id !== selectedPageId));
+        }
       } else {
         // Add to selection
-        onChange([...currentValues, pageId]);
+        const { error } = await supabase
+          .from('page_relations')
+          .insert({ from_page_id: pageId, to_page_id: selectedPageId, relation_property_id: field.id });
+        if (!error) {
+          setRelatedPageIds(currentIds => [...currentIds, selectedPageId]);
+        }
       }
     } else {
       // Single selection
-      if (value === pageId) {
-        onChange(null); // Deselect if already selected
+      if (relatedPageIds.includes(selectedPageId)) {
+        // Deselect if already selected
+        const { error } = await supabase
+          .from('page_relations')
+          .delete()
+          .match({ from_page_id: pageId, to_page_id: selectedPageId, relation_property_id: field.id });
+        if (!error) {
+          setRelatedPageIds([]);
+        }
       } else {
-        onChange(pageId);
+        // To change selection, first delete existing relations for this property, then insert the new one
+        const { error: deleteError } = await supabase
+          .from('page_relations')
+          .delete()
+          .match({ from_page_id: pageId, relation_property_id: field.id });
+        
+        if (!deleteError) {
+          const { error: insertError } = await supabase
+            .from('page_relations')
+            .insert({ from_page_id: pageId, to_page_id: selectedPageId, relation_property_id: field.id });
+          if (!insertError) {
+            setRelatedPageIds([selectedPageId]);
+          }
+        }
         setIsOpen(false);
       }
     }
   };
-
-  const handleRemove = (pageId: string) => {
-    if (isMultiple) {
-      const currentValues = Array.isArray(value) ? value : (value ? [value] : []);
-      const newValues = currentValues.filter(id => id !== pageId);
-      onChange(newValues.length > 0 ? newValues : null);
-    } else {
-      onChange(null);
+  
+  const handleRemove = async (pageIdToRemove: string) => {
+    const { error } = await supabase
+      .from('page_relations')
+      .delete()
+      .match({ from_page_id: pageId, to_page_id: pageIdToRemove, relation_property_id: field.id });
+    if (!error) {
+      setRelatedPageIds(currentIds => currentIds.filter(id => id !== pageIdToRemove));
     }
   };
 
@@ -100,9 +159,7 @@ export function RelationFieldEditor({
   };
 
   const isPageSelected = (pageId: string) => {
-    if (!value) return false;
-    const valueArray = Array.isArray(value) ? value : [value];
-    return valueArray.includes(pageId);
+    return relatedPageIds.includes(pageId);
   };
 
   return (
@@ -177,7 +234,7 @@ export function RelationFieldEditor({
 
               {/* Page list */}
               <div className="flex-1 overflow-y-auto space-y-1 max-h-80">
-                {loading ? (
+                {loadingTargetPages || loadingRelations ? (
                   <div className="text-center py-8 text-muted-foreground">
                     <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary mx-auto mb-2"></div>
                     Loading items...

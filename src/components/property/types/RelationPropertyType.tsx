@@ -6,6 +6,7 @@ import { RelationPropertyConfig } from '@/types/property/configs/relation';
 import { RelationFieldDisplay } from '@/components/database/fields/RelationFieldDisplay';
 import { RelationFieldEditor } from '@/components/database/fields/RelationFieldEditor';
 import { RelationPropertyConfigEditor } from '@/components/property/config-editors/RelationPropertyConfigEditor';
+import { DatabaseField } from '@/types/database';
 
 export const relationPropertyType: PropertyTypeDefinition<RelationPropertyConfig> = {
   type: 'relation',
@@ -72,26 +73,27 @@ export const relationPropertyType: PropertyTypeDefinition<RelationPropertyConfig
 
   ConfigEditor: RelationPropertyConfigEditor,
   
-  FieldDisplay: ({ value, config }) => {
-    console.log('RelationPropertyType FieldDisplay rendering with:', { value, config });
+  FieldDisplay: ({ value, config, field, pageId }) => {
     return (
       <RelationFieldDisplay 
-        value={value} 
+        value={value} // Pass value for compatibility, but it will be ignored
         settings={{
           target_database_id: config.targetDatabaseId,
           display_property: config.displayProperty,
           allow_multiple: config.allowMultiple,
           bidirectional: config.bidirectional,
           related_property_name: config.relatedPropertyName,
-        }} 
+        }}
+        pageId={pageId || ''}
+        fieldId={field?.id || ''}
       />
     );
   },
   
-  FieldEditor: ({ value, config, onChange, workspaceId, pageId }) => (
+  FieldEditor: ({ value, config, onChange, workspaceId, pageId, field }) => (
     <RelationFieldEditor
       value={value}
-      onChange={onChange}
+      onChange={onChange} // Will be ignored by the component
       settings={{
         target_database_id: config.targetDatabaseId,
         display_property: config.displayProperty,
@@ -102,6 +104,8 @@ export const relationPropertyType: PropertyTypeDefinition<RelationPropertyConfig
       workspaceId={workspaceId || ''}
       isMultiple={config.allowMultiple || false}
       showBacklink={config.bidirectional || false}
+      pageId={pageId || ''}
+      field={field as DatabaseField}
     />
   ),
 

@@ -599,6 +599,52 @@ export type Database = {
           },
         ]
       }
+      page_relations: {
+        Row: {
+          created_at: string
+          from_page_id: string
+          id: number
+          relation_property_id: string
+          to_page_id: string
+        }
+        Insert: {
+          created_at?: string
+          from_page_id: string
+          id?: never
+          relation_property_id: string
+          to_page_id: string
+        }
+        Update: {
+          created_at?: string
+          from_page_id?: string
+          id?: never
+          relation_property_id?: string
+          to_page_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "page_relations_from_page_id_fkey"
+            columns: ["from_page_id"]
+            isOneToOne: false
+            referencedRelation: "blocks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "page_relations_relation_property_id_fkey"
+            columns: ["relation_property_id"]
+            isOneToOne: false
+            referencedRelation: "database_properties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "page_relations_to_page_id_fkey"
+            columns: ["to_page_id"]
+            isOneToOne: false
+            referencedRelation: "blocks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       presence: {
         Row: {
           activity: Database["public"]["Enums"]["presence_activity_enum"]

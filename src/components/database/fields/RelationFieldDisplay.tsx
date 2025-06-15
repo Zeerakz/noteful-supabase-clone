@@ -15,11 +15,13 @@ import {
 } from '@/components/ui/tooltip';
 
 interface RelationFieldDisplayProps {
-  value: string | string[] | null;
+  value: string | string[] | null; // Ignored, kept for compatibility
   settings: RelationFieldSettings;
+  pageId: string;
+  fieldId: string;
 }
 
-export function RelationFieldDisplay({ value, settings }: RelationFieldDisplayProps) {
+export function RelationFieldDisplay({ value, settings, pageId, fieldId }: RelationFieldDisplayProps) {
   const [relatedPages, setRelatedPages] = useState<Block[]>([]);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -34,19 +36,28 @@ export function RelationFieldDisplay({ value, settings }: RelationFieldDisplayPr
 
   useEffect(() => {
     const fetchRelatedPages = async () => {
-      if (!value || (Array.isArray(value) && value.length === 0)) {
-        setRelatedPages([]);
-        return;
-      }
-
       setLoading(true);
       try {
-        const valueArray = Array.isArray(value) ? value : [value];
+        // Fetch related page IDs from the new page_relations table
+        const { data: relationData, error: relationError } = await supabase
+          .from('page_relations')
+          .select('to_page_id')
+          .eq('from_page_id', pageId)
+          .eq('relation_property_id', fieldId);
+
+        if (relationError) throw relationError;
+
+        const relatedIds = relationData.map(r => r.to_page_id);
+
+        if (relatedIds.length === 0) {
+          setRelatedPages([]);
+          return;
+        }
         
         const { data, error } = await supabase
           .from('blocks')
           .select('id, type, properties')
-          .in('id', valueArray)
+          .in('id', relatedIds)
           .eq('type', 'page');
 
         if (error) throw error;
@@ -59,8 +70,10 @@ export function RelationFieldDisplay({ value, settings }: RelationFieldDisplayPr
       }
     };
 
-    fetchRelatedPages();
-  }, [value, settings.target_database_id]);
+    if (pageId && fieldId) {
+      fetchRelatedPages();
+    }
+  }, [pageId, fieldId]);
 
   if (loading) {
     return <span className="text-muted-foreground">Loading...</span>;
