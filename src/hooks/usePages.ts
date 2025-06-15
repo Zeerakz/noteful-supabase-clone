@@ -44,11 +44,16 @@ export function usePages(workspaceId?: string) {
       properties.database_id = databaseId;
     }
 
+    const pageData: Partial<Block> = {
+      properties,
+      parent_id: parentId,
+      type: 'page',
+    };
+
     const { data, error } = await PageService.createPage(
       workspaceId,
       user.id,
-      properties,
-      parentId
+      pageData
     );
     
     return { data, error };

@@ -8,9 +8,10 @@ import { useOptimisticPropertyUpdate } from '@/hooks/useOptimisticPropertyUpdate
 import { DatabaseField } from '@/types/database';
 import { FilterGroup } from '@/types/filters';
 import { SortRule } from '@/components/database/SortingModal';
-import { Page } from '@/types/page';
+import { Block } from '@/types/block';
 
 interface UseOptimisticDatabasePagesProps {
+  workspaceId: string;
   databaseId: string;
   filterGroup: FilterGroup;
   fields: DatabaseField[];
@@ -18,6 +19,7 @@ interface UseOptimisticDatabasePagesProps {
 }
 
 export function useOptimisticDatabasePages({
+  workspaceId,
   databaseId,
   filterGroup,
   fields,
@@ -37,7 +39,7 @@ export function useOptimisticDatabasePages({
   const propertyUpdateMutation = useOptimisticPropertyUpdate(databaseId);
 
   const updatePageMutation = useMutation({
-    mutationFn: ({ pageId, updates }: { pageId: string, updates: Partial<Page> }) => PageService.updatePage(pageId, updates),
+    mutationFn: ({ pageId, updates }: { pageId: string, updates: Partial<Block> }) => PageService.updatePage(pageId, updates),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey });
     },
@@ -49,7 +51,14 @@ export function useOptimisticDatabasePages({
   const createPageMutation = useMutation({
     mutationFn: (pageData: { title: string }) => {
       if (!user) throw new Error("User not authenticated");
-      return PageService.createPage(databaseId, user.id, { title: pageData.title || 'Untitled', databaseId });
+      const newPageData: Partial<Block> = {
+        type: 'page',
+        properties: {
+          title: pageData.title || 'Untitled',
+          database_id: databaseId
+        }
+      };
+      return PageService.createPage(workspaceId, user.id, newPageData);
     },
     onSuccess: () => {
       toast({ title: 'Success', description: 'New entry created' });

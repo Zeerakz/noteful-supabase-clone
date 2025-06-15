@@ -16,37 +16,48 @@ export class DatabaseQueryService {
     try {
       console.log('Fetching pages for database:', databaseId);
       
-      // First get all pages for this database with their properties
-      let pagesQuery = supabase
-        .from('pages')
-        .select(`
-          *,
-          page_properties (
-            field_id,
-            value
-          )
-        `)
-        .eq('database_id', databaseId)
-        .order('created_at', { ascending: false });
+      // 1. Fetch all blocks that are pages for the given database
+      const { data: pages, error: pagesError } = await supabase
+        .from('blocks')
+        .select('*')
+        .eq('type', 'page')
+        .eq('properties->>database_id', databaseId);
 
-      const { data: pages, error: pagesError } = await pagesQuery;
-      
       if (pagesError) {
         console.error('Supabase error fetching pages:', pagesError);
         throw pagesError;
       }
 
-      if (!pages) {
+      if (!pages || pages.length === 0) {
         console.log('No pages found');
         return { data: [], error: null };
       }
+      
+      const pageIds = pages.map(p => p.id);
 
-      console.log('Pages fetched successfully:', pages.length);
-      let processedPages = pages;
+      // 2. Fetch all properties for these pages
+      const { data: properties, error: propertiesError } = await supabase
+        .from('page_properties')
+        .select('page_id, field_id, value')
+        .in('page_id', pageIds);
+      
+      if (propertiesError) throw propertiesError;
+
+      // 3. Combine pages with their properties
+      const pagesWithProperties = pages.map(page => {
+        const pageProperties = properties?.filter(p => p.page_id === page.id) || [];
+        return {
+          ...page,
+          page_properties: pageProperties.map(({ field_id, value }) => ({ field_id, value }))
+        };
+      });
+
+      console.log('Pages fetched successfully:', pagesWithProperties.length);
+      let processedPages = pagesWithProperties;
 
       // Apply complex filters on the client side with current user context
       if (filterGroup && fields) {
-        processedPages = applyComplexFilters(pages, filterGroup, fields, currentUserId);
+        processedPages = applyComplexFilters(pagesWithProperties, filterGroup, fields, currentUserId);
       }
 
       // Apply sorting on the client side

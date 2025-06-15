@@ -20,6 +20,7 @@ export type Database = {
           last_edited_by: string | null
           last_edited_time: string
           parent_id: string | null
+          pos: number
           properties: Json
           type: Database["public"]["Enums"]["block_type_enum"]
           workspace_id: string
@@ -34,6 +35,7 @@ export type Database = {
           last_edited_by?: string | null
           last_edited_time?: string
           parent_id?: string | null
+          pos?: number
           properties?: Json
           type: Database["public"]["Enums"]["block_type_enum"]
           workspace_id: string
@@ -48,6 +50,7 @@ export type Database = {
           last_edited_by?: string | null
           last_edited_time?: string
           parent_id?: string | null
+          pos?: number
           properties?: Json
           type?: Database["public"]["Enums"]["block_type_enum"]
           workspace_id?: string
