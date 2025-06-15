@@ -4,6 +4,7 @@ import { DatabaseCoreService } from './database/databaseCoreService';
 import { DatabasePageService } from './database/databasePageService';
 import { DatabasePropertyService } from './database/databasePropertyService';
 import { DatabaseFieldService } from './database/databaseFieldService';
+import { PropertyValueService } from '@/services/propertyValueService';
 
 export class DatabaseService {
   // Database CRUD operations
@@ -43,7 +44,7 @@ export class DatabaseService {
   // Database field operations
   static async fetchDatabaseFields(databaseId: string) {
     const { data, error } = await supabase
-      .from('fields')
+      .from('database_properties')
       .select('*')
       .eq('database_id', databaseId)
       .order('pos', { ascending: true });
@@ -70,6 +71,6 @@ export class DatabaseService {
 
   // Page property operations
   static async createPageProperty(pageId: string, fieldId: string, value: string, userId: string) {
-    return DatabasePropertyService.createPageProperty(pageId, fieldId, value, userId);
+    return PropertyValueService.upsertPropertyValue(pageId, fieldId, value, userId);
   }
 }

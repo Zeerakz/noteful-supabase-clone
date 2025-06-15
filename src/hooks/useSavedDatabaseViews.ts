@@ -25,9 +25,9 @@ export function useSavedDatabaseViews(databaseId: string, workspaceId: string) {
       view_type: 'table',
       filters: JSON.stringify(createEmptyFilterGroup()),
       sorts: JSON.stringify([]),
-      grouping_field_id: null,
+      grouping_property_id: null,
       grouping_collapsed_groups: [],
-      visible_field_ids: [], // Initialize as empty array
+      visible_property_ids: [],
       is_shared: false,
       is_default: true,
       created_by: user?.id || '',

@@ -62,7 +62,7 @@ export function DatabaseListView({
 
   // Enhanced handlers with optimistic updates
   const handleOptimisticFieldEdit = (pageId: string, fieldId: string, value: any) => {
-    optimisticUpdateProperty({ pageId, fieldId, value });
+    optimisticUpdateProperty({ pageId, propertyId: fieldId, value });
     handleFieldEdit(pageId, fieldId, value);
   };
 
