@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useForm, SubmitHandler, Controller } from 'react-hook-form';
 import { useWorkspaceMembers, WorkspaceMember, PendingInvitation } from '@/hooks/useWorkspaceMembers';
@@ -7,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Plus, Send, Trash2, Mail, Loader2, MoreHorizontal } from 'lucide-react';
+import { Send, Trash2, Mail, Loader2, MoreHorizontal } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { InvitationService } from '@/services/invitationService';
 import {
@@ -15,7 +16,13 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuPortal,
+  DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
+import { WorkspaceRole } from '@/types/db';
 
 interface MembersManagementTabProps {
   workspaceId: string;
@@ -31,7 +38,7 @@ const getInitials = (name?: string | null) => {
 };
 
 export function MembersManagementTab({ workspaceId }: MembersManagementTabProps) {
-  const { members, invitations, loading, refresh } = useWorkspaceMembers(workspaceId);
+  const { members, invitations, loading, refresh, updateMemberRole } = useWorkspaceMembers(workspaceId);
   const { inviteUserToWorkspace } = useWorkspaces();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
@@ -50,6 +57,16 @@ export function MembersManagementTab({ workspaceId }: MembersManagementTabProps)
     setIsSubmitting(false);
   };
   
+  const handleRoleChange = async (member: WorkspaceMember, newRole: WorkspaceRole) => {
+    if (member.role === newRole) return;
+    const { error } = await updateMemberRole(member.id, newRole);
+    if (error) {
+      toast({ title: 'Error updating role', description: error, variant: 'destructive' });
+    } else {
+      toast({ title: 'Role updated successfully' });
+    }
+  };
+
   const handleRemoveMember = async (member: WorkspaceMember) => {
     if (!confirm(`Are you sure you want to remove ${member.profiles?.email} from the workspace?`)) return;
     const { error } = await InvitationService.removeMember(member.id);
@@ -106,7 +123,7 @@ export function MembersManagementTab({ workspaceId }: MembersManagementTabProps)
               )}
             />
             <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
+              {isSubmitting ? <Loader2 className="mr-2 animate-spin" /> : <Send className="mr-2" />}
               Invite
             </Button>
           </form>
@@ -131,16 +148,29 @@ export function MembersManagementTab({ workspaceId }: MembersManagementTabProps)
                     <p className="text-sm text-muted-foreground capitalize">{member.role}</p>
                   </div>
                 </div>
-                {member.role !== 'owner' && (
+                {member.role !== 'owner' ? (
                   <DropdownMenu>
-                    <DropdownMenuTrigger asChild><Button variant="ghost" size="sm"><MoreHorizontal /></Button></DropdownMenuTrigger>
-                    <DropdownMenuContent>
-                      <DropdownMenuItem className="text-destructive" onClick={() => handleRemoveMember(member)}>
-                        <Trash2 className="mr-2 h-4 w-4" /> Remove
+                    <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8"><MoreHorizontal /></Button></DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                       <DropdownMenuSub>
+                        <DropdownMenuSubTrigger>
+                          <span>Change role</span>
+                        </DropdownMenuSubTrigger>
+                        <DropdownMenuPortal>
+                          <DropdownMenuSubContent>
+                            <DropdownMenuItem disabled={member.role === 'admin'} onClick={() => handleRoleChange(member, 'admin')}>Admin</DropdownMenuItem>
+                            <DropdownMenuItem disabled={member.role === 'member'} onClick={() => handleRoleChange(member, 'member')}>Member</DropdownMenuItem>
+                            <DropdownMenuItem disabled={member.role === 'guest'} onClick={() => handleRoleChange(member, 'guest')}>Guest</DropdownMenuItem>
+                          </DropdownMenuSubContent>
+                        </DropdownMenuPortal>
+                      </DropdownMenuSub>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem className="text-destructive focus:bg-destructive/10" onClick={() => handleRemoveMember(member)}>
+                        <Trash2 className="mr-2" /> Remove from workspace
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
-                )}
+                ) : <span className="text-sm text-muted-foreground pr-4">Owner</span>}
               </div>
             ))}
           </div>
@@ -151,14 +181,14 @@ export function MembersManagementTab({ workspaceId }: MembersManagementTabProps)
               <div key={invite.id} className="flex items-center justify-between p-2 rounded-lg hover:bg-muted">
                 <div className="flex items-center gap-3">
                   <Avatar>
-                    <AvatarFallback><Mail className="h-4 w-4 text-muted-foreground" /></AvatarFallback>
+                    <AvatarFallback><Mail /></AvatarFallback>
                   </Avatar>
                   <div>
                     <p className="font-medium">{invite.email}</p>
                     <p className="text-sm text-muted-foreground capitalize">{invite.role}</p>
                   </div>
                 </div>
-                <Button variant="ghost" size="sm" onClick={() => handleCancelInvitation(invite)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleCancelInvitation(invite)}><Trash2 /></Button>
               </div>
             ))}
           </div>

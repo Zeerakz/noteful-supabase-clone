@@ -15,6 +15,7 @@ import Index from "./pages/Index";
 import { Login } from "./pages/Login";
 import Register from "./pages/Register";
 import Workspace from "./pages/Workspace";
+import { WorkspaceSettings } from "./pages/WorkspaceSettings";
 import { PageView } from "./pages/PageView";
 import { DatabasePage } from "./pages/DatabasePage";
 import NotFound from "./pages/NotFound";
@@ -89,6 +90,14 @@ const App = () => {
                       element={
                         <ProtectedRoute>
                           <Workspace />
+                        </ProtectedRoute>
+                      } 
+                    />
+                    <Route 
+                      path="/workspace/:workspaceId/settings" 
+                      element={
+                        <ProtectedRoute>
+                          <WorkspaceSettings />
                         </ProtectedRoute>
                       } 
                     />

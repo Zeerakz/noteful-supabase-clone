@@ -1,6 +1,8 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { InvitationService } from '@/services/invitationService';
 import { WorkspaceMember, PendingInvitation } from '@/types/workspace';
+import { WorkspaceRole } from '@/types/db';
 
 export { type WorkspaceMember, type PendingInvitation } from '@/types/workspace';
 
@@ -38,5 +40,14 @@ export function useWorkspaceMembers(workspaceId?: string) {
     fetchMembersAndInvites();
   }, [fetchMembersAndInvites]);
 
-  return { members, invitations, loading, refresh: fetchMembersAndInvites };
+  const updateMemberRole = async (memberId: string, role: WorkspaceRole) => {
+    const { error } = await InvitationService.updateMemberRole(memberId, role);
+    if (error) {
+      return { error };
+    }
+    await fetchMembersAndInvites();
+    return { error: null };
+  };
+
+  return { members, invitations, loading, refresh: fetchMembersAndInvites, updateMemberRole };
 }
