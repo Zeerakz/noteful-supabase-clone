@@ -3,6 +3,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Trash2 } from 'lucide-react';
 import { Block } from '@/types/block';
 import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
 
 interface HeadingBlockProps {
   block: Block;
@@ -16,6 +17,13 @@ export function HeadingBlock({ block, onUpdate, onDelete, isEditable }: HeadingB
   const [isHovered, setIsHovered] = useState(false);
   const [content, setContent] = useState(block.content?.text || '');
   const inputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    if (!isEditing) {
+      setContent(block.content?.text || '');
+    }
+  }, [block.content?.text, isEditing]);
 
   useEffect(() => {
     if (isEditing && inputRef.current) {
@@ -24,8 +32,22 @@ export function HeadingBlock({ block, onUpdate, onDelete, isEditable }: HeadingB
   }, [isEditing]);
 
   const handleSave = async () => {
-    await onUpdate({ text: content });
-    setIsEditing(false);
+    if (content === (block.content?.text || '')) {
+      setIsEditing(false);
+      return;
+    }
+    try {
+      await onUpdate({ text: content });
+      setIsEditing(false);
+    } catch (error) {
+      console.error('Failed to update heading:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to save heading.',
+        variant: 'destructive',
+      });
+      setContent(block.content?.text || '');
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {

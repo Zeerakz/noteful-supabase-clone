@@ -93,10 +93,17 @@ export function PageEditor() {
       return;
     }
     
-    const { error } = await updatePage(page.id, { title: titleValue.trim() });
+    const newProperties = { ...page.properties, title: titleValue.trim() };
+    const { error } = await updatePage(page.id, { properties: newProperties });
     
     if (!error) {
       setIsEditingTitle(false);
+    } else {
+      toast({
+        title: "Error",
+        description: "Failed to update page title. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
