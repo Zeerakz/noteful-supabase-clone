@@ -21,6 +21,7 @@ import { TeamspaceSettingsModal } from '@/components/workspaces/TeamspaceSetting
 import { TeamspaceList } from './TeamspaceList';
 import { PrivatePagesList } from './PrivatePagesList';
 import { DatabaseList } from './DatabaseList';
+import { Separator } from '@/components/ui/separator';
 
 interface WorkspacePagesGroupProps {
   workspaceId: string;
@@ -172,8 +173,8 @@ export function WorkspacePagesGroup({ workspaceId, workspaceName }: WorkspacePag
           </span>
         </SidebarGroupLabel>
         <SidebarGroupContent>
-          <DragDropContext onDragEnd={handleDragEnd}>
-            <div className="space-y-1">
+          <div className="space-y-1">
+            <DragDropContext onDragEnd={handleDragEnd}>
               <TeamspaceList
                 teamspaces={teamspaces}
                 teamspacePages={teamspacePages}
@@ -188,15 +189,20 @@ export function WorkspacePagesGroup({ workspaceId, workspaceName }: WorkspacePag
                 workspaceId={workspaceId}
                 onDeletePage={handleDeletePage}
               />
-            </div>
-          </DragDropContext>
-          
-          <DatabaseList
-            databases={databases}
-            databasesLoading={databasesLoading}
-            onDeleteDatabase={handleDeleteDatabase}
-          />
+            </DragDropContext>
+            
+            {((teamspaces.length > 0 || privatePages.length > 0) && databases.length > 0 && !databasesLoading) && (
+              <div className="px-2 pt-2 pb-1">
+                <Separator />
+              </div>
+            )}
 
+            <DatabaseList
+              databases={databases}
+              databasesLoading={databasesLoading}
+              onDeleteDatabase={handleDeleteDatabase}
+            />
+          </div>
         </SidebarGroupContent>
       </SidebarGroup>
       {editingTeamspace && (
