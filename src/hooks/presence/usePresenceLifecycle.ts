@@ -1,12 +1,13 @@
 
 import { useEffect } from 'react';
 import { cleanupPresence, sendHeartbeat } from './utils';
-import { CursorPosition } from '@/types/presence';
+import { CursorPosition, PresenceActivity } from '@/types/presence';
 
 export function usePresenceLifecycle(
   user: any,
   pageId: string | undefined,
-  cursorPositionRef: React.MutableRefObject<CursorPosition | null>
+  cursorPositionRef: React.MutableRefObject<CursorPosition | null>,
+  activityRef: React.MutableRefObject<PresenceActivity>
 ) {
   useEffect(() => {
     const handleBeforeUnload = () => {
@@ -18,7 +19,7 @@ export function usePresenceLifecycle(
         cleanupPresence(user, pageId!);
       } else if (!document.hidden && user && pageId) {
         // Re-establish presence when tab becomes visible again
-        sendHeartbeat(user, pageId, cursorPositionRef);
+        sendHeartbeat(user, pageId, cursorPositionRef, activityRef);
       }
     };
 
@@ -31,5 +32,5 @@ export function usePresenceLifecycle(
         document.removeEventListener('visibilitychange', handleVisibilityChange);
       };
     }
-  }, [user, pageId, cursorPositionRef]);
+  }, [user, pageId, cursorPositionRef, activityRef]);
 }

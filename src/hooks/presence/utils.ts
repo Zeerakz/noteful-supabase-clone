@@ -1,6 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { CursorPosition, ActiveUser } from '@/types/presence';
+import { CursorPosition, ActiveUser, PresenceActivity } from '@/types/presence';
 import { SupabasePresenceData } from './types';
 
 export const updateCursorPosition = async (
@@ -9,6 +9,7 @@ export const updateCursorPosition = async (
   x: number,
   y: number,
   cursorPositionRef: React.MutableRefObject<CursorPosition | null>,
+  activityRef: React.MutableRefObject<PresenceActivity>,
   blockId?: string
 ) => {
   if (!user || !pageId) return;
@@ -23,6 +24,7 @@ export const updateCursorPosition = async (
         page_id: pageId,
         user_id: user.id,
         cursor: { x, y, blockId } as any,
+        activity: activityRef.current,
         last_heartbeat: new Date().toISOString(),
       }, {
         onConflict: 'page_id,user_id'
@@ -36,10 +38,41 @@ export const updateCursorPosition = async (
   }
 };
 
+export const updateActivity = async (
+  user: any,
+  pageId: string,
+  activity: PresenceActivity,
+  activityRef: React.MutableRefObject<PresenceActivity>
+) => {
+  if (!user || !pageId) return;
+
+  activityRef.current = activity;
+
+  try {
+    const { error } = await supabase
+      .from('presence')
+      .upsert({
+        page_id: pageId,
+        user_id: user.id,
+        activity: activity,
+        last_heartbeat: new Date().toISOString(),
+      }, {
+        onConflict: 'page_id,user_id',
+      });
+
+    if (error) {
+      console.error('Error updating activity:', error);
+    }
+  } catch (err) {
+    console.error('Failed to update activity:', err);
+  }
+};
+
 export const sendHeartbeat = async (
   user: any,
   pageId: string,
-  cursorPositionRef: React.MutableRefObject<CursorPosition | null>
+  cursorPositionRef: React.MutableRefObject<CursorPosition | null>,
+  activityRef: React.MutableRefObject<PresenceActivity>
 ) => {
   if (!user || !pageId) return;
 
@@ -51,6 +84,7 @@ export const sendHeartbeat = async (
         page_id: pageId,
         user_id: user.id,
         cursor: cursorPositionRef.current as any,
+        activity: activityRef.current,
         last_heartbeat: new Date().toISOString(),
       }, {
         onConflict: 'page_id,user_id'
@@ -99,6 +133,7 @@ export const fetchActiveUsers = async (
       return {
         user_id: presence.user_id,
         cursor,
+        activity: presence.activity || 'viewing',
         last_heartbeat: presence.last_heartbeat,
       };
     }) || [];

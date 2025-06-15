@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { PresenceActivity } from '@/types/presence';
 
 interface UserAvatarProps {
   userId: string;
@@ -8,10 +9,12 @@ interface UserAvatarProps {
   y: number;
   color?: string;
   showLabel?: boolean;
+  activity?: PresenceActivity;
 }
 
-export function UserAvatar({ userId, x, y, color = '#3b82f6', showLabel = true }: UserAvatarProps) {
+export function UserAvatar({ userId, x, y, color = '#3b82f6', showLabel = true, activity = 'viewing' }: UserAvatarProps) {
   const initials = userId.slice(0, 2).toUpperCase();
+  const activityLabel = activity.charAt(0).toUpperCase() + activity.slice(1);
   
   return (
     <div
@@ -60,7 +63,7 @@ export function UserAvatar({ userId, x, y, color = '#3b82f6', showLabel = true }
             className="absolute top-10 left-0 px-2 py-1 rounded text-xs text-white whitespace-nowrap shadow-lg"
             style={{ backgroundColor: color }}
           >
-            User {userId.slice(0, 8)}
+            User {userId.slice(0, 8)} - {activityLabel}
           </div>
         )}
       </div>

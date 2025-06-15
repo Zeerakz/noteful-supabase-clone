@@ -1,8 +1,8 @@
-
 import React from 'react';
-import { Users } from 'lucide-react';
+import { Users, Eye, MessageSquare, Edit3 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { PresenceActivity } from '@/types/presence';
 
 interface ActiveUser {
   user_id: string;
@@ -11,6 +11,7 @@ interface ActiveUser {
     y: number;
     blockId?: string;
   };
+  activity: PresenceActivity;
   last_heartbeat: string;
 }
 
@@ -37,6 +38,14 @@ const getUserColor = (userId: string): string => {
     hash = userId.charCodeAt(i) + ((hash << 5) - hash);
   }
   return colors[Math.abs(hash) % colors.length];
+};
+
+const ActivityIcon = ({ activity }: { activity: PresenceActivity }) => {
+    switch (activity) {
+      case 'editing': return <Edit3 className="h-3 w-3 text-gray-600" />;
+      case 'commenting': return <MessageSquare className="h-3 w-3 text-gray-600" />;
+      default: return <Eye className="h-3 w-3 text-gray-600" />;
+    }
 };
 
 export function ActiveUsers({ activeUsers, loading }: ActiveUsersProps) {
@@ -71,12 +80,12 @@ export function ActiveUsers({ activeUsers, loading }: ActiveUsersProps) {
           return (
             <Avatar
               key={user.user_id}
-              className="w-6 h-6 border-2 border-white"
+              className="w-6 h-6 border-2 border-white relative"
               style={{
                 zIndex: 10 - index,
                 backgroundColor: userColor,
               }}
-              title={`User ${user.user_id.slice(0, 8)}`}
+              title={`User ${user.user_id.slice(0, 8)} (${user.activity})`}
             >
               <AvatarFallback 
                 className="text-xs text-white font-medium"
@@ -84,6 +93,9 @@ export function ActiveUsers({ activeUsers, loading }: ActiveUsersProps) {
               >
                 {initials}
               </AvatarFallback>
+              <div className="absolute -bottom-1 -right-1 bg-white rounded-full p-0.5 shadow-md">
+                <ActivityIcon activity={user.activity} />
+              </div>
             </Avatar>
           );
         })}

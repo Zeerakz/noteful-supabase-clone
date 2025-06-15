@@ -2,6 +2,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { usePresence } from '@/hooks/usePresence';
 import { UserCursor } from './UserCursor';
+import { PresenceActivity } from '@/types/presence';
 
 interface ActiveUser {
   user_id: string;
@@ -10,6 +11,7 @@ interface ActiveUser {
     y: number;
     blockId?: string;
   };
+  activity: PresenceActivity;
   last_heartbeat: string;
 }
 
@@ -17,6 +19,7 @@ interface PresenceContextType {
   activeUsers: ActiveUser[];
   loading: boolean;
   updateCursorPosition: (x: number, y: number, blockId?: string) => Promise<void>;
+  updateActivity: (activity: PresenceActivity) => Promise<void>;
   sendHeartbeat: () => Promise<void>;
 }
 
@@ -49,7 +52,7 @@ const getUserColor = (userId: string): string => {
 };
 
 export function PresenceProvider({ pageId, children }: PresenceProviderProps) {
-  const { activeUsers, loading, updateCursorPosition, sendHeartbeat } = usePresence(pageId);
+  const { activeUsers, loading, updateCursorPosition, sendHeartbeat, updateActivity } = usePresence(pageId);
   const [cursorsVisible, setCursorsVisible] = useState(true);
 
   // Track mouse movement with improved throttling
@@ -95,6 +98,7 @@ export function PresenceProvider({ pageId, children }: PresenceProviderProps) {
     loading,
     updateCursorPosition,
     sendHeartbeat,
+    updateActivity,
   };
 
   return (
@@ -110,6 +114,7 @@ export function PresenceProvider({ pageId, children }: PresenceProviderProps) {
             x={user.cursor.x}
             y={user.cursor.y}
             color={getUserColor(user.user_id)}
+            activity={user.activity}
           />
         ) : null
       )}

@@ -1,9 +1,9 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { CursorPosition, ActiveUser } from '@/types/presence';
+import { CursorPosition, ActiveUser, PresenceActivity } from '@/types/presence';
 import { UsePresenceReturn } from './presence/types';
-import { updateCursorPosition, fetchActiveUsers, cleanupPresence } from './presence/utils';
+import { updateCursorPosition, fetchActiveUsers, cleanupPresence, updateActivity as updateActivityUtil, sendHeartbeat as sendHeartbeatUtil } from './presence/utils';
 import { usePresenceSubscription } from './presence/usePresenceSubscription';
 import { usePresenceHeartbeat } from './presence/usePresenceHeartbeat';
 import { usePresenceLifecycle } from './presence/usePresenceLifecycle';
@@ -13,6 +13,7 @@ export function usePresence(pageId?: string): UsePresenceReturn {
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
   const cursorPositionRef = useRef<CursorPosition | null>(null);
+  const activityRef = useRef<PresenceActivity>('viewing');
 
   const handleFetchActiveUsers = useCallback(async () => {
     if (!pageId) {
@@ -33,24 +34,30 @@ export function usePresence(pageId?: string): UsePresenceReturn {
   }, [pageId, user?.id]);
 
   const handleUpdateCursorPosition = useCallback(async (x: number, y: number, blockId?: string) => {
-    if (!pageId) return;
-    await updateCursorPosition(user, pageId, x, y, cursorPositionRef, blockId);
+    if (!user || !pageId) return;
+    await updateCursorPosition(user, pageId, x, y, cursorPositionRef, activityRef, blockId);
+  }, [user, pageId]);
+  
+  const handleUpdateActivity = useCallback(async (activity: PresenceActivity) => {
+    if (!user || !pageId) return;
+    await updateActivityUtil(user, pageId, activity, activityRef);
+    // Send heartbeat to broadcast change immediately
+    await handleSendHeartbeat();
   }, [user, pageId]);
 
   const handleSendHeartbeat = useCallback(async () => {
-    if (!pageId) return;
-    const { sendHeartbeat } = await import('./presence/utils');
-    await sendHeartbeat(user, pageId, cursorPositionRef);
+    if (!user || !pageId) return;
+    await sendHeartbeatUtil(user, pageId, cursorPositionRef, activityRef);
   }, [user, pageId]);
 
   // Set up subscription for real-time updates
   const { cleanup } = usePresenceSubscription(user, pageId, handleFetchActiveUsers);
 
   // Set up heartbeat
-  usePresenceHeartbeat(user, pageId, cursorPositionRef);
+  usePresenceHeartbeat(user, pageId, cursorPositionRef, activityRef);
 
   // Set up lifecycle management
-  usePresenceLifecycle(user, pageId, cursorPositionRef);
+  usePresenceLifecycle(user, pageId, cursorPositionRef, activityRef);
 
   // Initial fetch
   useEffect(() => {
@@ -71,6 +78,7 @@ export function usePresence(pageId?: string): UsePresenceReturn {
     activeUsers,
     loading,
     updateCursorPosition: handleUpdateCursorPosition,
+    updateActivity: handleUpdateActivity,
     sendHeartbeat: handleSendHeartbeat,
   };
 }

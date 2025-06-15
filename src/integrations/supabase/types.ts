@@ -483,6 +483,7 @@ export type Database = {
       }
       presence: {
         Row: {
+          activity: Database["public"]["Enums"]["presence_activity_enum"]
           created_at: string
           cursor: Json | null
           id: string
@@ -492,6 +493,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          activity?: Database["public"]["Enums"]["presence_activity_enum"]
           created_at?: string
           cursor?: Json | null
           id?: string
@@ -501,6 +503,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          activity?: Database["public"]["Enums"]["presence_activity_enum"]
           created_at?: string
           cursor?: Json | null
           id?: string
@@ -1120,6 +1123,7 @@ export type Database = {
         | "quote"
         | "divider"
         | "callout"
+      presence_activity_enum: "editing" | "commenting" | "viewing"
       property_type_enum:
         | "text"
         | "number"
@@ -1277,6 +1281,7 @@ export const Constants = {
         "divider",
         "callout",
       ],
+      presence_activity_enum: ["editing", "commenting", "viewing"],
       property_type_enum: [
         "text",
         "number",

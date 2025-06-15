@@ -1,12 +1,13 @@
 
 import { useRef, useEffect } from 'react';
 import { sendHeartbeat } from './utils';
-import { CursorPosition } from '@/types/presence';
+import { CursorPosition, PresenceActivity } from '@/types/presence';
 
 export function usePresenceHeartbeat(
   user: any,
   pageId: string | undefined,
-  cursorPositionRef: React.MutableRefObject<CursorPosition | null>
+  cursorPositionRef: React.MutableRefObject<CursorPosition | null>,
+  activityRef: React.MutableRefObject<PresenceActivity>
 ) {
   const heartbeatIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const isActiveRef = useRef<boolean>(true);
@@ -18,13 +19,13 @@ export function usePresenceHeartbeat(
     
     // Send initial heartbeat immediately
     if (user && pageId && isActiveRef.current) {
-      sendHeartbeat(user, pageId, cursorPositionRef);
+      sendHeartbeat(user, pageId, cursorPositionRef, activityRef);
     }
     
     // Set up recurring heartbeat every 10 seconds (reduced frequency)
     heartbeatIntervalRef.current = setInterval(() => {
       if (user && pageId && isActiveRef.current) {
-        sendHeartbeat(user, pageId, cursorPositionRef);
+        sendHeartbeat(user, pageId, cursorPositionRef, activityRef);
       }
     }, 10000); // Every 10 seconds instead of 5
   };
@@ -59,7 +60,7 @@ export function usePresenceHeartbeat(
         isActiveRef.current = true;
         // Resume heartbeat when page becomes visible
         if (user && pageId) {
-          sendHeartbeat(user, pageId, cursorPositionRef);
+          sendHeartbeat(user, pageId, cursorPositionRef, activityRef);
         }
       }
     };
@@ -69,7 +70,7 @@ export function usePresenceHeartbeat(
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [user, pageId, cursorPositionRef]);
+  }, [user, pageId, cursorPositionRef, activityRef]);
 
   return { stopHeartbeat };
 }
