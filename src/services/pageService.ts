@@ -112,7 +112,8 @@ export class PageService {
       if (pageDetails.parent_id) {
         query = query.eq('parent_id', pageDetails.parent_id);
       } else {
-        query = query.is('parent_id', null);
+        // For top-level pages, position is relative to other top-level pages
+        query = query.is('parent_id', null).eq('type', 'page');
       }
 
       const { data: existingPages, error: posError } = await query
