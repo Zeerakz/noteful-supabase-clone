@@ -175,7 +175,7 @@ export async function duplicatePage(
         return { data: newPage, error: null }; // return what we have
     }
 
-    return { data: finalNewPage, error: null };
+    return { data: finalNewPage as Block, error: null };
   } catch (err) {
     console.error('Page duplication error:', err);
     return {
