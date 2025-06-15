@@ -88,7 +88,7 @@ export function useEnhancedPages(workspaceId?: string) {
     }
   }, [workspaceId, createPage, optimisticCreatePage, clearOptimisticCreation, clearOptimisticCreationByMatch, toast, optimisticPages]);
 
-  const enhancedUpdatePage = useCallback(async (id: string, updates: { title?: string, parent_id?: string | null, pos?: number }) => {
+  const enhancedUpdatePage = useCallback(async (id: string, updates: Partial<Pick<Block, 'properties' | 'parent_id' | 'pos'>>) => {
     console.log('Updating page optimistically:', { id, updates });
 
     // Validate nesting depth if parent is being changed
@@ -104,19 +104,7 @@ export function useEnhancedPages(workspaceId?: string) {
       }
     }
 
-    const currentPage = optimisticPages.find(p => p.id === id);
-
-    // Transform updates for the block structure
-    const blockUpdates: Partial<Block> = {};
-    if (updates.title !== undefined) {
-      blockUpdates.properties = { ...currentPage?.properties, title: updates.title };
-    }
-    if (updates.parent_id !== undefined) {
-      blockUpdates.parent_id = updates.parent_id;
-    }
-    if (updates.pos !== undefined) {
-      blockUpdates.pos = updates.pos;
-    }
+    const blockUpdates: Partial<Block> = { ...updates };
 
     // Optimistic update
     optimisticUpdatePage(id, blockUpdates);
