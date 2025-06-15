@@ -114,7 +114,12 @@ export type FieldType =
   | 'id'
   | 'button'
   | 'status'
-  | 'people';
+  | 'people'
+  | 'datetime'
+  | 'rich_text'
+  | 'rating'
+  | 'progress'
+  | 'currency';
 
 // Settings types for complex fields
 export interface FormulaFieldSettings {

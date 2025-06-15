@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
@@ -52,7 +51,7 @@ export function FilterRuleEditor({ rule, fields, onUpdate, onRemove }: FilterRul
     onUpdate({ ...rule, value2 });
   };
 
-  const isPersonField = selectedField?.type === 'person' || selectedField?.type === 'people';
+  const isPersonField = selectedField?.type === 'people';
 
   return (
     <div className="flex items-center gap-2 p-3 border rounded-lg bg-muted/30">

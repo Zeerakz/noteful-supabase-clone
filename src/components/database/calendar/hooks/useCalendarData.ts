@@ -33,7 +33,7 @@ export function useCalendarData({ databaseId, filterGroup, fields, sortRules }: 
 
   // Find all date-type fields (including timestamp fields)
   const dateFields = fields.filter(field => 
-    field.type === 'date' || field.type === 'timestamp'
+    field.type === 'date' || field.type === 'datetime'
   );
 
   // Set default date field (first one found)

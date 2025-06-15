@@ -1,4 +1,3 @@
-
 -- Phase 1: Cleanup of old schema
 -- Drop triggers and functions that depend on the old 'fields' table to avoid errors.
 DROP TRIGGER IF EXISTS on_field_change_trigger ON public.fields;
@@ -48,7 +47,12 @@ CREATE TYPE public.property_type_enum AS ENUM (
   'created_by',
   'last_edited_time',
   'last_edited_by',
-  'id'
+  'id',
+  'datetime',
+  'rich_text',
+  'rating',
+  'progress',
+  'currency'
 );
 
 -- 3. Create the new 'fields' table with the correct structure.
