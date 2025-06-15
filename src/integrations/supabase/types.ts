@@ -1267,7 +1267,7 @@ export type Database = {
         Args: { p_page_id: string; p_database_id: string; p_user_id: string }
         Returns: undefined
       }
-      can_access_block: {
+      can_user_access_block: {
         Args: { p_block_id: string; p_user_id: string }
         Returns: boolean
       }
@@ -1308,6 +1308,14 @@ export type Database = {
       }
       get_inherited_block_permission: {
         Args: { p_block_id: string; p_user_id: string }
+        Returns: Database["public"]["Enums"]["block_permission_level"]
+      }
+      get_user_final_block_permission: {
+        Args: { p_block_id: string; p_user_id: string }
+        Returns: Database["public"]["Enums"]["block_permission_level"]
+      }
+      get_user_workspace_permission_level: {
+        Args: { p_workspace_id: string; p_user_id: string }
         Returns: Database["public"]["Enums"]["block_permission_level"]
       }
       global_search: {

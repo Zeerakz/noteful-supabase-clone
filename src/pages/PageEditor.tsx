@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { useParams, Navigate, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Edit2 } from 'lucide-react';
@@ -8,6 +7,7 @@ import { BlockEditor } from '@/components/blocks/BlockEditor';
 import { PresenceProvider } from '@/components/collaboration/PresenceProvider';
 import { ActiveUsers } from '@/components/collaboration/ActiveUsers';
 import { SaveAsTemplateDialog } from '@/components/templates/SaveAsTemplateDialog';
+import { ShareButton } from '@/components/sharing/ShareButton';
 import { usePageData } from '@/hooks/usePageData';
 import { useEnhancedPages } from '@/hooks/useEnhancedPages';
 import { useWorkspaces } from '@/hooks/useWorkspaces';
@@ -35,7 +35,7 @@ export function PageEditor() {
   const { activeUsers, loading: presenceLoading } = usePresence(pageId);
   const { blocks, hasOptimisticChanges: hasBlockChanges } = useEnhancedBlocks(pageId, workspaceId);
   const { updatePage, hasOptimisticChanges: hasPageChanges } = useEnhancedPages(workspaceId);
-  const { permissions, loading: permissionsLoading } = useBlockPermissions(pageId, workspaceId);
+  const { permissions, loading: permissionsLoading } = useBlockPermissions(pageId);
 
   useEffect(() => {
     if (pageData) {
@@ -179,6 +179,9 @@ export function PageEditor() {
               </div>
               
               <div className="flex items-center gap-3">
+                {permissions.canManagePermissions && (
+                  <ShareButton blockId={page.id} workspaceId={workspaceId} />
+                )}
                 {/* Save as Template button */}
                 {isEditable && blocks.length > 0 && (
                   <SaveAsTemplateDialog

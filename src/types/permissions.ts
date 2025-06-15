@@ -1,5 +1,6 @@
 
 export type BlockPermissionLevel = 'view' | 'comment' | 'edit' | 'full_access' | 'none';
+export type GrantablePermissionLevel = Exclude<BlockPermissionLevel, 'none'>;
 
 export interface BlockPermissions {
   canView: boolean;
@@ -12,7 +13,7 @@ export interface BlockPermissions {
 export interface BlockPermissionGrant {
   id: string;
   block_id: string;
-  permission_level: 'view' | 'comment' | 'edit' | 'full_access';
+  permission_level: GrantablePermissionLevel;
   grantee_type: 'user' | 'group';
   user_id: string | null;
   group_id: string | null;
