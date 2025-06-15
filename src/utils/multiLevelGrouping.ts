@@ -1,4 +1,3 @@
-
 import { DatabaseField } from '@/types/database';
 import { GroupingConfig, GroupedItem, GroupNode, FlattenedGroup } from '@/types/grouping';
 
@@ -131,22 +130,24 @@ export function getGroupKey(groupPath: string[]): string {
 
 export function getSelectFieldOptions(field: DatabaseField): string[] {
   if (!field.settings) return [];
-  
-  if (field.type === 'select' || field.type === 'multi-select') {
-    const options = field.settings.options || [];
-    return options
-      .filter((option: any) => option.id && option.id.trim() !== '')
-      .map((option: any) => option.name);
-  }
-  
-  if (field.type === 'status') {
-    const groups = field.settings.groups || [];
-    return groups.flatMap((group: any) => 
-      (group.options || [])
+
+  switch (field.type) {
+    case 'select':
+    case 'multi_select': {
+      const options = field.settings.options || [];
+      return options
         .filter((option: any) => option.id && option.id.trim() !== '')
-        .map((option: any) => option.name)
-    );
+        .map((option: any) => option.name);
+    }
+    case 'status': {
+      const groups = field.settings.groups || [];
+      return groups.flatMap((group: any) =>
+        (group.options || [])
+          .filter((option: any) => option.id && option.id.trim() !== '')
+          .map((option: any) => option.name)
+      );
+    }
+    default:
+      return [];
   }
-  
-  return [];
 }
