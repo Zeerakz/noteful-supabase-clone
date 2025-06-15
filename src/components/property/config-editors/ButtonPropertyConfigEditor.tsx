@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { ButtonPropertyConfig, ButtonAction, CreatePageWithTemplateConfig, SetPropertyValueConfig, OpenLinkConfig } from '@/types/property/configs/button';
 import { DatabaseField } from '@/types/database';
 import { Label } from '@/components/ui/label';
@@ -60,10 +60,10 @@ export function ButtonPropertyConfigEditor({
     switch (action.type) {
       case 'create_page_with_template':
         const templateConfig = action.config as CreatePageWithTemplateConfig;
-        const selectedTemplate = templates.find((t: any) => t.id === templateConfig.templateId);
+        const selectedTemplate = templates.find((t) => t.id === templateConfig.templateId);
         
-        // Assumption: template object contains database_id within template_data
-        const databaseId = selectedTemplate?.database_id || selectedTemplate?.template_data?.database_id;
+        // The database ID should be stored within the template's content if it's a database page template.
+        const databaseId = selectedTemplate?.content?.database_id;
         const { fields: databaseFields } = useDatabaseFields(databaseId);
         
         const addPrefilledProperty = () => {

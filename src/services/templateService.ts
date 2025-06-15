@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Template, TemplateCreateRequest } from '@/types/template';
 
@@ -56,13 +55,19 @@ export const TemplateService = {
       if (!template) {
         return { data: null, error: 'Template not found' };
       }
+      
+      const templateContent = template.content as { database_id?: string; blocks?: any[]; [key: string]: any } | null;
+      const databaseId = templateContent?.database_id;
 
       // Create a new page (which is a block of type 'page')
       const pageTitle = pageName || `${template.name} (Copy)`;
       const { data: newPage, error: pageError } = await supabase
         .from('blocks')
         .insert({
-          properties: { title: pageTitle },
+          properties: { 
+            title: pageTitle,
+            ...(databaseId && { database_id: databaseId })
+          },
           workspace_id: workspaceId,
           created_by: userId,
           last_edited_by: userId,
@@ -75,33 +80,27 @@ export const TemplateService = {
         return { data: null, error: pageError.message };
       }
 
-      // Type-safe content parsing
-      const templateContent = template.content;
-      if (templateContent && typeof templateContent === 'object' && !Array.isArray(templateContent)) {
-        const contentObj = templateContent as { [key: string]: any };
-        
-        if (contentObj.blocks && Array.isArray(contentObj.blocks)) {
-          // Create blocks from template
-          const blocksToCreate = contentObj.blocks.map((block: any, index: number) => ({
-            parent_id: newPage.id,
-            workspace_id: workspaceId,
-            type: block.type || 'text',
-            content: block.content || {},
-            properties: block.properties || {},
-            pos: block.pos !== undefined ? block.pos : index,
-            created_by: userId,
-            last_edited_by: userId,
-          }));
+      // Copy blocks from template content to the new page
+      if (templateContent?.blocks && Array.isArray(templateContent.blocks)) {
+        const blocksToCreate = templateContent.blocks.map((block: any, index: number) => ({
+          parent_id: newPage.id,
+          workspace_id: workspaceId,
+          type: block.type || 'text',
+          content: block.content || {},
+          properties: block.properties || {},
+          pos: block.pos !== undefined ? block.pos : index,
+          created_by: userId,
+          last_edited_by: userId,
+        }));
 
-          if (blocksToCreate.length > 0) {
-            const { error: blocksError } = await supabase
-              .from('blocks')
-              .insert(blocksToCreate);
+        if (blocksToCreate.length > 0) {
+          const { error: blocksError } = await supabase
+            .from('blocks')
+            .insert(blocksToCreate);
 
-            if (blocksError) {
-              // If blocks creation fails, we should still return the page
-              console.error('Failed to create blocks from template:', blocksError);
-            }
+          if (blocksError) {
+            // If blocks creation fails, we should still return the page
+            console.error('Failed to create blocks from template:', blocksError);
           }
         }
       }
