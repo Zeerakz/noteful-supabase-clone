@@ -1,19 +1,19 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { PageProperty } from '@/types/database';
+import { PropertyValue } from '@/types/database';
 import { errorHandler } from '@/utils/errorHandler';
 
-interface UseStablePagePropertiesResult {
-  properties: PageProperty[];
+interface UseStablePropertyValuesResult {
+  properties: PropertyValue[];
   loading: boolean;
   error: string | null;
-  updateProperty: (fieldId: string, value: string) => Promise<{ error?: string }>;
+  updateProperty: (propertyId: string, value: string) => Promise<{ error?: string }>;
   retry: () => void;
 }
 
-export function useStablePageProperties(pageId?: string): UseStablePagePropertiesResult {
-  const [properties, setProperties] = useState<PageProperty[]>([]);
+export function useStablePropertyValues(pageId?: string): UseStablePropertyValuesResult {
+  const [properties, setProperties] = useState<PropertyValue[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const channelRef = useRef<any>(null);
@@ -46,7 +46,7 @@ export function useStablePageProperties(pageId?: string): UseStablePagePropertie
       console.log('🔍 Fetching properties for page:', pageId);
       
       const { data, error: fetchError } = await supabase
-        .from('page_properties')
+        .from('property_values')
         .select('*')
         .eq('page_id', pageId);
 
@@ -77,7 +77,7 @@ export function useStablePageProperties(pageId?: string): UseStablePagePropertie
     if (!pageId || channelRef.current) return;
 
     try {
-      const channelName = `page_properties_${pageId}_${Date.now()}`;
+      const channelName = `property_values_${pageId}_${Date.now()}`;
       console.log('📡 Setting up properties subscription:', channelName);
       
       const channel = supabase.channel(channelName);
@@ -87,7 +87,7 @@ export function useStablePageProperties(pageId?: string): UseStablePagePropertie
         {
           event: '*',
           schema: 'public',
-          table: 'page_properties',
+          table: 'property_values',
           filter: `page_id=eq.${pageId}`
         },
         (payload) => {
@@ -98,16 +98,16 @@ export function useStablePageProperties(pageId?: string): UseStablePagePropertie
           setProperties(prev => {
             switch (payload.eventType) {
               case 'INSERT':
-                const newProperty = payload.new as PageProperty;
+                const newProperty = payload.new as PropertyValue;
                 if (prev.some(p => p.id === newProperty.id)) return prev;
                 return [...prev, newProperty];
               
               case 'UPDATE':
-                const updatedProperty = payload.new as PageProperty;
+                const updatedProperty = payload.new as PropertyValue;
                 return prev.map(p => p.id === updatedProperty.id ? updatedProperty : p);
               
               case 'DELETE':
-                const deletedProperty = payload.old as PageProperty;
+                const deletedProperty = payload.old as Partial<PropertyValue> & { id: string };
                 return prev.filter(p => p.id !== deletedProperty.id);
               
               default:
@@ -127,7 +127,7 @@ export function useStablePageProperties(pageId?: string): UseStablePagePropertie
     }
   }, [pageId]);
 
-  const updateProperty = useCallback(async (fieldId: string, value: string) => {
+  const updateProperty = useCallback(async (propertyId: string, value: string) => {
     if (!pageId) return { error: 'No page selected' };
 
     try {
@@ -135,10 +135,10 @@ export function useStablePageProperties(pageId?: string): UseStablePagePropertie
       if (!user) return { error: 'User not authenticated' };
 
       const { error } = await supabase
-        .from('page_properties')
+        .from('property_values')
         .upsert({
           page_id: pageId,
-          field_id: fieldId,
+          property_id: propertyId,
           value: value,
           created_by: user.id
         });
@@ -147,7 +147,7 @@ export function useStablePageProperties(pageId?: string): UseStablePagePropertie
       return {};
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to update property';
-      errorHandler.logError(err as Error, { context: 'property_update', pageId, fieldId });
+      errorHandler.logError(err as Error, { context: 'property_update', pageId, propertyId });
       return { error: errorMessage };
     }
   }, [pageId]);

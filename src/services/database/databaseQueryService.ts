@@ -37,8 +37,8 @@ export class DatabaseQueryService {
 
       // 2. Fetch all properties for these pages
       const { data: properties, error: propertiesError } = await supabase
-        .from('page_properties')
-        .select('page_id, field_id, value')
+        .from('property_values')
+        .select('page_id, property_id, value')
         .in('page_id', pageIds);
       
       if (propertiesError) throw propertiesError;
@@ -48,7 +48,7 @@ export class DatabaseQueryService {
         const pageProperties = properties?.filter(p => p.page_id === page.id) || [];
         return {
           ...page,
-          page_properties: pageProperties.map(({ field_id, value }) => ({ field_id, value }))
+          page_properties: pageProperties.map(({ property_id, value }) => ({ property_id, value }))
         };
       });
 
@@ -81,11 +81,11 @@ export class DatabaseQueryService {
       const bProperties: Record<string, string> = {};
       
       (a.page_properties || []).forEach((prop: any) => {
-        aProperties[prop.field_id] = prop.value || '';
+        aProperties[prop.property_id] = prop.value || '';
       });
       
       (b.page_properties || []).forEach((prop: any) => {
-        bProperties[prop.field_id] = prop.value || '';
+        bProperties[prop.property_id] = prop.value || '';
       });
 
       for (const sortRule of sortRules) {

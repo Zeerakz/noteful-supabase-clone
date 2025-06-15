@@ -1,17 +1,18 @@
-import { supabase } from '@/integrations/supabase/client';
-import { PageProperty } from '@/types/database';
 
-export class PagePropertyService {
-  static async fetchPageProperties(pageId: string): Promise<{ data: PageProperty[] | null; error: string | null }> {
+import { supabase } from '@/integrations/supabase/client';
+import { PropertyValue } from '@/types/database';
+
+export class PropertyValueService {
+  static async fetchPropertyValues(pageId: string): Promise<{ data: PropertyValue[] | null; error: string | null }> {
     try {
       const { data, error } = await supabase
-        .from('page_properties')
+        .from('property_values')
         .select('*')
         .eq('page_id', pageId)
         .order('created_at', { ascending: true });
 
       if (error) throw error;
-      return { data: (data || []) as PageProperty[], error: null };
+      return { data: (data || []) as PropertyValue[], error: null };
     } catch (err) {
       return { 
         data: null, 
@@ -20,19 +21,19 @@ export class PagePropertyService {
     }
   }
 
-  static async upsertPageProperty(
+  static async upsertPropertyValue(
     pageId: string,
-    fieldId: string,
+    propertyId: string,
     value: string,
     userId: string,
     options?: {
       computedValue?: string;
     }
-  ): Promise<{ data: PageProperty | null; error: string | null }> {
+  ): Promise<{ data: PropertyValue | null; error: string | null }> {
     try {
       const updateData: any = {
         page_id: pageId,
-        field_id: fieldId,
+        property_id: propertyId,
         value,
         created_by: userId,
         updated_at: new Date().toISOString(),
@@ -44,11 +45,11 @@ export class PagePropertyService {
       }
 
       const { data, error } = await supabase
-        .from('page_properties')
+        .from('property_values')
         .upsert(
           updateData,
           { 
-            onConflict: 'page_id,field_id',
+            onConflict: 'page_id,property_id',
             ignoreDuplicates: false 
           }
         )
@@ -56,7 +57,7 @@ export class PagePropertyService {
         .single();
 
       if (error) throw error;
-      return { data: data as PageProperty, error: null };
+      return { data: data as PropertyValue, error: null };
     } catch (err) {
       return { 
         data: null, 
@@ -67,20 +68,20 @@ export class PagePropertyService {
 
   static async updateComputedValue(
     pageId: string,
-    fieldId: string,
+    propertyId: string,
     computedValue: string
-  ): Promise<{ data: PageProperty | null; error: string | null }> {
+  ): Promise<{ data: PropertyValue | null; error: string | null }> {
     try {
       const { data, error } = await supabase
-        .from('page_properties')
+        .from('property_values')
         .update({ computed_value: computedValue })
         .eq('page_id', pageId)
-        .eq('field_id', fieldId)
+        .eq('property_id', propertyId)
         .select()
         .single();
 
       if (error) throw error;
-      return { data: data as PageProperty, error: null };
+      return { data: data as PropertyValue, error: null };
     } catch (err) {
       return { 
         data: null, 
@@ -89,16 +90,16 @@ export class PagePropertyService {
     }
   }
 
-  static async deletePageProperty(
+  static async deletePropertyValue(
     pageId: string,
-    fieldId: string
+    propertyId: string
   ): Promise<{ error: string | null }> {
     try {
       const { error } = await supabase
-        .from('page_properties')
+        .from('property_values')
         .delete()
         .eq('page_id', pageId)
-        .eq('field_id', fieldId);
+        .eq('property_id', propertyId);
 
       if (error) throw error;
       return { error: null };
@@ -109,10 +110,10 @@ export class PagePropertyService {
     }
   }
 
-  static async deleteAllPageProperties(pageId: string): Promise<{ error: string | null }> {
+  static async deleteAllPropertyValues(pageId: string): Promise<{ error: string | null }> {
     try {
       const { error } = await supabase
-        .from('page_properties')
+        .from('property_values')
         .delete()
         .eq('page_id', pageId);
 

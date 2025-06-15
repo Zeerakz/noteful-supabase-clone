@@ -1,12 +1,12 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { PageProperty } from '@/types/database';
-import { PagePropertyService } from '@/services/pagePropertyService';
+import { PropertyValue } from '@/types/database';
+import { PropertyValueService } from '@/services/propertyValueService';
 import { supabase } from '@/integrations/supabase/client';
 
-export function usePageProperties(pageId?: string) {
-  const [properties, setProperties] = useState<PageProperty[]>([]);
+export function usePropertyValues(pageId?: string) {
+  const [properties, setProperties] = useState<PropertyValue[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
@@ -22,7 +22,7 @@ export function usePageProperties(pageId?: string) {
 
     try {
       setLoading(true);
-      const { data, error } = await PagePropertyService.fetchPageProperties(pageId);
+      const { data, error } = await PropertyValueService.fetchPropertyValues(pageId);
 
       if (error) throw new Error(error);
       setProperties(data || []);
@@ -33,12 +33,12 @@ export function usePageProperties(pageId?: string) {
     }
   };
 
-  const updateProperty = async (fieldId: string, value: string) => {
+  const updateProperty = async (propertyId: string, value: string) => {
     if (!user || !pageId) return { error: 'User not authenticated or page not selected' };
 
-    const { data, error } = await PagePropertyService.upsertPageProperty(
+    const { data, error } = await PropertyValueService.upsertPropertyValue(
       pageId, 
-      fieldId, 
+      propertyId, 
       value, 
       user.id
     );
@@ -46,17 +46,17 @@ export function usePageProperties(pageId?: string) {
     return { data, error };
   };
 
-  const deleteProperty = async (fieldId: string) => {
+  const deleteProperty = async (propertyId: string) => {
     if (!pageId) return { error: 'Page not selected' };
 
-    const { error } = await PagePropertyService.deletePageProperty(pageId, fieldId);
+    const { error } = await PropertyValueService.deletePropertyValue(pageId, propertyId);
     return { error };
   };
 
   const deleteAllProperties = async () => {
     if (!pageId) return { error: 'Page not selected' };
 
-    const { error } = await PagePropertyService.deleteAllPageProperties(pageId);
+    const { error } = await PropertyValueService.deleteAllPropertyValues(pageId);
     return { error };
   };
 
@@ -88,7 +88,7 @@ export function usePageProperties(pageId?: string) {
 
     // Create unique channel name to avoid conflicts
     const timestamp = Date.now();
-    const channelName = `page_properties_${pageId}_${timestamp}`;
+    const channelName = `property_values_${pageId}_${timestamp}`;
     console.log('Creating page properties channel:', channelName);
 
     // Set up realtime subscription for page properties
@@ -99,14 +99,14 @@ export function usePageProperties(pageId?: string) {
       {
         event: '*',
         schema: 'public',
-        table: 'page_properties',
+        table: 'property_values',
         filter: `page_id=eq.${pageId}`
       },
       (payload) => {
         console.log('Realtime page properties update:', payload);
         
         if (payload.eventType === 'INSERT') {
-          const newProperty = payload.new as PageProperty;
+          const newProperty = payload.new as PropertyValue;
           setProperties(prev => {
             if (prev.some(prop => prop.id === newProperty.id)) {
               return prev;
@@ -114,12 +114,12 @@ export function usePageProperties(pageId?: string) {
             return [...prev, newProperty];
           });
         } else if (payload.eventType === 'UPDATE') {
-          const updatedProperty = payload.new as PageProperty;
+          const updatedProperty = payload.new as PropertyValue;
           setProperties(prev => prev.map(prop => 
             prop.id === updatedProperty.id ? updatedProperty : prop
           ));
         } else if (payload.eventType === 'DELETE') {
-          const deletedProperty = payload.old as PageProperty;
+          const deletedProperty = payload.old as PropertyValue;
           setProperties(prev => prev.filter(prop => prop.id !== deletedProperty.id));
         }
       }

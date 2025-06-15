@@ -2,10 +2,10 @@
 import { supabase } from '@/integrations/supabase/client';
 
 export class DatabasePropertyService {
-  static async createPageProperty(pageId: string, fieldId: string, value: string, userId: string) {
-    const { data, error } = await supabase.from('page_properties').insert({
+  static async createPropertyValue(pageId: string, propertyId: string, value: string, userId: string) {
+    const { data, error } = await supabase.from('property_values').insert({
       page_id: pageId,
-      field_id: fieldId,
+      property_id: propertyId,
       value: value,
       created_by: userId,
     }).select().single();

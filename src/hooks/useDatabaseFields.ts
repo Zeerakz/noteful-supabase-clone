@@ -17,7 +17,7 @@ export function useDatabaseFields(databaseId: string | undefined) {
     setLoading(true);
     try {
       const { data, error } = await supabase
-        .from('fields')
+        .from('database_properties')
         .select('*')
         .eq('database_id', databaseId)
         .order('pos', { ascending: true });

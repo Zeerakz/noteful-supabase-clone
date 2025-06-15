@@ -3,7 +3,7 @@ import { useQueryClient, useMutation } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { PageService } from '@/services/pageService';
-import { PagePropertyService } from '@/services/pagePropertyService';
+import { PropertyValueService } from '@/services/propertyValueService';
 import { useFilteredDatabasePagesQuery } from '@/hooks/useFilteredDatabasePagesQuery';
 import { useOptimisticDatabaseFields } from '@/hooks/useOptimisticDatabaseFields';
 import { useEnhancedDatabaseFieldOperations } from '@/hooks/useEnhancedDatabaseFieldOperations';
@@ -201,7 +201,7 @@ export function useDatabaseTableData({
   const { mutate: propertyUpdateMutation } = useMutation({
     mutationFn: ({ pageId, fieldId, value }: { pageId: string, fieldId: string, value: string }) => {
         if (!user) throw new Error('User not authenticated');
-        return PagePropertyService.upsertPageProperty(pageId, fieldId, value, user.id);
+        return PropertyValueService.upsertPropertyValue(pageId, fieldId, value, user.id);
     },
     onMutate: async ({ pageId, fieldId, value }) => {
         await queryClient.cancelQueries({ queryKey });
@@ -230,8 +230,8 @@ export function useDatabaseTableData({
     }
   });
 
-  const handlePropertyUpdate = useCallback((pageId: string, fieldId: string, value: string) => {
-    propertyUpdateMutation({ pageId, fieldId, value });
+  const handlePropertyUpdate = useCallback((pageId: string, propertyId: string, value: string) => {
+    propertyUpdateMutation({ pageId, fieldId: propertyId, value });
   }, [propertyUpdateMutation]);
 
   const groupedData = useMemo(() => {

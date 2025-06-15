@@ -1,8 +1,7 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { PropertyMigrationResult, PropertyMigrationPreview } from '@/types/propertyMigration';
 import { getMigrationRule } from '@/utils/propertyMigrationRules';
-import { DatabaseField, PageProperty } from '@/types/database';
+import { DatabaseField, PropertyValue } from '@/types/database';
 
 export class PropertyMigrationService {
   static async previewMigration(
@@ -30,9 +29,9 @@ export class PropertyMigrationService {
 
     // Fetch existing property values for this field
     const { data: properties, error } = await supabase
-      .from('page_properties')
+      .from('property_values')
       .select('value')
-      .eq('field_id', field.id)
+      .eq('property_id', field.id)
       .not('value', 'is', null);
 
     if (error) {
@@ -121,9 +120,9 @@ export class PropertyMigrationService {
       
       // 1. Fetch all existing property values
       const { data: properties, error: fetchError } = await supabase
-        .from('page_properties')
+        .from('property_values')
         .select('id, page_id, value')
-        .eq('field_id', field.id);
+        .eq('property_id', field.id);
 
       if (fetchError) {
         throw new Error(`Failed to fetch existing values: ${fetchError.message}`);
@@ -169,7 +168,7 @@ export class PropertyMigrationService {
       // Batch update successful conversions
       if (updates.length > 0) {
         const { error: updateError } = await supabase
-          .from('page_properties')
+          .from('property_values')
           .upsert(updates);
 
         if (updateError) {
@@ -180,7 +179,7 @@ export class PropertyMigrationService {
       // Batch delete failed conversions for lossy migrations
       if (deletions.length > 0) {
         const { error: deleteError } = await supabase
-          .from('page_properties')
+          .from('property_values')
           .delete()
           .in('id', deletions);
 

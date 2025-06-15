@@ -33,10 +33,10 @@ export interface DatabaseCreateRequest {
   }[];
 }
 
-export interface PageProperty {
+export interface PropertyValue {
   id: string;
   page_id: string;
-  field_id: string;
+  property_id: string;
   value?: string;
   computed_value?: string;
   created_by: string;
@@ -49,7 +49,7 @@ export interface DatabaseView {
   database_id: string;
   user_id: string;
   default_view_type: 'table' | 'list' | 'timeline' | 'calendar' | 'kanban' | 'form' | 'gallery';
-  grouping_field_id?: string;
+  grouping_property_id?: string;
   grouping_collapsed_groups?: string[];
   created_at: string;
   updated_at: string;
@@ -65,9 +65,9 @@ export interface SavedDatabaseView {
   view_type: 'table' | 'list' | 'timeline' | 'calendar' | 'kanban' | 'form' | 'gallery';
   filters: any; // Changed from any[] to any to support both JSON strings and parsed objects
   sorts: any; // Changed from any[] to any to support both JSON strings and parsed objects
-  grouping_field_id?: string;
+  grouping_property_id?: string;
   grouping_collapsed_groups?: string[];
-  visible_field_ids: string[]; // New property for visible fields
+  visible_property_ids: string[]; // New property for visible fields
   is_shared: boolean;
   is_default: boolean;
   created_at: string;

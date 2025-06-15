@@ -14,7 +14,7 @@ export function useDatabaseFieldOperations(databaseId?: string, onFieldsChange?:
 
   const createField = useCallback(async (field: { name: string; type: PropertyType; settings?: any; }) => {
     if (!databaseId || !user) return;
-    const { error } = await supabase.from('fields').insert([{
+    const { error } = await supabase.from('database_properties').insert([{
       database_id: databaseId,
       name: field.name,
       type: field.type as any,
@@ -26,13 +26,13 @@ export function useDatabaseFieldOperations(databaseId?: string, onFieldsChange?:
 
   const updateField = useCallback(async (fieldId: string, updates: Partial<DatabaseField>) => {
     if (!databaseId) return;
-    const { error } = await supabase.from('fields').update(updates as any).eq('id', fieldId);
+    const { error } = await supabase.from('database_properties').update(updates as any).eq('id', fieldId);
     if (!error) handleSuccess();
   }, [databaseId, handleSuccess]);
 
   const deleteField = useCallback(async (fieldId: string) => {
     if (!databaseId) return;
-    const { error } = await supabase.from('fields').delete().eq('id', fieldId);
+    const { error } = await supabase.from('database_properties').delete().eq('id', fieldId);
     if (!error) handleSuccess();
   }, [databaseId, handleSuccess]);
 
@@ -45,7 +45,7 @@ export function useDatabaseFieldOperations(databaseId?: string, onFieldsChange?:
     const { id, created_at, updated_at, ...fieldToCopy } = originalField;
 
     const { data: maxPosData } = await supabase
-      .from('fields')
+      .from('database_properties')
       .select('pos')
       .eq('database_id', databaseId)
       .order('pos', { ascending: false })
@@ -61,7 +61,7 @@ export function useDatabaseFieldOperations(databaseId?: string, onFieldsChange?:
       created_by: user.id,
     };
 
-    const { error: insertError } = await supabase.from('fields').insert([newField as any]);
+    const { error: insertError } = await supabase.from('database_properties').insert([newField as any]);
 
     if (insertError) {
       console.error('Failed to duplicate field:', insertError.message);
@@ -73,7 +73,7 @@ export function useDatabaseFieldOperations(databaseId?: string, onFieldsChange?:
   const reorderFields = useCallback(async (fields: DatabaseField[]) => {
     if (!databaseId) return;
     const updates = fields.map((field, index) => 
-        supabase.from('fields').update({ pos: index }).eq('id', field.id)
+        supabase.from('database_properties').update({ pos: index }).eq('id', field.id)
     );
     
     const results = await Promise.all(updates);

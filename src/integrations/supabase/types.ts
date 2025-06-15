@@ -114,6 +114,59 @@ export type Database = {
           },
         ]
       }
+      database_properties: {
+        Row: {
+          created_at: string | null
+          created_by: string
+          database_id: string
+          id: string
+          name: string
+          pos: number
+          settings: Json | null
+          type: Database["public"]["Enums"]["property_type_enum"]
+          updated_at: string | null
+          visibility_setting:
+            | Database["public"]["Enums"]["property_visibility"]
+            | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by: string
+          database_id: string
+          id?: string
+          name: string
+          pos?: number
+          settings?: Json | null
+          type: Database["public"]["Enums"]["property_type_enum"]
+          updated_at?: string | null
+          visibility_setting?:
+            | Database["public"]["Enums"]["property_visibility"]
+            | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string
+          database_id?: string
+          id?: string
+          name?: string
+          pos?: number
+          settings?: Json | null
+          type?: Database["public"]["Enums"]["property_type_enum"]
+          updated_at?: string | null
+          visibility_setting?:
+            | Database["public"]["Enums"]["property_visibility"]
+            | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "database_properties_database_id_fkey"
+            columns: ["database_id"]
+            isOneToOne: false
+            referencedRelation: "databases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       database_templates: {
         Row: {
           category: string
@@ -170,7 +223,7 @@ export type Database = {
           database_id: string
           default_view_type: string
           grouping_collapsed_groups: Json | null
-          grouping_field_id: string | null
+          grouping_property_id: string | null
           id: string
           updated_at: string
           user_id: string
@@ -180,7 +233,7 @@ export type Database = {
           database_id: string
           default_view_type: string
           grouping_collapsed_groups?: Json | null
-          grouping_field_id?: string | null
+          grouping_property_id?: string | null
           id?: string
           updated_at?: string
           user_id: string
@@ -190,7 +243,7 @@ export type Database = {
           database_id?: string
           default_view_type?: string
           grouping_collapsed_groups?: Json | null
-          grouping_field_id?: string | null
+          grouping_property_id?: string | null
           id?: string
           updated_at?: string
           user_id?: string
@@ -244,76 +297,23 @@ export type Database = {
       field_dependencies: {
         Row: {
           created_at: string | null
-          dependent_field_id: string
+          dependent_property_id: string
           id: string
-          source_field_id: string
+          source_property_id: string
         }
         Insert: {
           created_at?: string | null
-          dependent_field_id: string
+          dependent_property_id: string
           id?: string
-          source_field_id: string
+          source_property_id: string
         }
         Update: {
           created_at?: string | null
-          dependent_field_id?: string
+          dependent_property_id?: string
           id?: string
-          source_field_id?: string
+          source_property_id?: string
         }
         Relationships: []
-      }
-      fields: {
-        Row: {
-          created_at: string | null
-          created_by: string
-          database_id: string
-          id: string
-          name: string
-          pos: number
-          settings: Json | null
-          type: Database["public"]["Enums"]["property_type_enum"]
-          updated_at: string | null
-          visibility_setting:
-            | Database["public"]["Enums"]["property_visibility"]
-            | null
-        }
-        Insert: {
-          created_at?: string | null
-          created_by: string
-          database_id: string
-          id?: string
-          name: string
-          pos?: number
-          settings?: Json | null
-          type: Database["public"]["Enums"]["property_type_enum"]
-          updated_at?: string | null
-          visibility_setting?:
-            | Database["public"]["Enums"]["property_visibility"]
-            | null
-        }
-        Update: {
-          created_at?: string | null
-          created_by?: string
-          database_id?: string
-          id?: string
-          name?: string
-          pos?: number
-          settings?: Json | null
-          type?: Database["public"]["Enums"]["property_type_enum"]
-          updated_at?: string | null
-          visibility_setting?:
-            | Database["public"]["Enums"]["property_visibility"]
-            | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "fields_database_id_fkey"
-            columns: ["database_id"]
-            isOneToOne: false
-            referencedRelation: "databases"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       files: {
         Row: {
@@ -481,54 +481,6 @@ export type Database = {
           },
         ]
       }
-      page_properties: {
-        Row: {
-          computed_value: string | null
-          created_at: string | null
-          created_by: string
-          field_id: string
-          id: string
-          page_id: string
-          updated_at: string | null
-          value: string | null
-        }
-        Insert: {
-          computed_value?: string | null
-          created_at?: string | null
-          created_by: string
-          field_id: string
-          id?: string
-          page_id: string
-          updated_at?: string | null
-          value?: string | null
-        }
-        Update: {
-          computed_value?: string | null
-          created_at?: string | null
-          created_by?: string
-          field_id?: string
-          id?: string
-          page_id?: string
-          updated_at?: string | null
-          value?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "page_properties_field_id_fkey"
-            columns: ["field_id"]
-            isOneToOne: false
-            referencedRelation: "fields"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "page_properties_page_id_fkey"
-            columns: ["page_id"]
-            isOneToOne: false
-            referencedRelation: "legacy_pages"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       presence: {
         Row: {
           created_at: string
@@ -597,13 +549,13 @@ export type Database = {
       property_file_attachments: {
         Row: {
           created_at: string
-          field_id: string
           file_size: number
           filename: string
           id: string
           mime_type: string
           original_filename: string
           page_id: string
+          property_id: string
           storage_path: string
           updated_at: string
           uploaded_by: string
@@ -611,13 +563,13 @@ export type Database = {
         }
         Insert: {
           created_at?: string
-          field_id: string
           file_size: number
           filename: string
           id?: string
           mime_type: string
           original_filename: string
           page_id: string
+          property_id: string
           storage_path: string
           updated_at?: string
           uploaded_by: string
@@ -625,13 +577,13 @@ export type Database = {
         }
         Update: {
           created_at?: string
-          field_id?: string
           file_size?: number
           filename?: string
           id?: string
           mime_type?: string
           original_filename?: string
           page_id?: string
+          property_id?: string
           storage_path?: string
           updated_at?: string
           uploaded_by?: string
@@ -657,6 +609,54 @@ export type Database = {
             columns: ["workspace_id"]
             isOneToOne: false
             referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      property_values: {
+        Row: {
+          computed_value: string | null
+          created_at: string | null
+          created_by: string
+          id: string
+          page_id: string
+          property_id: string
+          updated_at: string | null
+          value: string | null
+        }
+        Insert: {
+          computed_value?: string | null
+          created_at?: string | null
+          created_by: string
+          id?: string
+          page_id: string
+          property_id: string
+          updated_at?: string | null
+          value?: string | null
+        }
+        Update: {
+          computed_value?: string | null
+          created_at?: string | null
+          created_by?: string
+          id?: string
+          page_id?: string
+          property_id?: string
+          updated_at?: string | null
+          value?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "page_properties_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: false
+            referencedRelation: "legacy_pages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "property_values_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "database_properties"
             referencedColumns: ["id"]
           },
         ]
@@ -690,7 +690,7 @@ export type Database = {
           description: string | null
           filters: Json | null
           grouping_collapsed_groups: Json | null
-          grouping_field_id: string | null
+          grouping_property_id: string | null
           id: string
           is_default: boolean | null
           is_shared: boolean | null
@@ -699,7 +699,7 @@ export type Database = {
           updated_at: string
           user_id: string
           view_type: string
-          visible_field_ids: Json | null
+          visible_property_ids: Json | null
           workspace_id: string
         }
         Insert: {
@@ -709,7 +709,7 @@ export type Database = {
           description?: string | null
           filters?: Json | null
           grouping_collapsed_groups?: Json | null
-          grouping_field_id?: string | null
+          grouping_property_id?: string | null
           id?: string
           is_default?: boolean | null
           is_shared?: boolean | null
@@ -718,7 +718,7 @@ export type Database = {
           updated_at?: string
           user_id: string
           view_type: string
-          visible_field_ids?: Json | null
+          visible_property_ids?: Json | null
           workspace_id: string
         }
         Update: {
@@ -728,7 +728,7 @@ export type Database = {
           description?: string | null
           filters?: Json | null
           grouping_collapsed_groups?: Json | null
-          grouping_field_id?: string | null
+          grouping_property_id?: string | null
           id?: string
           is_default?: boolean | null
           is_shared?: boolean | null
@@ -737,7 +737,7 @@ export type Database = {
           updated_at?: string
           user_id?: string
           view_type?: string
-          visible_field_ids?: Json | null
+          visible_property_ids?: Json | null
           workspace_id?: string
         }
         Relationships: []
@@ -783,11 +783,11 @@ export type Database = {
           changed_by: string
           created_at: string | null
           database_id: string
-          field_id: string | null
           id: string
           metadata: Json | null
           new_values: Json | null
           old_values: Json | null
+          property_id: string | null
           workspace_id: string
         }
         Insert: {
@@ -795,11 +795,11 @@ export type Database = {
           changed_by: string
           created_at?: string | null
           database_id: string
-          field_id?: string | null
           id?: string
           metadata?: Json | null
           new_values?: Json | null
           old_values?: Json | null
+          property_id?: string | null
           workspace_id: string
         }
         Update: {
@@ -807,11 +807,11 @@ export type Database = {
           changed_by?: string
           created_at?: string | null
           database_id?: string
-          field_id?: string | null
           id?: string
           metadata?: Json | null
           new_values?: Json | null
           old_values?: Json | null
+          property_id?: string | null
           workspace_id?: string
         }
         Relationships: [
