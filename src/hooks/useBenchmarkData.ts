@@ -219,6 +219,7 @@ export function useBenchmarkData() {
           id: pageId,
           properties: { title: `Test Page ${pageIndex + 1}`, database_id: databaseId },
           workspace_id: 'test_workspace',
+          teamspace_id: null,
           created_by: 'benchmark',
           pos: pageIndex,
           type: 'page',

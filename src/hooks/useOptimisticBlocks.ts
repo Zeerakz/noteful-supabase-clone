@@ -32,6 +32,7 @@ export function useOptimisticBlocks({ blocks }: UseOptimisticBlocksProps) {
     const optimisticBlock: Block = {
       id: tempId,
       workspace_id: blockData.workspace_id || '',
+      teamspace_id: blockData.teamspace_id ?? null,
       type: blockData.type || 'text',
       parent_id: blockData.parent_id || null,
       properties: blockData.properties || {},

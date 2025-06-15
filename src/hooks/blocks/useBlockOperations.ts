@@ -64,6 +64,7 @@ export function useBlockOperations(workspaceId?: string, parentId?: string | nul
       const newBlockData: Omit<Block, 'id'> = {
         workspace_id: workspaceId,
         parent_id: parentId === undefined ? null : parentId,
+        teamspace_id: params.teamspace_id ?? null,
         type: params.type || 'text',
         properties: params.properties || {},
         content: params.content || null,
@@ -85,6 +86,7 @@ export function useBlockOperations(workspaceId?: string, parentId?: string | nul
         .insert({
           workspace_id: newBlockData.workspace_id,
           parent_id: newBlockData.parent_id,
+          teamspace_id: newBlockData.teamspace_id,
           type: newBlockData.type as any, // Cast to any to bypass stale enum type
           properties: newBlockData.properties,
           content: newBlockData.content,

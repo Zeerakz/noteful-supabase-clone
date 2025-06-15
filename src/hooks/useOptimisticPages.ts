@@ -46,6 +46,7 @@ export function useOptimisticPages({ pages, onServerUpdate }: UseOptimisticPages
       id: tempId,
       type: 'page',
       workspace_id: pageData.workspace_id || '',
+      teamspace_id: pageData.teamspace_id ?? null,
       parent_id: pageData.parent_id || null,
       properties: pageData.properties || { title: 'Untitled' },
       content: pageData.content || {},
