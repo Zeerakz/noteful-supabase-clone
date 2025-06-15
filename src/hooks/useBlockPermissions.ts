@@ -57,70 +57,31 @@ export function useBlockPermissions(blockId?: string, workspaceId?: string) {
 
       setLoading(true);
       try {
-        const { data: block, error: blockError } = await supabase
-          .from('blocks')
-          .select('created_by')
-          .eq('id', blockId)
-          .single();
+        // 1. Get inherited permissions from the database function
+        const { data: inheritedPerm, error: rpcError } = await supabase.rpc(
+          'get_inherited_block_permission',
+          { p_block_id: blockId, p_user_id: user.id }
+        );
 
-        if (blockError || !block) {
-          throw new Error(blockError?.message || 'Block not found.');
+        if (rpcError) {
+          throw new Error(`Failed to get inherited permissions: ${rpcError.message}`);
         }
 
-        let potentialPermissions: BlockPermissionLevel[] = [];
+        const blockPermissionLevel: BlockPermissionLevel = inheritedPerm || 'none';
+        
+        const potentialPermissions: BlockPermissionLevel[] = [blockPermissionLevel];
 
-        // 1. Workspace-level permissions as a baseline
+        // 2. Add workspace-level permissions as a potential source
         if (workspacePermissions.permissionLevel === 'full_access') {
           potentialPermissions.push('full_access');
         } else if (workspacePermissions.permissionLevel === 'can_edit_content') {
           potentialPermissions.push('edit');
         } else {
+          // All workspace members should be able to at least view.
           potentialPermissions.push('view');
         }
-
-        // 2. Block creator has full access
-        if (block.created_by === user.id) {
-          potentialPermissions.push('full_access');
-        }
-
-        // 3. Get direct user & group permissions for this block
-        const { data: blockPerms, error: blockPermsError } = await supabase
-            .from('block_permissions')
-            .select('permission_level, grantee_type, user_id, group_id')
-            .eq('block_id', blockId);
-
-        if (blockPermsError) throw blockPermsError;
         
-        if (blockPerms && blockPerms.length > 0) {
-          // 4. Check for direct user permission
-          const directUserPerm = blockPerms.find(p => p.grantee_type === 'user' && p.user_id === user.id);
-          if (directUserPerm) {
-            potentialPermissions.push(directUserPerm.permission_level as BlockPermissionLevel);
-          }
-
-          // 5. Check for group permissions
-          const groupPerms = blockPerms.filter(p => p.grantee_type === 'group');
-          if (groupPerms.length > 0) {
-              const groupIds = groupPerms.map(p => p.group_id);
-              const { data: userGroups, error: userGroupsError } = await supabase
-                  .from('group_memberships')
-                  .select('group_id')
-                  .eq('user_id', user.id)
-                  .in('group_id', groupIds as string[]);
-              
-              if (userGroupsError) throw userGroupsError;
-
-              if (userGroups) {
-                  for (const userGroup of userGroups) {
-                      const matchingPerm = groupPerms.find(p => p.group_id === userGroup.group_id);
-                      if (matchingPerm) {
-                          potentialPermissions.push(matchingPerm.permission_level as BlockPermissionLevel);
-                      }
-                  }
-              }
-          }
-        }
-        
+        // 3. Determine the final highest permission level
         const finalPermission = getHighestPermission(potentialPermissions);
 
         const perms: BlockPermissions = {

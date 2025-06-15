@@ -1152,6 +1152,10 @@ export type Database = {
           table_name: string
         }[]
       }
+      get_inherited_block_permission: {
+        Args: { p_block_id: string; p_user_id: string }
+        Returns: Database["public"]["Enums"]["block_permission_level"]
+      }
       get_user_workspace_role: {
         Args: { workspace_uuid: string; user_uuid: string }
         Returns: string
