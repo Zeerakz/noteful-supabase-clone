@@ -1316,6 +1316,7 @@ export type Database = {
           workspace_id: string
           name: string
           description: string
+          icon: string
           created_by: string
           created_at: string
           updated_at: string

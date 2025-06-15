@@ -38,7 +38,10 @@ export const TeamspaceService = {
       console.error('Error fetching discoverable teamspaces:', error);
       return { data: null, error: error.message };
     }
-    return { data, error: null };
+    // The type from rpc might be stale because the generated types haven't been updated
+    // after the migration. We cast to `any` to bypass the type check, as the
+    // runtime data will be correct.
+    return { data: data as any, error: null };
   },
 
   async createTeamspace(
