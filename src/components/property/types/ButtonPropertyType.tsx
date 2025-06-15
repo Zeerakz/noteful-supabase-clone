@@ -1,7 +1,6 @@
-
 import React from 'react';
 import { PropertyTypeDefinition } from '@/types/propertyRegistry';
-import { ButtonPropertyConfig, CreatePageWithTemplateConfig, SetPropertyValueConfig, OpenLinkConfig } from '@/types/property/configs/button';
+import { ButtonPropertyConfig, CreatePageWithTemplateConfig, UpdatePagesConfig, OpenLinkConfig } from '@/types/property/configs/button';
 import { Button } from '@/components/ui/button';
 import { MousePointer } from 'lucide-react';
 import { ButtonPropertyConfigEditor } from '../config-editors/ButtonPropertyConfigEditor';
@@ -49,10 +48,13 @@ export const buttonPropertyType: PropertyTypeDefinition<ButtonPropertyConfig> = 
             errors.push(`Action ${index + 1}: Template ID is required`);
           }
           break;
-        case 'set_property_value':
-          const propertyConfig = action.config as SetPropertyValueConfig;
-          if (!propertyConfig.targetFieldId) {
-            errors.push(`Action ${index + 1}: Target field ID is required`);
+        case 'update_pages':
+          const updateConfig = action.config as UpdatePagesConfig;
+          if (!updateConfig.propertiesToUpdate || updateConfig.propertiesToUpdate.length === 0) {
+            errors.push(`Action ${index + 1}: At least one property to update is required.`);
+          }
+          if (updateConfig.target === 'filtered_pages' && !updateConfig.targetDatabaseId) {
+            errors.push(`Action ${index + 1}: Target database is required for filtered pages.`);
           }
           break;
         case 'open_link':

@@ -1,6 +1,5 @@
-
 import React from 'react';
-import { ButtonPropertyConfig, CreatePageWithTemplateConfig, SetPropertyValueConfig, OpenLinkConfig } from '@/types/property/configs/button';
+import { ButtonPropertyConfig, CreatePageWithTemplateConfig, UpdatePagesConfig, OpenLinkConfig } from '@/types/property/configs/button';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { ChevronDown, ExternalLink, Plus, Edit } from 'lucide-react';
@@ -85,31 +84,18 @@ export function ButtonFieldDisplay({
           }
           break;
 
-        case 'set_property_value':
-          if (pageId && user) {
-            const propertyConfig = action.config as SetPropertyValueConfig;
-            const targetPageId = propertyConfig.targetPageId || pageId;
-            const { error } = await PropertyValueService.upsertPropertyValue(
-              targetPageId,
-              propertyConfig.targetFieldId,
-              propertyConfig.value,
-              user.id
-            );
-            if (error) {
-              toast({
-                title: "Error",
-                description: error,
-                variant: "destructive"
-              });
-            } else {
-              toast({
-                title: "Success",
-                description: "Property updated successfully",
-              });
-              // Invalidate queries to refresh data
-              queryClient.invalidateQueries({ queryKey: ['database-pages'] });
-            }
-          }
+        case 'update_pages':
+          const updateConfig = action.config as UpdatePagesConfig;
+          // Placeholder for execution logic
+          toast({
+            title: "Action Triggered",
+            description: `Update pages action '${action.label}' not fully implemented yet. Target: ${updateConfig.target}.`,
+          });
+          // In a future step, we would implement:
+          // 1. If target is 'current_page', update properties on `pageId`.
+          // 2. If target is 'filtered_pages', fetch pages from `targetDatabaseId` matching `filter`.
+          // 3. For each page, call PropertyValueService to update properties.
+          // 4. Invalidate relevant queries to refresh UI.
           break;
 
         case 'open_link':
@@ -137,7 +123,7 @@ export function ButtonFieldDisplay({
     switch (actionType) {
       case 'create_page_with_template':
         return <Plus className="h-4 w-4 mr-2" />;
-      case 'set_property_value':
+      case 'update_pages':
         return <Edit className="h-4 w-4 mr-2" />;
       case 'open_link':
         return <ExternalLink className="h-4 w-4 mr-2" />;

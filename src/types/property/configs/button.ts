@@ -1,16 +1,17 @@
 
 import { BasePropertyConfig } from '../base';
+import { ComplexFilter } from '@/types/filters';
 
 export interface ButtonAction {
   id: string;
-  type: 'create_page_with_template' | 'set_property_value' | 'open_link';
+  type: 'create_page_with_template' | 'update_pages' | 'open_link';
   label: string;
   config: ButtonActionConfig;
 }
 
 export type ButtonActionConfig = 
   | CreatePageWithTemplateConfig
-  | SetPropertyValueConfig
+  | UpdatePagesConfig
   | OpenLinkConfig;
 
 export interface CreatePageWithTemplateConfig {
@@ -20,10 +21,11 @@ export interface CreatePageWithTemplateConfig {
   prefilledProperties?: { propertyId: string; value: string }[];
 }
 
-export interface SetPropertyValueConfig {
-  targetFieldId: string;
-  value: string;
-  targetPageId?: string; // If not provided, applies to current page
+export interface UpdatePagesConfig {
+  target: 'current_page' | 'filtered_pages';
+  targetDatabaseId?: string;
+  filter?: ComplexFilter;
+  propertiesToUpdate: { propertyId: string; value: string }[];
 }
 
 export interface OpenLinkConfig {
