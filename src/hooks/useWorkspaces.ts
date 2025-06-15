@@ -55,7 +55,9 @@ export function useWorkspaces() {
     if (!user) return { error: 'User not authenticated' };
 
     try {
-      const { data, error } = await supabase
+      // To debug the RLS issue, we'll separate the insert from the select.
+      // This helps determine if the INSERT is failing, or if the subsequent SELECT RLS check is the problem.
+      const { error } = await supabase
         .from('workspaces')
         .insert([
           {
@@ -63,16 +65,20 @@ export function useWorkspaces() {
             description,
             owner_user_id: user.id,
           },
-        ])
-        .select()
-        .single();
+        ]);
+        // Note: .select().single() has been removed for this test.
 
       if (error) throw error;
       
+      // Manually refetch the workspaces list to get the new one.
       await fetchWorkspaces();
       
-      return { data, error: null };
+      // Since we are not selecting the data back, we return null for the data.
+      // The calling component handles this gracefully.
+      return { data: null, error: null };
     } catch (err) {
+      // Adding more detailed logging to help debug.
+      console.error("Full error from createWorkspace:", err);
       const error = err instanceof Error ? err.message : 'Failed to create workspace';
       return { data: null, error };
     }
