@@ -26,10 +26,16 @@ export const PermissionService = {
     if (profilesRes.error) return { data: null, error: profilesRes.error.message };
     if (groupsRes.error) return { data: null, error: groupsRes.error.message };
 
-    const profilesMap = new Map(profilesRes.data?.map(p => [p.id, p]));
-    const groupsMap = new Map(groupsRes.data?.map(g => [g.id, g]));
+    const profilesMap = new Map<string, { full_name: string | null, avatar_url: string | null }>(
+      (profilesRes.data || []).map(p => [p.id, p])
+    );
+    const groupsMap = new Map<string, { name: string }>(
+      (groupsRes.data || []).map(g => [g.id, g])
+    );
 
-    const formattedData = permissions.map(p => {
+    const formattedData = permissions
+      .filter((p): p is Omit<typeof p, 'permission_level'> & { permission_level: GrantablePermissionLevel } => p.permission_level !== 'none')
+      .map(p => {
         let grantee_name: string | undefined;
         let grantee_avatar_url: string | undefined;
 
@@ -65,7 +71,7 @@ export const PermissionService = {
       console.error("Error adding user permission:", error);
       return { data: null, error: error.message };
     }
-    return { data, error: null };
+    return { data: data as BlockPermissionGrant, error: null };
   },
 
   async addGroupPermission(blockId: string, groupId: string, permissionLevel: GrantablePermissionLevel, grantedBy: string): Promise<{ data: BlockPermissionGrant | null, error: string | null }> {
@@ -85,7 +91,7 @@ export const PermissionService = {
       console.error("Error adding group permission:", error);
       return { data: null, error: error.message };
     }
-    return { data, error: null };
+    return { data: data as BlockPermissionGrant, error: null };
   },
 
   async updatePermission(permissionId: string, permissionLevel: GrantablePermissionLevel): Promise<{ data: BlockPermissionGrant | null, error: string | null }> {
@@ -100,7 +106,7 @@ export const PermissionService = {
       console.error("Error updating permission:", error);
       return { data: null, error: error.message };
     }
-    return { data, error: null };
+    return { data: data as BlockPermissionGrant, error: null };
   },
 
   async removePermission(permissionId: string): Promise<{ error: string | null }> {

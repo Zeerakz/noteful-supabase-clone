@@ -30,7 +30,7 @@ function PageViewContent() {
   const { properties, loading: propertiesLoading, error: propertiesError, updateProperty, retry: retryProperties } = useStablePropertyValues(pageId);
   const { userProfiles } = useUserProfiles(pageData?.workspace?.id);
   const { fields, loading: fieldsLoading } = useDatabaseFields(pageData?.properties.database_id);
-  const { permissions, loading: permissionsLoading } = useBlockPermissions(pageId, pageData?.workspace?.id);
+  const { permissions, loading: permissionsLoading } = useBlockPermissions(pageId);
   const { updatePage, hasOptimisticChanges } = useEnhancedPages(pageData?.workspace?.id);
 
   useEffect(() => {
