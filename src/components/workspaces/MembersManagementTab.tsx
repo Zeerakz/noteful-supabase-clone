@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Send, Trash2, Mail, Loader2, MoreHorizontal } from 'lucide-react';
+import { Send, Trash2, Mail, Loader2, MoreHorizontal, Copy } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
   AlertDialog,
@@ -86,6 +86,18 @@ export function MembersManagementTab({ workspaceId }: MembersManagementTabProps)
       refresh();
     }
     setIsSubmitting(false);
+  };
+
+  const handleCopyInviteLink = (token: string) => {
+    const inviteUrl = `${window.location.origin}/accept-invite?token=${token}`;
+    navigator.clipboard.writeText(inviteUrl)
+      .then(() => {
+        toast({ title: 'Invitation link copied!' });
+      })
+      .catch(err => {
+        console.error('Failed to copy link', err);
+        toast({ title: 'Error copying link', variant: 'destructive' });
+      });
   };
   
   const handleRoleChange = async (member: WorkspaceMember, newRole: WorkspaceRole) => {
@@ -224,7 +236,26 @@ export function MembersManagementTab({ workspaceId }: MembersManagementTabProps)
                   </div>
                 </div>
                 {canManageMembers && (
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => setInvitationToCancel(invite)}><Trash2 /></Button>
+                  <div className="flex items-center gap-1">
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-8 w-8" 
+                      onClick={() => handleCopyInviteLink(invite.token)}
+                      title="Copy invitation link"
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-8 w-8 text-destructive" 
+                      onClick={() => setInvitationToCancel(invite)}
+                      title="Cancel invitation"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 )}
               </div>
             ))}
