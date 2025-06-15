@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { PropertyMigrationResult, PropertyMigrationPreview } from '@/types/propertyMigration';
 import { getMigrationRule } from '@/utils/propertyMigrationRules';
@@ -120,7 +121,7 @@ export class PropertyMigrationService {
       
       // 1. Fetch all existing property values
       const { data: properties, error: fetchError } = await supabase
-        .from('database_properties')
+        .from('property_values')
         .select('id, page_id, value')
         .eq('property_id', field.id);
 

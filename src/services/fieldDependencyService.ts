@@ -68,8 +68,8 @@ export class FieldDependencyService {
   ): Promise<{ data: string | null; error: string | null }> {
     try {
       const { data, error } = await supabase.rpc('recalculate_formula_field', {
-        p_field_id: fieldId, // Ensure RPC parameter name matches definition
-        p_page_id: pageId
+        field_id: fieldId,
+        page_id: pageId
       });
 
       if (error) throw error;
@@ -88,8 +88,8 @@ export class FieldDependencyService {
   ): Promise<{ data: string | null; error: string | null }> {
     try {
       const { data, error } = await supabase.rpc('recalculate_rollup_field', {
-        p_field_id: fieldId, // Ensure RPC parameter name matches definition
-        p_page_id: pageId
+        field_id: fieldId,
+        page_id: pageId
       });
 
       if (error) throw error;
