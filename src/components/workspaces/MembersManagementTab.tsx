@@ -8,7 +8,8 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Send, Trash2, Mail, Loader2, MoreHorizontal, Copy } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Send, Trash2, Mail, Loader2, MoreHorizontal, Copy, Clock, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
   AlertDialog,
@@ -33,6 +34,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { WorkspaceRole } from '@/types/db';
 import { useAuth } from '@/contexts/AuthContext';
+import { format, isAfter, differenceInDays } from 'date-fns';
 
 interface MembersManagementTabProps {
   workspaceId: string;
@@ -45,6 +47,20 @@ interface InviteFormInputs {
 
 const getInitials = (name?: string | null) => {
   return name?.split(' ').map(n => n[0]).join('').toUpperCase() || 'U';
+};
+
+const getExpirationStatus = (expiresAt: string) => {
+  const expiration = new Date(expiresAt);
+  const now = new Date();
+  const daysUntilExpiration = differenceInDays(expiration, now);
+  
+  if (isAfter(now, expiration)) {
+    return { status: 'expired', text: 'Expired', variant: 'destructive' as const };
+  } else if (daysUntilExpiration <= 1) {
+    return { status: 'expiring', text: `Expires ${daysUntilExpiration === 0 ? 'today' : 'tomorrow'}`, variant: 'secondary' as const };
+  } else {
+    return { status: 'active', text: `Expires in ${daysUntilExpiration} days`, variant: 'outline' as const };
+  }
 };
 
 export function MembersManagementTab({ workspaceId }: MembersManagementTabProps) {
@@ -143,7 +159,13 @@ export function MembersManagementTab({ workspaceId }: MembersManagementTabProps)
             <form onSubmit={handleSubmit(onSubmit)} className="flex items-start gap-2">
               <div className="flex-grow">
                 <Input
-                  {...register('email', { required: 'Email is required', pattern: { value: /^\S+@\S+$/i, message: 'Invalid email address' } })}
+                  {...register('email', { 
+                    required: 'Email is required', 
+                    pattern: { 
+                      value: /^\S+@\S+$/i, 
+                      message: 'Invalid email address' 
+                    } 
+                  })}
                   placeholder="email@example.com"
                   className={errors.email ? 'border-red-500' : ''}
                 />
@@ -224,41 +246,53 @@ export function MembersManagementTab({ workspaceId }: MembersManagementTabProps)
 
           <div className="space-y-2">
             <h4 className="font-medium">Pending Invitations ({invitations.length})</h4>
-            {invitations.map(invite => (
-              <div key={invite.id} className="flex items-center justify-between p-2 rounded-lg hover:bg-muted">
-                <div className="flex items-center gap-3">
-                  <Avatar>
-                    <AvatarFallback><Mail /></AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <p className="font-medium">{invite.email}</p>
-                    <p className="text-sm text-muted-foreground capitalize">{invite.role}</p>
+            {invitations.map(invite => {
+              const expirationStatus = getExpirationStatus(invite.expires_at);
+              return (
+                <div key={invite.id} className="flex items-center justify-between p-2 rounded-lg hover:bg-muted">
+                  <div className="flex items-center gap-3">
+                    <Avatar>
+                      <AvatarFallback><Mail /></AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <p className="font-medium">{invite.email}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm text-muted-foreground capitalize">{invite.role}</p>
+                        <Badge variant={expirationStatus.variant} className="text-xs">
+                          {expirationStatus.status === 'expired' && <AlertCircle className="w-3 h-3 mr-1" />}
+                          {expirationStatus.status === 'expiring' && <Clock className="w-3 h-3 mr-1" />}
+                          {expirationStatus.text}
+                        </Badge>
+                      </div>
+                    </div>
                   </div>
+                  {canManageMembers && (
+                    <div className="flex items-center gap-1">
+                      {expirationStatus.status !== 'expired' && (
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-8 w-8" 
+                          onClick={() => handleCopyInviteLink(invite.token)}
+                          title="Copy invitation link"
+                        >
+                          <Copy className="h-4 w-4" />
+                        </Button>
+                      )}
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-8 w-8 text-destructive" 
+                        onClick={() => setInvitationToCancel(invite)}
+                        title="Cancel invitation"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  )}
                 </div>
-                {canManageMembers && (
-                  <div className="flex items-center gap-1">
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className="h-8 w-8" 
-                      onClick={() => handleCopyInviteLink(invite.token)}
-                      title="Copy invitation link"
-                    >
-                      <Copy className="h-4 w-4" />
-                    </Button>
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className="h-8 w-8 text-destructive" 
-                      onClick={() => setInvitationToCancel(invite)}
-                      title="Cancel invitation"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                )}
-              </div>
-            ))}
+              );
+            })}
           </div>
         </>
       )}

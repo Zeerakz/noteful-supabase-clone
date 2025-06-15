@@ -82,10 +82,14 @@ export class InvitationService {
 
   static async getPendingInvitations(workspaceId: string) {
     try {
+      // Clean up expired invitations first
+      await supabase.rpc('cleanup_expired_invitations');
+
       const { data, error } = await supabase
         .from('invitations')
-        .select('*')
+        .select('id, email, role, created_at, expires_at, token')
         .eq('workspace_id', workspaceId)
+        .gt('expires_at', new Date().toISOString()) // Only get non-expired invitations
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -137,6 +141,24 @@ export class InvitationService {
       return { error: null };
     } catch (err) {
       return { error: err instanceof Error ? err.message : 'Failed to update role' };
+    }
+  }
+
+  static async getInvitationAnalytics(workspaceId: string) {
+    try {
+      const { data, error } = await supabase
+        .from('invitation_analytics')
+        .select('*')
+        .eq('workspace_id', workspaceId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return { data: data || [], error: null };
+    } catch (err) {
+      return {
+        data: null,
+        error: err instanceof Error ? err.message : 'Failed to fetch analytics'
+      };
     }
   }
 }

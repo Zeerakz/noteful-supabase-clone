@@ -1,70 +1,101 @@
-import { useState, useEffect, useCallback } from 'react';
+
+import { useState, useEffect } from 'react';
 import { InvitationService } from '@/services/invitationService';
-import { WorkspaceMember, PendingInvitation } from '@/types/workspace';
 import { WorkspaceRole } from '@/types/db';
 
-export { type WorkspaceMember, type PendingInvitation } from '@/types/workspace';
+export interface WorkspaceMember {
+  id: string;
+  user_id: string;
+  role: WorkspaceRole;
+  created_at: string;
+  profiles?: {
+    full_name?: string;
+    email?: string;
+    avatar_url?: string;
+  };
+}
+
+export interface PendingInvitation {
+  id: string;
+  email: string;
+  role: WorkspaceRole;
+  created_at: string;
+  expires_at: string;
+  token: string;
+}
 
 export function useWorkspaceMembers(workspaceId?: string) {
   const [members, setMembers] = useState<WorkspaceMember[]>([]);
   const [invitations, setInvitations] = useState<PendingInvitation[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchMembersAndInvites = useCallback(async () => {
-    if (!workspaceId) {
-      setLoading(false);
-      return;
-    }
+  const fetchData = async () => {
+    if (!workspaceId) return;
+
     setLoading(true);
     try {
-      const [membersRes, invitesRes] = await Promise.all([
+      const [membersResult, invitationsResult] = await Promise.all([
         InvitationService.getWorkspaceMembers(workspaceId),
-        InvitationService.getPendingInvitations(workspaceId),
+        InvitationService.getPendingInvitations(workspaceId)
       ]);
 
-      if (membersRes.error) throw new Error(`Failed to fetch members: ${membersRes.error}`);
-      if (invitesRes.error) throw new Error(`Failed to fetch invites: ${invitesRes.error}`);
-      
-      setMembers((membersRes.data as WorkspaceMember[]) || []);
-      setInvitations((invitesRes.data as PendingInvitation[]) || []);
+      if (membersResult.error) {
+        console.error('Error fetching members:', membersResult.error);
+      } else {
+        setMembers(membersResult.data || []);
+      }
 
+      if (invitationsResult.error) {
+        console.error('Error fetching invitations:', invitationsResult.error);
+      } else {
+        setInvitations(invitationsResult.data || []);
+      }
     } catch (error) {
-      console.error(error);
+      console.error('Error fetching workspace data:', error);
     } finally {
       setLoading(false);
     }
-  }, [workspaceId]);
+  };
 
   useEffect(() => {
-    fetchMembersAndInvites();
-  }, [fetchMembersAndInvites]);
+    fetchData();
+  }, [workspaceId]);
+
+  const refresh = () => {
+    fetchData();
+  };
 
   const updateMemberRole = async (memberId: string, role: WorkspaceRole) => {
-    const { error } = await InvitationService.updateMemberRole(memberId, role);
-    if (error) {
-      return { error };
+    const result = await InvitationService.updateMemberRole(memberId, role);
+    if (!result.error) {
+      await fetchData(); // Refresh the data
     }
-    await fetchMembersAndInvites();
-    return { error: null };
+    return result;
   };
 
   const removeMember = async (memberId: string) => {
-    const { error } = await InvitationService.removeMember(memberId);
-    if (error) {
-      return { error };
+    const result = await InvitationService.removeMember(memberId);
+    if (!result.error) {
+      await fetchData(); // Refresh the data
     }
-    await fetchMembersAndInvites();
-    return { error: null };
+    return result;
   };
 
   const cancelInvitation = async (invitationId: string) => {
-    const { error } = await InvitationService.cancelInvitation(invitationId);
-    if (error) {
-      return { error };
+    const result = await InvitationService.cancelInvitation(invitationId);
+    if (!result.error) {
+      await fetchData(); // Refresh the data
     }
-    await fetchMembersAndInvites();
-    return { error: null };
+    return result;
   };
 
-  return { members, invitations, loading, refresh: fetchMembersAndInvites, updateMemberRole, removeMember, cancelInvitation };
+  return {
+    members,
+    invitations,
+    loading,
+    refresh,
+    updateMemberRole,
+    removeMember,
+    cancelInvitation
+  };
 }

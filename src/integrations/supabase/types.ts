@@ -500,10 +500,49 @@ export type Database = {
           },
         ]
       }
+      invitation_analytics: {
+        Row: {
+          created_at: string
+          event_type: string
+          id: string
+          invitation_id: string | null
+          ip_address: unknown | null
+          user_agent: string | null
+          workspace_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_type: string
+          id?: string
+          invitation_id?: string | null
+          ip_address?: unknown | null
+          user_agent?: string | null
+          workspace_id: string
+        }
+        Update: {
+          created_at?: string
+          event_type?: string
+          id?: string
+          invitation_id?: string | null
+          ip_address?: unknown | null
+          user_agent?: string | null
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invitation_analytics_invitation_id_fkey"
+            columns: ["invitation_id"]
+            isOneToOne: false
+            referencedRelation: "invitations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       invitations: {
         Row: {
           created_at: string
           email: string
+          expires_at: string | null
           id: string
           invited_by: string | null
           role: Database["public"]["Enums"]["workspace_role"]
@@ -513,6 +552,7 @@ export type Database = {
         Insert: {
           created_at?: string
           email: string
+          expires_at?: string | null
           id?: string
           invited_by?: string | null
           role: Database["public"]["Enums"]["workspace_role"]
@@ -522,6 +562,7 @@ export type Database = {
         Update: {
           created_at?: string
           email?: string
+          expires_at?: string | null
           id?: string
           invited_by?: string | null
           role?: Database["public"]["Enums"]["workspace_role"]
@@ -1300,6 +1341,10 @@ export type Database = {
           p_required_roles?: Database["public"]["Enums"]["workspace_role"][]
         }
         Returns: boolean
+      }
+      cleanup_expired_invitations: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
       }
       cleanup_old_presence: {
         Args: Record<PropertyKey, never>
