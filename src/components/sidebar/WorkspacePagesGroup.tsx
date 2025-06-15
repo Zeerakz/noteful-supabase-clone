@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Loader2, Users, FolderLock } from 'lucide-react';
+import { Loader2, Users, FolderLock, Database as DatabaseIcon } from 'lucide-react';
 import { DragDropContext, Droppable, DropResult } from 'react-beautiful-dnd';
 import {
   SidebarGroup,
@@ -14,6 +14,7 @@ import {
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useEnhancedPages } from '@/hooks/useEnhancedPages';
 import { useTeamspaces } from '@/hooks/useTeamspaces';
+import { useDatabases } from '@/hooks/useDatabases';
 import { useToast } from '@/hooks/use-toast';
 import { PageTreeItem } from './PageTreeItem';
 import { validateDragAndDrop } from '@/utils/navigationConstraints';
@@ -29,6 +30,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { MoreHorizontal, Settings } from 'lucide-react';
 import { TeamspaceSettingsModal } from '@/components/workspaces/TeamspaceSettingsModal';
+import { DatabaseListItem } from './DatabaseListItem';
 
 interface WorkspacePagesGroupProps {
   workspaceId: string;
@@ -38,10 +40,11 @@ interface WorkspacePagesGroupProps {
 export function WorkspacePagesGroup({ workspaceId, workspaceName }: WorkspacePagesGroupProps) {
   const { pages, updatePageHierarchy, deletePage, hasOptimisticChanges, loading: pagesLoading, fetchPages } = useEnhancedPages(workspaceId);
   const { teamspaces, loading: teamspacesLoading } = useTeamspaces(workspaceId);
+  const { databases, loading: databasesLoading, deleteDatabase } = useDatabases(workspaceId);
   const { toast } = useToast();
   const [editingTeamspace, setEditingTeamspace] = useState<Teamspace | null>(null);
 
-  const loading = pagesLoading || teamspacesLoading;
+  const loading = pagesLoading || teamspacesLoading || databasesLoading;
 
   const privatePages = pages.filter(p => !p.teamspace_id && !p.parent_id);
   const teamspacePages = pages.reduce((acc, page) => {
@@ -129,6 +132,18 @@ export function WorkspacePagesGroup({ workspaceId, workspaceName }: WorkspacePag
     }
 
     await deletePage(pageId);
+  };
+
+  const handleDeleteDatabase = async (databaseId: string, databaseName: string) => {
+    if (!confirm(`Are you sure you want to delete database "${databaseName}"? This will also delete all its contents and cannot be undone.`)) {
+      return;
+    }
+    const { error } = await deleteDatabase(databaseId);
+    if (error) {
+      toast({ title: "Error deleting database", description: error, variant: "destructive" });
+    } else {
+      toast({ title: "Database deleted" });
+    }
   };
 
   if (loading) {
@@ -256,6 +271,41 @@ export function WorkspacePagesGroup({ workspaceId, workspaceName }: WorkspacePag
               </Collapsible>
             </div>
           </DragDropContext>
+          
+          <div className="space-y-1 mt-2 border-t pt-2">
+            <Collapsible defaultOpen>
+                <CollapsibleTrigger className="w-full text-sm font-medium flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-muted">
+                  <DatabaseIcon className="h-4 w-4" />
+                  <span className="flex-1 text-left truncate">Databases</span>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <ul role="group" className="pt-1" aria-label="Databases">
+                      <SidebarMenu>
+                          {databases.map((db) => (
+                              <DatabaseListItem
+                              key={db.id}
+                              database={db}
+                              onDelete={handleDeleteDatabase}
+                              />
+                          ))}
+                          {databases.length === 0 && !databasesLoading && (
+                              <SidebarMenuItem>
+                              <div className="px-2 py-1 text-xs text-muted-foreground">No databases.</div>
+                              </SidebarMenuItem>
+                          )}
+                          {databasesLoading && (
+                             <SidebarMenuItem>
+                              <div className="px-2 py-1 text-xs text-muted-foreground flex items-center gap-2">
+                                <Loader2 className="h-3 w-3 animate-spin"/> Loading...
+                              </div>
+                            </SidebarMenuItem>
+                          )}
+                      </SidebarMenu>
+                  </ul>
+                </CollapsibleContent>
+            </Collapsible>
+          </div>
+
         </SidebarGroupContent>
       </SidebarGroup>
       {editingTeamspace && (
