@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react';
 import { DatabaseField } from '@/types/database';
 import { useDatabaseFields } from '@/hooks/useDatabaseFields';
 
-export function useOptimisticDatabaseFields(databaseId: string, workspaceId: string) {
-  const { fields: serverFields, loading, error } = useDatabaseFields(databaseId, workspaceId);
+export function useOptimisticDatabaseFields(databaseId: string) {
+  const { fields: serverFields, loading, error } = useDatabaseFields(databaseId);
   const [optimisticFields, setOptimisticFields] = useState<DatabaseField[]>([]);
 
   // Sync optimistic fields with server fields

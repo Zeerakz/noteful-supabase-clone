@@ -213,8 +213,9 @@ export class BatchedRollupService {
     let pageTitles: any[] = [];
     if (targetPropertyIds.includes('title') && allRelatedPageIds.size > 0) {
       const { data } = await supabase
-        .from('pages')
-        .select('id, title')
+        .from('blocks')
+        .select('id, properties')
+        .eq('type', 'page')
         .in('id', Array.from(allRelatedPageIds));
       
       pageTitles = data || [];
@@ -266,7 +267,7 @@ export class BatchedRollupService {
         if (settings.rollup_property === 'title') {
           propertyValues = pageTitles
             .filter(p => relatedPageIds.includes(p.id))
-            .map(p => p.title);
+            .map(p => p.properties?.title);
         } else {
           propertyValues = targetPropertyValues
             .filter(p => 

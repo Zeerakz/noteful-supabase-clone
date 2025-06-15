@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Database, DatabaseCreateRequest } from '@/types/database';
 import { DatabaseCoreService } from './database/databaseCoreService';
@@ -43,7 +42,13 @@ export class DatabaseService {
 
   // Database field operations
   static async fetchDatabaseFields(databaseId: string) {
-    return DatabaseFieldService.fetchDatabaseFields(databaseId);
+    const { data, error } = await supabase
+      .from('fields')
+      .select('*')
+      .eq('database_id', databaseId)
+      .order('pos', { ascending: true });
+    
+    return { data, error: error?.message };
   }
 
   static async createDatabaseField(databaseId: string, userId: string, field: any) {

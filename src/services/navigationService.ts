@@ -8,6 +8,7 @@ import {
   NavigationTreeUtils,
   DEFAULT_WORKSPACE_SECTIONS
 } from '@/types/navigation';
+import { Block } from '@/types/block';
 
 export class NavigationService {
   /**
@@ -18,10 +19,11 @@ export class NavigationService {
       // For now, we'll simulate navigation items based on existing pages
       // In a full implementation, you would have a separate navigation_items table
       const { data: pages, error: pagesError } = await supabase
-        .from('pages')
+        .from('blocks')
         .select('*')
         .eq('workspace_id', workspaceId)
-        .order('order_index', { ascending: true });
+        .eq('type', 'page')
+        .order('pos', { ascending: true });
 
       if (pagesError) throw pagesError;
 
@@ -43,19 +45,20 @@ export class NavigationService {
 
       // Convert pages to navigation page items
       if (pages) {
-        pages.forEach(page => {
+        const typedPages = pages as Block[];
+        typedPages.forEach(page => {
           const navigationPage: NavigationPage = {
             id: `page-nav-${page.id}`,
             type: 'page',
-            title: page.title,
-            order_index: page.order_index,
-            parent_id: page.parent_page_id ? `page-nav-${page.parent_page_id}` : 'section-' + workspaceId + '-1', // Default to Projects section
+            title: page.properties?.title || 'Untitled',
+            order_index: page.pos,
+            parent_id: page.parent_id ? `page-nav-${page.parent_id}` : 'section-' + workspaceId + '-1', // Default to Projects section
             page_id: page.id,
             workspace_id: page.workspace_id,
-            created_by: page.created_by,
-            database_id: page.database_id,
-            created_at: page.created_at,
-            updated_at: page.updated_at,
+            created_by: page.created_by || '',
+            database_id: page.properties?.database_id,
+            created_at: page.created_time,
+            updated_at: page.last_edited_time,
           };
           navigationItems.push(navigationPage);
         });
