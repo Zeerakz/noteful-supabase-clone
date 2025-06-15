@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useParams, Navigate, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Edit2, Copy } from 'lucide-react';
+import { ArrowLeft, Edit2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { BlockEditor } from '@/components/blocks/BlockEditor';
@@ -30,7 +30,7 @@ export function PageEditor() {
   const { workspaces, loading: workspacesLoading } = useWorkspaces();
   const { activeUsers, loading: presenceLoading } = usePresence(pageId);
   const { blocks, hasOptimisticChanges: hasBlockChanges } = useEnhancedBlocks(pageId, workspaceId);
-  const { updatePage, duplicatePage, hasOptimisticChanges: hasPageChanges } = useEnhancedPages(workspaceId);
+  const { updatePage, hasOptimisticChanges: hasPageChanges } = useEnhancedPages(workspaceId);
   const { permissions, loading: permissionsLoading } = useBlockPermissions(pageId, workspaceId);
 
   useEffect(() => {
@@ -122,25 +122,6 @@ export function PageEditor() {
     }
   };
 
-  const handleDuplicatePage = async () => {
-    if (!pageId) return;
-    toast({ title: "Duplicating page...", description: "Please wait a moment." });
-    const { data: newPage, error } = await duplicatePage(pageId);
-    if (error) {
-      toast({
-        title: "Error",
-        description: "Failed to duplicate page.",
-        variant: "destructive",
-      });
-    } else if (newPage) {
-      toast({
-        title: "Success!",
-        description: `Page duplicated. You are now viewing the copy.`,
-      });
-      navigate(`/workspace/${workspaceId}/page/${newPage.id}`);
-    }
-  };
-
   const hasAnyOptimisticChanges = hasPageChanges || hasBlockChanges;
 
   return (
@@ -194,14 +175,6 @@ export function PageEditor() {
               </div>
               
               <div className="flex items-center gap-3">
-                {/* Duplicate button */}
-                {isEditable && (
-                  <Button variant="outline" size="sm" onClick={handleDuplicatePage}>
-                    <Copy className="h-4 w-4 mr-2" />
-                    Duplicate
-                  </Button>
-                )}
-
                 {/* Save as Template button */}
                 {isEditable && blocks.length > 0 && (
                   <SaveAsTemplateDialog

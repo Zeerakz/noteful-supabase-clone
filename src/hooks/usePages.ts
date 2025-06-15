@@ -6,7 +6,6 @@ import {
   createPage as createPageService, 
   updatePage as updatePageService, 
   deletePage as deletePageService, 
-  duplicatePage as duplicatePageService,
   PageCreateRequest 
 } from '@/services/pageMutationService';
 import { usePageHierarchy } from '@/hooks/usePageHierarchy';
@@ -80,12 +79,6 @@ export function usePages(workspaceId?: string) {
   const deletePage = async (id: string) => {
     const { error } = await deletePageService(id);
     return { error };
-  };
-
-  const duplicatePage = async (pageId: string) => {
-    if (!user) return { data: null, error: 'User not authenticated' };
-    const { data, error } = await duplicatePageService(pageId, user.id);
-    return { data, error };
   };
 
   const cleanup = () => {
@@ -192,7 +185,6 @@ export function usePages(workspaceId?: string) {
     updatePage,
     updatePageHierarchy,
     deletePage,
-    duplicatePage,
   };
 }
 

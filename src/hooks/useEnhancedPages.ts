@@ -12,7 +12,6 @@ export function useEnhancedPages(workspaceId?: string) {
     createPage: pageData.createPage,
     updatePage: pageData.updatePage,
     deletePage: pageData.deletePage,
-    duplicatePage: pageData.duplicatePage,
     updatePageHierarchy: pageData.updatePageHierarchy,
     ...optimisticData,
   });
@@ -24,7 +23,6 @@ export function useEnhancedPages(workspaceId?: string) {
     createPage: mutations.createPage,
     updatePage: mutations.updatePage,
     deletePage: mutations.deletePage,
-    duplicatePage: mutations.duplicatePage,
     updatePageHierarchy: mutations.updatePageHierarchy,
     fetchPages: pageData.fetchPages,
     hasOptimisticChanges: optimisticData.hasOptimisticChanges,

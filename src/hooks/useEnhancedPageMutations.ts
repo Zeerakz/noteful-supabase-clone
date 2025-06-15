@@ -1,16 +1,15 @@
+
 import { Block } from '@/types/block';
 import { useEnhancedCreatePage } from './mutations/useEnhancedCreatePage';
 import { useEnhancedUpdatePage } from './mutations/useEnhancedUpdatePage';
 import { useEnhancedDeletePage } from './mutations/useEnhancedDeletePage';
 import { useEnhancedUpdatePageHierarchy } from './mutations/useEnhancedUpdatePageHierarchy';
-import { useToast } from '@/hooks/use-toast';
 
 interface UseEnhancedPageMutationsProps {
   workspaceId?: string;
   createPage: (title: string, parentId?: string, databaseId?: string) => Promise<{ data?: Block | null; error: string | null }>;
   updatePage: (id: string, updates: Partial<Block>) => Promise<{ data: Block | null; error: string | null }>;
   deletePage: (id: string) => Promise<{ error: string | null }>;
-  duplicatePage: (pageId: string) => Promise<{ data: Block | null; error: string | null; }>;
   updatePageHierarchy: (pageId: string, newParentId: string | null, newIndex: number) => Promise<{ error: string | null }>;
   optimisticPages: Block[];
   optimisticCreatePage: (pageData: Partial<Block>) => string;
@@ -28,7 +27,6 @@ export function useEnhancedPageMutations({
   createPage,
   updatePage,
   deletePage,
-  duplicatePage,
   updatePageHierarchy,
   optimisticPages,
   optimisticCreatePage,
@@ -40,7 +38,6 @@ export function useEnhancedPageMutations({
   clearOptimisticDeletion,
   revertAllOptimisticChanges,
 }: UseEnhancedPageMutationsProps) {
-  const { toast } = useToast();
   
   const enhancedCreatePage = useEnhancedCreatePage({
     workspaceId,
@@ -74,24 +71,11 @@ export function useEnhancedPageMutations({
     clearOptimisticUpdate,
     revertAllOptimisticChanges,
   });
-
-  const enhancedDuplicatePage = async (pageId: string) => {
-    const { data, error } = await duplicatePage(pageId);
-    if (error) {
-      toast({
-        title: "Error",
-        description: `Failed to duplicate page: ${error}`,
-        variant: "destructive",
-      });
-    }
-    return { data, error };
-  };
   
   return {
     createPage: enhancedCreatePage,
     updatePage: enhancedUpdatePage,
     deletePage: enhancedDeletePage,
     updatePageHierarchy: enhancedUpdatePageHierarchy,
-    duplicatePage: enhancedDuplicatePage,
   };
 }
