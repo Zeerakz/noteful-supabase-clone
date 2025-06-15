@@ -1,15 +1,8 @@
 
 import React, { useState } from 'react';
-import { useForm, SubmitHandler, Controller } from 'react-hook-form';
+import { useForm, SubmitHandler } from 'react-hook-form';
 import { useWorkspaceMembers, WorkspaceMember, PendingInvitation } from '@/hooks/useWorkspaceMembers';
 import { useWorkspaces } from '@/hooks/useWorkspaces';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
-import { Send, Trash2, Mail, Loader2, MoreHorizontal, Copy, Clock, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
   AlertDialog,
@@ -21,47 +14,15 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
-  DropdownMenuPortal,
-  DropdownMenuSeparator,
-} from '@/components/ui/dropdown-menu';
 import { WorkspaceRole } from '@/types/db';
 import { useAuth } from '@/contexts/AuthContext';
-import { format, isAfter, differenceInDays } from 'date-fns';
+import { MemberInviteForm, InviteFormInputs } from './MemberInviteForm';
+import { WorkspaceMembersList } from './WorkspaceMembersList';
+import { PendingInvitationsList } from './PendingInvitationsList';
 
 interface MembersManagementTabProps {
   workspaceId: string;
 }
-
-interface InviteFormInputs {
-  email: string;
-  role: 'admin' | 'member' | 'guest';
-}
-
-const getInitials = (name?: string | null) => {
-  return name?.split(' ').map(n => n[0]).join('').toUpperCase() || 'U';
-};
-
-const getExpirationStatus = (expiresAt: string) => {
-  const expiration = new Date(expiresAt);
-  const now = new Date();
-  const daysUntilExpiration = differenceInDays(expiration, now);
-  
-  if (isAfter(now, expiration)) {
-    return { status: 'expired', text: 'Expired', variant: 'destructive' as const };
-  } else if (daysUntilExpiration <= 1) {
-    return { status: 'expiring', text: `Expires ${daysUntilExpiration === 0 ? 'today' : 'tomorrow'}`, variant: 'secondary' as const };
-  } else {
-    return { status: 'active', text: `Expires in ${daysUntilExpiration} days`, variant: 'outline' as const };
-  }
-};
 
 export function MembersManagementTab({ workspaceId }: MembersManagementTabProps) {
   const { members, invitations, loading, refresh, updateMemberRole, removeMember, cancelInvitation } = useWorkspaceMembers(workspaceId);
@@ -69,7 +30,7 @@ export function MembersManagementTab({ workspaceId }: MembersManagementTabProps)
   const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
-  const { register, handleSubmit, reset, control, formState: { errors } } = useForm<InviteFormInputs>();
+  const form = useForm<InviteFormInputs>();
   
   const [memberToRemove, setMemberToRemove] = useState<WorkspaceMember | null>(null);
   const [invitationToCancel, setInvitationToCancel] = useState<PendingInvitation | null>(null);
@@ -98,7 +59,7 @@ export function MembersManagementTab({ workspaceId }: MembersManagementTabProps)
       } else {
         toast({ title: 'Invitation sent successfully' });
       }
-      reset();
+      form.reset();
       refresh();
     }
     setIsSubmitting(false);
@@ -151,148 +112,35 @@ export function MembersManagementTab({ workspaceId }: MembersManagementTabProps)
   return (
     <div className="space-y-8">
       {canManageMembers && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Invite New Member</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit(onSubmit)} className="flex items-start gap-2">
-              <div className="flex-grow">
-                <Input
-                  {...register('email', { 
-                    required: 'Email is required', 
-                    pattern: { 
-                      value: /^\S+@\S+$/i, 
-                      message: 'Invalid email address' 
-                    } 
-                  })}
-                  placeholder="email@example.com"
-                  className={errors.email ? 'border-red-500' : ''}
-                />
-                {errors.email && <p className="text-xs text-red-500 mt-1">{errors.email.message}</p>}
-              </div>
-              <Controller
-                name="role"
-                control={control}
-                defaultValue="member"
-                render={({ field }) => (
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <SelectTrigger className="w-[120px]">
-                      <SelectValue placeholder="Role" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="member">Member</SelectItem>
-                      <SelectItem value="admin">Admin</SelectItem>
-                      <SelectItem value="guest">Guest</SelectItem>
-                    </SelectContent>
-                  </Select>
-                )}
-              />
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? <Loader2 className="mr-2 animate-spin" /> : <Send className="mr-2" />}
-                Invite
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
+        <MemberInviteForm
+          form={form}
+          onSubmit={onSubmit}
+          isSubmitting={isSubmitting}
+        />
       )}
 
-      {loading && <div className="text-center p-4">Loading members...</div>}
+      {loading && <div className="text-center p-4">Loading...</div>}
 
       {!loading && (
         <>
           <div className="space-y-3">
             <h3 className="text-lg font-semibold">Workspace Members ({members.length})</h3>
-            {members.length > 0 ? members.map(member => (
-              <div key={member.id} className="flex items-center justify-between p-3 rounded-lg hover:bg-muted">
-                <div className="flex items-center gap-3">
-                  <Avatar>
-                    <AvatarImage src={member.profiles?.avatar_url || undefined} />
-                    <AvatarFallback>{getInitials(member.profiles?.full_name || member.profiles?.email)}</AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <p className="font-medium">{member.profiles?.full_name || member.profiles?.email}</p>
-                    <p className="text-sm text-muted-foreground capitalize">{member.role}</p>
-                  </div>
-                </div>
-                {canManageMembers && member.role !== 'owner' ? (
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8"><MoreHorizontal /></Button></DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                       <DropdownMenuSub>
-                        <DropdownMenuSubTrigger>
-                          <span>Change role</span>
-                        </DropdownMenuSubTrigger>
-                        <DropdownMenuPortal>
-                          <DropdownMenuSubContent>
-                            <DropdownMenuItem disabled={member.role === 'admin'} onClick={() => handleRoleChange(member, 'admin')}>Admin</DropdownMenuItem>
-                            <DropdownMenuItem disabled={member.role === 'member'} onClick={() => handleRoleChange(member, 'member')}>Member</DropdownMenuItem>
-                            <DropdownMenuItem disabled={member.role === 'guest'} onClick={() => handleRoleChange(member, 'guest')}>Guest</DropdownMenuItem>
-                          </DropdownMenuSubContent>
-                        </DropdownMenuPortal>
-                      </DropdownMenuSub>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem className="text-destructive focus:bg-destructive/10" onClick={() => setMemberToRemove(member)}>
-                        <Trash2 className="mr-2" /> Remove from workspace
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                ) : (
-                  <span className="text-sm text-muted-foreground pr-4 capitalize">{member.role}</span>
-                )}
-              </div>
-            )) : <p className="text-sm text-muted-foreground p-3">No members yet.</p>}
+            <WorkspaceMembersList
+              members={members}
+              canManageMembers={canManageMembers}
+              onRoleChange={handleRoleChange}
+              onRemoveMember={setMemberToRemove}
+            />
           </div>
 
           <div className="space-y-3">
             <h3 className="text-lg font-semibold">Pending Invitations ({invitations.length})</h3>
-            {invitations.length > 0 ? invitations.map(invite => {
-              const expirationStatus = getExpirationStatus(invite.expires_at);
-              return (
-                <div key={invite.id} className="flex items-center justify-between p-3 rounded-lg hover:bg-muted">
-                  <div className="flex items-center gap-3">
-                    <Avatar>
-                      <AvatarFallback><Mail /></AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <p className="font-medium">{invite.email}</p>
-                      <div className="flex items-center gap-2">
-                        <p className="text-sm text-muted-foreground capitalize">{invite.role}</p>
-                        <Badge variant={expirationStatus.variant} className="text-xs">
-                          {expirationStatus.status === 'expired' && <AlertCircle className="w-3 h-3 mr-1" />}
-                          {expirationStatus.status === 'expiring' && <Clock className="w-3 h-3 mr-1" />}
-                          {expirationStatus.text}
-                        </Badge>
-                      </div>
-                    </div>
-                  </div>
-                  {canManageMembers && (
-                    <div className="flex items-center gap-1">
-                      {expirationStatus.status !== 'expired' && (
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="h-8 w-8" 
-                          onClick={() => handleCopyInviteLink(invite.token)}
-                          title="Copy invitation link"
-                        >
-                          <Copy className="h-4 w-4" />
-                        </Button>
-                      )}
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="h-8 w-8 text-destructive" 
-                        onClick={() => setInvitationToCancel(invite)}
-                        title="Cancel invitation"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  )}
-                </div>
-              );
-            }) : <p className="text-sm text-muted-foreground p-3">No pending invitations.</p>}
+            <PendingInvitationsList
+              invitations={invitations}
+              canManageMembers={canManageMembers}
+              onCopyInvite={handleCopyInviteLink}
+              onCancelInvite={setInvitationToCancel}
+            />
           </div>
         </>
       )}
