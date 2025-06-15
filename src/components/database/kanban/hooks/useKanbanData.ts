@@ -99,7 +99,7 @@ export function useKanbanData({
     let options: Array<{ id: string; name: string; color?: string }> = [];
 
     // Handle different field types
-    if (selectedField.type === 'select' || selectedField.type === 'multi-select') {
+    if (['select', 'multi_select'].includes(selectedField.type)) {
       options = selectedField.settings?.options || [];
     } else if (selectedField.type === 'status') {
       // For status fields, flatten options from all groups

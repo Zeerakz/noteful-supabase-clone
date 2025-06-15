@@ -14,7 +14,7 @@ export const KanbanCard = React.forwardRef<HTMLDivElement, KanbanCardProps & Rea
   ({ page, fields, isDragging, ...props }, ref) => {
     // Show first few non-select fields
     const displayFields = fields.filter(
-      field => field.type !== 'select' && field.type !== 'multi-select'
+      field => !['select', 'multi_select', 'status'].includes(field.type)
     ).slice(0, 3);
 
     return (

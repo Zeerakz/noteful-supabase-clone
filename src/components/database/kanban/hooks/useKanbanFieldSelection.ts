@@ -11,7 +11,7 @@ export function useKanbanFieldSelection({ fields }: UseKanbanFieldSelectionProps
 
   // Get all select-type and status fields for grouping options, filter out fields with empty IDs
   const selectFields = fields.filter(field => {
-    const isValidType = field.type === 'select' || field.type === 'multi-select' || field.type === 'status';
+    const isValidType = ['select', 'multi_select', 'status'].includes(field.type);
     const hasValidId = field.id && field.id.trim() !== '';
     
     if (isValidType && !hasValidId) {
