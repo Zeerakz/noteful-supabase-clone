@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { DatabaseField } from '@/types/database';
 import { useDatabaseFields } from '@/hooks/useDatabaseFields';

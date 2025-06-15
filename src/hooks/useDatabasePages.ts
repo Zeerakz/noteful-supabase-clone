@@ -75,7 +75,7 @@ export function useDatabasePages(databaseId: string, workspaceId: string) {
     if (!pageToUpdate) {
         const { data: fetchedPage, error: fetchError } = await supabase
             .from('blocks')
-            .select('properties')
+            .select('*')
             .eq('id', pageId)
             .single();
 
