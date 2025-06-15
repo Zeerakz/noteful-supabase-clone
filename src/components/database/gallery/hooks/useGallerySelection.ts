@@ -1,7 +1,7 @@
 
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { PageService } from '@/services/pageService';
+import { deletePage } from '@/services/pageMutationService';
 
 export function useGallerySelection() {
   const [selectedPages, setSelectedPages] = useState<Set<string>>(new Set());
@@ -32,7 +32,7 @@ export function useGallerySelection() {
 
     try {
       await Promise.all(
-        Array.from(selectedPages).map(pageId => PageService.deletePage(pageId))
+        Array.from(selectedPages).map(pageId => deletePage(pageId))
       );
       
       toast({

@@ -1,8 +1,7 @@
-
 import { useQueryClient, useMutation } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { PageService, PageCreateRequest } from '@/services/pageService';
+import { createPage, updatePage, PageCreateRequest } from '@/services/pageMutationService';
 import { useFilteredDatabasePagesQuery } from '@/hooks/useFilteredDatabasePagesQuery';
 import { useOptimisticPropertyValueUpdate } from '@/hooks/useOptimisticPropertyValueUpdate';
 import { DatabaseField } from '@/types/database';
@@ -39,7 +38,7 @@ export function useOptimisticDatabasePages({
   const propertyUpdateMutation = useOptimisticPropertyValueUpdate(databaseId);
 
   const updatePageMutation = useMutation({
-    mutationFn: ({ pageId, updates }: { pageId: string, updates: Partial<Block> }) => PageService.updatePage(pageId, updates),
+    mutationFn: ({ pageId, updates }: { pageId: string, updates: Partial<Block> }) => updatePage(pageId, updates),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey });
     },
@@ -57,7 +56,7 @@ export function useOptimisticDatabasePages({
           database_id: databaseId
         }
       };
-      return PageService.createPage(workspaceId, user.id, newPageData);
+      return createPage(workspaceId, user.id, newPageData);
     },
     onSuccess: () => {
       toast({ title: 'Success', description: 'New entry created' });

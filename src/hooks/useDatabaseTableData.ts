@@ -2,7 +2,7 @@ import { useState, useMemo, useCallback } from 'react';
 import { useQueryClient, useMutation } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { PageService } from '@/services/pageService';
+import { createPage, deletePage, updatePage } from '@/services/pageMutationService';
 import { PropertyValueService } from '@/services/propertyValueService';
 import { useFilteredDatabasePagesQuery } from '@/hooks/useFilteredDatabasePagesQuery';
 import { useOptimisticDatabaseFields } from '@/hooks/useOptimisticDatabaseFields';
@@ -125,7 +125,7 @@ export function useDatabaseTableData({
   const { mutateAsync: createRowMutation } = useMutation({
     mutationFn: async ({ title = 'Untitled' }: { title?: string }) => {
       if (!user) throw new Error('User not authenticated');
-      const { data, error } = await PageService.createPage(workspaceId, user.id, { properties: { title, database_id: databaseId } });
+      const { data, error } = await createPage(workspaceId, user.id, { properties: { title, database_id: databaseId } });
       if (error) throw new Error(error);
       return data;
     },
@@ -143,7 +143,7 @@ export function useDatabaseTableData({
   }, [createRowMutation]);
   
   const { mutateAsync: deleteRowMutation } = useMutation({
-    mutationFn: (pageId: string) => PageService.deletePage(pageId),
+    mutationFn: (pageId: string) => deletePage(pageId),
     onMutate: async (pageId: string) => {
       await queryClient.cancelQueries({ queryKey });
       const previousData = queryClient.getQueryData(queryKey);
@@ -172,7 +172,7 @@ export function useDatabaseTableData({
     mutationFn: async ({ pageId, newTitle }: { pageId: string, newTitle: string }) => {
       const page = pages.find(p => p.id === pageId);
       const newProperties = { ...page?.properties, title: newTitle };
-      return PageService.updatePage(pageId, { properties: newProperties });
+      return updatePage(pageId, { properties: newProperties });
     },
     onMutate: async ({ pageId, newTitle }) => {
       await queryClient.cancelQueries({ queryKey });

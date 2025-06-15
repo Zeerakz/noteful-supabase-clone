@@ -1,6 +1,5 @@
-
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { PageService } from '@/services/pageService';
+import { getPageProperties } from '@/services/pageQueryService';
 
 interface UseLazyPropertiesProps {
   pageIds: string[];
@@ -43,7 +42,7 @@ export function useLazyProperties({ pageIds, fields, enabled = true }: UseLazyPr
     setLoadingProperties(prev => new Set([...prev, pageId]));
     
     try {
-      const { data, error } = await PageService.getPageProperties(pageId);
+      const { data, error } = await getPageProperties(pageId);
       
       if (!error && data) {
         const properties: Record<string, string> = {};

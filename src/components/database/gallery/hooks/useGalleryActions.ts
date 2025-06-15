@@ -1,8 +1,7 @@
-
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { PageService } from '@/services/pageService';
+import { createPage, deletePage } from '@/services/pageMutationService';
 
 export function useGalleryActions(workspaceId: string, databaseId: string) {
   const { user } = useAuth();
@@ -13,7 +12,7 @@ export function useGalleryActions(workspaceId: string, databaseId: string) {
     if (!user) return;
 
     try {
-      const { data, error } = await PageService.createPage(
+      const { data, error } = await createPage(
         workspaceId,
         user.id,
         { properties: { title: 'Untitled', database_id: databaseId } }
@@ -51,7 +50,7 @@ export function useGalleryActions(workspaceId: string, databaseId: string) {
 
   const handlePageDelete = async (pageId: string, refetch: () => void) => {
     try {
-      const { error } = await PageService.deletePage(pageId);
+      const { error } = await deletePage(pageId);
       if (error) {
         toast({
           title: "Error",
