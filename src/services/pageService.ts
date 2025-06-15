@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { Block } from '@/types/block';
 import { PropertyInheritanceService } from '@/services/propertyInheritanceService';
@@ -85,8 +86,8 @@ export class PageService {
   }
 
   static async createPage(
-    workspaceId: string, 
-    userId: string, 
+    workspaceId: string,
+    userId: string,
     pageDetails: PageCreateRequest
   ): Promise<{ data: Block | null; error: string | null }> {
     try {
@@ -102,14 +103,22 @@ export class PageService {
       }
 
       // Get the next position
-      const { data: existingPages, error: posError } = await supabase
+      let query = supabase
         .from('blocks')
         .select('pos')
         .eq('workspace_id', workspaceId)
-        .eq('parent_id', pageDetails.parent_id || null)
-        .is('properties->>database_id', null)
+        .is('properties->>database_id', null);
+
+      if (pageDetails.parent_id) {
+        query = query.eq('parent_id', pageDetails.parent_id);
+      } else {
+        query = query.is('parent_id', null);
+      }
+
+      const { data: existingPages, error: posError } = await query
         .order('pos', { ascending: false })
         .limit(1);
+
 
       if (posError) throw posError;
 
@@ -151,15 +160,15 @@ export class PageService {
       return { data: newPage, error: null };
     } catch (err) {
       console.error('Page creation error:', err);
-      return { 
-        data: null, 
-        error: err instanceof Error ? err.message : 'Failed to create page' 
+      return {
+        data: null,
+        error: err instanceof Error ? err.message : 'Failed to create page'
       };
     }
   }
 
   static async updatePage(
-    pageId: string, 
+    pageId: string,
     updates: PageUpdateRequest
   ): Promise<{ data: Block | null; error: string | null }> {
     try {
