@@ -1,8 +1,7 @@
 
-```typescript
 import React from 'react';
 import { PropertyTypeDefinition } from '@/types/propertyRegistry';
-import { EmailPropertyConfig } from '@/types/property';
+import { EmailPropertyConfig } from '@/types/property/configs/email';
 import { EmailPropertyConfigEditor } from '../config-editors/EmailPropertyConfigEditor';
 import { Input } from '@/components/ui/input';
 import { AtSign } from 'lucide-react';
@@ -55,7 +54,7 @@ export const emailPropertyType: PropertyTypeDefinition<EmailPropertyConfig> = {
     return { isValid: errors.length === 0, errors };
   },
   
-  formatValue: (value) => String(value || ''),
+  formatValue: (value) => (value || '').toString(),
   parseValue: (input) => input,
   
   ConfigEditor: EmailPropertyConfigEditor,
@@ -66,4 +65,3 @@ export const emailPropertyType: PropertyTypeDefinition<EmailPropertyConfig> = {
   supportsSorting: true,
   supportsGrouping: false,
 };
-```

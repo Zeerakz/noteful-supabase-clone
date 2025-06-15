@@ -1,8 +1,7 @@
 
-```typescript
 import React from 'react';
 import { PropertyTypeDefinition } from '@/types/propertyRegistry';
-import { PhonePropertyConfig } from '@/types/property';
+import { PhonePropertyConfig } from '@/types/property/configs/phone';
 import { PhonePropertyConfigEditor } from '../config-editors/PhonePropertyConfigEditor';
 import { Input } from '@/components/ui/input';
 import { Phone } from 'lucide-react';
@@ -55,7 +54,7 @@ export const phonePropertyType: PropertyTypeDefinition<PhonePropertyConfig> = {
     return { isValid: errors.length === 0, errors };
   },
   
-  formatValue: (value) => String(value || ''),
+  formatValue: (value) => (value || '').toString(),
   parseValue: (input) => input,
   
   ConfigEditor: PhonePropertyConfigEditor,
@@ -66,4 +65,3 @@ export const phonePropertyType: PropertyTypeDefinition<PhonePropertyConfig> = {
   supportsSorting: true,
   supportsGrouping: false,
 };
-```
