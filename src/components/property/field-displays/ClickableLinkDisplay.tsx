@@ -1,5 +1,4 @@
 
-```typescript
 import React from 'react';
 import { ExternalLink } from 'lucide-react';
 import { PropertyType } from '@/types/property';
@@ -47,4 +46,3 @@ export function ClickableLinkDisplay({ value, type }: ClickableLinkDisplayProps)
     </div>
   );
 }
-```

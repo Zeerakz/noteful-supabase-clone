@@ -1,5 +1,4 @@
 
-```typescript
 import React from 'react';
 import { PropertyTypeDefinition } from '@/types/propertyRegistry';
 import { UrlPropertyConfig } from '@/types/property';
@@ -52,7 +51,7 @@ export const urlPropertyType: PropertyTypeDefinition<UrlPropertyConfig> = {
     if (value) {
       try {
         new URL(value.startsWith('http') ? value : `https://${value}`);
-      } catch {
+      } catch (error) {
         errors.push('Invalid URL format.');
       }
     }
@@ -70,4 +69,3 @@ export const urlPropertyType: PropertyTypeDefinition<UrlPropertyConfig> = {
   supportsSorting: true,
   supportsGrouping: false,
 };
-```
