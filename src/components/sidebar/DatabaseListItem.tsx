@@ -23,7 +23,7 @@ export function DatabaseListItem({ database, onDelete }: DatabaseListItemProps) 
 
   const handleNavigate = () => {
     if (workspaceId) {
-      navigate(`/workspace/${workspaceId}/db/${database.id}`);
+      navigate(`/workspace/${workspaceId}/database/${database.id}`);
     }
   };
 
