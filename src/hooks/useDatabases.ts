@@ -107,7 +107,7 @@ export function useDatabases(workspaceId?: string) {
     fetchDatabases();
     cleanup();
 
-    const channelName = `databases_${workspaceId}`;
+    const channelName = `databases-updates`; // A single channel for all database updates
     const channel = supabase.channel(channelName);
     channel
       .on(
@@ -116,11 +116,20 @@ export function useDatabases(workspaceId?: string) {
           event: '*',
           schema: 'public',
           table: 'databases',
-          filter: `workspace_id=eq.${workspaceId}`,
+          // Filter removed to catch cross-workspace moves
         },
         (payload) => {
           if (mountedRef.current) {
-            fetchDatabases();
+            const oldData = payload.old as Database;
+            const newData = payload.new as Database;
+
+            // If the update affects this workspace, refetch
+            if (
+              (newData && newData.workspace_id === workspaceId) ||
+              (oldData && oldData.workspace_id === workspaceId)
+            ) {
+              fetchDatabases();
+            }
           }
         }
       )
