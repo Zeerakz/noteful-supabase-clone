@@ -10,6 +10,7 @@ interface RegistryBasedPropertyConfigEditorProps {
   onConfigChange: (config: PropertyConfig) => void;
   workspaceId?: string;
   availableProperties?: Property[];
+  currentDatabaseId?: string; // Added prop
 }
 
 export function RegistryBasedPropertyConfigEditor({
@@ -17,7 +18,8 @@ export function RegistryBasedPropertyConfigEditor({
   config,
   onConfigChange,
   workspaceId,
-  availableProperties = []
+  availableProperties = [],
+  currentDatabaseId // Added prop
 }: RegistryBasedPropertyConfigEditorProps) {
   const definition = propertyRegistry.get(propertyType);
   
@@ -39,6 +41,7 @@ export function RegistryBasedPropertyConfigEditor({
         onConfigChange={onConfigChange}
         workspaceId={workspaceId}
         availableProperties={availableProperties}
+        currentDatabaseId={currentDatabaseId} // Pass down
       />
     </div>
   );

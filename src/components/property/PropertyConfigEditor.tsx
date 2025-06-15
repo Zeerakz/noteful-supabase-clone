@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Property, PropertyType, PropertyConfig, getDefaultConfigForType } from '@/types/property';
 import { propertyRegistry } from '@/types/propertyRegistry';
@@ -27,6 +28,7 @@ interface PropertyConfigEditorProps {
   onConfigChange: (config: PropertyConfig) => void;
   workspaceId?: string;
   availableProperties?: Property[];
+  currentDatabaseId?: string; // Added prop
 }
 
 export function PropertyConfigEditor({
@@ -34,10 +36,14 @@ export function PropertyConfigEditor({
   config,
   onConfigChange,
   workspaceId,
-  availableProperties = []
+  availableProperties = [],
+  currentDatabaseId
 }: PropertyConfigEditorProps) {
   // Ensure we have a valid config object
   const safeConfig = config || getDefaultConfigForType(propertyType);
+
+  // Derive currentDatabaseId if not provided, for backward compatibility
+  const dbId = currentDatabaseId || (availableProperties.length > 0 ? availableProperties[0].database_id : undefined);
 
   // First, check if the type is registered in the new registry
   if (propertyRegistry.has(propertyType)) {
@@ -48,6 +54,7 @@ export function PropertyConfigEditor({
         onConfigChange={onConfigChange}
         workspaceId={workspaceId}
         availableProperties={availableProperties}
+        currentDatabaseId={dbId} // Pass down
       />
     );
   }
@@ -129,6 +136,7 @@ export function PropertyConfigEditor({
             config={safeConfig}
             onConfigChange={onConfigChange}
             workspaceId={workspaceId}
+            currentDatabaseId={dbId} // Pass down
           />
         );
       

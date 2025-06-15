@@ -3,13 +3,13 @@ import React from 'react';
 import { RelationPropertyConfig } from '@/types/property';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useDatabases } from '@/hooks/useDatabases';
-import { Link, ArrowLeftRight, Search, Zap, AlertCircle } from 'lucide-react';
+import { Link, ArrowLeftRight, Zap, AlertCircle } from 'lucide-react';
+import { DatabaseSelector } from './relation/DatabaseSelector';
 
 interface RelationPropertyConfigEditorProps {
   config: any;
@@ -25,7 +25,7 @@ export function RelationPropertyConfigEditor({
   currentDatabaseId 
 }: RelationPropertyConfigEditorProps) {
   const relationConfig = config as RelationPropertyConfig;
-  const { databases } = useDatabases(workspaceId);
+  const { databases, loading: loadingDatabases } = useDatabases(workspaceId);
 
   const updateConfig = (updates: Partial<RelationPropertyConfig>) => {
     onConfigChange({ ...relationConfig, ...updates });
@@ -55,26 +55,19 @@ export function RelationPropertyConfigEditor({
         <CardContent className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="targetDatabase">Database to link to</Label>
-            <Select 
-              value={relationConfig.targetDatabaseId || ''} 
-              onValueChange={handleTargetDatabaseChange}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select a database to link to" />
-              </SelectTrigger>
-              <SelectContent>
-                {databases?.map((database) => (
-                  <SelectItem key={database.id} value={database.id}>
-                    {database.name} {database.id === currentDatabaseId && '(This database)'}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {databases?.length === 0 && (
+            <DatabaseSelector
+              databases={databases || []}
+              selectedDatabaseId={relationConfig.targetDatabaseId || ''}
+              onSelect={handleTargetDatabaseChange}
+              currentDatabaseId={currentDatabaseId}
+              disabled={loadingDatabases}
+            />
+            {databases?.length === 0 && !loadingDatabases && (
               <p className="text-xs text-muted-foreground">
                 No databases available. Create a database first to enable relations.
               </p>
             )}
+            {loadingDatabases && <p className="text-xs text-muted-foreground">Loading databases...</p>}
           </div>
 
           {/* Self-referencing warning */}
