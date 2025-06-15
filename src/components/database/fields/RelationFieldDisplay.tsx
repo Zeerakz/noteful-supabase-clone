@@ -1,12 +1,10 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { RelationFieldSettings } from '@/types/database';
 import { Block } from '@/types/block';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { ExternalLink } from 'lucide-react';
 import {
   Tooltip,
   TooltipContent,
@@ -34,84 +32,106 @@ export function RelationFieldDisplay({ value, settings, pageId, fieldId }: Relat
     navigate({ search: newParams.toString() }, { replace: true });
   };
 
-  useEffect(() => {
-    const fetchRelatedPages = async () => {
-      setLoading(true);
-      try {
-        // Fetch related page IDs from the new page_relations table
-        const { data: relationData, error: relationError } = await supabase
-          .from('page_relations')
-          .select('to_page_id')
-          .eq('from_page_id', pageId)
-          .eq('relation_property_id', fieldId);
+  const getDisplayText = (page: Block) => {
+    return (page.properties as any)?.title || 'Untitled';
+  };
 
-        if (relationError) throw relationError;
+  const fetchRelatedPages = useCallback(async () => {
+    if (!pageId || !fieldId) {
+      setRelatedPages([]);
+      return;
+    }
+    setLoading(true);
+    try {
+      // Fetch related page IDs from the new page_relations table
+      const { data: relationData, error: relationError } = await supabase
+        .from('page_relations')
+        .select('to_page_id')
+        .eq('from_page_id', pageId)
+        .eq('relation_property_id', fieldId);
 
-        const relatedIds = relationData.map(r => r.to_page_id);
+      if (relationError) throw relationError;
 
-        if (relatedIds.length === 0) {
-          setRelatedPages([]);
-          return;
-        }
-        
-        const { data, error } = await supabase
-          .from('blocks')
-          .select('id, type, properties')
-          .in('id', relatedIds)
-          .eq('type', 'page');
+      const relatedIds = relationData.map(r => r.to_page_id);
 
-        if (error) throw error;
-        setRelatedPages(data as Block[] || []);
-      } catch (err) {
-        console.error('Error fetching related pages:', err);
+      if (relatedIds.length === 0) {
         setRelatedPages([]);
-      } finally {
-        setLoading(false);
+        return;
       }
-    };
+      
+      const { data, error } = await supabase
+        .from('blocks')
+        .select('id, type, properties, created_time')
+        .in('id', relatedIds)
+        .eq('type', 'page');
 
-    if (pageId && fieldId) {
-      fetchRelatedPages();
+      if (error) throw error;
+      setRelatedPages(data as Block[] || []);
+    } catch (err) {
+      console.error('Error fetching related pages:', err);
+      setRelatedPages([]);
+    } finally {
+      setLoading(false);
     }
   }, [pageId, fieldId]);
 
+  useEffect(() => {
+    fetchRelatedPages();
+
+    if (!pageId || !fieldId) return;
+
+    const channel = supabase
+      .channel(`relation-display-${pageId}-${fieldId}-${Date.now()}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'page_relations',
+          filter: `from_page_id=eq.${pageId}`,
+        },
+        (payload) => {
+          const record = payload.new || payload.old;
+          if ((record as any)?.relation_property_id === fieldId) {
+            fetchRelatedPages();
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [pageId, fieldId, fetchRelatedPages]);
+
+
   if (loading) {
-    return <span className="text-muted-foreground">Loading...</span>;
+    return <span className="text-muted-foreground text-xs">Loading...</span>;
   }
 
   if (!relatedPages.length) {
     return <span className="text-muted-foreground">—</span>;
   }
 
-  const getDisplayText = (page: Block) => {
-    return (page.properties as any)?.title || 'Untitled';
-  };
-
   return (
     <TooltipProvider>
-      <div className="flex flex-wrap gap-2 items-center">
+      <div className="flex flex-wrap gap-1 items-center">
         {relatedPages.map((page) => (
-          <div key={page.id} className="flex items-center gap-1">
-            <Badge variant="outline" className="text-xs">
-              {getDisplayText(page)}
-            </Badge>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-6 w-6 p-0"
-                  onClick={(e) => handleOpenPeek(e, page.id)}
-                  aria-label={`Open ${getDisplayText(page)}`}
-                >
-                  <ExternalLink className="h-3 w-3 text-muted-foreground" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Open page</p>
-              </TooltipContent>
-            </Tooltip>
-          </div>
+          <Tooltip key={page.id}>
+            <TooltipTrigger asChild>
+              <Badge
+                variant="outline"
+                className="cursor-pointer hover:bg-accent text-xs"
+                onClick={(e) => handleOpenPeek(e, page.id)}
+                aria-label={`Open ${getDisplayText(page)}`}
+              >
+                {getDisplayText(page)}
+              </Badge>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Open page: {getDisplayText(page)}</p>
+            </TooltipContent>
+          </Tooltip>
         ))}
       </div>
     </TooltipProvider>
