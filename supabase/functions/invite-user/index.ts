@@ -1,5 +1,6 @@
+
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient, User } from "https://esm.sh/@supabase/supabase-js@2.50.0";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.50.0";
 import { Resend } from "npm:resend@2.0.0";
 
 const corsHeaders = {
@@ -55,27 +56,44 @@ const handler = async (req: Request): Promise<Response> => {
       return new Response(JSON.stringify({ error: 'Missing required fields' }), { status: 400, headers: corsHeaders });
     }
 
-    // Check if user exists and is already a member
-    const { data: userProfile } = await supabase.from('profiles').select('id').eq('email', email).single();
+    // Check if user exists and is already a member (case-insensitive check)
+    const { data: userProfile, error: profileError } = await supabase.from('profiles').select('id').ilike('email', email).maybeSingle();
+    if (profileError) {
+      console.error('Profile fetch error:', profileError);
+      return new Response(JSON.stringify({ error: `Database error: ${profileError.message}` }), { status: 500, headers: corsHeaders });
+    }
     if (userProfile) {
-      const { data: member } = await supabase
+      const { data: member, error: memberError } = await supabase
         .from('workspace_members')
         .select('id')
         .eq('workspace_id', workspaceId)
         .eq('user_id', userProfile.id)
-        .single();
+        .maybeSingle();
+
+      if (memberError) {
+        console.error('Member check error:', memberError);
+        return new Response(JSON.stringify({ error: `Database error: ${memberError.message}` }), { status: 500, headers: corsHeaders });
+      }
+
       if (member) {
         return new Response(JSON.stringify({ error: 'User is already a member of this workspace' }), { status: 409, headers: corsHeaders });
       }
     }
 
-    // Check if there is already a pending invitation
-    const { data: existingInvite } = await supabase
+    // Check if there is already a pending invitation (case-insensitive check)
+    // This provides a friendly error before hitting the database constraint.
+    const { data: existingInvite, error: inviteCheckError } = await supabase
       .from('invitations')
       .select('id')
       .eq('workspace_id', workspaceId)
-      .eq('email', email)
-      .single();
+      .ilike('email', email)
+      .maybeSingle();
+
+    if (inviteCheckError) {
+      console.error('Invite check error:', inviteCheckError);
+      return new Response(JSON.stringify({ error: `Database error: ${inviteCheckError.message}` }), { status: 500, headers: corsHeaders });
+    }
+
     if (existingInvite) {
       return new Response(JSON.stringify({ error: 'An invitation has already been sent to this email address' }), { status: 409, headers: corsHeaders });
     }
@@ -85,13 +103,17 @@ const handler = async (req: Request): Promise<Response> => {
 
     const { error: insertError } = await supabase.from('invitations').insert({
       workspace_id: workspaceId,
-      email: email,
+      email: email.toLowerCase(), // Store email in lowercase to enforce uniqueness
       role: role,
       token: token,
       invited_by: user.id,
     });
 
     if (insertError) {
+      // The unique index will prevent duplicates. Handle the error for race conditions.
+      if (insertError.code === '23505') {
+        return new Response(JSON.stringify({ error: 'An invitation has already been sent to this email address.' }), { status: 409, headers: corsHeaders });
+      }
       throw new Error(`Failed to create invitation record: ${insertError.message}`);
     }
 
@@ -100,7 +122,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     const { data: emailData, error: emailError } = await resend.emails.send({
       from: "Knowledge File <onboarding@resend.dev>",
-      to: [email],
+      to: [email], // Send to the original email address for better user experience
       subject: `You're invited to join ${workspaceName}`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
