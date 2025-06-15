@@ -21,6 +21,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const syncProfile = async (user: User) => {
+      if (!user) return;
+      
+      try {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('avatar_url')
+          .eq('id', user.id)
+          .single();
+        
+        const authAvatarUrl = user.user_metadata?.avatar_url;
+        
+        if (authAvatarUrl && (!profile || profile.avatar_url !== authAvatarUrl)) {
+          console.log('🔄 Syncing avatar_url for user:', user.id);
+          await supabase
+            .from('profiles')
+            .update({ avatar_url: authAvatarUrl, updated_at: new Date().toISOString() })
+            .eq('id', user.id);
+        }
+      } catch (error) {
+        console.error("Error syncing profile avatar:", error);
+      }
+    };
+
     // Set up auth state listener FIRST
     const {
       data: { subscription },
@@ -29,6 +53,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
+      if (_event === 'SIGNED_IN' && session?.user) {
+        syncProfile(session.user);
+      }
     });
 
     // THEN get initial session
@@ -37,6 +64,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
+      if (session?.user) {
+        syncProfile(session.user);
+      }
     });
 
     return () => subscription.unsubscribe();

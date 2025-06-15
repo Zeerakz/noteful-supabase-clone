@@ -6,7 +6,7 @@ import { useDatabases } from '@/hooks/useDatabases';
 import { useGlobalSearch } from '@/hooks/useGlobalSearch';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, FileText, Database, Bookmark, Search, MoreHorizontal, Trash2, Settings } from 'lucide-react';
+import { Plus, FileText, Database, Bookmark, Search, MoreHorizontal, Trash2, Settings, Users } from 'lucide-react';
 import { DatabaseWizard } from '@/components/database/DatabaseWizard';
 import {
   DropdownMenu,
@@ -71,6 +71,10 @@ export function WorkspaceView() {
 
   const handleTemplateGalleryClick = () => {
     navigate(`/workspace/${workspaceId}/templates`);
+  };
+
+  const handleSettingsClick = () => {
+    navigate(`/workspace/${workspaceId}/settings`);
   };
 
   const handleDeleteDatabase = (database: { id: string; name: string }) => {
@@ -151,9 +155,23 @@ export function WorkspaceView() {
               <Plus className="h-4 w-4" />
               New Page
             </Button>
-            <Button variant="ghost" size="icon" onClick={() => setMembersModalOpen(true)}>
-              <Settings className="h-4 w-4" />
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon">
+                  <Settings className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => setMembersModalOpen(true)}>
+                  <Users className="h-4 w-4 mr-2" />
+                  Manage Members
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleSettingsClick}>
+                  <Settings className="h-4 w-4 mr-2" />
+                  Workspace Settings
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
 
