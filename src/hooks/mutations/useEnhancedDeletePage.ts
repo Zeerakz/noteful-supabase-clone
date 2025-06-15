@@ -1,7 +1,6 @@
-
 import { useCallback } from 'react';
 import { Block } from '@/types/block';
-import { useToast } from '@/hooks/use-toast';
+import { useGentleErrorHandler } from '@/hooks/useGentleErrorHandler';
 
 interface UseEnhancedDeletePageProps {
   deletePage: (id: string) => Promise<{ error: string | null }>;
@@ -18,7 +17,7 @@ export function useEnhancedDeletePage({
   clearOptimisticDeletion,
   revertAllOptimisticChanges,
 }: UseEnhancedDeletePageProps) {
-  const { toast } = useToast();
+  const { handleSuccess, handleSaveError } = useGentleErrorHandler();
 
   const enhancedDeletePage = useCallback(async (id: string) => {
     const pageToDelete = optimisticPages.find(p => p.id === id);
@@ -34,29 +33,24 @@ export function useEnhancedDeletePage({
       if (error) {
         console.error('Server page deletion failed:', error);
         revertAllOptimisticChanges();
-        throw new Error(error);
+        handleSaveError('Failed to delete page', error);
+        return { error };
       }
 
       console.log('Server page deletion successful');
       clearOptimisticDeletion(id);
 
-      toast({
-        title: "Success",
-        description: "Page deleted successfully",
-      });
+      handleSuccess("Page deleted successfully");
 
       return { error: null };
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to delete page';
       console.error('Page deletion error:', err);
-      toast({
-        title: "Error",
-        description: errorMessage,
-        variant: "destructive",
-      });
+      revertAllOptimisticChanges();
+      handleSaveError(errorMessage);
       return { error: errorMessage };
     }
-  }, [optimisticPages, deletePage, optimisticDeletePage, clearOptimisticDeletion, revertAllOptimisticChanges, toast]);
+  }, [optimisticPages, deletePage, optimisticDeletePage, clearOptimisticDeletion, revertAllOptimisticChanges, handleSuccess, handleSaveError]);
 
   return enhancedDeletePage;
 }

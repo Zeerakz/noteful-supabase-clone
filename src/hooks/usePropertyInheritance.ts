@@ -1,42 +1,38 @@
 
 import { useState } from 'react';
 import { PropertyInheritanceService } from '@/services/propertyInheritanceService';
-import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { useGentleErrorHandler } from './useGentleErrorHandler';
 
 export function usePropertyInheritance() {
   const [loading, setLoading] = useState(false);
-  const { toast } = useToast();
   const { user } = useAuth();
+  const { handleSuccess, handlePermissionError, handleSaveError } = useGentleErrorHandler();
 
   const applyDatabaseInheritance = async (pageId: string, databaseId: string) => {
     if (!user) {
-      toast({
-        variant: 'destructive',
-        title: 'Authentication Error',
-        description: 'You must be logged in to perform this action.',
-      });
+      handlePermissionError('You must be logged in to perform this action.');
       return { success: false };
     }
 
     setLoading(true);
-    const { error } = await PropertyInheritanceService.applyDatabaseInheritance(pageId, databaseId, user.id);
-    setLoading(false);
+    try {
+      const { error } = await PropertyInheritanceService.applyDatabaseInheritance(pageId, databaseId, user.id);
+      
+      if (error) {
+        handleSaveError('Failed to Apply Properties', error);
+        return { success: false };
+      }
 
-    if (error) {
-      toast({
-        variant: 'destructive',
-        title: 'Failed to Apply Properties',
-        description: error,
-      });
+      handleSuccess('Database properties have been applied to the page.');
+      return { success: true };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'An unknown error occurred';
+      handleSaveError('An unexpected error occurred', message);
       return { success: false };
+    } finally {
+      setLoading(false);
     }
-
-    toast({
-      title: 'Success',
-      description: 'Database properties have been applied to the page.',
-    });
-    return { success: true };
   };
 
   return { loading, applyDatabaseInheritance };

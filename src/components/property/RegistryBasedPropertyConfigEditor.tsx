@@ -2,6 +2,7 @@
 import React from 'react';
 import { Property, PropertyType, PropertyConfig } from '@/types/property';
 import { propertyRegistry } from '@/types/propertyRegistry';
+import { GentleError } from '@/components/ui/gentle-error';
 
 interface RegistryBasedPropertyConfigEditorProps {
   propertyType: PropertyType;
@@ -22,9 +23,10 @@ export function RegistryBasedPropertyConfigEditor({
   
   if (!definition) {
     return (
-      <div className="text-sm text-muted-foreground">
-        Unknown property type: {propertyType}
-      </div>
+      <GentleError 
+        message={`Unknown property type: ${propertyType}`}
+        suggestion="This property type may not be registered correctly."
+      />
     );
   }
   

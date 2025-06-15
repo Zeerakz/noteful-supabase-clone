@@ -11,64 +11,52 @@ export interface ErrorDetails {
 
 class GlobalErrorHandler {
   private errors: ErrorDetails[] = [];
-  private maxErrors = 50;
+  private maxErrors = 100;
+  private isInitialized = false;
 
   constructor() {
-    this.setupGlobalHandlers();
+    if (typeof window !== 'undefined' && !this.isInitialized) {
+      this.setupGlobalHandlers();
+      this.isInitialized = true;
+    }
   }
 
   private setupGlobalHandlers() {
-    // Handle unhandled promise rejections
-    window.addEventListener('unhandledrejection', (event) => {
-      console.error('Unhandled promise rejection:', event.reason);
-      this.logError(new Error(`Unhandled Promise Rejection: ${event.reason}`), {
-        type: 'unhandledrejection',
-        reason: event.reason
-      });
-    });
-
-    // Handle uncaught errors
     window.addEventListener('error', (event) => {
-      console.error('Uncaught error:', event.error);
       this.logError(event.error || new Error(event.message), {
-        type: 'uncaught',
+        context: 'global_error_handler',
+        type: 'uncaught_error',
         filename: event.filename,
         lineno: event.lineno,
         colno: event.colno
       });
     });
+
+    window.addEventListener('unhandledrejection', (event) => {
+      this.logError(event.reason instanceof Error ? event.reason : new Error(String(event.reason)), {
+        context: 'global_error_handler',
+        type: 'unhandled_rejection'
+      });
+    });
   }
 
   logError(error: Error, additionalData?: Record<string, any>) {
+    console.error("Logged by GlobalErrorHandler:", error, additionalData);
     const errorDetails: ErrorDetails = {
       message: error.message,
       stack: error.stack,
       timestamp: new Date().toISOString(),
-      url: window.location.href,
-      userAgent: navigator.userAgent,
+      url: typeof window !== 'undefined' ? window.location.href : '',
+      userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : '',
       additionalData
     };
 
-    // Add to local storage for persistence
-    this.errors.push(errorDetails);
+    this.errors.unshift(errorDetails);
     if (this.errors.length > this.maxErrors) {
-      this.errors = this.errors.slice(-this.maxErrors);
+      this.errors.pop();
     }
 
-    try {
-      localStorage.setItem('app_errors', JSON.stringify(this.errors));
-    } catch (e) {
-      console.warn('Could not save errors to localStorage:', e);
-    }
-
-    // Log to console in development
-    if (process.env.NODE_ENV === 'development') {
-      console.group('🚨 Error Logged');
-      console.error('Error:', error);
-      console.log('Additional Data:', additionalData);
-      console.log('Error Details:', errorDetails);
-      console.groupEnd();
-    }
+    // In a real app, you would send this to a service like Sentry, LogRocket, etc.
   }
 
   getErrors(): ErrorDetails[] {
@@ -77,45 +65,26 @@ class GlobalErrorHandler {
 
   clearErrors() {
     this.errors = [];
-    try {
-      localStorage.removeItem('app_errors');
-    } catch (e) {
-      console.warn('Could not clear errors from localStorage:', e);
-    }
-  }
-
-  async reportError(error: Error, additionalData?: Record<string, any>) {
-    this.logError(error, additionalData);
-    
-    // In a real app, you might send this to an error reporting service
-    // For now, we'll just log it
-    console.log('Error reported:', { error: error.message, additionalData });
   }
 }
 
 export const errorHandler = new GlobalErrorHandler();
 
-// Helper function for try-catch blocks
 export function withErrorHandler<T extends (...args: any[]) => any>(
   fn: T,
   context?: string
-): T {
-  return ((...args: any[]) => {
+): (...args: Parameters<T>) => ReturnType<T> | void {
+  return (...args: Parameters<T>): ReturnType<T> | void => {
     try {
       const result = fn(...args);
-      
-      // Handle async functions
       if (result instanceof Promise) {
         return result.catch((error) => {
           errorHandler.logError(error, { context, args });
-          throw error;
-        });
+        }) as ReturnType<T>;
       }
-      
       return result;
     } catch (error) {
       errorHandler.logError(error as Error, { context, args });
-      throw error;
     }
-  }) as T;
+  };
 }
