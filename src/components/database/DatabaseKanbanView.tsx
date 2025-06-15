@@ -1,6 +1,5 @@
-
-import React from 'react';
-import { Kanban, Plus } from 'lucide-react';
+import React, { useState } from 'react';
+import { Kanban, Plus, RefreshCw } from 'lucide-react';
 import { DragDropContext } from 'react-beautiful-dnd';
 import { DatabaseField } from '@/types/database';
 import { FilterGroup } from '@/types/filters';
@@ -30,6 +29,8 @@ export function DatabaseKanbanView({
   sortRules = [],
   onFieldCreate,
 }: DatabaseKanbanViewProps) {
+  const [isCreatingField, setIsCreatingField] = useState(false);
+
   const {
     selectedField,
     selectFields,
@@ -61,15 +62,13 @@ export function DatabaseKanbanView({
 
   const handleAddStatusField = async () => {
     if (!onFieldCreate) return;
-    try {
-      await onFieldCreate({
-        name: 'Status',
-        type: 'status',
-        settings: statusPropertyType.getDefaultConfig(),
-      });
-    } catch (error) {
-      console.error("Failed to create status field", error);
-    }
+    setIsCreatingField(true);
+    await onFieldCreate({
+      name: 'Status',
+      type: 'status',
+      settings: statusPropertyType.getDefaultConfig(),
+    });
+    setIsCreatingField(false);
   };
 
   if (loading) {
@@ -101,9 +100,13 @@ export function DatabaseKanbanView({
             Kanban view requires at least one select or status field in your database to group by.
           </p>
           {onFieldCreate && (
-            <Button onClick={handleAddStatusField}>
-              <Plus className="mr-2 h-4 w-4" />
-              Add a Status Property
+            <Button onClick={handleAddStatusField} disabled={isCreatingField}>
+              {isCreatingField ? (
+                <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Plus className="mr-2 h-4 w-4" />
+              )}
+              {isCreatingField ? 'Adding...' : 'Add a Status Property'}
             </Button>
           )}
         </div>

@@ -69,8 +69,8 @@ export function useEnhancedDatabaseFieldOperations({
       console.error('Failed to create field:', error);
       onRevert();
       toast({
-        title: "Error",
-        description: "Failed to create field",
+        title: "Error Creating Field",
+        description: error instanceof Error ? error.message : "An unexpected error occurred. Please try again.",
         variant: "destructive",
       });
     }
@@ -90,8 +90,8 @@ export function useEnhancedDatabaseFieldOperations({
       console.error('Failed to update field:', error);
       onRevert();
       toast({
-        title: "Error",
-        description: "Failed to update field",
+        title: "Error Updating Field",
+        description: error instanceof Error ? error.message : "An unexpected error occurred. Please try again.",
         variant: "destructive",
       });
     }
@@ -116,8 +116,8 @@ export function useEnhancedDatabaseFieldOperations({
       console.error('Failed to delete field:', error);
       onRevert();
       toast({
-        title: "Error",
-        description: "Failed to delete field",
+        title: "Error Deleting Field",
+        description: error instanceof Error ? error.message : "An unexpected error occurred. Please try again.",
         variant: "destructive",
       });
     }
@@ -138,8 +138,8 @@ export function useEnhancedDatabaseFieldOperations({
       console.error('Failed to reorder fields:', error);
       onRevert();
       toast({
-        title: "Error",
-        description: "Failed to reorder fields",
+        title: "Error Reordering Fields",
+        description: error instanceof Error ? error.message : "An unexpected error occurred. Please try again.",
         variant: "destructive",
       });
     }
@@ -167,7 +167,7 @@ export function useEnhancedDatabaseFieldOperations({
     try {
       const { error } = await DatabaseFieldService.createDatabaseField(
         databaseId,
-        user.id,
+        user!.id, // user is checked above
         duplicatedField
       );
       
@@ -183,8 +183,8 @@ export function useEnhancedDatabaseFieldOperations({
       console.error('Failed to duplicate field:', error);
       onRevert();
       toast({
-        title: "Error",
-        description: "Failed to duplicate field",
+        title: "Error Duplicating Field",
+        description: error instanceof Error ? error.message : "An unexpected error occurred. Please try again.",
         variant: "destructive",
       });
     }
