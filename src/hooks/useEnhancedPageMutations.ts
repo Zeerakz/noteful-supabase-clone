@@ -1,4 +1,3 @@
-
 import { Block } from '@/types/block';
 import { useEnhancedCreatePage } from './mutations/useEnhancedCreatePage';
 import { useEnhancedUpdatePage } from './mutations/useEnhancedUpdatePage';
@@ -51,6 +50,7 @@ export function useEnhancedPageMutations({
     optimisticPages,
     optimisticUpdatePage,
     clearOptimisticUpdate,
+    revertAllOptimisticChanges,
   });
 
   const enhancedDeletePage = useEnhancedDeletePage({
@@ -65,6 +65,7 @@ export function useEnhancedPageMutations({
     optimisticPages,
     optimisticUpdatePage,
     clearOptimisticUpdate,
+    revertAllOptimisticChanges,
   });
   
   return {

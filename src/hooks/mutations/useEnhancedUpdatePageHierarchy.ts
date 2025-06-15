@@ -9,6 +9,7 @@ interface UseEnhancedUpdatePageHierarchyProps {
   optimisticPages: Block[];
   optimisticUpdatePage: (pageId: string, updates: Partial<Block>) => void;
   clearOptimisticUpdate: (pageId: string) => void;
+  revertAllOptimisticChanges: () => void;
 }
 
 export function useEnhancedUpdatePageHierarchy({
@@ -16,6 +17,7 @@ export function useEnhancedUpdatePageHierarchy({
   optimisticPages,
   optimisticUpdatePage,
   clearOptimisticUpdate,
+  revertAllOptimisticChanges,
 }: UseEnhancedUpdatePageHierarchyProps) {
   const { toast } = useToast();
 
@@ -45,7 +47,6 @@ export function useEnhancedUpdatePageHierarchy({
       
       if (error) {
         console.error('Server page hierarchy update failed:', error);
-        clearOptimisticUpdate(pageId);
         throw new Error(error);
       }
 
@@ -55,6 +56,7 @@ export function useEnhancedUpdatePageHierarchy({
       
       return { error: null };
     } catch (err) {
+      revertAllOptimisticChanges();
       const errorMessage = err instanceof Error ? err.message : 'Failed to update page hierarchy';
       console.error('Page hierarchy update error:', err);
       toast({
@@ -64,7 +66,7 @@ export function useEnhancedUpdatePageHierarchy({
       });
       return { error: errorMessage };
     }
-  }, [optimisticPages, updatePageHierarchy, optimisticUpdatePage, clearOptimisticUpdate, toast]);
+  }, [optimisticPages, updatePageHierarchy, optimisticUpdatePage, clearOptimisticUpdate, revertAllOptimisticChanges, toast]);
   
   return enhancedUpdatePageHierarchy;
 }

@@ -9,6 +9,7 @@ interface UseEnhancedUpdatePageProps {
   optimisticPages: Block[];
   optimisticUpdatePage: (pageId: string, updates: Partial<Block>) => void;
   clearOptimisticUpdate: (pageId: string) => void;
+  revertAllOptimisticChanges: () => void;
 }
 
 export function useEnhancedUpdatePage({
@@ -16,6 +17,7 @@ export function useEnhancedUpdatePage({
   optimisticPages,
   optimisticUpdatePage,
   clearOptimisticUpdate,
+  revertAllOptimisticChanges,
 }: UseEnhancedUpdatePageProps) {
   const { toast } = useToast();
 
@@ -43,8 +45,7 @@ export function useEnhancedUpdatePage({
       
       if (error) {
         console.error('Server page update failed:', error);
-        clearOptimisticUpdate(id);
-        throw error;
+        throw new Error(error);
       }
 
       console.log('Server page update successful:', data);
@@ -53,6 +54,7 @@ export function useEnhancedUpdatePage({
       
       return { data, error: null };
     } catch (err) {
+      revertAllOptimisticChanges();
       const errorMessage = err instanceof Error ? err.message : 'Failed to update page';
       console.error('Page update error:', err);
       toast({
@@ -62,7 +64,7 @@ export function useEnhancedUpdatePage({
       });
       return { data: null, error: errorMessage };
     }
-  }, [updatePage, optimisticUpdatePage, clearOptimisticUpdate, toast, optimisticPages]);
+  }, [updatePage, optimisticUpdatePage, clearOptimisticUpdate, revertAllOptimisticChanges, toast, optimisticPages]);
 
   return enhancedUpdatePage;
 }
