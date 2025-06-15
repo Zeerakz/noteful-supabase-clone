@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Block } from '@/types/block';
-import { PageService, PageCreateRequest } from '@/services/pageService';
+import { fetchPages } from '@/services/pageQueryService';
+import { createPage, updatePage, deletePage, PageCreateRequest } from '@/services/pageMutationService';
 import { usePageHierarchy } from '@/hooks/usePageHierarchy';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -19,7 +20,7 @@ export function usePages(workspaceId?: string) {
 
     try {
       setLoading(true);
-      const { data, error } = await PageService.fetchPages(workspaceId);
+      const { data, error } = await fetchPages(workspaceId);
 
       if (error) throw new Error(error);
       if (mountedRef.current) {
@@ -49,7 +50,7 @@ export function usePages(workspaceId?: string) {
       parent_id: parentId,
     };
 
-    const { data, error } = await PageService.createPage(
+    const { data, error } = await createPage(
       workspaceId,
       user.id,
       pageDetails
@@ -59,7 +60,7 @@ export function usePages(workspaceId?: string) {
   };
 
   const updatePage = async (id: string, updates: Partial<Block>) => {
-    const { data, error } = await PageService.updatePage(id, updates);
+    const { data, error } = await updatePage(id, updates);
     return { data, error };
   };
 
@@ -71,7 +72,7 @@ export function usePages(workspaceId?: string) {
   };
 
   const deletePage = async (id: string) => {
-    const { error } = await PageService.deletePage(id);
+    const { error } = await deletePage(id);
     return { error };
   };
 

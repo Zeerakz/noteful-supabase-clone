@@ -1,7 +1,7 @@
 
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { PageService } from '@/services/pageService';
+import { createPage, updatePage } from '@/services/pageMutationService';
 import { useOptimisticPropertyValueUpdate } from '@/hooks/useOptimisticPropertyValueUpdate';
 
 export function useListActions(databaseId: string, workspaceId: string, refetch: () => void) {
@@ -20,7 +20,7 @@ export function useListActions(databaseId: string, workspaceId: string, refetch:
 
   const handleTitleEdit = async (pageId: string, title: string) => {
     try {
-      const { error } = await PageService.updatePage(pageId, { properties: { title: title.trim() } });
+      const { error } = await updatePage(pageId, { properties: { title: title.trim() } });
       if (error) {
         toast({
           title: "Error",
@@ -43,7 +43,7 @@ export function useListActions(databaseId: string, workspaceId: string, refetch:
     if (!user) return;
 
     try {
-      const { data, error } = await PageService.createPage(
+      const { data, error } = await createPage(
         workspaceId,
         user.id,
         { properties: { title: 'Untitled', database_id: databaseId } }
