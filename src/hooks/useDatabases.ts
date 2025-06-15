@@ -1,34 +1,47 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Database, DatabaseCreateRequest } from '@/types/database';
 import { DatabaseService } from '@/services/databaseService';
+import { supabase } from '@/integrations/supabase/client';
 
 export function useDatabases(workspaceId?: string) {
   const [databases, setDatabases] = useState<Database[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
+  const channelRef = useRef<any>(null);
+  const mountedRef = useRef(true);
 
   const fetchDatabases = async () => {
     if (!user || !workspaceId) {
-      setDatabases([]);
-      setLoading(false);
+      if (mountedRef.current) {
+        setDatabases([]);
+        setLoading(false);
+      }
       return;
     }
 
     try {
-      setLoading(true);
-      setError(null);
+      if (mountedRef.current) {
+        setLoading(true);
+        setError(null);
+      }
       const { data, error } = await DatabaseService.fetchDatabases(workspaceId);
 
       if (error) throw new Error(error);
-      setDatabases(data || []);
+      if (mountedRef.current) {
+        setDatabases(data || []);
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch databases');
-      setDatabases([]);
+      if (mountedRef.current) {
+        setError(err instanceof Error ? err.message : 'Failed to fetch databases');
+        setDatabases([]);
+      }
     } finally {
-      setLoading(false);
+      if (mountedRef.current) {
+        setLoading(false);
+      }
     }
   };
 
@@ -45,15 +58,8 @@ export function useDatabases(workspaceId?: string) {
       if (error) {
         return { data: null, error };
       }
-
-      // Immediately add the new database to the local state for instant UI update
-      if (data) {
-        setDatabases(prev => [data, ...prev]);
-      }
       
-      // Also fetch fresh data to ensure consistency
-      await fetchDatabases();
-      
+      // No optimistic update needed, realtime will handle it
       return { data, error: null };
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to create database';
@@ -69,12 +75,7 @@ export function useDatabases(workspaceId?: string) {
         return { error };
       }
 
-      // Immediately remove the database from local state for instant UI update
-      setDatabases(prev => prev.filter(db => db.id !== id));
-      
-      // Also fetch fresh data to ensure consistency
-      await fetchDatabases();
-      
+      // No optimistic update needed, realtime will handle it
       return { error: null };
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to delete database';
@@ -82,8 +83,59 @@ export function useDatabases(workspaceId?: string) {
     }
   };
 
+  const cleanup = () => {
+    if (channelRef.current) {
+      try {
+        channelRef.current.unsubscribe();
+      } catch (error) {
+        console.warn('Error unsubscribing from databases channel:', error);
+      }
+      channelRef.current = null;
+    }
+  };
+
   useEffect(() => {
+    mountedRef.current = true;
+    
+    if (!user || !workspaceId) {
+      cleanup();
+      setDatabases([]);
+      setLoading(false);
+      return;
+    }
+
     fetchDatabases();
+    cleanup();
+
+    const channelName = `databases_${workspaceId}`;
+    const channel = supabase.channel(channelName);
+    channel
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'databases',
+          filter: `workspace_id=eq.${workspaceId}`,
+        },
+        (payload) => {
+          if (mountedRef.current) {
+            fetchDatabases();
+          }
+        }
+      )
+      .subscribe((status, err) => {
+        if (err) {
+          console.error(`Databases subscription error for workspace ${workspaceId}:`, err);
+        }
+      });
+    
+    channelRef.current = channel;
+
+    return () => {
+      mountedRef.current = false;
+      cleanup();
+    };
   }, [user, workspaceId]);
 
   return {
