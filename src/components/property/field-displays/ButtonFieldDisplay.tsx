@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { ButtonPropertyConfig, CreatePageWithTemplateConfig, SetPropertyValueConfig, OpenLinkConfig } from '@/types/property/configs/button';
 import { Button } from '@/components/ui/button';
@@ -7,6 +8,7 @@ import { useTemplates } from '@/hooks/useTemplates';
 import { useAuth } from '@/contexts/AuthContext';
 import { PropertyValueService } from '@/services/propertyValueService';
 import { toast } from '@/hooks/use-toast';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface ButtonFieldDisplayProps {
   value: any;
@@ -23,6 +25,7 @@ export function ButtonFieldDisplay({
 }: ButtonFieldDisplayProps) {
   const { createPageFromTemplate } = useTemplates();
   const { user } = useAuth();
+  const queryClient = useQueryClient();
 
   const executeAction = async (actionId: string) => {
     const action = config.actions.find(a => a.id === actionId);
@@ -33,21 +36,51 @@ export function ButtonFieldDisplay({
         case 'create_page_with_template':
           if (user) {
             const templateConfig = action.config as CreatePageWithTemplateConfig;
-            const { data, error } = await createPageFromTemplate(
+            const { data: newPage, error } = await createPageFromTemplate(
               templateConfig.templateId,
               templateConfig.pageName
             );
+
             if (error) {
               toast({
-                title: "Error",
+                title: "Error creating page",
                 description: error,
                 variant: "destructive"
               });
-            } else {
+            } else if (newPage) {
+              let propertiesUpdated = false;
+              if (templateConfig.prefilledProperties && templateConfig.prefilledProperties.length > 0) {
+                try {
+                  await Promise.all(
+                    templateConfig.prefilledProperties
+                      .filter(p => p.propertyId && p.value)
+                      .map(prop => 
+                        PropertyValueService.upsertPropertyValue(
+                          newPage.id,
+                          prop.propertyId,
+                          prop.value,
+                          user.id
+                        )
+                      )
+                  );
+                  propertiesUpdated = true;
+                } catch (propError) {
+                  toast({
+                    title: "Error setting properties",
+                    description: "The page was created, but some properties could not be pre-filled.",
+                    variant: "destructive"
+                  });
+                }
+              }
+              
               toast({
                 title: "Success",
-                description: `Page "${data?.title}" created successfully`,
+                description: `Page "${newPage.title}" created` + (propertiesUpdated ? ' with prefilled properties.' : '.'),
               });
+              
+              // Invalidate queries to refresh data
+              queryClient.invalidateQueries({ queryKey: ['database-pages'] });
+              queryClient.invalidateQueries({ queryKey: ['pages'] });
             }
           }
           break;
@@ -73,6 +106,8 @@ export function ButtonFieldDisplay({
                 title: "Success",
                 description: "Property updated successfully",
               });
+              // Invalidate queries to refresh data
+              queryClient.invalidateQueries({ queryKey: ['database-pages'] });
             }
           }
           break;

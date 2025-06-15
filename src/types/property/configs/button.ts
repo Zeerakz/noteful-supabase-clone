@@ -17,6 +17,7 @@ export interface CreatePageWithTemplateConfig {
   templateId: string;
   targetWorkspaceId?: string;
   pageName?: string;
+  prefilledProperties?: { propertyId: string; value: string }[];
 }
 
 export interface SetPropertyValueConfig {
