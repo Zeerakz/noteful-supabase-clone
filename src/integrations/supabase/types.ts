@@ -1306,6 +1306,21 @@ export type Database = {
           ancestor_created_by: string
         }[]
       }
+      get_discoverable_teamspaces: {
+        Args: { p_workspace_id: string; p_user_id: string }
+        Returns: {
+          id: string
+          workspace_id: string
+          name: string
+          description: string
+          created_by: string
+          created_at: string
+          updated_at: string
+          access_level: Database["public"]["Enums"]["teamspace_access_level"]
+          member_count: number
+          is_member: boolean
+        }[]
+      }
       get_inherited_block_permission: {
         Args: { p_block_id: string; p_user_id: string }
         Returns: Database["public"]["Enums"]["block_permission_level"]

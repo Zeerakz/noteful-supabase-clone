@@ -1,4 +1,5 @@
 
+```typescript
 export type TeamspaceAccessLevel = 'public' | 'private';
 export type TeamspaceMemberRole = 'admin' | 'member';
 
@@ -13,6 +14,11 @@ export interface Teamspace {
   access_level: TeamspaceAccessLevel;
 }
 
+export interface DiscoverableTeamspace extends Teamspace {
+  member_count: number;
+  is_member: boolean;
+}
+
 export interface TeamspaceMember {
   id: string;
   teamspace_id: string;
@@ -25,3 +31,4 @@ export interface TeamspaceMember {
     avatar_url: string | null;
   } | null;
 }
+```

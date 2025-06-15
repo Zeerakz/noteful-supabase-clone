@@ -1,6 +1,7 @@
 
+```typescript
 import { supabase } from '@/integrations/supabase/client';
-import { Teamspace, TeamspaceMember, TeamspaceAccessLevel, TeamspaceMemberRole } from '@/types/teamspace';
+import { Teamspace, TeamspaceMember, TeamspaceAccessLevel, TeamspaceMemberRole, DiscoverableTeamspace } from '@/types/teamspace';
 
 export const TeamspaceService = {
   async getTeamspaces(workspaceId: string): Promise<{ data: Teamspace[] | null, error: string | null }> {
@@ -12,6 +13,19 @@ export const TeamspaceService = {
 
     if (error) return { data: null, error: error.message };
     return { data: data as Teamspace[], error: null };
+  },
+
+  async getDiscoverableTeamspaces(workspaceId: string, userId: string): Promise<{ data: DiscoverableTeamspace[] | null, error: string | null }> {
+    const { data, error } = await supabase.rpc('get_discoverable_teamspaces', {
+      p_workspace_id: workspaceId,
+      p_user_id: userId,
+    });
+
+    if (error) {
+      console.error('Error fetching discoverable teamspaces:', error);
+      return { data: null, error: error.message };
+    }
+    return { data, error: null };
   },
 
   async createTeamspace(
@@ -97,3 +111,4 @@ export const TeamspaceService = {
       return { error: null };
   },
 };
+```

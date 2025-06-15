@@ -1,16 +1,18 @@
 
+```typescript
 import React, { useState } from 'react';
 import { useForm, SubmitHandler, Controller } from 'react-hook-form';
 import { useTeamspaces, TeamspaceAccessLevel } from '@/hooks/useTeamspaces';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, Loader2, Users, Lock, Unlock } from 'lucide-react';
+import { Plus, Loader2, Users, Lock, Unlock, Compass } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { TeamspaceMembersManager } from './TeamspaceMembersManager';
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
+import { DiscoverTeamspacesModal } from './DiscoverTeamspacesModal';
 
 interface TeamspaceManagementTabProps {
   workspaceId: string;
@@ -22,8 +24,9 @@ interface CreateTeamspaceInputs {
 }
 
 export function TeamspaceManagementTab({ workspaceId }: TeamspaceManagementTabProps) {
-  const { teamspaces, loading, createTeamspace } = useTeamspaces(workspaceId);
+  const { teamspaces, loading, createTeamspace, fetchTeamspaces } = useTeamspaces(workspaceId);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDiscoverModalOpen, setIsDiscoverModalOpen] = useState(false);
   const { toast } = useToast();
   const { register, handleSubmit, reset, formState: { errors }, control } = useForm<CreateTeamspaceInputs>({
     defaultValues: {
@@ -47,7 +50,13 @@ export function TeamspaceManagementTab({ workspaceId }: TeamspaceManagementTabPr
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Create New Teamspace</CardTitle>
+          <div className="flex justify-between items-center">
+            <CardTitle>Create New Teamspace</CardTitle>
+            <Button variant="outline" onClick={() => setIsDiscoverModalOpen(true)}>
+                <Compass className="mr-2 h-4 w-4" />
+                Browse Teamspaces
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -130,6 +139,14 @@ export function TeamspaceManagementTab({ workspaceId }: TeamspaceManagementTabPr
           ))}
         </div>
       )}
+      
+      <DiscoverTeamspacesModal
+        isOpen={isDiscoverModalOpen}
+        onClose={() => setIsDiscoverModalOpen(false)}
+        onTeamspaceJoined={fetchTeamspaces}
+        workspaceId={workspaceId}
+      />
     </div>
   );
 }
+```
