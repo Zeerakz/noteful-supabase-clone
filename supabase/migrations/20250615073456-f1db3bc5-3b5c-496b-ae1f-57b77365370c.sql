@@ -68,7 +68,12 @@ DROP POLICY IF EXISTS "Users can view memberships for workspaces they are in" ON
 DROP POLICY IF EXISTS "Owners and admins can update member roles" ON public.workspace_members;
 DROP POLICY IF EXISTS "Owners and admins can remove members" ON public.workspace_members;
 
-CREATE POLICY "Owners and admins can add new members" ON public.workspace_members FOR INSERT TO authenticated WITH CHECK (public.check_workspace_membership(workspace_id, auth.uid(), ARRAY['owner', 'admin']::public.workspace_role[]));
+CREATE POLICY "Owners and admins can add new members" ON public.workspace_members FOR INSERT TO authenticated WITH CHECK (
+    -- Condition for existing members to add others
+    public.check_workspace_membership(workspace_id, auth.uid(), ARRAY['owner', 'admin']::public.workspace_role[])
+    -- OR: Condition to allow the trigger to add the new workspace's owner
+    OR public.is_workspace_owner(workspace_id, auth.uid())
+);
 CREATE POLICY "Users can view memberships for workspaces they are in" ON public.workspace_members FOR SELECT TO authenticated USING (public.check_workspace_membership(workspace_id, auth.uid()));
 CREATE POLICY "Owners and admins can update member roles" ON public.workspace_members FOR UPDATE TO authenticated USING (public.check_workspace_membership(workspace_id, auth.uid(), ARRAY['owner', 'admin']::public.workspace_role[]));
 CREATE POLICY "Owners and admins can remove members" ON public.workspace_members FOR DELETE TO authenticated USING (public.check_workspace_membership(workspace_id, auth.uid(), ARRAY['owner', 'admin']::public.workspace_role[]) AND role <> 'owner');
