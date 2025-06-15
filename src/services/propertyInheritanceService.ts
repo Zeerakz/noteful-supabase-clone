@@ -22,7 +22,7 @@ export class PropertyInheritanceService {
   static async removeDatabaseInheritance(pageId: string, databaseId: string): Promise<{ error: string | null }> {
     try {
       const { data: fields, error: fieldsError } = await supabase
-        .from('fields')
+        .from('database_properties')
         .select('id')
         .eq('database_id', databaseId);
 
@@ -35,10 +35,10 @@ export class PropertyInheritanceService {
       const fieldIds = fields.map(f => f.id);
 
       const { error } = await supabase
-        .from('page_properties')
+        .from('property_values')
         .delete()
         .eq('page_id', pageId)
-        .in('field_id', fieldIds);
+        .in('property_id', fieldIds);
 
       if (error) throw error;
       return { error: null };

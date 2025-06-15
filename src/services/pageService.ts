@@ -70,7 +70,7 @@ export class PageService {
       }
 
       const { data, error } = await supabase
-        .from('page_properties')
+        .from('property_values')
         .select('*')
         .eq('page_id', pageId);
 

@@ -70,7 +70,7 @@ export class DatabaseService {
   }
 
   // Page property operations
-  static async createPageProperty(pageId: string, fieldId: string, value: string, userId: string) {
-    return PropertyValueService.upsertPropertyValue(pageId, fieldId, value, userId);
+  static async createPageProperty(pageId: string, propertyId: string, value: string, userId: string) {
+    return PropertyValueService.upsertPropertyValue(pageId, propertyId, value, userId);
   }
 }

@@ -1,4 +1,3 @@
-
 import { useState, useCallback } from 'react';
 import { DatabaseField } from '@/types/database';
 import { supabase } from '@/integrations/supabase/client';
@@ -235,14 +234,14 @@ export function useBenchmarkData() {
           if (field.type === 'text') {
             properties.push({
               page_id: pageId,
-              field_id: field.id,
+              property_id: field.id,
               value: `Sample text ${pageIndex} for ${field.name}`,
               created_by: 'benchmark'
             });
           } else if (field.type === 'number') {
             properties.push({
               page_id: pageId,
-              field_id: field.id,
+              property_id: field.id,
               value: (Math.random() * 1000).toFixed(2),
               created_by: 'benchmark'
             });
@@ -250,7 +249,7 @@ export function useBenchmarkData() {
             const randomDate = new Date(Date.now() - Math.random() * 365 * 24 * 60 * 60 * 1000);
             properties.push({
               page_id: pageId,
-              field_id: field.id,
+              property_id: field.id,
               value: randomDate.toISOString().split('T')[0],
               created_by: 'benchmark'
             });
@@ -259,7 +258,7 @@ export function useBenchmarkData() {
             const randomOption = options[Math.floor(Math.random() * options.length)];
             properties.push({
               page_id: pageId,
-              field_id: field.id,
+              property_id: field.id,
               value: randomOption?.id || 'opt1',
               created_by: 'benchmark'
             });
@@ -269,7 +268,7 @@ export function useBenchmarkData() {
             const relationIds = Array.from({length: relationCount}, (_, i) => `related_${pageIndex}_${i}`);
             properties.push({
               page_id: pageId,
-              field_id: field.id,
+              property_id: field.id,
               value: relationIds.join(','),
               created_by: 'benchmark'
             });
