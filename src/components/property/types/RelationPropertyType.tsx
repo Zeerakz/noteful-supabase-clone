@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link } from 'lucide-react';
 import { PropertyTypeDefinition } from '@/types/propertyRegistry';
@@ -92,8 +91,6 @@ export const relationPropertyType: PropertyTypeDefinition<RelationPropertyConfig
   
   FieldEditor: ({ value, config, onChange, workspaceId, pageId, field }) => (
     <RelationFieldEditor
-      value={value}
-      onChange={onChange} // Will be ignored by the component
       settings={{
         target_database_id: config.targetDatabaseId,
         display_property: config.displayProperty,
