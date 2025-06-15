@@ -1029,18 +1029,21 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          role: Database["public"]["Enums"]["teamspace_member_role"]
           teamspace_id: string
           user_id: string
         }
         Insert: {
           created_at?: string
           id?: string
+          role?: Database["public"]["Enums"]["teamspace_member_role"]
           teamspace_id: string
           user_id: string
         }
         Update: {
           created_at?: string
           id?: string
+          role?: Database["public"]["Enums"]["teamspace_member_role"]
           teamspace_id?: string
           user_id?: string
         }
@@ -1056,6 +1059,7 @@ export type Database = {
       }
       teamspaces: {
         Row: {
+          access_level: Database["public"]["Enums"]["teamspace_access_level"]
           created_at: string
           created_by: string
           description: string | null
@@ -1065,6 +1069,7 @@ export type Database = {
           workspace_id: string
         }
         Insert: {
+          access_level?: Database["public"]["Enums"]["teamspace_access_level"]
           created_at?: string
           created_by: string
           description?: string | null
@@ -1074,6 +1079,7 @@ export type Database = {
           workspace_id: string
         }
         Update: {
+          access_level?: Database["public"]["Enums"]["teamspace_access_level"]
           created_at?: string
           created_by?: string
           description?: string | null
@@ -1400,6 +1406,8 @@ export type Database = {
         | "last_edited_by"
         | "id"
       property_visibility: "always_show" | "always_hide" | "show_when_not_empty"
+      teamspace_access_level: "public" | "private"
+      teamspace_member_role: "admin" | "member"
       workspace_role: "owner" | "admin" | "member" | "guest"
     }
     CompositeTypes: {
@@ -1566,6 +1574,8 @@ export const Constants = {
         "always_hide",
         "show_when_not_empty",
       ],
+      teamspace_access_level: ["public", "private"],
+      teamspace_member_role: ["admin", "member"],
       workspace_role: ["owner", "admin", "member", "guest"],
     },
   },

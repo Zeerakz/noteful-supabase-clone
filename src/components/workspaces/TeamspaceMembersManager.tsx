@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useTeamspaces, Teamspace, TeamspaceMember } from '@/hooks/useTeamspaces';
 import { usePeopleSearch } from '@/hooks/usePeopleSearch';
@@ -126,8 +125,8 @@ export function TeamspaceMembersManager({ teamspace }: TeamspaceMembersManagerPr
                             </Avatar>
                             <div>
                                 <p className="font-medium">{member.profiles?.full_name || member.profiles?.email}</p>
-                                {member.user_id === teamspace.created_by && (
-                                    <p className="text-xs text-muted-foreground">Owner</p>
+                                {member.role === 'admin' && (
+                                    <p className="text-xs text-muted-foreground capitalize">{member.role}</p>
                                 )}
                             </div>
                         </div>
@@ -135,7 +134,8 @@ export function TeamspaceMembersManager({ teamspace }: TeamspaceMembersManagerPr
                             variant="ghost" 
                             size="sm" 
                             onClick={() => handleRemoveMember(member.id)}
-                            disabled={member.user_id === teamspace.created_by}
+                            disabled={member.role === 'admin'}
+                            title={member.role === 'admin' ? 'Admins cannot be removed here.' : 'Remove member'}
                         >
                             <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>

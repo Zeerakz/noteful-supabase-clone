@@ -1,29 +1,10 @@
 
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { TeamspaceService } from '@/services/teamspaceService';
+import { Teamspace, TeamspaceAccessLevel } from '@/types/teamspace';
 
-export interface Teamspace {
-  id: string;
-  workspace_id: string;
-  name: string;
-  description: string | null;
-  created_by: string;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface TeamspaceMember {
-    id: string;
-    teamspace_id: string;
-    user_id: string;
-    created_at: string;
-    profiles: {
-        full_name: string | null;
-        email: string | null;
-        avatar_url: string | null;
-    } | null;
-}
+export { type Teamspace, type TeamspaceMember, type TeamspaceAccessLevel, type TeamspaceMemberRole } from '@/types/teamspace';
 
 export function useTeamspaces(workspaceId: string) {
   const [teamspaces, setTeamspaces] = useState<Teamspace[]>([]);
@@ -37,16 +18,12 @@ export function useTeamspaces(workspaceId: string) {
     }
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('teamspaces')
-        .select('*')
-        .eq('workspace_id', workspaceId)
-        .order('created_at', { ascending: true });
-
-      if (error) throw error;
+      const { data, error } = await TeamspaceService.getTeamspaces(workspaceId);
+      if (error) throw new Error(error);
       setTeamspaces(data || []);
     } catch (error) {
       console.error('Failed to fetch teamspaces', error);
+      setTeamspaces([]);
     } finally {
       setLoading(false);
     }
@@ -56,79 +33,21 @@ export function useTeamspaces(workspaceId: string) {
     fetchTeamspaces();
   }, [fetchTeamspaces]);
 
-  const createTeamspace = async (name: string, description?: string) => {
+  const createTeamspace = async (name: string, description?: string, accessLevel?: TeamspaceAccessLevel) => {
     if (!user || !workspaceId) return { error: 'Not authenticated or no workspace' };
-    const { data, error } = await supabase
-      .from('teamspaces')
-      .insert({ name, description, workspace_id: workspaceId, created_by: user.id })
-      .select()
-      .single();
+    const { data, error } = await TeamspaceService.createTeamspace(name, workspaceId, user.id, description, accessLevel);
 
-    if (error) return { error: error.message };
+    if (error) return { error };
     
     await fetchTeamspaces();
     return { data };
   };
 
-  const getTeamspaceMembers = async (teamspaceId: string): Promise<{ data: TeamspaceMember[] | null, error: string | null }> => {
-    const { data: membersData, error: membersError } = await supabase
-      .from('teamspace_members')
-      .select(`id, teamspace_id, user_id, created_at`)
-      .eq('teamspace_id', teamspaceId);
+  const getTeamspaceMembers = TeamspaceService.getTeamspaceMembers;
 
-    if (membersError) {
-      console.error('Error fetching teamspace members:', membersError);
-      return { data: null, error: membersError.message };
-    }
-    if (!membersData) return { data: [], error: null };
-
-    const userIds = membersData.map(m => m.user_id);
-    if (userIds.length === 0) {
-      return { data: [], error: null };
-    }
-
-    const { data: profilesData, error: profilesError } = await supabase
-      .from('profiles')
-      .select('id, full_name, email, avatar_url')
-      .in('id', userIds);
-
-    if (profilesError) {
-      console.error('Error fetching profiles for members:', profilesError);
-      return { data: null, error: profilesError.message };
-    }
-
-    const profilesMap = new Map(profilesData.map(p => [p.id, {
-      full_name: p.full_name,
-      email: p.email,
-      avatar_url: p.avatar_url,
-    }]));
-
-    const combinedData: TeamspaceMember[] = membersData.map(member => ({
-      ...member,
-      profiles: profilesMap.get(member.user_id) || null
-    }));
-
-    return { data: combinedData, error: null };
-  };
-
-  const addMemberToTeamspace = async (teamspaceId: string, userId: string) => {
-    const { error } = await supabase
-        .from('teamspace_members')
-        .insert({ teamspace_id: teamspaceId, user_id: userId });
-    
-    if (error) return { error: error.message };
-    return { error: null };
-  };
+  const addMemberToTeamspace = TeamspaceService.addMemberToTeamspace;
   
-  const removeMemberFromTeamspace = async (memberId: string) => {
-      const { error } = await supabase
-        .from('teamspace_members')
-        .delete()
-        .eq('id', memberId);
-
-      if (error) return { error: error.message };
-      return { error: null };
-  };
+  const removeMemberFromTeamspace = TeamspaceService.removeMemberFromTeamspace;
 
   return { 
       teamspaces, 

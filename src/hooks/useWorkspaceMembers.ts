@@ -1,29 +1,8 @@
-
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { InvitationService } from '@/services/invitationService';
+import { WorkspaceMember, PendingInvitation } from '@/types/workspace';
 
-export interface WorkspaceMember {
-  id: string;
-  user_id: string;
-  role: 'owner' | 'admin' | 'member' | 'guest';
-  created_at: string;
-  profiles: {
-    full_name: string | null;
-    email: string | null;
-    avatar_url: string | null;
-  } | null;
-}
-
-export interface PendingInvitation {
-  id: string;
-  workspace_id: string;
-  email: string;
-  role: 'owner' | 'admin' | 'member' | 'guest';
-  token: string;
-  invited_by: string | null;
-  created_at: string;
-}
+export { type WorkspaceMember, type PendingInvitation } from '@/types/workspace';
 
 export function useWorkspaceMembers(workspaceId?: string) {
   const [members, setMembers] = useState<WorkspaceMember[]>([]);
