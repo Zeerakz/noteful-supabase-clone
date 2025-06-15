@@ -70,6 +70,7 @@ export type Database = {
           parent_id: string | null
           pos: number
           properties: Json
+          teamspace_id: string | null
           type: Database["public"]["Enums"]["block_type_enum"]
           workspace_id: string
         }
@@ -85,6 +86,7 @@ export type Database = {
           parent_id?: string | null
           pos?: number
           properties?: Json
+          teamspace_id?: string | null
           type: Database["public"]["Enums"]["block_type_enum"]
           workspace_id: string
         }
@@ -100,6 +102,7 @@ export type Database = {
           parent_id?: string | null
           pos?: number
           properties?: Json
+          teamspace_id?: string | null
           type?: Database["public"]["Enums"]["block_type_enum"]
           workspace_id?: string
         }
@@ -116,6 +119,13 @@ export type Database = {
             columns: ["workspace_id"]
             isOneToOne: false
             referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_blocks_teamspace_id"
+            columns: ["teamspace_id"]
+            isOneToOne: false
+            referencedRelation: "teamspaces"
             referencedColumns: ["id"]
           },
         ]
@@ -1015,6 +1025,73 @@ export type Database = {
           },
         ]
       }
+      teamspace_members: {
+        Row: {
+          created_at: string
+          id: string
+          teamspace_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          teamspace_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          teamspace_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teamspace_members_teamspace_id_fkey"
+            columns: ["teamspace_id"]
+            isOneToOne: false
+            referencedRelation: "teamspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      teamspaces: {
+        Row: {
+          created_at: string
+          created_by: string
+          description: string | null
+          id: string
+          name: string
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teamspaces_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       templates: {
         Row: {
           content: Json
@@ -1184,6 +1261,10 @@ export type Database = {
         Args: { p_page_id: string; p_database_id: string; p_user_id: string }
         Returns: undefined
       }
+      can_access_block: {
+        Args: { p_block_id: string; p_user_id: string }
+        Returns: boolean
+      }
       check_workspace_membership: {
         Args: {
           p_workspace_id: string
@@ -1210,6 +1291,15 @@ export type Database = {
           table_name: string
         }[]
       }
+      get_block_ancestor_permission_source: {
+        Args: { p_block_id: string }
+        Returns: {
+          ancestor_id: string
+          ancestor_parent_id: string
+          ancestor_teamspace_id: string
+          ancestor_created_by: string
+        }[]
+      }
       get_inherited_block_permission: {
         Args: { p_block_id: string; p_user_id: string }
         Returns: Database["public"]["Enums"]["block_permission_level"]
@@ -1230,6 +1320,10 @@ export type Database = {
       }
       is_small_workspace: {
         Args: { workspace_uuid: string }
+        Returns: boolean
+      }
+      is_teamspace_member: {
+        Args: { p_teamspace_id: string; p_user_id: string }
         Returns: boolean
       }
       is_workspace_owner: {
