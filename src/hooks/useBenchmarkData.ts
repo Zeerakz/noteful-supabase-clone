@@ -1,3 +1,4 @@
+
 import { useState, useCallback } from 'react';
 import { DatabaseField } from '@/types/database';
 import { supabase } from '@/integrations/supabase/client';
@@ -289,7 +290,7 @@ export function useBenchmarkData() {
 
         // Insert batch of properties
         const { error: propertiesError } = await supabase
-          .from('page_properties')
+          .from('property_values')
           .insert(properties);
 
         if (propertiesError) {
@@ -472,7 +473,7 @@ export function useBenchmarkData() {
         
         // Delete page properties for these pages
         await supabase
-          .from('page_properties')
+          .from('property_values')
           .delete()
           .in('page_id', pageIds);
       }

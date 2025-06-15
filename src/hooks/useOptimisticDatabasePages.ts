@@ -1,9 +1,10 @@
+
 import { useQueryClient, useMutation } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { PageService, PageCreateRequest } from '@/services/pageService';
 import { useFilteredDatabasePagesQuery } from '@/hooks/useFilteredDatabasePagesQuery';
-import { useOptimisticPropertyUpdate } from '@/hooks/useOptimisticPropertyUpdate';
+import { useOptimisticPropertyValueUpdate } from '@/hooks/useOptimisticPropertyValueUpdate';
 import { DatabaseField } from '@/types/database';
 import { FilterGroup } from '@/types/filters';
 import { SortRule } from '@/components/database/SortingModal';
@@ -35,7 +36,7 @@ export function useOptimisticDatabasePages({
     sortRules,
   });
 
-  const propertyUpdateMutation = useOptimisticPropertyUpdate(databaseId);
+  const propertyUpdateMutation = useOptimisticPropertyValueUpdate(databaseId);
 
   const updatePageMutation = useMutation({
     mutationFn: ({ pageId, updates }: { pageId: string, updates: Partial<Block> }) => PageService.updatePage(pageId, updates),

@@ -1,18 +1,19 @@
+
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { PageService } from '@/services/pageService';
-import { useOptimisticPropertyUpdate } from '@/hooks/useOptimisticPropertyUpdate';
+import { useOptimisticPropertyValueUpdate } from '@/hooks/useOptimisticPropertyValueUpdate';
 
 export function useListActions(databaseId: string, workspaceId: string, refetch: () => void) {
   const { user } = useAuth();
   const { toast } = useToast();
-  const propertyUpdateMutation = useOptimisticPropertyUpdate(databaseId);
+  const propertyUpdateMutation = useOptimisticPropertyValueUpdate(databaseId);
 
   const handleFieldEdit = (pageId: string, fieldId: string, value: string) => {
     console.log('useListActions: Field edit triggered', { pageId, fieldId, value });
     propertyUpdateMutation.mutate({
       pageId,
-      fieldId,
+      propertyId: fieldId,
       value
     });
   };

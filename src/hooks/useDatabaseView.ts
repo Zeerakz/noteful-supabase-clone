@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -8,7 +7,7 @@ export type DatabaseViewType = 'table' | 'list' | 'timeline' | 'calendar' | 'kan
 
 export function useDatabaseView(databaseId: string) {
   const [defaultView, setDefaultView] = useState<DatabaseViewType>('table');
-  const [groupingFieldId, setGroupingFieldId] = useState<string | undefined>();
+  const [groupingPropertyId, setGroupingPropertyId] = useState<string | undefined>();
   const [collapsedGroups, setCollapsedGroups] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
@@ -28,7 +27,7 @@ export function useDatabaseView(databaseId: string) {
           // Use default values if there's an error
         } else if (data) {
           setDefaultView(data.default_view_type as DatabaseViewType);
-          setGroupingFieldId(data.grouping_field_id);
+          setGroupingPropertyId(data.grouping_property_id);
           setCollapsedGroups(data.grouping_collapsed_groups || []);
         }
       } catch (err) {
@@ -60,17 +59,17 @@ export function useDatabaseView(databaseId: string) {
     }
   };
 
-  const updateGrouping = async (fieldId?: string) => {
+  const updateGrouping = async (propertyId?: string) => {
     if (!user || !databaseId) return;
 
     try {
-      setGroupingFieldId(fieldId);
+      setGroupingPropertyId(propertyId);
       setCollapsedGroups([]); // Reset collapsed groups when changing grouping field
 
       const { error } = await DatabaseViewService.updateGrouping(
         databaseId,
         user.id,
-        fieldId,
+        propertyId,
         []
       );
 
@@ -104,7 +103,7 @@ export function useDatabaseView(databaseId: string) {
 
   return {
     defaultView,
-    groupingFieldId,
+    groupingPropertyId,
     collapsedGroups,
     saveDefaultView,
     updateGrouping,
