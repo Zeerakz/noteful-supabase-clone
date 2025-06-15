@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Kanban, Plus, RefreshCw } from 'lucide-react';
 import { DragDropContext } from 'react-beautiful-dnd';
@@ -11,6 +12,7 @@ import { useKanbanFieldSelection } from './kanban/hooks/useKanbanFieldSelection'
 import { useKanbanDragDrop } from './kanban/hooks/useKanbanDragDrop';
 import { Button } from '@/components/ui/button';
 import { statusPropertyType } from '@/components/property/types/StatusPropertyType';
+import { DatabaseViewError } from './DatabaseViewError';
 
 interface DatabaseKanbanViewProps {
   databaseId: string;
@@ -63,12 +65,15 @@ export function DatabaseKanbanView({
   const handleAddStatusField = async () => {
     if (!onFieldCreate) return;
     setIsCreatingField(true);
-    await onFieldCreate({
-      name: 'Status',
-      type: 'status',
-      settings: statusPropertyType.getDefaultConfig(),
-    });
-    setIsCreatingField(false);
+    try {
+      await onFieldCreate({
+        name: 'Status',
+        type: 'status',
+        settings: statusPropertyType.getDefaultConfig(),
+      });
+    } finally {
+      setIsCreatingField(false);
+    }
   };
 
   if (loading) {
@@ -84,9 +89,10 @@ export function DatabaseKanbanView({
 
   if (error) {
     return (
-      <div className="text-center h-full flex items-center justify-center">
-        <p className="text-destructive">{error}</p>
-      </div>
+      <DatabaseViewError 
+        error={error} 
+        message="Could not load Kanban board data." 
+      />
     );
   }
 
