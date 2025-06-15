@@ -1,7 +1,9 @@
-import React from 'react';
+
+import React, { useState, useRef, useEffect } from 'react';
 import { useParams, Navigate, useNavigate } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Edit2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { BlockEditor } from '@/components/blocks/BlockEditor';
 import { PagePropertiesSection } from '@/components/database/fields/PagePropertiesSection';
 import { useDatabaseFields } from '@/hooks/useDatabaseFields';
@@ -11,10 +13,17 @@ import { useUserProfiles } from '@/hooks/useUserProfiles';
 import { errorHandler } from '@/utils/errorHandler';
 import { ErrorBoundary } from '@/components/error/ErrorBoundary';
 import { useBlockPermissions } from '@/hooks/useBlockPermissions';
+import { useEnhancedPages } from '@/hooks/useEnhancedPages';
+import { useToast } from '@/hooks/use-toast';
 
 function PageViewContent() {
   const { pageId } = useParams<{ pageId: string }>();
   const navigate = useNavigate();
+  const { toast } = useToast();
+
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [titleValue, setTitleValue] = useState('');
+  const titleInputRef = useRef<HTMLInputElement>(null);
   
   // Use the stable hooks
   const { pageData, loading: pageLoading, error: pageError, retry: retryPage } = usePageData(pageId);
@@ -22,6 +31,13 @@ function PageViewContent() {
   const { userProfiles } = useUserProfiles(pageData?.workspace?.id);
   const { fields, loading: fieldsLoading } = useDatabaseFields(pageData?.properties.database_id);
   const { permissions, loading: permissionsLoading } = useBlockPermissions(pageId, pageData?.workspace?.id);
+  const { updatePage, hasOptimisticChanges } = useEnhancedPages(pageData?.workspace?.id);
+
+  useEffect(() => {
+    if (pageData) {
+      setTitleValue(pageData.properties?.title || 'Untitled');
+    }
+  }, [pageData]);
 
   const handlePropertyUpdate = async (fieldId: string, value: any) => {
     try {
@@ -49,6 +65,55 @@ function PageViewContent() {
   const handleRetry = () => {
     retryPage();
     retryProperties();
+  };
+
+  const isEditable = permissions.canEdit;
+
+  const startEditingTitle = () => {
+    if (!pageData) return;
+    setTitleValue(pageData.properties?.title || 'Untitled');
+    setIsEditingTitle(true);
+    setTimeout(() => {
+      titleInputRef.current?.focus();
+      titleInputRef.current?.select();
+    }, 0);
+  };
+
+  const handleTitleSave = async () => {
+    if (!pageData) return;
+    if (!titleValue.trim()) {
+      toast({ title: "Error", description: "Page title cannot be empty", variant: "destructive" });
+      return;
+    }
+    if (titleValue.trim() === ((pageData.properties as any)?.title || 'Untitled')) {
+      setIsEditingTitle(false);
+      return;
+    }
+    
+    const newProperties = { ...pageData.properties, title: titleValue.trim() };
+    const { error } = await updatePage(pageData.id, { properties: newProperties });
+    
+    if (!error) {
+      setIsEditingTitle(false);
+    } else {
+      toast({ title: "Error", description: "Failed to update page title. Please try again.", variant: "destructive" });
+    }
+  };
+
+  const handleTitleCancel = () => {
+    if (!pageData) return;
+    setTitleValue((pageData.properties as any)?.title || 'Untitled');
+    setIsEditingTitle(false);
+  };
+
+  const handleTitleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleTitleSave();
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      handleTitleCancel();
+    }
   };
 
   // Loading state
@@ -90,7 +155,6 @@ function PageViewContent() {
     return acc;
   }, {} as Record<string, any>);
 
-  const isEditable = permissions.canEdit;
 
   return (
     <div className="min-h-screen bg-background">
@@ -106,7 +170,36 @@ function PageViewContent() {
               Back
             </Button>
             <div>
-              <h1 className="text-xl font-semibold">{pageData.properties?.title || 'Untitled'}</h1>
+              {isEditingTitle ? (
+                <div className="flex items-center gap-2">
+                  <Input
+                    ref={titleInputRef}
+                    value={titleValue}
+                    onChange={(e) => setTitleValue(e.target.value)}
+                    onBlur={handleTitleSave}
+                    onKeyDown={handleTitleKeyDown}
+                    className="text-xl font-semibold border-none bg-transparent p-0 focus-visible:ring-1"
+                    placeholder="Page title"
+                  />
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 group">
+                  <h1 className="text-xl font-semibold">{pageData.properties?.title || 'Untitled'}</h1>
+                  {isEditable && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={startEditingTitle}
+                      className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0"
+                    >
+                      <Edit2 className="h-3 w-3" />
+                    </Button>
+                  )}
+                  {hasOptimisticChanges && (
+                    <span className="inline-block w-2 h-2 bg-blue-500 rounded-full animate-pulse ml-2" title="Syncing changes..." />
+                  )}
+                </div>
+              )}
               <p className="text-sm text-muted-foreground">in {pageData.workspace.name}</p>
             </div>
           </div>
