@@ -1,7 +1,7 @@
 
 import { useState } from 'react';
 import { PropertyInheritanceService } from '@/services/propertyInheritanceService';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 
 export function usePropertyInheritance() {
