@@ -1341,6 +1341,10 @@ export type Database = {
         Args: { p_workspace_id: string; p_user_id: string }
         Returns: Database["public"]["Enums"]["block_permission_level"]
       }
+      get_user_workspace_role: {
+        Args: { p_workspace_id: string; p_user_id: string }
+        Returns: Database["public"]["Enums"]["workspace_role"]
+      }
       global_search: {
         Args: { search_query: string; user_workspace_id?: string }
         Returns: {
@@ -1364,7 +1368,7 @@ export type Database = {
         Returns: boolean
       }
       is_workspace_owner: {
-        Args: { workspace_uuid: string; user_uuid: string }
+        Args: { p_workspace_id: string; p_user_id: string }
         Returns: boolean
       }
       recalculate_formula_field: {
