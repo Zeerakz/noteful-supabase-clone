@@ -2,7 +2,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { Database, DatabaseCreateRequest } from '@/types/database';
 import { DatabaseCoreService } from './database/databaseCoreService';
 import { DatabasePageService } from './database/databasePageService';
-import { DatabasePropertyService } from './database/databasePropertyService';
 import { DatabaseFieldService } from './database/databaseFieldService';
 import { PropertyValueService } from '@/services/propertyValueService';
 
