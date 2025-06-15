@@ -4,6 +4,13 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Block } from '@/types/block';
 import { supabase } from '@/integrations/supabase/client';
 
+const formatPageProperties = (page: any): Block => {
+  const properties = (typeof page.properties === 'object' && page.properties !== null && !Array.isArray(page.properties))
+    ? page.properties
+    : {};
+  return { ...page, properties } as Block;
+};
+
 export function useDatabasePages(databaseId: string, workspaceId: string) {
   const [pages, setPages] = useState<Block[]>([]);
   const [loading, setLoading] = useState(true);
@@ -26,7 +33,7 @@ export function useDatabasePages(databaseId: string, workspaceId: string) {
 
       if (error) throw error;
       if (mountedRef.current) {
-        setPages(data || []);
+        setPages((data || []).map(formatPageProperties));
       }
     } catch (err) {
       if (mountedRef.current) {
@@ -59,7 +66,7 @@ export function useDatabasePages(databaseId: string, workspaceId: string) {
       .select()
       .single();
 
-    return { data, error: error ? error.message : null };
+    return { data: data ? formatPageProperties(data) : null, error: error ? error.message : null };
   };
 
   const updatePage = async (pageId: string, updates: Partial<{ title: string }>) => {
@@ -75,7 +82,7 @@ export function useDatabasePages(databaseId: string, workspaceId: string) {
         if(fetchError || !fetchedPage) {
             return { data: null, error: "Page not found to update." };
         }
-        pageToUpdate = fetchedPage as Block;
+        pageToUpdate = formatPageProperties(fetchedPage);
     }
     
     const currentProperties = pageToUpdate.properties || {};
@@ -96,7 +103,7 @@ export function useDatabasePages(databaseId: string, workspaceId: string) {
         .select()
         .single();
         
-    return { data, error: error ? error.message : null };
+    return { data: data ? formatPageProperties(data) : null, error: error ? error.message : null };
   };
 
   const deletePage = async (pageId: string) => {
@@ -153,7 +160,7 @@ export function useDatabasePages(databaseId: string, workspaceId: string) {
         console.log('Realtime database pages update:', payload);
         
         if (payload.eventType === 'INSERT') {
-          const newPage = payload.new as Block;
+          const newPage = formatPageProperties(payload.new);
           setPages(prev => {
             if (prev.some(page => page.id === newPage.id)) {
               return prev;
@@ -161,7 +168,7 @@ export function useDatabasePages(databaseId: string, workspaceId: string) {
             return [newPage, ...prev];
           });
         } else if (payload.eventType === 'UPDATE') {
-          const updatedPage = payload.new as Block;
+          const updatedPage = formatPageProperties(payload.new);
           setPages(prev => prev.map(page => 
             page.id === updatedPage.id ? updatedPage : page
           ));

@@ -48,6 +48,7 @@ export function DatabaseListView({
     optimisticCreatePage
   } = useOptimisticDatabasePages({
     databaseId,
+    workspaceId,
     filterGroup,
     fields,
     sortRules,
