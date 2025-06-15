@@ -1,4 +1,3 @@
-
 /**
  * Navigation depth and nesting constraints
  * 
@@ -6,7 +5,7 @@
  */
 
 import { NavigationItem, NavigationTreeNode } from '@/types/navigation';
-import { Page } from '@/types/page';
+import { Block as Page } from '@/types/block';
 
 /**
  * Maximum allowed nesting depth (0-indexed)
@@ -54,11 +53,11 @@ export function canNestPage(
  */
 export function calculatePageDepth(pages: Page[], pageId: string): number {
   const page = pages.find(p => p.id === pageId);
-  if (!page || !page.parent_page_id) {
+  if (!page || !page.parent_id) {
     return 0;
   }
 
-  return 1 + calculatePageDepth(pages, page.parent_page_id);
+  return 1 + calculatePageDepth(pages, page.parent_id);
 }
 
 /**
@@ -86,15 +85,15 @@ export function getValidParentPages(
  */
 export function isDescendant(pages: Page[], potentialDescendant: string, ancestorId: string): boolean {
   const descendant = pages.find(p => p.id === potentialDescendant);
-  if (!descendant || !descendant.parent_page_id) {
+  if (!descendant || !descendant.parent_id) {
     return false;
   }
 
-  if (descendant.parent_page_id === ancestorId) {
+  if (descendant.parent_id === ancestorId) {
     return true;
   }
 
-  return isDescendant(pages, descendant.parent_page_id, ancestorId);
+  return isDescendant(pages, descendant.parent_id, ancestorId);
 }
 
 /**

@@ -50,16 +50,16 @@ export class SearchService {
     try {
       const { data, error } = await supabase
         .from('blocks')
-        .select('page_id')
+        .select('parent_id')
         .eq('id', blockId)
         .single();
 
       if (error) {
-        console.error('Error fetching block page:', error);
+        console.error('Error fetching block parent:', error);
         return null;
       }
 
-      return data?.page_id || null;
+      return data?.parent_id || null;
     } catch (err) {
       console.error('Error in getBlockPageId:', err);
       return null;

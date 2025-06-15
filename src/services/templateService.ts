@@ -57,14 +57,16 @@ export const TemplateService = {
         return { data: null, error: 'Template not found' };
       }
 
-      // Create a new page
+      // Create a new page (which is a block of type 'page')
       const pageTitle = pageName || `${template.name} (Copy)`;
       const { data: newPage, error: pageError } = await supabase
-        .from('pages')
+        .from('blocks')
         .insert({
-          title: pageTitle,
+          properties: { title: pageTitle },
           workspace_id: workspaceId,
           created_by: userId,
+          last_edited_by: userId,
+          type: 'page',
         })
         .select()
         .single();
@@ -81,11 +83,14 @@ export const TemplateService = {
         if (contentObj.blocks && Array.isArray(contentObj.blocks)) {
           // Create blocks from template
           const blocksToCreate = contentObj.blocks.map((block: any, index: number) => ({
-            page_id: newPage.id,
+            parent_id: newPage.id,
+            workspace_id: workspaceId,
             type: block.type || 'text',
             content: block.content || {},
+            properties: block.properties || {},
             pos: block.pos !== undefined ? block.pos : index,
             created_by: userId,
+            last_edited_by: userId,
           }));
 
           if (blocksToCreate.length > 0) {
