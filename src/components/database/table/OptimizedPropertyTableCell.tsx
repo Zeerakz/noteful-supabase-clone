@@ -1,10 +1,11 @@
-
 import React, { useState, useMemo } from 'react';
 import { TableCell } from '@/components/ui/table';
 import { DatabaseField } from '@/types/database';
 import { RegistryBasedFieldDisplay } from '@/components/database/fields/RegistryBasedFieldDisplay';
 import { RegistryBasedFieldEditor } from '@/components/database/fields/RegistryBasedFieldEditor';
 import { LazyRollupFieldDisplay } from '@/components/database/fields/LazyRollupFieldDisplay';
+import { propertyRegistry } from '@/types/propertyRegistry';
+import { getFieldPropertyType } from '@/utils/fieldTypeMapper';
 
 interface OptimizedPropertyTableCellProps {
   field: DatabaseField;
@@ -47,10 +48,16 @@ export function OptimizedPropertyTableCell({
 
   // Check if field is editable
   const isFieldEditable = useMemo(() => {
+    const mappedType = getFieldPropertyType(field);
+    const definition = propertyRegistry.get(mappedType) || propertyRegistry.get(field.type as any);
+    if (definition?.isComputed) {
+      return false;
+    }
+    
     // System properties and computed fields are not editable
     const readOnlyTypes = ['rollup', 'formula', 'created_time', 'created_by', 'last_edited_time', 'last_edited_by', 'id'];
     return !readOnlyTypes.includes(field.type);
-  }, [field.type]);
+  }, [field.type, field.name]);
 
   const handleStartEdit = () => {
     if (!isFieldEditable) {
