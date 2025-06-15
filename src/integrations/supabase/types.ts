@@ -1273,6 +1273,10 @@ export type Database = {
       }
     }
     Functions: {
+      accept_invitation: {
+        Args: { p_token: string; p_user_id: string; p_user_email: string }
+        Returns: Json
+      }
       apply_properties_to_page: {
         Args: { p_page_id: string; p_database_id: string; p_user_id: string }
         Returns: undefined

@@ -1,5 +1,4 @@
 
-```typescript
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.50.0";
 
@@ -25,18 +24,18 @@ const handler = async (req: Request): Promise<Response> => {
 
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
-      return new Response(JSON.stringify({ error: 'Missing Authorization header' }), { status: 401, headers: corsHeaders });
+      return new Response(JSON.stringify({ error: 'Missing Authorization header' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
     const jwt = authHeader.replace('Bearer ', '');
     const { data: { user }, error: userError } = await supabase.auth.getUser(jwt);
 
     if (userError || !user) {
-      return new Response(JSON.stringify({ error: 'Authentication error' }), { status: 401, headers: corsHeaders });
+      return new Response(JSON.stringify({ error: 'Authentication error' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
     const { token }: AcceptInviteRequest = await req.json();
     if (!token) {
-      return new Response(JSON.stringify({ error: 'Missing invitation token' }), { status: 400, headers: corsHeaders });
+      return new Response(JSON.stringify({ error: 'Missing invitation token' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
     const { data, error: rpcError } = await supabase.rpc('accept_invitation', {
@@ -66,4 +65,3 @@ const handler = async (req: Request): Promise<Response> => {
 };
 
 serve(handler);
-```
