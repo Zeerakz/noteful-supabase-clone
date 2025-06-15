@@ -2,7 +2,7 @@
 import { useCallback } from 'react';
 import { DropResult } from 'react-beautiful-dnd';
 import { useAuth } from '@/contexts/AuthContext';
-import { useOptimisticPropertyUpdate } from '@/hooks/useOptimisticPropertyUpdate';
+import { useOptimisticPropertyValueUpdate } from '@/hooks/useOptimisticPropertyValueUpdate';
 import { toast } from '@/hooks/use-toast';
 import { DatabaseField } from '@/types/database';
 import { PageWithProperties, KanbanColumn } from '../types';
@@ -27,7 +27,7 @@ export function useKanbanDragDrop({
   setPages
 }: UseKanbanDragDropProps) {
   const { user } = useAuth();
-  const propertyUpdateMutation = useOptimisticPropertyUpdate(databaseId);
+  const propertyUpdateMutation = useOptimisticPropertyValueUpdate(databaseId);
 
   const handleDragEnd = useCallback(async (result: DropResult) => {
     const { destination, source, draggableId } = result;
@@ -128,7 +128,7 @@ export function useKanbanDragDrop({
     propertyUpdateMutation.mutate(
       {
         pageId,
-        fieldId: selectField.id,
+        propertyId: selectField.id,
         value: newValue
       },
       {

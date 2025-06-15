@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { DatabaseService } from '@/services/databaseService';
+import { DatabaseFieldService } from '@/services/database/databaseFieldService';
 import { DatabaseQueryService } from '@/services/database/databaseQueryService';
 import { DatabaseField } from '@/types/database';
 import { FilterGroup } from '@/types/filters';
@@ -32,8 +32,8 @@ export function useKanbanData({
       if (!databaseId) return;
       
       try {
-        const { data, error } = await DatabaseService.fetchDatabaseFields(databaseId);
-        if (error) throw new Error(error);
+        const { data, error } = await DatabaseFieldService.fetchDatabaseFields(databaseId);
+        if (error) throw new Error(error.message);
         setFields(data || []);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to fetch fields');

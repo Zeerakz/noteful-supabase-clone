@@ -141,7 +141,7 @@ export function useStablePropertyValues(pageId?: string): UseStablePropertyValue
           property_id: propertyId,
           value: value,
           created_by: user.id
-        });
+        }, { onConflict: 'page_id, property_id' });
 
       if (error) throw error;
       return {};

@@ -1,15 +1,15 @@
 
 import React, { useEffect, useState } from 'react';
-import { DatabaseField, PageProperty } from '@/types/database';
+import { DatabaseField, PropertyValue } from '@/types/database';
 import { FieldDependencyService } from '@/services/fieldDependencyService';
-import { PagePropertyService } from '@/services/pagePropertyService';
+import { PropertyValueService } from '@/services/propertyValueService';
 import { Calculator, TrendingUp, Loader2 } from 'lucide-react';
 
 interface ComputedFieldDisplayProps {
   field: DatabaseField;
   pageId: string;
-  property?: PageProperty;
-  onPropertyUpdate?: (property: PageProperty) => void;
+  property?: PropertyValue;
+  onPropertyUpdate?: (property: PropertyValue) => void;
 }
 
 export function ComputedFieldDisplay({ field, pageId, property, onPropertyUpdate }: ComputedFieldDisplayProps) {
@@ -41,7 +41,7 @@ export function ComputedFieldDisplay({ field, pageId, property, onPropertyUpdate
         setComputedValue(result);
         
         // Update the computed value in the database
-        const { data: updatedProperty, error } = await PagePropertyService.updateComputedValue(
+        const { data: updatedProperty, error } = await PropertyValueService.updateComputedValue(
           pageId,
           field.id,
           result
