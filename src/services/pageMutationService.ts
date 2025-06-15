@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Block } from '@/types/block';
 import { PropertyInheritanceService } from '@/services/propertyInheritanceService';
@@ -87,6 +86,99 @@ export async function createPage(
     return {
       data: null,
       error: err instanceof Error ? err.message : 'Failed to create page'
+    };
+  }
+}
+
+export async function duplicatePage(
+  pageId: string,
+  userId: string
+): Promise<{ data: Block | null; error: string | null }> {
+  try {
+    // 1. Fetch the original page
+    const { data: originalPage, error: fetchPageError } = await supabase
+      .from('blocks')
+      .select('*')
+      .eq('id', pageId)
+      .eq('type', 'page')
+      .single();
+
+    if (fetchPageError || !originalPage) {
+      throw new Error(fetchPageError?.message || 'Original page not found.');
+    }
+
+    // 2. Fetch all blocks of the original page
+    const { data: originalBlocks, error: fetchBlocksError } = await supabase
+      .from('blocks')
+      .select('*')
+      .eq('parent_id', pageId)
+      .order('pos', { ascending: true });
+    
+    if (fetchBlocksError) {
+      throw new Error(fetchBlocksError.message || 'Could not fetch page blocks.');
+    }
+    
+    // 3. Create the new page with a modified title
+    const newPageDetails: PageCreateRequest = {
+      properties: {
+        ...(originalPage.properties as object),
+        title: `${(originalPage.properties as any)?.title || 'Untitled'} (Copy)`,
+      },
+      parent_id: originalPage.parent_id || undefined,
+    };
+    
+    const { data: newPage, error: createPageError } = await createPage(
+      originalPage.workspace_id,
+      userId,
+      newPageDetails
+    );
+
+    if (createPageError || !newPage) {
+        throw new Error(createPageError || 'Failed to create duplicated page.');
+    }
+
+    // 4. Create copies of the blocks for the new page
+    if (originalBlocks && originalBlocks.length > 0) {
+      const newBlocksData = originalBlocks.map(block => {
+        const { id, created_time, last_edited_time, created_by, last_edited_by, workspace_id, parent_id, ...rest } = block;
+        return {
+          ...rest,
+          parent_id: newPage.id,
+          workspace_id: newPage.workspace_id,
+          created_by: userId,
+          last_edited_by: userId,
+        };
+      });
+
+      const { error: insertBlocksError } = await supabase
+        .from('blocks')
+        .insert(newBlocksData as any);
+
+      if (insertBlocksError) {
+        // Clean up the created page if block creation fails
+        await supabase.from('blocks').delete().eq('id', newPage.id);
+        throw new Error(insertBlocksError.message || 'Failed to copy blocks.');
+      }
+    }
+
+    // Refetch the new page with all its properties after potential inheritance
+     const { data: finalNewPage, error: refetchError } = await supabase
+      .from('blocks')
+      .select('*')
+      .eq('id', newPage.id)
+      .single();
+
+    if(refetchError) {
+        console.error("Could not refetch duplicated page", refetchError);
+        return { data: newPage, error: null }; // return what we have
+    }
+
+    return { data: finalNewPage, error: null };
+  } catch (err) {
+    console.error('Page duplication error:', err);
+    return {
+      data: null,
+      error: err instanceof Error ? err.message : 'Failed to duplicate page'
     };
   }
 }
