@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { DatabaseTemplate, ViewTemplate, DatabaseTemplateCreateRequest } from '@/types/databaseTemplate';
 
@@ -100,7 +99,7 @@ export const DatabaseTemplateService = {
         }));
 
         const { error: fieldsError } = await supabase
-          .from('fields')
+          .from('database_properties')
           .insert(fieldsToCreate);
 
         if (fieldsError) {

@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { DatabaseField, RollupFieldSettings, RelationFieldSettings } from '@/types/database';
 
@@ -29,12 +30,16 @@ export class RollupCalculationService {
       }
 
       // Get the current page's relation value
-      const { data: currentPageProperty } = await supabase
-        .from('page_properties')
+      const { data: currentPageProperty, error: relationValueError } = await supabase
+        .from('property_values')
         .select('value')
         .eq('page_id', pageId)
-        .eq('field_id', settings.relation_field_id)
+        .eq('property_id', settings.relation_field_id)
         .single();
+        
+      if(relationValueError) {
+        return { value: null, error: relationValueError.message };
+      }
 
       if (!currentPageProperty?.value) {
         return { value: this.getDefaultValue(settings.aggregation), error: null };
@@ -54,7 +59,7 @@ export class RollupCalculationService {
       // Get target field if rolling up a specific property
       if (settings.rollup_property !== 'title') {
         const { data: targetFields } = await supabase
-          .from('fields')
+          .from('database_properties')
           .select('*')
           .eq('database_id', relationSettings.target_database_id);
 
@@ -78,9 +83,9 @@ export class RollupCalculationService {
       } else {
         // Rolling up a specific field property
         const { data: relatedProperties } = await supabase
-          .from('page_properties')
+          .from('property_values')
           .select('value')
-          .eq('field_id', settings.rollup_property)
+          .eq('property_id', settings.rollup_property)
           .in('page_id', relatedPageIds);
 
         propertyValues = relatedProperties?.map(p => p.value).filter(Boolean) || [];
@@ -141,9 +146,6 @@ export class RollupCalculationService {
     }
   }
 
-  /**
-   * Get default value for an aggregation type
-   */
   private static getDefaultValue(aggregationType: string): string {
     switch (aggregationType) {
       case 'count':
@@ -159,16 +161,16 @@ export class RollupCalculationService {
    */
   private static async updateComputedProperty(
     pageId: string,
-    fieldId: string,
+    propertyId: string,
     value: string | null
   ): Promise<{ error?: string }> {
     if (value === null) return {};
 
     const { error } = await supabase
-      .from('page_properties')
+      .from('property_values')
       .update({ computed_value: value })
       .eq('page_id', pageId)
-      .eq('field_id', fieldId);
+      .eq('property_id', propertyId);
 
     if (error) {
       console.error('Error updating computed property:', error);

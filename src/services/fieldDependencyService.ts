@@ -8,7 +8,7 @@ export class FieldDependencyService {
       const { data, error } = await supabase
         .from('field_dependencies')
         .select('*')
-        .eq('dependent_field_id', fieldId);
+        .eq('dependent_property_id', fieldId);
 
       if (error) throw error;
       return { data: (data || []) as FieldDependency[], error: null };
@@ -21,16 +21,16 @@ export class FieldDependencyService {
   }
 
   static async createFieldDependency(
-    sourceFieldId: string,
-    dependentFieldId: string
+    sourcePropertyId: string,
+    dependentPropertyId: string
   ): Promise<{ data: FieldDependency | null; error: string | null }> {
     try {
       const { data, error } = await supabase
         .from('field_dependencies')
         .insert([
           {
-            source_field_id: sourceFieldId,
-            dependent_field_id: dependentFieldId,
+            source_property_id: sourcePropertyId,
+            dependent_property_id: dependentPropertyId,
           },
         ])
         .select()
@@ -68,8 +68,8 @@ export class FieldDependencyService {
   ): Promise<{ data: string | null; error: string | null }> {
     try {
       const { data, error } = await supabase.rpc('recalculate_formula_field', {
-        field_id: fieldId,
-        page_id: pageId
+        p_field_id: fieldId, // Ensure RPC parameter name matches definition
+        p_page_id: pageId
       });
 
       if (error) throw error;
@@ -88,8 +88,8 @@ export class FieldDependencyService {
   ): Promise<{ data: string | null; error: string | null }> {
     try {
       const { data, error } = await supabase.rpc('recalculate_rollup_field', {
-        field_id: fieldId,
-        page_id: pageId
+        p_field_id: fieldId, // Ensure RPC parameter name matches definition
+        p_page_id: pageId
       });
 
       if (error) throw error;

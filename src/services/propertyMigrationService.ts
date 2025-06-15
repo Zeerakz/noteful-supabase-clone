@@ -120,7 +120,7 @@ export class PropertyMigrationService {
       
       // 1. Fetch all existing property values
       const { data: properties, error: fetchError } = await supabase
-        .from('property_values')
+        .from('database_properties')
         .select('id, page_id, value')
         .eq('property_id', field.id);
 
@@ -130,7 +130,7 @@ export class PropertyMigrationService {
 
       // 2. Update the field type and settings
       const { error: fieldUpdateError } = await supabase
-        .from('fields')
+        .from('database_properties')
         .update({
           type: newType as any,
           settings: newSettings || {},

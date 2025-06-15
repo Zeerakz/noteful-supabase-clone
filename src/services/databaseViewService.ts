@@ -67,7 +67,7 @@ export class DatabaseViewService {
   static async updateGrouping(
     databaseId: string,
     userId: string,
-    groupingFieldId?: string,
+    groupingPropertyId?: string,
     collapsedGroups?: string[]
   ): Promise<{ data: DatabaseView | null; error: string | null }> {
     try {
@@ -82,7 +82,7 @@ export class DatabaseViewService {
             database_id: databaseId,
             user_id: userId,
             default_view_type: defaultViewType,
-            grouping_field_id: groupingFieldId,
+            grouping_property_id: groupingPropertyId,
             grouping_collapsed_groups: collapsedGroups || [],
           },
           {
@@ -124,7 +124,7 @@ export class DatabaseViewService {
       return this.updateGrouping(
         databaseId,
         userId,
-        currentView.data.grouping_field_id,
+        currentView.data.grouping_property_id,
         updatedCollapsedGroups
       );
     } catch (err) {
