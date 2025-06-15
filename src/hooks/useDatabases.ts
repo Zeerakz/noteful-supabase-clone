@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Database, DatabaseCreateRequest } from '@/types/database';
@@ -107,7 +106,7 @@ export function useDatabases(workspaceId?: string) {
     fetchDatabases();
     cleanup();
 
-    const channelName = `databases-updates`; // A single channel for all database updates
+    const channelName = `databases-workspace:${workspaceId}`; // Use a unique channel name per workspace
     const channel = supabase.channel(channelName);
     channel
       .on(
