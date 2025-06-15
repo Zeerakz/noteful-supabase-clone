@@ -5,6 +5,7 @@ export interface BaseProperty {
   config: PropertyConfig;
   createdAt: string;
   updatedAt: string;
+  database_id?: string;
 }
 
 export type PropertyType = 

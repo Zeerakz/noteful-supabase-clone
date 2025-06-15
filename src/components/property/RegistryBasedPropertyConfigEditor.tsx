@@ -32,7 +32,7 @@ export function RegistryBasedPropertyConfigEditor({
     );
   }
   
-  const ConfigEditor = definition.ConfigEditor;
+  const ConfigEditor = definition.ConfigEditor as any;
   
   return (
     <div className="space-y-4">
