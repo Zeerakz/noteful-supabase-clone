@@ -24,12 +24,18 @@ interface DatabaseWizardProps {
 }
 
 const FIELD_TYPES = [
-  { value: 'TEXT', label: 'Text' },
-  { value: 'INTEGER', label: 'Number' },
-  { value: 'BOOLEAN', label: 'Checkbox' },
-  { value: 'TIMESTAMP WITH TIME ZONE', label: 'Date' },
-  { value: 'UUID', label: 'Reference' },
-  { value: 'JSONB', label: 'JSON' },
+  { value: 'text', label: 'Text' },
+  { value: 'number', label: 'Number' },
+  { value: 'select', label: 'Select' },
+  { value: 'multi_select', label: 'Multi-Select' },
+  { value: 'status', label: 'Status' },
+  { value: 'date', label: 'Date' },
+  { value: 'people', label: 'Person' },
+  { value: 'file_attachment', label: 'Files & Media' },
+  { value: 'checkbox', label: 'Checkbox' },
+  { value: 'url', label: 'URL' },
+  { value: 'email', label: 'Email' },
+  { value: 'phone', label: 'Phone' },
 ];
 
 export function DatabaseWizard({ onDatabaseCreated }: DatabaseWizardProps) {
@@ -43,7 +49,7 @@ export function DatabaseWizard({ onDatabaseCreated }: DatabaseWizardProps) {
     {
       id: '1',
       name: 'title',
-      type: 'TEXT',
+      type: 'text',
       nullable: false,
     }
   ]);
@@ -54,7 +60,7 @@ export function DatabaseWizard({ onDatabaseCreated }: DatabaseWizardProps) {
     const newField: DatabaseField = {
       id: Date.now().toString(),
       name: '',
-      type: 'TEXT',
+      type: 'text',
       nullable: true,
     };
     setFields([...fields, newField]);
@@ -125,7 +131,7 @@ export function DatabaseWizard({ onDatabaseCreated }: DatabaseWizardProps) {
       setFields([{
         id: '1',
         name: 'title',
-        type: 'TEXT',
+        type: 'text',
         nullable: false,
       }]);
       setOpen(false);
