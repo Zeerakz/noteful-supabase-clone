@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Block } from '@/types/block';
-import { PageService } from '@/services/pageService';
 import { supabase } from '@/integrations/supabase/client';
 
 export function useDatabasePages(databaseId: string, workspaceId: string) {
@@ -17,9 +16,14 @@ export function useDatabasePages(databaseId: string, workspaceId: string) {
 
     try {
       setLoading(true);
-      const { data, error } = await PageService.fetchDatabasePages(databaseId);
+      const { data, error } = await supabase
+        .from('blocks')
+        .select('*')
+        .eq('type', 'page')
+        .eq('properties->>database_id', databaseId)
+        .order('created_time', { ascending: false });
 
-      if (error) throw new Error(error);
+      if (error) throw error;
       if (mountedRef.current) {
         setPages(data || []);
       }
@@ -36,35 +40,66 @@ export function useDatabasePages(databaseId: string, workspaceId: string) {
 
   const createDatabasePage = async (title: string) => {
     if (!user || !databaseId || !workspaceId) {
-      return { error: 'User not authenticated or required IDs missing' };
+      return { data: null, error: 'User not authenticated or required IDs missing' };
     }
 
     const properties = { title, database_id: databaseId };
 
-    const { data, error } = await PageService.createPage(
-      workspaceId, 
-      user.id, 
-      properties
-    );
-    
-    return { data, error };
+    const { data, error } = await supabase
+      .from('blocks')
+      .insert({
+        workspace_id: workspaceId,
+        created_by: user.id,
+        last_edited_by: user.id,
+        type: 'page',
+        properties,
+      })
+      .select()
+      .single();
+
+    return { data, error: error ? error.message : null };
   };
 
   const updatePage = async (pageId: string, updates: Partial<{ title: string }>) => {
-    const blockUpdates: Partial<Block> = {};
-    if (updates.title) {
-        // Here we assume properties is a JSONB field.
-        // A proper implementation might need to fetch existing properties and merge.
-        // For simplicity, we just set the title.
-        blockUpdates.properties = { title: updates.title };
+    let pageToUpdate = pages.find(p => p.id === pageId);
+
+    if (!pageToUpdate) {
+        const { data: fetchedPage, error: fetchError } = await supabase
+            .from('blocks')
+            .select('properties')
+            .eq('id', pageId)
+            .single();
+
+        if(fetchError || !fetchedPage) {
+            return { data: null, error: "Page not found to update." };
+        }
+        pageToUpdate = fetchedPage as Block;
     }
-    const { data, error } = await PageService.updatePage(pageId, blockUpdates);
-    return { data, error };
+    
+    const currentProperties = pageToUpdate.properties || {};
+
+    const blockUpdates: Partial<Block> = {};
+    if (updates.title !== undefined) {
+        blockUpdates.properties = { ...currentProperties, title: updates.title };
+    }
+
+    if (Object.keys(blockUpdates).length === 0) {
+        return { data: pageToUpdate, error: null };
+    }
+
+    const { data, error } = await supabase
+        .from('blocks')
+        .update(blockUpdates)
+        .eq('id', pageId)
+        .select()
+        .single();
+        
+    return { data, error: error ? error.message : null };
   };
 
   const deletePage = async (pageId: string) => {
-    const { error } = await PageService.deletePage(pageId);
-    return { error };
+    const { error } = await supabase.from('blocks').delete().eq('id', pageId);
+    return { error: error ? error.message : null };
   };
 
   const cleanup = () => {
