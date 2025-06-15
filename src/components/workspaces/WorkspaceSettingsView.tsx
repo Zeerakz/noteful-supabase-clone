@@ -11,18 +11,18 @@ interface WorkspaceSettingsViewProps {
 
 export function WorkspaceSettingsView({ workspaceId }: WorkspaceSettingsViewProps) {
   return (
-    <div className="p-4 sm:p-6 h-full overflow-y-auto">
-      <header className="mb-6">
-        <h1 className="text-2xl font-bold">Settings & Members</h1>
-        <p className="text-muted-foreground">Manage your workspace members, groups, and settings.</p>
+    <div className="p-4 sm:p-6 md:p-8 h-full overflow-y-auto">
+      <header className="mb-8">
+        <h1 className="text-3xl font-bold tracking-tight">Settings & Members</h1>
+        <p className="text-muted-foreground mt-1">Manage your workspace members, groups, and settings.</p>
       </header>
-      <Tabs defaultValue="members" className="flex flex-col h-full">
-        <TabsList className="shrink-0">
+      <Tabs defaultValue="members">
+        <TabsList className="bg-muted/60 p-1 rounded-lg h-10">
           <TabsTrigger value="members">Members</TabsTrigger>
           <TabsTrigger value="groups">Groups</TabsTrigger>
           <TabsTrigger value="settings">Settings</TabsTrigger>
         </TabsList>
-        <div className="flex-1 mt-4 overflow-y-auto">
+        <div className="mt-6">
             <TabsContent value="members">
               <MembersManagementTab workspaceId={workspaceId} />
             </TabsContent>

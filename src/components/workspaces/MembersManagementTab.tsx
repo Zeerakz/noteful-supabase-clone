@@ -149,7 +149,7 @@ export function MembersManagementTab({ workspaceId }: MembersManagementTabProps)
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {canManageMembers && (
         <Card>
           <CardHeader>
@@ -201,10 +201,10 @@ export function MembersManagementTab({ workspaceId }: MembersManagementTabProps)
 
       {!loading && (
         <>
-          <div className="space-y-2">
-            <h4 className="font-medium">Workspace Members ({members.length})</h4>
-            {members.map(member => (
-              <div key={member.id} className="flex items-center justify-between p-2 rounded-lg hover:bg-muted">
+          <div className="space-y-3">
+            <h3 className="text-lg font-semibold">Workspace Members ({members.length})</h3>
+            {members.length > 0 ? members.map(member => (
+              <div key={member.id} className="flex items-center justify-between p-3 rounded-lg hover:bg-muted">
                 <div className="flex items-center gap-3">
                   <Avatar>
                     <AvatarImage src={member.profiles?.avatar_url || undefined} />
@@ -241,15 +241,15 @@ export function MembersManagementTab({ workspaceId }: MembersManagementTabProps)
                   <span className="text-sm text-muted-foreground pr-4 capitalize">{member.role}</span>
                 )}
               </div>
-            ))}
+            )) : <p className="text-sm text-muted-foreground p-3">No members yet.</p>}
           </div>
 
-          <div className="space-y-2">
-            <h4 className="font-medium">Pending Invitations ({invitations.length})</h4>
-            {invitations.map(invite => {
+          <div className="space-y-3">
+            <h3 className="text-lg font-semibold">Pending Invitations ({invitations.length})</h3>
+            {invitations.length > 0 ? invitations.map(invite => {
               const expirationStatus = getExpirationStatus(invite.expires_at);
               return (
-                <div key={invite.id} className="flex items-center justify-between p-2 rounded-lg hover:bg-muted">
+                <div key={invite.id} className="flex items-center justify-between p-3 rounded-lg hover:bg-muted">
                   <div className="flex items-center gap-3">
                     <Avatar>
                       <AvatarFallback><Mail /></AvatarFallback>
@@ -292,7 +292,7 @@ export function MembersManagementTab({ workspaceId }: MembersManagementTabProps)
                   )}
                 </div>
               );
-            })}
+            }) : <p className="text-sm text-muted-foreground p-3">No pending invitations.</p>}
           </div>
         </>
       )}
