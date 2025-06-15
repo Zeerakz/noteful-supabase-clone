@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.50.0";
 import { Resend } from "npm:resend@2.0.0";
@@ -54,19 +53,27 @@ const handler = async (req: Request): Promise<Response> => {
       });
     }
 
-    // Check if user is already a member
-    const { data: existingMember } = await supabase
-      .from('workspace_members')
+    // Check if an existing user with this email is already a member
+    const { data: inviteeProfile } = await supabase
+      .from('profiles')
       .select('id')
-      .eq('workspace_id', workspaceId)
-      .eq('user_id', user.id)
+      .ilike('email', email)
       .single();
 
-    if (existingMember) {
-      return new Response(JSON.stringify({ error: 'User is already a member of this workspace' }), { 
-        status: 400, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      });
+    if (inviteeProfile?.id) {
+      const { data: existingMember } = await supabase
+        .from('workspace_members')
+        .select('id')
+        .eq('workspace_id', workspaceId)
+        .eq('user_id', inviteeProfile.id)
+        .maybeSingle();
+
+      if (existingMember) {
+        return new Response(JSON.stringify({ error: 'This user is already a member of the workspace.' }), {
+          status: 409, // 409 Conflict is more appropriate
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
     }
 
     // Check for existing pending invitation

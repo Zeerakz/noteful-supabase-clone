@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { WorkspaceRole } from '@/types/db';
 
@@ -21,7 +20,11 @@ export class InvitationService {
       if (data.error) throw new Error(data.error);
 
       return { error: null, success: true, data };
-    } catch (err) {
+    } catch (err: any) {
+      // Improved error handling for Edge Functions
+      if (err.context && err.context.error) {
+        return { error: err.context.error, success: false };
+      }
       return { 
         error: err instanceof Error ? err.message : 'Failed to send invitation',
         success: false 
