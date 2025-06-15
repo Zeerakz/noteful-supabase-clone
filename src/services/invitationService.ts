@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { WorkspaceRole } from '@/types/db';
 
@@ -38,7 +39,12 @@ export class InvitationService {
       if (data.error) throw new Error(data.error);
 
       return { error: null, data };
-    } catch (err) {
+    } catch (err: any) {
+      console.error("Error in acceptInvitation service:", err);
+      // Supabase FunctionsHttpError contains the response body in `context`
+      if (err.context && err.context.error) {
+        return { error: err.context.error, data: null };
+      }
       return { 
         error: err instanceof Error ? err.message : 'Failed to accept invitation',
         data: null 
