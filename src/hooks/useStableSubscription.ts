@@ -1,3 +1,4 @@
+
 import { useRef, useCallback, useEffect } from 'react';
 import { useRealtimeSubscriptions } from '@/hooks/useRealtimeSubscriptions';
 
@@ -31,8 +32,14 @@ export function useStableSubscription(
       unsubscribeRef.current = null;
     }
 
-    // Create new subscription
-    const unsubscribe = subscribe(config, (payload) => {
+    // Create new subscription with the proper config format
+    const subscriptionConfig = {
+      table: config.table,
+      filter: config.filter,
+      event: config.event || '*' as const
+    };
+
+    const unsubscribe = subscribe(subscriptionConfig, (payload) => {
       callbackRef.current(payload);
     });
 

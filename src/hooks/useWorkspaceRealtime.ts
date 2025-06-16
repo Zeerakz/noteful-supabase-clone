@@ -1,3 +1,4 @@
+
 import { useEffect, useRef, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -6,6 +7,24 @@ interface UseWorkspaceRealtimeProps {
   workspaceId?: string;
   onBlockChange?: (payload: any) => void;
   onPageChange?: (payload: any) => void;
+}
+
+interface BlockPayload {
+  new?: {
+    id: string;
+    type: string;
+    workspace_id: string;
+    parent_id?: string;
+    [key: string]: any;
+  };
+  old?: {
+    id: string;
+    type: string;
+    workspace_id: string;
+    parent_id?: string;
+    [key: string]: any;
+  };
+  eventType: string;
 }
 
 export function useWorkspaceRealtime({ 
@@ -46,16 +65,20 @@ export function useWorkspaceRealtime({
         table: 'blocks',
         filter: `workspace_id=eq.${workspaceId}`,
       },
-      (payload) => {
+      (payload: BlockPayload) => {
         console.log('📨 Workspace realtime update:', payload);
         
-        const { new: newBlock, old: oldBlock } = payload;
+        // Handle the payload more safely
+        const newBlock = payload.new;
+        const oldBlock = payload.old;
         const block = newBlock || oldBlock;
         
-        if (block?.type === 'page' && callbacksRef.current.onPageChange) {
-          callbacksRef.current.onPageChange(payload);
-        } else if (block?.type !== 'page' && callbacksRef.current.onBlockChange) {
-          callbacksRef.current.onBlockChange(payload);
+        if (block && typeof block === 'object' && 'type' in block) {
+          if (block.type === 'page' && callbacksRef.current.onPageChange) {
+            callbacksRef.current.onPageChange(payload);
+          } else if (block.type !== 'page' && callbacksRef.current.onBlockChange) {
+            callbacksRef.current.onBlockChange(payload);
+          }
         }
       }
     );
