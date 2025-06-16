@@ -25,7 +25,10 @@ function hasBlockType(obj: any): obj is { type: string } {
 
 // Type guard to check if an object is a Block
 function isBlock(obj: any): obj is Block {
-  return hasBlockType(obj) && typeof obj.id === 'string';
+  return obj && 
+         typeof obj === 'object' && 
+         typeof obj.id === 'string' && 
+         typeof obj.type === 'string';
 }
 
 class RealtimeManager {
