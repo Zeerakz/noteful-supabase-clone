@@ -1,3 +1,4 @@
+
 import { useState, useCallback, useEffect } from 'react';
 import { Block } from '@/types/block';
 
@@ -32,18 +33,21 @@ export function useOptimisticBlocks({ blocks }: UseOptimisticBlocksProps) {
     return maxPos + 1;
   }, [blocks, optimisticCreations]);
 
-  // Clean up optimistic creations when real blocks arrive
+  // Clean up optimistic creations when real blocks arrive - improved matching
   useEffect(() => {
     if (blocks.length === 0) return;
 
     setOptimisticCreations(prev => {
       const filtered = prev.filter(optimisticBlock => {
-        // Keep optimistic blocks that don't have a corresponding real block
+        // Check if there's a real block that matches this optimistic one
         const hasRealBlock = blocks.some(realBlock => {
-          // Match by content and position for blocks that might have been created
-          return realBlock.parent_id === optimisticBlock.parent_id &&
-                 realBlock.pos === optimisticBlock.pos &&
-                 Math.abs(new Date(realBlock.created_time).getTime() - new Date(optimisticBlock.created_time).getTime()) < 10000; // Within 10 seconds
+          // More precise matching: same parent_id, similar position, and recent creation time
+          const positionMatch = Math.abs((realBlock.pos || 0) - (optimisticBlock.pos || 0)) <= 1;
+          const parentMatch = realBlock.parent_id === optimisticBlock.parent_id;
+          const typeMatch = realBlock.type === optimisticBlock.type;
+          const timeMatch = Math.abs(new Date(realBlock.created_time).getTime() - new Date(optimisticBlock.created_time).getTime()) < 15000; // Within 15 seconds
+          
+          return parentMatch && positionMatch && typeMatch && timeMatch;
         });
 
         if (hasRealBlock) {
@@ -56,6 +60,28 @@ export function useOptimisticBlocks({ blocks }: UseOptimisticBlocksProps) {
       return filtered.length !== prev.length ? filtered : prev;
     });
   }, [blocks]);
+
+  // Auto-cleanup old optimistic creations (fallback safety)
+  useEffect(() => {
+    const cleanup = () => {
+      const now = Date.now();
+      setOptimisticCreations(prev => {
+        const filtered = prev.filter(block => {
+          const age = now - new Date(block.created_time).getTime();
+          const isOld = age > 30000; // 30 seconds
+          
+          if (isOld) {
+            console.log('Optimistic: Auto-removing old optimistic creation:', block.id, 'age:', age + 'ms');
+          }
+          return !isOld;
+        });
+        return filtered.length !== prev.length ? filtered : prev;
+      });
+    };
+
+    const interval = setInterval(cleanup, 10000); // Check every 10 seconds
+    return () => clearInterval(interval);
+  }, []);
 
   // Apply optimistic updates to blocks list with proper sorting and filtering
   const optimisticBlocks = blocks
@@ -191,11 +217,13 @@ export function useOptimisticBlocks({ blocks }: UseOptimisticBlocksProps) {
     console.log('Optimistic: Clearing creation by match for', realBlock.id);
     setOptimisticCreations(prev => {
       const filtered = prev.filter(optimisticBlock => {
-        // Remove optimistic blocks that match the real block
-        const isMatch = optimisticBlock.parent_id === realBlock.parent_id &&
-                       optimisticBlock.pos === realBlock.pos &&
-                       optimisticBlock.type === realBlock.type &&
-                       Math.abs(new Date(realBlock.created_time).getTime() - new Date(optimisticBlock.created_time).getTime()) < 10000;
+        // Enhanced matching logic - match by parent, position, type, and time
+        const parentMatch = optimisticBlock.parent_id === realBlock.parent_id;
+        const positionMatch = Math.abs((optimisticBlock.pos || 0) - (realBlock.pos || 0)) <= 1;
+        const typeMatch = optimisticBlock.type === realBlock.type;
+        const timeMatch = Math.abs(new Date(realBlock.created_time).getTime() - new Date(optimisticBlock.created_time).getTime()) < 15000;
+        
+        const isMatch = parentMatch && positionMatch && typeMatch && timeMatch;
         
         if (isMatch) {
           console.log('Optimistic: Found matching optimistic block to clear:', optimisticBlock.id);
