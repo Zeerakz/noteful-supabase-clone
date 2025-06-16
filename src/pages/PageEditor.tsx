@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { useParams, Navigate, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Edit2 } from 'lucide-react';
@@ -9,10 +10,10 @@ import { ActiveUsers } from '@/components/collaboration/ActiveUsers';
 import { SaveAsTemplateDialog } from '@/components/templates/SaveAsTemplateDialog';
 import { ShareButton } from '@/components/sharing/ShareButton';
 import { usePageData } from '@/hooks/usePageData';
-import { useEnhancedPages } from '@/hooks/useEnhancedPages';
+import { useEnhancedPagesWithRealtime } from '@/hooks/useEnhancedPagesWithRealtime';
 import { useWorkspaces } from '@/hooks/useWorkspaces';
 import { usePresence } from '@/hooks/usePresence';
-import { useEnhancedBlocks } from '@/hooks/useEnhancedBlocks';
+import { useEnhancedBlocksWithRealtime } from '@/hooks/useEnhancedBlocksWithRealtime';
 import { useToast } from '@/hooks/use-toast';
 import { useBlockPermissions } from '@/hooks/useBlockPermissions';
 
@@ -29,12 +30,12 @@ export function PageEditor() {
   const [titleValue, setTitleValue] = useState('');
   const titleInputRef = useRef<HTMLInputElement>(null);
 
-  // Call ALL hooks before any conditional logic
+  // Use the enhanced realtime hooks
   const { pageData, loading: pageLoading, error: pageError } = usePageData(pageId);
   const { workspaces, loading: workspacesLoading } = useWorkspaces();
   const { activeUsers, loading: presenceLoading } = usePresence(pageId);
-  const { blocks, hasOptimisticChanges: hasBlockChanges } = useEnhancedBlocks(pageId, workspaceId);
-  const { updatePage, hasOptimisticChanges: hasPageChanges } = useEnhancedPages(workspaceId);
+  const { blocks, hasOptimisticChanges: hasBlockChanges } = useEnhancedBlocksWithRealtime(pageId, workspaceId);
+  const { updatePage, hasOptimisticChanges: hasPageChanges } = useEnhancedPagesWithRealtime(workspaceId);
   const { permissions, loading: permissionsLoading } = useBlockPermissions(pageId);
 
   useEffect(() => {
@@ -42,7 +43,6 @@ export function PageEditor() {
       setTitleValue(pageData.properties?.title || 'Untitled');
     }
   }, [pageData]);
-
 
   // Now handle conditional rendering after all hooks are called
   if (!workspaceId || !pageId) {

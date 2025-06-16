@@ -9,7 +9,7 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
 } from '@/components/ui/sidebar';
-import { useEnhancedPages } from '@/hooks/useEnhancedPages';
+import { useEnhancedPagesWithRealtime } from '@/hooks/useEnhancedPagesWithRealtime';
 import { useTeamspaces } from '@/hooks/useTeamspaces';
 import { useDatabases } from '@/hooks/useDatabases';
 import { useToast } from '@/hooks/use-toast';
@@ -29,7 +29,8 @@ interface WorkspacePagesGroupProps {
 }
 
 export function WorkspacePagesGroup({ workspaceId, workspaceName }: WorkspacePagesGroupProps) {
-  const { pages, updatePageHierarchy, deletePage, hasOptimisticChanges, loading: pagesLoading, fetchPages } = useEnhancedPages(workspaceId);
+  // Use the enhanced realtime pages hook
+  const { pages, updatePageHierarchy, deletePage, hasOptimisticChanges, loading: pagesLoading, fetchPages } = useEnhancedPagesWithRealtime(workspaceId);
   const { teamspaces, loading: teamspacesLoading } = useTeamspaces(workspaceId);
   const { databases, loading: databasesLoading, deleteDatabase } = useDatabases(workspaceId);
   const { toast } = useToast();
