@@ -17,6 +17,22 @@ export function useOptimisticBlocks({ blocks }: UseOptimisticBlocksProps) {
   const [optimisticCreations, setOptimisticCreations] = useState<Block[]>([]);
   const [optimisticDeletions, setOptimisticDeletions] = useState<Set<string>>(new Set());
 
+  // Helper function to get next position for optimistic blocks
+  const getNextOptimisticPosition = useCallback((parentId: string) => {
+    // Get all blocks with the same parent (including optimistic ones)
+    const siblingBlocks = [
+      ...blocks.filter(block => block.parent_id === parentId),
+      ...optimisticCreations.filter(block => block.parent_id === parentId)
+    ];
+
+    if (siblingBlocks.length === 0) {
+      return 0;
+    }
+
+    const maxPos = Math.max(...siblingBlocks.map(block => block.pos || 0));
+    return maxPos + 1;
+  }, [blocks, optimisticCreations]);
+
   // Apply optimistic updates to blocks list
   const optimisticBlocks = blocks
     .filter(block => !optimisticDeletions.has(block.id))
@@ -32,15 +48,17 @@ export function useOptimisticBlocks({ blocks }: UseOptimisticBlocksProps) {
   const optimisticCreateBlock = useCallback((blockData: Partial<Block>) => {
     const tempId = `temp-${Date.now()}-${Math.random()}`;
     const now = new Date().toISOString();
+    const parentId = blockData.parent_id || '';
+    
     const optimisticBlock: Block = {
       id: tempId,
       type: blockData.type || 'text',
       workspace_id: blockData.workspace_id || '',
       teamspace_id: blockData.teamspace_id || null,
-      parent_id: blockData.parent_id || null,
+      parent_id: parentId,
       properties: blockData.properties || {},
       content: blockData.content || {},
-      pos: blockData.pos ?? Date.now(),
+      pos: blockData.pos ?? getNextOptimisticPosition(parentId),
       created_time: now,
       last_edited_time: now,
       created_by: blockData.created_by || null,
@@ -59,7 +77,7 @@ export function useOptimisticBlocks({ blocks }: UseOptimisticBlocksProps) {
     }, 10000);
     
     return tempId;
-  }, []);
+  }, [getNextOptimisticPosition]);
 
   const optimisticUpdateBlock = useCallback((blockId: string, updates: Partial<Block>) => {
     setOptimisticUpdates(prev => {

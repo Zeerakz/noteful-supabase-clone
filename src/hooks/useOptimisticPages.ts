@@ -1,3 +1,4 @@
+
 import { useState, useCallback } from 'react';
 import { Block } from '@/types/block';
 
@@ -16,6 +17,30 @@ export function useOptimisticPages({ pages, onServerUpdate }: UseOptimisticPages
   const [optimisticUpdates, setOptimisticUpdates] = useState<Map<string, OptimisticPageUpdate>>(new Map());
   const [optimisticCreations, setOptimisticCreations] = useState<Block[]>([]);
   const [optimisticDeletions, setOptimisticDeletions] = useState<Set<string>>(new Set());
+
+  // Helper function to get next position for optimistic pages
+  const getNextOptimisticPosition = useCallback((parentId: string | null, workspaceId: string) => {
+    // Get all pages with the same parent (including optimistic ones)
+    const siblingPages = [
+      ...pages.filter(page => 
+        page.parent_id === parentId && 
+        page.workspace_id === workspaceId &&
+        !(page.properties as any)?.database_id // Exclude database entries
+      ),
+      ...optimisticCreations.filter(page => 
+        page.parent_id === parentId && 
+        page.workspace_id === workspaceId &&
+        !(page.properties as any)?.database_id
+      )
+    ];
+
+    if (siblingPages.length === 0) {
+      return 0;
+    }
+
+    const maxPos = Math.max(...siblingPages.map(page => page.pos || 0));
+    return maxPos + 1;
+  }, [pages, optimisticCreations]);
 
   // Apply optimistic updates to the pages list
   const optimisticPages = pages
@@ -42,15 +67,18 @@ export function useOptimisticPages({ pages, onServerUpdate }: UseOptimisticPages
   const optimisticCreatePage = useCallback((pageData: Partial<Block>) => {
     const tempId = `temp-${Date.now()}-${Math.random()}`;
     const now = new Date().toISOString();
+    const workspaceId = pageData.workspace_id || '';
+    const parentId = pageData.parent_id || null;
+    
     const optimisticPage: Block = {
       id: tempId,
       type: 'page',
-      workspace_id: pageData.workspace_id || '',
+      workspace_id: workspaceId,
       teamspace_id: pageData.teamspace_id ?? null,
-      parent_id: pageData.parent_id || null,
+      parent_id: parentId,
       properties: pageData.properties || { title: 'Untitled' },
       content: pageData.content || {},
-      pos: pageData.pos ?? Date.now(),
+      pos: pageData.pos ?? getNextOptimisticPosition(parentId, workspaceId),
       created_time: now,
       last_edited_time: now,
       created_by: pageData.created_by || '',
@@ -69,7 +97,7 @@ export function useOptimisticPages({ pages, onServerUpdate }: UseOptimisticPages
     }, 10000);
     
     return tempId;
-  }, []);
+  }, [getNextOptimisticPosition]);
 
   const optimisticUpdatePage = useCallback((pageId: string, updates: Partial<Block>) => {
     setOptimisticUpdates(prev => {

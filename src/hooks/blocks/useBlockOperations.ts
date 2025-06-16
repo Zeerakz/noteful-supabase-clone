@@ -1,3 +1,4 @@
+
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -52,6 +53,27 @@ export function useBlockOperations(workspaceId?: string, pageId?: string) {
     }
   }, [pageId, workspaceId]);
 
+  // Helper function to get the next position for a block
+  const getNextBlockPosition = async (parentId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('blocks')
+        .select('pos')
+        .eq('parent_id', parentId)
+        .order('pos', { ascending: false })
+        .limit(1);
+
+      if (error) throw error;
+
+      const maxPos = data && data.length > 0 ? data[0].pos : -1;
+      return maxPos + 1;
+    } catch (err) {
+      console.error('Error getting next block position:', err);
+      // Fallback to a simple increment if query fails
+      return Date.now() % 1000000; // Use modulo to keep within integer range
+    }
+  };
+
   // Handle realtime updates
   const handleRealtimeUpdate = useCallback((payload: any) => {
     if (!mountedRef.current) return;
@@ -102,14 +124,17 @@ export function useBlockOperations(workspaceId?: string, pageId?: string) {
     }
 
     try {
+      const parentId = params.parent_id || pageId;
+      const nextPos = params.pos !== undefined ? params.pos : await getNextBlockPosition(parentId);
+
       const { data, error } = await supabase
         .from('blocks')
         .insert({
           workspace_id: workspaceId,
           type: params.type,
-          parent_id: params.parent_id || pageId,
+          parent_id: parentId,
           content: params.content || {},
-          pos: params.pos ?? Date.now(),
+          pos: nextPos,
           created_by: user.id,
           last_edited_by: user.id,
           properties: {},
@@ -123,7 +148,7 @@ export function useBlockOperations(workspaceId?: string, pageId?: string) {
     } catch (err) {
       return { data: null, error: err instanceof Error ? err.message : 'Failed to create block' };
     }
-  }, [user, workspaceId, pageId]);
+  }, [user, workspaceId, pageId, getNextBlockPosition]);
 
   const updateBlock = useCallback(async (id: string, updates: BlockUpdateParams) => {
     if (!user) {

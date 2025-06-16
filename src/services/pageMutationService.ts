@@ -13,6 +13,43 @@ export interface PageCreateRequest {
 
 export type PageUpdateRequest = Partial<Omit<Block, 'id' | 'created_time' | 'created_by' | 'workspace_id'>>;
 
+// Helper function to get the next position for a page
+async function getNextPagePosition(workspaceId: string, parentId?: string, databaseId?: string): Promise<number> {
+  try {
+    let query = supabase
+      .from('blocks')
+      .select('pos')
+      .eq('workspace_id', workspaceId);
+
+    if (databaseId) {
+      // For database entries, check within the same database
+      query = query.eq('properties->>database_id', databaseId);
+    } else {
+      // For regular pages, exclude database entries and filter by parent
+      query = query.is('properties->>database_id', null);
+      
+      if (parentId) {
+        query = query.eq('parent_id', parentId);
+      } else {
+        query = query.is('parent_id', null).eq('type', 'page');
+      }
+    }
+
+    const { data, error } = await query
+      .order('pos', { ascending: false })
+      .limit(1);
+
+    if (error) throw error;
+
+    const maxPos = data && data.length > 0 ? data[0].pos : -1;
+    return maxPos + 1;
+  } catch (err) {
+    console.error('Error getting next page position:', err);
+    // Fallback to a simple increment if query fails
+    return Date.now() % 1000000; // Use modulo to keep within integer range
+  }
+}
+
 export async function createPage(
   workspaceId: string,
   userId: string,
@@ -29,25 +66,11 @@ export async function createPage(
       throw new Error('Title is required');
     }
 
-    let query = supabase
-      .from('blocks')
-      .select('pos')
-      .eq('workspace_id', workspaceId)
-      .is('properties->>database_id', null);
-
-    if (pageDetails.parent_id) {
-      query = query.eq('parent_id', pageDetails.parent_id);
-    } else {
-      query = query.is('parent_id', null).eq('type', 'page');
-    }
-
-    const { data: existingPages, error: posError } = await query
-      .order('pos', { ascending: false })
-      .limit(1);
-
-    if (posError) throw posError;
-
-    const nextPos = existingPages && existingPages.length > 0 ? existingPages[0].pos + 1 : 0;
+    const nextPos = await getNextPagePosition(
+      workspaceId, 
+      pageDetails.parent_id,
+      pageDetails.properties.database_id
+    );
 
     const insertData = {
       workspace_id: workspaceId,
