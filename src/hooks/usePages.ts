@@ -10,7 +10,6 @@ import {
   PageCreateRequest 
 } from '@/services/pageMutationService';
 import { usePageHierarchy } from '@/hooks/usePageHierarchy';
-import { useWorkspaceRealtime } from '@/hooks/useWorkspaceRealtime';
 
 export function usePages(workspaceId?: string) {
   const [pages, setPages] = useState<Block[]>([]);
@@ -41,43 +40,6 @@ export function usePages(workspaceId?: string) {
       }
     }
   };
-
-  // Handle realtime updates
-  const handlePageChange = (payload: any) => {
-    if (!mountedRef.current) return;
-    
-    console.log('Pages realtime update:', payload);
-    
-    if (payload.eventType === 'INSERT') {
-      const newPage = payload.new as Block;
-      if (newPage.type === 'page') {
-        setPages(prev => {
-          if (prev.some(page => page.id === newPage.id)) {
-            return prev;
-          }
-          return [...prev, newPage].sort((a, b) => a.pos - b.pos);
-        });
-      }
-    } else if (payload.eventType === 'UPDATE') {
-      const updatedPage = payload.new as Block;
-      if (updatedPage.type === 'page') {
-        setPages(prev => prev.map(page => 
-          page.id === updatedPage.id ? updatedPage : page
-        ).sort((a, b) => a.pos - b.pos));
-      }
-    } else if (payload.eventType === 'DELETE') {
-      const deletedPage = payload.old as Block;
-      if (deletedPage.type === 'page') {
-        setPages(prev => prev.filter(page => page.id !== deletedPage.id));
-      }
-    }
-  };
-
-  // Set up realtime subscription
-  useWorkspaceRealtime({
-    workspaceId,
-    onPageChange: handlePageChange,
-  });
 
   const createPage = async (title: string, parentId?: string, databaseId?: string) => {
     if (!user || !workspaceId) return { error: 'User not authenticated or workspace not selected' };

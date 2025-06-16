@@ -3,7 +3,6 @@ import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Block } from '@/types/block';
 import { supabase } from '@/integrations/supabase/client';
-import { useWorkspaceRealtime } from '@/hooks/useWorkspaceRealtime';
 
 const formatPageProperties = (page: any): Block => {
   const properties = (typeof page.properties === 'object' && page.properties !== null && !Array.isArray(page.properties))
@@ -45,41 +44,6 @@ export function useDatabasePages(databaseId: string, workspaceId: string) {
       }
     }
   };
-
-  // Handle realtime updates
-  const handlePageChange = (payload: any) => {
-    if (!mountedRef.current) return;
-    
-    console.log('Database pages realtime update:', payload);
-    
-    if (payload.eventType === 'INSERT') {
-      const newPage = formatPageProperties(payload.new);
-      if (newPage.properties?.database_id === databaseId) {
-        setPages(prev => {
-          if (prev.some(page => page.id === newPage.id)) {
-            return prev;
-          }
-          return [newPage, ...prev];
-        });
-      }
-    } else if (payload.eventType === 'UPDATE') {
-      const updatedPage = formatPageProperties(payload.new);
-      if (updatedPage.properties?.database_id === databaseId) {
-        setPages(prev => prev.map(page => 
-          page.id === updatedPage.id ? updatedPage : page
-        ));
-      }
-    } else if (payload.eventType === 'DELETE') {
-      const deletedPage = payload.old as Partial<Block> & { id: string };
-      setPages(prev => prev.filter(page => page.id !== deletedPage.id));
-    }
-  };
-
-  // Use workspace realtime for this database
-  useWorkspaceRealtime({
-    workspaceId,
-    onPageChange: handlePageChange,
-  });
 
   const createDatabasePage = async (title: string) => {
     if (!user || !databaseId || !workspaceId) {

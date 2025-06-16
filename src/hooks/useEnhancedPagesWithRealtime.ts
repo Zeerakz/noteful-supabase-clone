@@ -8,11 +8,11 @@ export function useEnhancedPagesWithRealtime(workspaceId?: string) {
 
   const handlePageChange = useCallback((payload: any) => {
     console.log('📄 Page change detected, refreshing pages...');
-    // Add a small delay to ensure the database write is complete
+    // Small delay to ensure the database write is complete
     setTimeout(() => {
       pagesHook.fetchPages();
-    }, 100);
-  }, [pagesHook.fetchPages]);
+    }, 50);
+  }, [pagesHook]);
 
   useWorkspaceRealtime({
     workspaceId,

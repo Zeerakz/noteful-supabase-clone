@@ -15,9 +15,9 @@ export function useEnhancedBlocksWithRealtime(pageId?: string, workspaceId?: str
       console.log('📥 Block change detected for current page, refreshing blocks...');
       setTimeout(() => {
         blocksHook.fetchBlocks();
-      }, 100);
+      }, 50);
     }
-  }, [pageId, blocksHook.fetchBlocks]);
+  }, [pageId, blocksHook]);
 
   useWorkspaceRealtime({
     workspaceId,
