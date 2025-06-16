@@ -111,16 +111,8 @@ export function useOptimisticBlocks({ blocks }: UseOptimisticBlocksProps) {
       return newCreations;
     });
     
-    // Enhanced auto-cleanup with longer timeout since we increased the clear delay
-    setTimeout(() => {
-      setOptimisticCreations(current => {
-        const filtered = current.filter(block => block.id !== tempId);
-        if (filtered.length !== current.length) {
-          console.log('Optimistic: Auto-cleanup for', tempId);
-        }
-        return filtered;
-      });
-    }, 30000); // Increased to 30 seconds to match the longer clear delays
+    // REMOVED: Auto-cleanup setTimeout - let the explicit clearOptimisticCreation handle cleanup
+    // This prevents premature removal of optimistic blocks before server confirmation
     
     return tempId;
   }, [getNextOptimisticPosition]);
@@ -148,18 +140,7 @@ export function useOptimisticBlocks({ blocks }: UseOptimisticBlocksProps) {
       return newMap;
     });
 
-    // Auto-cleanup with enhanced timing
-    setTimeout(() => {
-      setOptimisticUpdates(current => {
-        const newMap = new Map(current);
-        const update = newMap.get(blockId);
-        if (update && Date.now() - update.timestamp > 20000) {
-          newMap.delete(blockId);
-          console.log('Optimistic: Auto-cleanup update for', blockId);
-        }
-        return newMap;
-      });
-    }, 20000); // Increased timeout to match longer delays
+    // REMOVED: Auto-cleanup setTimeout - rely on explicit clearing after server confirmation
   }, []);
 
   const optimisticDeleteBlock = useCallback((blockId: string) => {
@@ -172,16 +153,7 @@ export function useOptimisticBlocks({ blocks }: UseOptimisticBlocksProps) {
     console.log('Optimistic: Deleting block', blockId);
     setOptimisticDeletions(prev => new Set(prev).add(blockId));
     
-    // Auto-cleanup
-    setTimeout(() => {
-      setOptimisticDeletions(current => {
-        const newSet = new Set(current);
-        if (newSet.delete(blockId)) {
-          console.log('Optimistic: Auto-cleanup deletion for', blockId);
-        }
-        return newSet;
-      });
-    }, 20000); // Increased timeout
+    // REMOVED: Auto-cleanup setTimeout - rely on explicit clearing after server confirmation
   }, []);
 
   const clearOptimisticUpdate = useCallback((blockId: string) => {

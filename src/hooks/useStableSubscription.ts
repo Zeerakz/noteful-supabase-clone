@@ -126,6 +126,7 @@ export function useStableSubscription(
           console.log('📨 Subscription update received:', payload.eventType || payload.event, 'for', config.table);
           
           // Create a normalized payload with eventType for backward compatibility
+          // Handle both old and new payload structures
           const normalizedPayload = {
             ...payload,
             eventType: payload.event || payload.eventType || 'unknown'
