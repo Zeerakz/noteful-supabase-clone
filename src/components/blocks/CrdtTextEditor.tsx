@@ -41,12 +41,42 @@ export function CrdtTextEditor({
   const isUpdatingRef = useRef(false);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isTemporaryBlockRef = useRef(blockId.startsWith('temp-'));
+  const hasAutoFocusedRef = useRef(false);
 
   // Update temporary block status when blockId changes
   useEffect(() => {
+    const wasTemporary = isTemporaryBlockRef.current;
     isTemporaryBlockRef.current = blockId.startsWith('temp-');
+    
     console.log('CrdtTextEditor: Block ID changed, isTemporary:', isTemporaryBlockRef.current, blockId);
+    
+    // Reset auto-focus flag when block ID changes
+    if (wasTemporary !== isTemporaryBlockRef.current) {
+      hasAutoFocusedRef.current = false;
+    }
   }, [blockId]);
+
+  // Auto-focus for temporary blocks
+  useEffect(() => {
+    if (isTemporaryBlockRef.current && !hasAutoFocusedRef.current && editorRef.current) {
+      console.log('CrdtTextEditor: Auto-focusing temporary block:', blockId);
+      
+      // Use a small delay to ensure the DOM is ready and avoid race conditions
+      const focusTimeout = setTimeout(() => {
+        if (editorRef.current && isTemporaryBlockRef.current && !hasAutoFocusedRef.current) {
+          try {
+            editorRef.current.focus();
+            hasAutoFocusedRef.current = true;
+            console.log('CrdtTextEditor: Successfully auto-focused temporary block');
+          } catch (error) {
+            console.warn('CrdtTextEditor: Failed to auto-focus temporary block:', error);
+          }
+        }
+      }, 50);
+
+      return () => clearTimeout(focusTimeout);
+    }
+  }, [blockId, isTemporaryBlockRef.current]);
 
   const { ytext, isConnected, updateContent, getDocumentContent } = useYjsDocument({
     pageId: `${pageId}-${blockId}`,
