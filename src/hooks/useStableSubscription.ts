@@ -53,31 +53,32 @@ export function useStableSubscription(
     try {
       const channel = supabase.channel(channelName);
       
-      channel.on(
-        'postgres_changes',
-        {
-          event: config.event || '*',
-          schema: config.schema || 'public',
-          table: config.table,
-          ...(config.filter && { filter: config.filter }),
-        },
-        (payload) => {
-          console.log('📨 Subscription update:', payload.eventType, 'for', config.table);
-          onUpdate(payload);
-        }
-      );
-
-      channel.subscribe((status) => {
-        console.log('📡 Subscription status:', status, 'for', channelName);
-        if (status === 'SUBSCRIBED') {
-          isSubscribedRef.current = true;
-        } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
-          isSubscribedRef.current = false;
-          if (channelRef.current === channel) {
-            channelRef.current = null;
+      // Use the correct Supabase v2 syntax for postgres changes
+      channel
+        .on(
+          'postgres_changes',
+          {
+            event: config.event || '*',
+            schema: config.schema || 'public',
+            table: config.table,
+            ...(config.filter && { filter: config.filter }),
+          },
+          (payload) => {
+            console.log('📨 Subscription update:', payload.eventType, 'for', config.table);
+            onUpdate(payload);
           }
-        }
-      });
+        )
+        .subscribe((status) => {
+          console.log('📡 Subscription status:', status, 'for', channelName);
+          if (status === 'SUBSCRIBED') {
+            isSubscribedRef.current = true;
+          } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
+            isSubscribedRef.current = false;
+            if (channelRef.current === channel) {
+              channelRef.current = null;
+            }
+          }
+        });
 
       channelRef.current = channel;
     } catch (error) {
