@@ -64,8 +64,8 @@ export function useStableSubscription(
           ...(config.filter && { filter: config.filter }),
         },
         (payload) => {
-          // Fix: Access the correct property from payload
-          const eventType = payload.eventType || (payload as any).event || 'unknown';
+          // Fix: Access the eventType from the correct location in the payload
+          const eventType = payload.eventType || payload.event || 'unknown';
           console.log('📨 Subscription update:', eventType, 'for', config.table);
           onUpdate(payload);
         }
