@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Database, DatabaseCreateRequest } from '@/types/database';
@@ -11,6 +12,7 @@ export function useDatabases(workspaceId?: string) {
   const { user } = useAuth();
   const channelRef = useRef<any>(null);
   const mountedRef = useRef(true);
+  const subscriptionActiveRef = useRef(false);
 
   const fetchDatabases = async () => {
     if (!user || !workspaceId) {
@@ -83,13 +85,16 @@ export function useDatabases(workspaceId?: string) {
   };
 
   const cleanup = () => {
-    if (channelRef.current) {
+    if (channelRef.current && subscriptionActiveRef.current) {
       try {
+        console.log('Cleaning up databases channel subscription');
         channelRef.current.unsubscribe();
+        supabase.removeChannel(channelRef.current);
       } catch (error) {
         console.warn('Error unsubscribing from databases channel:', error);
       }
       channelRef.current = null;
+      subscriptionActiveRef.current = false;
     }
   };
 
@@ -106,7 +111,9 @@ export function useDatabases(workspaceId?: string) {
     fetchDatabases();
     cleanup();
 
-    const channelName = `databases-workspace:${workspaceId}`; // Use a unique channel name per workspace
+    const channelName = `databases_${workspaceId}_${user.id}_${Date.now()}`;
+    console.log('Creating databases channel:', channelName);
+    
     const channel = supabase.channel(channelName);
     channel
       .on(
@@ -115,7 +122,6 @@ export function useDatabases(workspaceId?: string) {
           event: '*',
           schema: 'public',
           table: 'databases',
-          // Filter removed to catch cross-workspace moves
         },
         (payload) => {
           if (mountedRef.current) {
@@ -133,8 +139,13 @@ export function useDatabases(workspaceId?: string) {
         }
       )
       .subscribe((status, err) => {
+        console.log('Databases subscription status:', status);
         if (err) {
           console.error(`Databases subscription error for workspace ${workspaceId}:`, err);
+        } else if (status === 'SUBSCRIBED') {
+          subscriptionActiveRef.current = true;
+        } else if (status === 'CLOSED') {
+          subscriptionActiveRef.current = false;
         }
       });
     

@@ -18,6 +18,7 @@ export function useDatabasePages(databaseId: string, workspaceId: string) {
   const { user } = useAuth();
   const channelRef = useRef<any>(null);
   const mountedRef = useRef(true);
+  const subscriptionActiveRef = useRef(false);
 
   const fetchPages = async () => {
     if (!user || !databaseId) return;
@@ -112,7 +113,7 @@ export function useDatabasePages(databaseId: string, workspaceId: string) {
   };
 
   const cleanup = () => {
-    if (channelRef.current) {
+    if (channelRef.current && subscriptionActiveRef.current) {
       try {
         console.log('Cleaning up database pages channel subscription');
         channelRef.current.unsubscribe();
@@ -121,6 +122,7 @@ export function useDatabasePages(databaseId: string, workspaceId: string) {
         console.warn('Error removing database pages channel:', error);
       }
       channelRef.current = null;
+      subscriptionActiveRef.current = false;
     }
   };
 
@@ -140,8 +142,7 @@ export function useDatabasePages(databaseId: string, workspaceId: string) {
     cleanup();
 
     // Create a unique channel name
-    const timestamp = Date.now();
-    const channelName = `database_pages_${databaseId}_${user.id}_${timestamp}`;
+    const channelName = `database_pages_${databaseId}_${user.id}_${Date.now()}`;
     console.log('Creating database pages channel:', channelName);
     
     const channel = supabase.channel(channelName);
@@ -151,8 +152,8 @@ export function useDatabasePages(databaseId: string, workspaceId: string) {
       {
         event: '*',
         schema: 'public',
-        table: 'blocks', // Changed from 'pages' to 'blocks'
-        filter: `properties->>database_id=eq.${databaseId}` // Filter by database_id in properties
+        table: 'blocks',
+        filter: `properties->>database_id=eq.${databaseId}`
       },
       (payload) => {
         if (!mountedRef.current) return;
@@ -180,8 +181,15 @@ export function useDatabasePages(databaseId: string, workspaceId: string) {
     );
 
     // Subscribe and track status
-    channel.subscribe((status) => {
+    channel.subscribe((status, err) => {
       console.log('Database pages subscription status:', status);
+      if (err) {
+        console.error('Database pages subscription error:', err);
+      } else if (status === 'SUBSCRIBED') {
+        subscriptionActiveRef.current = true;
+      } else if (status === 'CLOSED') {
+        subscriptionActiveRef.current = false;
+      }
     });
 
     channelRef.current = channel;

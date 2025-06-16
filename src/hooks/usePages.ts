@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Block } from '@/types/block';
@@ -19,6 +20,7 @@ export function usePages(workspaceId?: string) {
   const { updatePageHierarchy: updateHierarchy } = usePageHierarchy();
   const channelRef = useRef<any>(null);
   const mountedRef = useRef(true);
+  const subscriptionActiveRef = useRef(false);
 
   const fetchPages = async () => {
     if (!user || !workspaceId) return;
@@ -82,15 +84,17 @@ export function usePages(workspaceId?: string) {
   };
 
   const cleanup = () => {
-    if (channelRef.current) {
+    if (channelRef.current && subscriptionActiveRef.current) {
       try {
         console.log('Cleaning up pages channel subscription');
-        // Use unsubscribe instead of removeChannel for better compatibility
         channelRef.current.unsubscribe();
+        // Remove the channel from Supabase client
+        supabase.removeChannel(channelRef.current);
       } catch (error) {
-        console.warn('Error unsubscribing from pages channel:', error);
+        console.warn('Error cleaning up pages channel:', error);
       }
       channelRef.current = null;
+      subscriptionActiveRef.current = false;
     }
   };
 
@@ -106,22 +110,15 @@ export function usePages(workspaceId?: string) {
 
     fetchPages();
 
-    // Cleanup existing subscription
+    // Cleanup existing subscription before creating new one
     cleanup();
 
-    // Create a unique channel name with timestamp to avoid conflicts
-    const timestamp = Date.now();
-    const channelName = `pages_${workspaceId}_${user.id}_${timestamp}`;
+    // Create a unique channel name to avoid conflicts
+    const channelName = `pages_${workspaceId}_${user.id}_${Date.now()}`;
     console.log('Creating pages channel:', channelName);
     
     try {
-      const channel = supabase.channel(channelName, {
-        config: {
-          presence: {
-            key: user.id,
-          },
-        },
-      });
+      const channel = supabase.channel(channelName);
 
       channel.on(
         'postgres_changes',
@@ -138,21 +135,27 @@ export function usePages(workspaceId?: string) {
           
           if (payload.eventType === 'INSERT') {
             const newPage = payload.new as Block;
-            setPages(prev => {
-              // Prevent duplicates
-              if (prev.some(page => page.id === newPage.id)) {
-                return prev;
-              }
-              return [...prev, newPage].sort((a, b) => a.pos - b.pos);
-            });
+            if (newPage.type === 'page') {
+              setPages(prev => {
+                // Prevent duplicates
+                if (prev.some(page => page.id === newPage.id)) {
+                  return prev;
+                }
+                return [...prev, newPage].sort((a, b) => a.pos - b.pos);
+              });
+            }
           } else if (payload.eventType === 'UPDATE') {
             const updatedPage = payload.new as Block;
-            setPages(prev => prev.map(page => 
-              page.id === updatedPage.id ? updatedPage : page
-            ).sort((a, b) => a.pos - b.pos));
+            if (updatedPage.type === 'page') {
+              setPages(prev => prev.map(page => 
+                page.id === updatedPage.id ? updatedPage : page
+              ).sort((a, b) => a.pos - b.pos));
+            }
           } else if (payload.eventType === 'DELETE') {
             const deletedPage = payload.old as Block;
-            setPages(prev => prev.filter(page => page.id !== deletedPage.id));
+            if (deletedPage.type === 'page') {
+              setPages(prev => prev.filter(page => page.id !== deletedPage.id));
+            }
           }
         }
       );
@@ -162,6 +165,10 @@ export function usePages(workspaceId?: string) {
         console.log('Pages subscription status:', status);
         if (err) {
           console.error('Pages subscription error:', err);
+        } else if (status === 'SUBSCRIBED') {
+          subscriptionActiveRef.current = true;
+        } else if (status === 'CLOSED') {
+          subscriptionActiveRef.current = false;
         }
       });
 
