@@ -20,6 +20,7 @@ export function PageTitleEditor({
 }: PageTitleEditorProps) {
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [titleValue, setTitleValue] = useState(title);
+  const [isSaving, setIsSaving] = useState(false);
   const titleInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
@@ -38,7 +39,11 @@ export function PageTitleEditor({
   };
 
   const handleTitleSave = async () => {
-    if (!titleValue.trim()) {
+    if (isSaving) return;
+
+    const trimmedTitle = titleValue.trim();
+    
+    if (!trimmedTitle) {
       toast({
         title: "Error",
         description: "Page title cannot be empty",
@@ -47,30 +52,41 @@ export function PageTitleEditor({
       return;
     }
 
-    if (titleValue.trim() === title) {
+    if (trimmedTitle === title) {
       setIsEditingTitle(false);
       return;
     }
     
-    const { error } = await onTitleUpdate(titleValue.trim());
+    setIsSaving(true);
     
-    if (!error) {
-      setIsEditingTitle(false);
-    } else {
+    try {
+      const { error } = await onTitleUpdate(trimmedTitle);
+      
+      if (!error) {
+        setIsEditingTitle(false);
+      }
+      // Error handling is done in the onTitleUpdate function
+    } catch (err) {
+      console.error('Unexpected error in handleTitleSave:', err);
       toast({
         title: "Error",
-        description: "Failed to update page title. Please try again.",
+        description: "An unexpected error occurred while saving the title.",
         variant: "destructive",
       });
+    } finally {
+      setIsSaving(false);
     }
   };
 
   const handleTitleCancel = () => {
+    if (isSaving) return;
     setTitleValue(title);
     setIsEditingTitle(false);
   };
 
   const handleTitleKeyDown = (e: React.KeyboardEvent) => {
+    if (isSaving) return;
+    
     if (e.key === 'Enter') {
       e.preventDefault();
       handleTitleSave();
@@ -89,9 +105,13 @@ export function PageTitleEditor({
           onChange={(e) => setTitleValue(e.target.value)}
           onBlur={handleTitleSave}
           onKeyDown={handleTitleKeyDown}
+          disabled={isSaving}
           className="text-xl font-semibold border-none bg-transparent p-0 focus-visible:ring-1"
           placeholder="Page title"
         />
+        {isSaving && (
+          <div className="text-sm text-muted-foreground">Saving...</div>
+        )}
       </div>
     );
   }
@@ -104,6 +124,7 @@ export function PageTitleEditor({
           variant="ghost"
           size="sm"
           onClick={startEditingTitle}
+          disabled={isSaving}
           className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0"
         >
           <Edit2 className="h-3 w-3" />

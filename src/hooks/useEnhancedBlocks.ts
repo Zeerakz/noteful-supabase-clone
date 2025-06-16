@@ -21,7 +21,15 @@ export function useEnhancedBlocks(pageId?: string, workspaceId?: string) {
   } = useOptimisticBlocks({ blocks });
 
   const enhancedCreateBlock = useCallback(async (type: string, content: any = {}, parentBlockId?: string) => {
-    if (!workspaceId || !pageId) return { error: 'Page or workspace not selected', data: null };
+    if (!workspaceId || !pageId) {
+      const errorMessage = 'Page or workspace not selected';
+      toast({
+        title: "Error",
+        description: "Cannot create block. Please select a workspace and page.",
+        variant: "destructive",
+      });
+      return { error: errorMessage, data: null };
+    }
 
     // Optimistic update
     const tempId = optimisticCreateBlock({
@@ -34,22 +42,31 @@ export function useEnhancedBlocks(pageId?: string, workspaceId?: string) {
     });
 
     try {
-      const { data, error } = await createBlock({ type: type as any, content, parent_id: parentBlockId || pageId });
+      const { data, error } = await createBlock({ 
+        type: type as any, 
+        content, 
+        parent_id: parentBlockId || pageId 
+      });
       
       if (error) {
         clearOptimisticCreation(tempId);
-        throw new Error(error);
+        // Error is already handled in useBlockOperations with toast
+        return { data: null, error };
       }
 
       clearOptimisticCreation(tempId);
       return { data, error: null };
     } catch (err) {
+      clearOptimisticCreation(tempId);
       const errorMessage = err instanceof Error ? err.message : 'Failed to create block';
+      console.error('Unexpected error in enhancedCreateBlock:', err);
+      
       toast({
         title: "Error",
-        description: errorMessage,
+        description: "An unexpected error occurred while creating the block.",
         variant: "destructive",
       });
+      
       return { data: null, error: errorMessage };
     }
   }, [pageId, workspaceId, createBlock, optimisticCreateBlock, clearOptimisticCreation, toast]);
@@ -62,18 +79,23 @@ export function useEnhancedBlocks(pageId?: string, workspaceId?: string) {
       
       if (error) {
         clearOptimisticUpdate(id);
-        throw new Error(error);
+        // Error is already handled in useBlockOperations with toast
+        return { data: null, error };
       }
 
       clearOptimisticUpdate(id);
       return { data, error: null };
     } catch (err) {
+      clearOptimisticUpdate(id);
       const errorMessage = err instanceof Error ? err.message : 'Failed to update block';
+      console.error('Unexpected error in enhancedUpdateBlock:', err);
+      
       toast({
         title: "Error",
-        description: errorMessage,
+        description: "An unexpected error occurred while updating the block.",
         variant: "destructive",
       });
+      
       return { data: null, error: errorMessage };
     }
   }, [updateBlock, optimisticUpdateBlock, clearOptimisticUpdate, toast]);
@@ -86,17 +108,22 @@ export function useEnhancedBlocks(pageId?: string, workspaceId?: string) {
       
       if (error) {
         revertAllOptimisticChanges();
-        throw new Error(error);
+        // Error is already handled in useBlockOperations with toast
+        return { error };
       }
 
       return { error: null };
     } catch (err) {
+      revertAllOptimisticChanges();
       const errorMessage = err instanceof Error ? err.message : 'Failed to delete block';
+      console.error('Unexpected error in enhancedDeleteBlock:', err);
+      
       toast({
         title: "Error",
-        description: errorMessage,
+        description: "An unexpected error occurred while deleting the block.",
         variant: "destructive",
       });
+      
       return { error: errorMessage };
     }
   }, [deleteBlock, optimisticDeleteBlock, revertAllOptimisticChanges, toast]);

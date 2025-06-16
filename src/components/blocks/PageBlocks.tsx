@@ -3,6 +3,7 @@ import React from 'react';
 import { useBlockOperations } from '@/hooks/blocks/useBlockOperations';
 import { DraggableBlockList } from './DraggableBlockList';
 import { Block, BlockType } from '@/types/block';
+import { useToast } from '@/hooks/use-toast';
 
 interface PageBlocksProps {
   workspaceId: string;
@@ -12,17 +13,57 @@ interface PageBlocksProps {
 
 export function PageBlocks({ workspaceId, pageId, isEditable = false }: PageBlocksProps) {
   const { blocks, loading, error, createBlock, updateBlock, deleteBlock } = useBlockOperations(workspaceId, pageId);
+  const { toast } = useToast();
 
   const handleUpdateBlock = async (id: string, updates: any) => {
-    await updateBlock(id, updates);
+    try {
+      const { error } = await updateBlock(id, updates);
+      if (error) {
+        console.error('Failed to update block:', error);
+        // Error handling is done in useBlockOperations
+      }
+    } catch (err) {
+      console.error('Unexpected error updating block:', err);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred while updating the block.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleDeleteBlock = async (id: string) => {
-    await deleteBlock(id);
+    try {
+      const { error } = await deleteBlock(id);
+      if (error) {
+        console.error('Failed to delete block:', error);
+        // Error handling is done in useBlockOperations
+      }
+    } catch (err) {
+      console.error('Unexpected error deleting block:', err);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred while deleting the block.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleCreateBlock = async (params: { type: BlockType; content?: any; parent_id?: string; pos?: number }) => {
-    await createBlock(params);
+    try {
+      const { error } = await createBlock(params);
+      if (error) {
+        console.error('Failed to create block:', error);
+        // Error handling is done in useBlockOperations
+      }
+    } catch (err) {
+      console.error('Unexpected error creating block:', err);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred while creating the block.",
+        variant: "destructive",
+      });
+    }
   };
 
   if (loading) {
@@ -41,6 +82,12 @@ export function PageBlocks({ workspaceId, pageId, isEditable = false }: PageBloc
     return (
       <div className="p-4 text-red-600">
         <p>Error loading blocks: {error}</p>
+        <button 
+          onClick={() => window.location.reload()} 
+          className="mt-2 text-blue-600 underline"
+        >
+          Refresh page
+        </button>
       </div>
     );
   }
