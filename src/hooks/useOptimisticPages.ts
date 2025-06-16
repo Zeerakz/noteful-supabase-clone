@@ -1,179 +1,86 @@
 
-import { useState, useCallback } from 'react';
 import { Block } from '@/types/block';
-
-interface OptimisticPageUpdate {
-  id: string;
-  updates: Partial<Block>;
-  timestamp: number;
-}
+import { useOptimisticState } from '@/hooks/useOptimisticState';
 
 interface UseOptimisticPagesProps {
   pages: Block[];
-  onServerUpdate?: (pages: Block[]) => void;
 }
 
-export function useOptimisticPages({ pages, onServerUpdate }: UseOptimisticPagesProps) {
-  const [optimisticUpdates, setOptimisticUpdates] = useState<Map<string, OptimisticPageUpdate>>(new Map());
-  const [optimisticCreations, setOptimisticCreations] = useState<Block[]>([]);
-  const [optimisticDeletions, setOptimisticDeletions] = useState<Set<string>>(new Set());
-
-  // Helper function to get next position for optimistic pages
-  const getNextOptimisticPosition = useCallback((parentId: string | null, workspaceId: string) => {
-    // Get all pages with the same parent (including optimistic ones)
-    const siblingPages = [
-      ...pages.filter(page => 
-        page.parent_id === parentId && 
-        page.workspace_id === workspaceId &&
-        !(page.properties as any)?.database_id // Exclude database entries
-      ),
-      ...optimisticCreations.filter(page => 
-        page.parent_id === parentId && 
-        page.workspace_id === workspaceId &&
-        !(page.properties as any)?.database_id
-      )
-    ];
-
-    if (siblingPages.length === 0) {
-      return 0;
+export function useOptimisticPages({ pages }: UseOptimisticPagesProps) {
+  const {
+    optimisticData: optimisticPages,
+    applyOptimisticUpdate,
+    clearOptimisticUpdate,
+    clearOptimisticByMatch,
+    hasOptimisticChanges,
+    revertAllOptimisticChanges,
+  } = useOptimisticState<Block>(pages, {
+    keyExtractor: (page) => page.id,
+    matcher: (serverPage, optimisticPage) => {
+      // Match by parent_id, type, and properties for newly created pages
+      return serverPage.type === 'page' &&
+             optimisticPage.type === 'page' &&
+             serverPage.parent_id === optimisticPage.parent_id &&
+             serverPage.properties?.title === optimisticPage.properties?.title &&
+             Math.abs(new Date(serverPage.created_time).getTime() - new Date(optimisticPage.created_time).getTime()) < 10000;
     }
+  });
 
-    const maxPos = Math.max(...siblingPages.map(page => page.pos || 0));
-    return maxPos + 1;
-  }, [pages, optimisticCreations]);
-
-  // Apply optimistic updates to the pages list
-  const optimisticPages = pages
-    .filter(page => !optimisticDeletions.has(page.id))
-    .map(page => {
-      const update = optimisticUpdates.get(page.id);
-      return update ? { ...page, ...update.updates } : page;
-    })
-    .concat(optimisticCreations.filter(optimisticPage => {
-      // Only include optimistic creations that haven't been replaced by real pages
-      // Use more specific matching to prevent false positives
-      return !pages.some(realPage => 
-        realPage.id === optimisticPage.id || // Direct ID match (for when server returns same ID)
-        (
-          (realPage.properties as any)?.title === (optimisticPage.properties as any)?.title && 
-          realPage.workspace_id === optimisticPage.workspace_id &&
-          realPage.parent_id === optimisticPage.parent_id &&
-          Math.abs(new Date(realPage.created_time).getTime() - new Date(optimisticPage.created_time).getTime()) < 5000 // Within 5 seconds
-        )
-      );
-    }))
-    .sort((a, b) => a.pos - b.pos);
-
-  const optimisticCreatePage = useCallback((pageData: Partial<Block>) => {
-    const tempId = `temp-${Date.now()}-${Math.random()}`;
+  const optimisticCreatePage = (pageData: Partial<Block>) => {
+    const tempId = crypto.randomUUID();
     const now = new Date().toISOString();
-    const workspaceId = pageData.workspace_id || '';
-    const parentId = pageData.parent_id || null;
     
     const optimisticPage: Block = {
       id: tempId,
       type: 'page',
-      workspace_id: workspaceId,
-      teamspace_id: pageData.teamspace_id ?? null,
-      parent_id: parentId,
-      properties: pageData.properties || { title: 'Untitled' },
+      workspace_id: pageData.workspace_id || '',
+      teamspace_id: pageData.teamspace_id || null,
+      parent_id: pageData.parent_id || null,
+      properties: pageData.properties || {},
       content: pageData.content || {},
-      pos: pageData.pos ?? getNextOptimisticPosition(parentId, workspaceId),
+      pos: pageData.pos ?? Date.now() % 1000000,
       created_time: now,
       last_edited_time: now,
-      created_by: pageData.created_by || '',
+      created_by: pageData.created_by || null,
       last_edited_by: null,
       archived: false,
       in_trash: false,
     };
 
-    setOptimisticCreations(prev => [...prev, optimisticPage]);
-    
-    // Auto-cleanup after 10 seconds to prevent orphaned optimistic pages
-    setTimeout(() => {
-      setOptimisticCreations(current => 
-        current.filter(page => page.id !== tempId)
-      );
-    }, 10000);
-    
-    return tempId;
-  }, [getNextOptimisticPosition]);
+    return applyOptimisticUpdate('create', optimisticPage, tempId);
+  };
 
-  const optimisticUpdatePage = useCallback((pageId: string, updates: Partial<Block>) => {
-    setOptimisticUpdates(prev => {
-      const newMap = new Map(prev);
-      newMap.set(pageId, {
-        id: pageId,
-        updates: { ...updates, last_edited_time: new Date().toISOString() },
-        timestamp: Date.now(),
-      });
-      return newMap;
-    });
+  const optimisticUpdatePage = (pageId: string, updates: Partial<Block>) => {
+    const existingPage = pages.find(p => p.id === pageId);
+    if (!existingPage) return;
 
-    // Auto-cleanup update after 30 seconds
-    setTimeout(() => {
-      setOptimisticUpdates(current => {
-        const newMap = new Map(current);
-        const update = newMap.get(pageId);
-        if (update && Date.now() - update.timestamp > 30000) {
-          newMap.delete(pageId);
-        }
-        return newMap;
-      });
-    }, 30000);
-  }, []);
+    const updatedPage = {
+      ...existingPage,
+      ...updates,
+      last_edited_time: new Date().toISOString(),
+    };
 
-  const optimisticDeletePage = useCallback((pageId: string) => {
-    setOptimisticDeletions(prev => new Set(prev).add(pageId));
-    
-    // Auto-cleanup deletion after 30 seconds
-    setTimeout(() => {
-      setOptimisticDeletions(current => {
-        const newSet = new Set(current);
-        newSet.delete(pageId);
-        return newSet;
-      });
-    }, 30000);
-  }, []);
+    applyOptimisticUpdate('update', updatedPage);
+  };
 
-  const clearOptimisticUpdate = useCallback((pageId: string) => {
-    setOptimisticUpdates(prev => {
-      const newMap = new Map(prev);
-      newMap.delete(pageId);
-      return newMap;
-    });
-  }, []);
+  const optimisticDeletePage = (pageId: string) => {
+    const existingPage = pages.find(p => p.id === pageId);
+    if (!existingPage) return;
 
-  const clearOptimisticCreation = useCallback((tempId: string) => {
-    setOptimisticCreations(prev => prev.filter(page => page.id !== tempId));
-  }, []);
+    applyOptimisticUpdate('delete', existingPage);
+  };
 
-  const clearOptimisticDeletion = useCallback((pageId: string) => {
-    setOptimisticDeletions(prev => {
-      const newSet = new Set(prev);
-      newSet.delete(pageId);
-      return newSet;
-    });
-  }, []);
+  const clearOptimisticCreation = (tempId: string) => {
+    clearOptimisticUpdate(tempId);
+  };
 
-  const clearOptimisticCreationByMatch = useCallback((realPage: Block) => {
-    setOptimisticCreations(prev => prev.filter(optimisticPage => {
-      // Remove optimistic pages that match the real page
-      // Use the same matching logic as in optimisticPages calculation
-      return !(
-        (optimisticPage.properties as any)?.title === (realPage.properties as any)?.title && 
-        optimisticPage.workspace_id === realPage.workspace_id &&
-        optimisticPage.parent_id === realPage.parent_id &&
-        Math.abs(new Date(realPage.created_time).getTime() - new Date(optimisticPage.created_time).getTime()) < 5000
-      );
-    }));
-  }, []);
+  const clearOptimisticCreationByMatch = (serverPage: Block) => {
+    clearOptimisticByMatch(serverPage);
+  };
 
-  const revertAllOptimisticChanges = useCallback(() => {
-    setOptimisticUpdates(new Map());
-    setOptimisticCreations([]);
-    setOptimisticDeletions(new Set());
-  }, []);
+  const clearOptimisticDeletion = (pageId: string) => {
+    clearOptimisticUpdate(pageId);
+  };
 
   return {
     optimisticPages,
@@ -182,9 +89,9 @@ export function useOptimisticPages({ pages, onServerUpdate }: UseOptimisticPages
     optimisticDeletePage,
     clearOptimisticUpdate,
     clearOptimisticCreation,
-    clearOptimisticDeletion,
     clearOptimisticCreationByMatch,
+    clearOptimisticDeletion,
     revertAllOptimisticChanges,
-    hasOptimisticChanges: optimisticUpdates.size > 0 || optimisticCreations.length > 0 || optimisticDeletions.size > 0,
+    hasOptimisticChanges,
   };
 }
