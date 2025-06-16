@@ -10,7 +10,7 @@ import {
   PageCreateRequest 
 } from '@/services/pageMutationService';
 import { usePageHierarchy } from '@/hooks/usePageHierarchy';
-import { useStableSubscription } from '@/hooks/useStableSubscription';
+import { useWorkspaceRealtime } from '@/hooks/useWorkspaceRealtime';
 
 export function usePages(workspaceId?: string) {
   const [pages, setPages] = useState<Block[]>([]);
@@ -43,10 +43,10 @@ export function usePages(workspaceId?: string) {
   };
 
   // Handle realtime updates
-  const handleRealtimeUpdate = (payload: any) => {
+  const handlePageChange = (payload: any) => {
     if (!mountedRef.current) return;
     
-    console.log('Realtime pages update:', payload);
+    console.log('Pages realtime update:', payload);
     
     if (payload.eventType === 'INSERT') {
       const newPage = payload.new as Block;
@@ -74,12 +74,10 @@ export function usePages(workspaceId?: string) {
   };
 
   // Set up realtime subscription
-  const subscriptionConfig = workspaceId ? {
-    table: 'blocks',
-    filter: `workspace_id=eq.${workspaceId}`,
-  } : null;
-
-  useStableSubscription(subscriptionConfig, handleRealtimeUpdate, [workspaceId]);
+  useWorkspaceRealtime({
+    workspaceId,
+    onPageChange: handlePageChange,
+  });
 
   const createPage = async (title: string, parentId?: string, databaseId?: string) => {
     if (!user || !workspaceId) return { error: 'User not authenticated or workspace not selected' };
