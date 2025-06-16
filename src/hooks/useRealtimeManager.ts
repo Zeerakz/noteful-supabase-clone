@@ -2,6 +2,7 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { Block } from '@/types/block';
 
 interface SubscriptionCallbacks {
   onBlockChange?: (payload: any) => void;
@@ -15,6 +16,16 @@ interface ActiveSubscription {
   filter: string;
   channel: any;
   callbacks: Set<SubscriptionCallbacks>;
+}
+
+// Type guard to check if an object has a type property
+function hasBlockType(obj: any): obj is { type: string } {
+  return obj && typeof obj === 'object' && typeof obj.type === 'string';
+}
+
+// Type guard to check if an object is a Block
+function isBlock(obj: any): obj is Block {
+  return hasBlockType(obj) && typeof obj.id === 'string';
 }
 
 class RealtimeManager {
@@ -90,6 +101,10 @@ class RealtimeManager {
       (payload) => {
         console.log(`📨 Realtime update for ${type}:${id}:`, payload);
         
+        // Safely check for block types with proper type guards
+        const newBlock = payload.new;
+        const oldBlock = payload.old;
+        
         // Broadcast to all callbacks
         subscription.callbacks.forEach(callback => {
           if (payload.eventType === 'INSERT' && callback.onBlockChange) {
@@ -100,11 +115,12 @@ class RealtimeManager {
             callback.onBlockChange(payload);
           }
           
-          // Handle page-specific events
-          if (payload.new?.type === 'page' || payload.old?.type === 'page') {
-            if (callback.onPageChange) {
-              callback.onPageChange(payload);
-            }
+          // Handle page-specific events with type guards
+          const isNewBlockPage = newBlock && hasBlockType(newBlock) && newBlock.type === 'page';
+          const isOldBlockPage = oldBlock && hasBlockType(oldBlock) && oldBlock.type === 'page';
+          
+          if ((isNewBlockPage || isOldBlockPage) && callback.onPageChange) {
+            callback.onPageChange(payload);
           }
         });
 
