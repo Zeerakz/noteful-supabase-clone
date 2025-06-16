@@ -64,10 +64,18 @@ export function useStableSubscription(
           ...(config.filter && { filter: config.filter }),
         },
         (payload) => {
-          // Fix: Access the eventType from the correct location in the payload
-          const eventType = payload.eventType || payload.event || 'unknown';
-          console.log('📨 Subscription update:', eventType, 'for', config.table);
-          onUpdate(payload);
+          // Fix: For postgres_changes, the event type is in payload.eventType
+          // but we need to handle the correct payload structure
+          console.log('📨 Subscription update received:', payload);
+          
+          // Create a normalized payload with eventType for backward compatibility
+          const normalizedPayload = {
+            ...payload,
+            eventType: payload.eventType || 'unknown'
+          };
+          
+          console.log('📨 Normalized payload:', normalizedPayload.eventType, 'for', config.table);
+          onUpdate(normalizedPayload);
         }
       );
 
