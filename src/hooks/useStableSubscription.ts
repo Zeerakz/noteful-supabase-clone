@@ -123,13 +123,15 @@ export function useStableSubscription(
           if (now - lastUpdateRef.current < 50) return;
           lastUpdateRef.current = now;
           
-          console.log('📨 Subscription update received:', payload.eventType || payload.event, 'for', config.table);
+          // Safely access the event type from the payload
+          const eventType = (payload as any)?.event || (payload as any)?.eventType || 'unknown';
+          console.log('📨 Subscription update received:', eventType, 'for', config.table);
           
           // Create a normalized payload with eventType for backward compatibility
           // Handle both old and new payload structures
           const normalizedPayload = {
             ...payload,
-            eventType: payload.event || payload.eventType || 'unknown'
+            eventType: eventType
           };
           
           try {
