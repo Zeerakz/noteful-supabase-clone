@@ -13,7 +13,7 @@ export function useBlockOperations(workspaceId?: string, pageId?: string) {
   const { user } = useAuth();
   const { toast } = useToast();
 
-  const { mountedRef, connectionStatus, reconnect } = useBlockRealtime({
+  const { mountedRef } = useBlockRealtime({
     pageId,
     onBlocksChange: setBlocks,
   });
@@ -91,6 +91,7 @@ export function useBlockOperations(workspaceId?: string, pageId?: string) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to create block';
       console.error('Error creating block:', err);
       
+      // Provide specific error messages based on common error patterns
       let userMessage = "Failed to create block. Please try again.";
       if (errorMessage.includes('permission')) {
         userMessage = "You don't have permission to create blocks in this workspace.";
@@ -124,6 +125,7 @@ export function useBlockOperations(workspaceId?: string, pageId?: string) {
     try {
       const data = await BlockOperationsService.updateBlock(id, updates, user.id);
       
+      // Only show success toast for significant updates, not minor ones
       if (updates.content || updates.type) {
         toast({
           title: "Success",
@@ -212,7 +214,5 @@ export function useBlockOperations(workspaceId?: string, pageId?: string) {
     createBlock,
     updateBlock,
     deleteBlock,
-    connectionStatus,
-    reconnect,
   };
 }

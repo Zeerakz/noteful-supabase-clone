@@ -6,16 +6,7 @@ import { BlockUpdateParams } from '@/hooks/blocks/types';
 import { useToast } from '@/hooks/use-toast';
 
 export function useEnhancedBlocks(pageId?: string, workspaceId?: string) {
-  const { 
-    blocks, 
-    loading, 
-    error, 
-    createBlock, 
-    updateBlock, 
-    deleteBlock, 
-    refetch: fetchBlocks,
-    connectionStatus 
-  } = useBlockOperations(workspaceId, pageId);
+  const { blocks, loading, error, createBlock, updateBlock, deleteBlock, refetch: fetchBlocks } = useBlockOperations(workspaceId, pageId);
   const { toast } = useToast();
 
   const {
@@ -42,7 +33,7 @@ export function useEnhancedBlocks(pageId?: string, workspaceId?: string) {
 
     console.log('Enhanced: Starting block creation with optimistic update', { type, parentBlockId: parentBlockId || pageId });
 
-    // Create optimistic block immediately
+    // Optimistic update - create immediately in UI
     const tempId = optimisticCreateBlock({
       workspace_id: workspaceId,
       type: type as any,
@@ -55,34 +46,31 @@ export function useEnhancedBlocks(pageId?: string, workspaceId?: string) {
     console.log('Enhanced: Optimistic block created with tempId', tempId);
 
     try {
-      // Create the actual block (database will generate real UUID)
+      // CRITICAL FIX: Pass only the necessary data to createBlock, excluding any ID
+      // The database will generate its own UUID
       const { data, error } = await createBlock({ 
         type: type as any, 
         content, 
         parent_id: parentBlockId || pageId 
+        // Note: Explicitly NOT passing any ID here - database generates its own
       });
       
       if (error) {
         console.error('Enhanced: Block creation failed, clearing optimistic', error);
         clearOptimisticCreation(tempId);
+        // Error is already handled in useBlockOperations with toast
         return { data: null, error };
       }
 
-      console.log('Enhanced: Block created successfully, will clear optimistic after delay', data);
-      
-      // Clear optimistic update after a longer delay to ensure realtime has time to catch up
-      // This prevents the "flash" effect where the block temporarily disappears
-      setTimeout(() => {
-        console.log('Enhanced: Clearing optimistic creation for', tempId);
-        clearOptimisticCreation(tempId);
-      }, 2000); // Increased delay to 2 seconds
-      
+      console.log('Enhanced: Block created successfully, clearing optimistic', data);
+      clearOptimisticCreation(tempId);
       return { data, error: null };
     } catch (err) {
       console.error('Enhanced: Unexpected error in block creation', err);
       clearOptimisticCreation(tempId);
       const errorMessage = err instanceof Error ? err.message : 'Failed to create block';
       
+      // Enhanced error handling for UUID validation errors
       if (errorMessage.includes('invalid input syntax for type uuid')) {
         console.error('Enhanced: UUID validation error detected - temporary ID may have been sent to database');
         toast({
@@ -109,7 +97,6 @@ export function useEnhancedBlocks(pageId?: string, workspaceId?: string) {
       return { data: null, error: 'Cannot update temporary block' };
     }
 
-    // Apply optimistic update immediately
     optimisticUpdateBlock(id, updates);
 
     try {
@@ -117,20 +104,18 @@ export function useEnhancedBlocks(pageId?: string, workspaceId?: string) {
       
       if (error) {
         clearOptimisticUpdate(id);
+        // Error is already handled in useBlockOperations with toast
         return { data: null, error };
       }
 
-      // Clear optimistic update after a longer delay to allow realtime sync
-      setTimeout(() => {
-        clearOptimisticUpdate(id);
-      }, 1000); // Increased delay
-      
+      clearOptimisticUpdate(id);
       return { data, error: null };
     } catch (err) {
       clearOptimisticUpdate(id);
       const errorMessage = err instanceof Error ? err.message : 'Failed to update block';
       console.error('Unexpected error in enhancedUpdateBlock:', err);
       
+      // Enhanced error handling for UUID validation errors
       if (errorMessage.includes('invalid input syntax for type uuid')) {
         console.error('Enhanced: UUID validation error during update - temporary ID may have been used');
         toast({
@@ -157,7 +142,6 @@ export function useEnhancedBlocks(pageId?: string, workspaceId?: string) {
       return { error: 'Cannot delete temporary block' };
     }
 
-    // Apply optimistic delete immediately
     optimisticDeleteBlock(id);
 
     try {
@@ -165,6 +149,7 @@ export function useEnhancedBlocks(pageId?: string, workspaceId?: string) {
       
       if (error) {
         revertAllOptimisticChanges();
+        // Error is already handled in useBlockOperations with toast
         return { error };
       }
 
@@ -174,6 +159,7 @@ export function useEnhancedBlocks(pageId?: string, workspaceId?: string) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to delete block';
       console.error('Unexpected error in enhancedDeleteBlock:', err);
       
+      // Enhanced error handling for UUID validation errors
       if (errorMessage.includes('invalid input syntax for type uuid')) {
         console.error('Enhanced: UUID validation error during delete - temporary ID may have been used');
         toast({
@@ -203,6 +189,5 @@ export function useEnhancedBlocks(pageId?: string, workspaceId?: string) {
     fetchBlocks,
     hasOptimisticChanges,
     revertAllOptimisticChanges,
-    connectionStatus,
   };
 }

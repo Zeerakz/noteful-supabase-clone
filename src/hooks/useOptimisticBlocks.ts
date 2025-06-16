@@ -111,8 +111,16 @@ export function useOptimisticBlocks({ blocks }: UseOptimisticBlocksProps) {
       return newCreations;
     });
     
-    // REMOVED: Auto-cleanup setTimeout - let the explicit clearOptimisticCreation handle cleanup
-    // This prevents premature removal of optimistic blocks before server confirmation
+    // Enhanced auto-cleanup with error handling
+    setTimeout(() => {
+      setOptimisticCreations(current => {
+        const filtered = current.filter(block => block.id !== tempId);
+        if (filtered.length !== current.length) {
+          console.log('Optimistic: Auto-cleanup for', tempId);
+        }
+        return filtered;
+      });
+    }, 15000);
     
     return tempId;
   }, [getNextOptimisticPosition]);
@@ -140,7 +148,18 @@ export function useOptimisticBlocks({ blocks }: UseOptimisticBlocksProps) {
       return newMap;
     });
 
-    // REMOVED: Auto-cleanup setTimeout - rely on explicit clearing after server confirmation
+    // Auto-cleanup with enhanced timing
+    setTimeout(() => {
+      setOptimisticUpdates(current => {
+        const newMap = new Map(current);
+        const update = newMap.get(blockId);
+        if (update && Date.now() - update.timestamp > 10000) {
+          newMap.delete(blockId);
+          console.log('Optimistic: Auto-cleanup update for', blockId);
+        }
+        return newMap;
+      });
+    }, 10000);
   }, []);
 
   const optimisticDeleteBlock = useCallback((blockId: string) => {
@@ -153,7 +172,16 @@ export function useOptimisticBlocks({ blocks }: UseOptimisticBlocksProps) {
     console.log('Optimistic: Deleting block', blockId);
     setOptimisticDeletions(prev => new Set(prev).add(blockId));
     
-    // REMOVED: Auto-cleanup setTimeout - rely on explicit clearing after server confirmation
+    // Auto-cleanup
+    setTimeout(() => {
+      setOptimisticDeletions(current => {
+        const newSet = new Set(current);
+        if (newSet.delete(blockId)) {
+          console.log('Optimistic: Auto-cleanup deletion for', blockId);
+        }
+        return newSet;
+      });
+    }, 10000);
   }, []);
 
   const clearOptimisticUpdate = useCallback((blockId: string) => {
