@@ -3,7 +3,7 @@ import React, { useRef, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 
 interface CellContainerProps {
-  children: React.ReactNode;
+  children?: React.ReactNode;
   isEditing: boolean;
   onClick?: () => void;
   onBlur?: (e: React.FocusEvent) => void;
