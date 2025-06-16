@@ -42,17 +42,27 @@ export function useOptimisticBlocks({ blocks }: UseOptimisticBlocksProps) {
     })
     .concat(optimisticCreations.filter(optimisticBlock => {
       // Only include optimistic creations that haven't been replaced by real blocks
-      return !blocks.some(realBlock => realBlock.id === optimisticBlock.id);
+      // Check by matching parent_id, type, and position instead of ID
+      return !blocks.some(realBlock => 
+        realBlock.parent_id === optimisticBlock.parent_id &&
+        realBlock.type === optimisticBlock.type &&
+        Math.abs((realBlock.pos || 0) - (optimisticBlock.pos || 0)) <= 1 &&
+        Math.abs(new Date(realBlock.created_time).getTime() - new Date(optimisticBlock.created_time).getTime()) < 10000
+      );
     }));
 
   const optimisticCreateBlock = useCallback((blockData: Partial<Block>) => {
-    const tempId = `temp-${Date.now()}-${Math.random()}`;
+    // Generate a proper UUID v4 for temporary ID
+    const tempId = crypto.randomUUID();
     const now = new Date().toISOString();
     const parentId = blockData.parent_id || '';
     
+    // Ensure we only use core block types that exist in the database
+    const coreBlockType = mapToValidBlockType(blockData.type || 'text');
+    
     const optimisticBlock: Block = {
       id: tempId,
-      type: blockData.type || 'text',
+      type: coreBlockType,
       workspace_id: blockData.workspace_id || '',
       teamspace_id: blockData.teamspace_id || null,
       parent_id: parentId,
@@ -69,12 +79,12 @@ export function useOptimisticBlocks({ blocks }: UseOptimisticBlocksProps) {
 
     setOptimisticCreations(prev => [...prev, optimisticBlock]);
     
-    // Auto-cleanup after 10 seconds
+    // Auto-cleanup after 15 seconds instead of 10
     setTimeout(() => {
       setOptimisticCreations(current => 
         current.filter(block => block.id !== tempId)
       );
-    }, 10000);
+    }, 15000);
     
     return tempId;
   }, [getNextOptimisticPosition]);
@@ -153,4 +163,24 @@ export function useOptimisticBlocks({ blocks }: UseOptimisticBlocksProps) {
     revertAllOptimisticChanges,
     hasOptimisticChanges: optimisticUpdates.size > 0 || optimisticCreations.length > 0 || optimisticDeletions.size > 0,
   };
+}
+
+// Helper function to map extended block types to valid database types
+function mapToValidBlockType(type: string): any {
+  const validTypes = [
+    'page', 'database', 'text', 'image', 'heading_1', 'heading_2', 'heading_3',
+    'todo_item', 'bulleted_list_item', 'numbered_list_item', 'toggle_list',
+    'code', 'quote', 'divider', 'callout'
+  ];
+  
+  // Map extended types to core types
+  const typeMapping: Record<string, string> = {
+    'two_column': 'text',
+    'table': 'text', 
+    'embed': 'text',
+    'file_attachment': 'text'
+  };
+  
+  const mappedType = typeMapping[type] || type;
+  return validTypes.includes(mappedType) ? mappedType : 'text';
 }

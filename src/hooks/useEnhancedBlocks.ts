@@ -23,28 +23,37 @@ export function useEnhancedBlocks(pageId?: string, workspaceId?: string) {
   const enhancedCreateBlock = useCallback(async (type: string, content: any = {}, parentBlockId?: string) => {
     if (!workspaceId || !pageId) return { error: 'Page or workspace not selected', data: null };
 
-    // Optimistic update
+    // Map extended types to valid database types
+    const validType = mapTypeForDatabase(type);
+
+    // Optimistic update with properly mapped type
     const tempId = optimisticCreateBlock({
       workspace_id: workspaceId,
-      type: type as any,
+      type: validType,
       content,
       parent_id: parentBlockId || pageId,
-      pos: Date.now(),
+      pos: Date.now() % 1000000, // Keep position as number
       properties: {},
     });
 
     try {
-      const { data, error } = await createBlock({ type: type as any, content, parent_id: parentBlockId || pageId });
+      const { data, error } = await createBlock({ 
+        type: validType as any, 
+        content, 
+        parent_id: parentBlockId || pageId 
+      });
       
       if (error) {
         clearOptimisticCreation(tempId);
         throw new Error(error);
       }
 
-      clearOptimisticCreation(tempId);
+      // Clear optimistic creation after successful creation
+      setTimeout(() => clearOptimisticCreation(tempId), 100);
       return { data, error: null };
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to create block';
+      clearOptimisticCreation(tempId);
       toast({
         title: "Error",
         description: errorMessage,
@@ -69,6 +78,7 @@ export function useEnhancedBlocks(pageId?: string, workspaceId?: string) {
       return { data, error: null };
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to update block';
+      clearOptimisticUpdate(id);
       toast({
         title: "Error",
         description: errorMessage,
@@ -92,6 +102,7 @@ export function useEnhancedBlocks(pageId?: string, workspaceId?: string) {
       return { error: null };
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to delete block';
+      revertAllOptimisticChanges();
       toast({
         title: "Error",
         description: errorMessage,
@@ -112,4 +123,16 @@ export function useEnhancedBlocks(pageId?: string, workspaceId?: string) {
     hasOptimisticChanges,
     revertAllOptimisticChanges,
   };
+}
+
+// Helper function to map UI types to valid database types
+function mapTypeForDatabase(type: string): string {
+  const typeMapping: Record<string, string> = {
+    'two_column': 'text',
+    'table': 'text',
+    'embed': 'text', 
+    'file_attachment': 'text'
+  };
+  
+  return typeMapping[type] || type;
 }
