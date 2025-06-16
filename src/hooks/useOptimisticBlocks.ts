@@ -1,6 +1,6 @@
 
 import { useState, useCallback } from 'react';
-import { Block } from '@/types/block';
+import { Block, ExtendedBlockType, BlockType } from '@/types/block';
 
 interface OptimisticBlockUpdate {
   id: string;
@@ -166,15 +166,15 @@ export function useOptimisticBlocks({ blocks }: UseOptimisticBlocksProps) {
 }
 
 // Helper function to map extended block types to valid database types
-function mapToValidBlockType(type: string): any {
-  const validTypes = [
+function mapToValidBlockType(type: string): ExtendedBlockType {
+  const validTypes: ExtendedBlockType[] = [
     'page', 'database', 'text', 'image', 'heading_1', 'heading_2', 'heading_3',
     'todo_item', 'bulleted_list_item', 'numbered_list_item', 'toggle_list',
-    'code', 'quote', 'divider', 'callout'
+    'code', 'quote', 'divider', 'callout', 'two_column', 'table', 'embed', 'file_attachment'
   ];
   
   // Map extended types to core types
-  const typeMapping: Record<string, string> = {
+  const typeMapping: Record<string, ExtendedBlockType> = {
     'two_column': 'text',
     'table': 'text', 
     'embed': 'text',
@@ -182,5 +182,5 @@ function mapToValidBlockType(type: string): any {
   };
   
   const mappedType = typeMapping[type] || type;
-  return validTypes.includes(mappedType) ? mappedType : 'text';
+  return validTypes.includes(mappedType as ExtendedBlockType) ? (mappedType as ExtendedBlockType) : 'text';
 }

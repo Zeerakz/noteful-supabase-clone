@@ -4,6 +4,7 @@ import { useOptimisticBlocks } from '@/hooks/useOptimisticBlocks';
 import { useCallback } from 'react';
 import { BlockUpdateParams } from '@/hooks/blocks/types';
 import { useToast } from '@/hooks/use-toast';
+import { ExtendedBlockType, BlockType } from '@/types/block';
 
 export function useEnhancedBlocks(pageId?: string, workspaceId?: string) {
   const { blocks, loading, error, createBlock, updateBlock, deleteBlock, refetch: fetchBlocks } = useBlockOperations(workspaceId, pageId);
@@ -24,7 +25,7 @@ export function useEnhancedBlocks(pageId?: string, workspaceId?: string) {
     if (!workspaceId || !pageId) return { error: 'Page or workspace not selected', data: null };
 
     // Map extended types to valid database types
-    const validType = mapTypeForDatabase(type);
+    const validType = mapTypeForDatabase(type as ExtendedBlockType);
 
     // Optimistic update with properly mapped type
     const tempId = optimisticCreateBlock({
@@ -38,7 +39,7 @@ export function useEnhancedBlocks(pageId?: string, workspaceId?: string) {
 
     try {
       const { data, error } = await createBlock({ 
-        type: validType as any, 
+        type: validType, 
         content, 
         parent_id: parentBlockId || pageId 
       });
@@ -126,13 +127,13 @@ export function useEnhancedBlocks(pageId?: string, workspaceId?: string) {
 }
 
 // Helper function to map UI types to valid database types
-function mapTypeForDatabase(type: string): string {
-  const typeMapping: Record<string, string> = {
+function mapTypeForDatabase(type: ExtendedBlockType): BlockType {
+  const typeMapping: Record<string, BlockType> = {
     'two_column': 'text',
     'table': 'text',
     'embed': 'text', 
     'file_attachment': 'text'
   };
   
-  return typeMapping[type] || type;
+  return typeMapping[type] || (type as BlockType);
 }
