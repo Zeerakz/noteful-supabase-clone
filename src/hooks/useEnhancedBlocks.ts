@@ -31,7 +31,9 @@ export function useEnhancedBlocks(pageId?: string, workspaceId?: string) {
       return { error: errorMessage, data: null };
     }
 
-    // Optimistic update
+    console.log('Enhanced: Starting block creation with optimistic update', { type, parentBlockId: parentBlockId || pageId });
+
+    // Optimistic update - create immediately in UI
     const tempId = optimisticCreateBlock({
       workspace_id: workspaceId,
       type: type as any,
@@ -41,6 +43,8 @@ export function useEnhancedBlocks(pageId?: string, workspaceId?: string) {
       properties: {},
     });
 
+    console.log('Enhanced: Optimistic block created with tempId', tempId);
+
     try {
       const { data, error } = await createBlock({ 
         type: type as any, 
@@ -49,17 +53,19 @@ export function useEnhancedBlocks(pageId?: string, workspaceId?: string) {
       });
       
       if (error) {
+        console.error('Enhanced: Block creation failed, clearing optimistic', error);
         clearOptimisticCreation(tempId);
         // Error is already handled in useBlockOperations with toast
         return { data: null, error };
       }
 
+      console.log('Enhanced: Block created successfully, clearing optimistic', data);
       clearOptimisticCreation(tempId);
       return { data, error: null };
     } catch (err) {
+      console.error('Enhanced: Unexpected error in block creation', err);
       clearOptimisticCreation(tempId);
       const errorMessage = err instanceof Error ? err.message : 'Failed to create block';
-      console.error('Unexpected error in enhancedCreateBlock:', err);
       
       toast({
         title: "Error",

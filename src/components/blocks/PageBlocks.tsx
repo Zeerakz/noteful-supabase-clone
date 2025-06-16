@@ -59,10 +59,13 @@ export function PageBlocks({ workspaceId, pageId, isEditable = false }: PageBloc
 
   const handleCreateBlock = async (params: { type: BlockType; content?: any; parent_id?: string; pos?: number }) => {
     try {
+      console.log('PageBlocks: Creating block with optimistic update', params);
       const { error } = await createBlock(params.type, params.content, params.parent_id);
       if (error) {
         console.error('Failed to create block:', error);
         // Error handling is done in useEnhancedBlocks
+      } else {
+        console.log('PageBlocks: Block created successfully');
       }
     } catch (err) {
       console.error('Unexpected error creating block:', err);
@@ -117,6 +120,12 @@ export function PageBlocks({ workspaceId, pageId, isEditable = false }: PageBloc
   const parentBlocks = blocks.filter(block => block.parent_id === pageId);
   const childBlocks = blocks.filter(block => block.parent_id && block.parent_id !== pageId);
 
+  console.log('PageBlocks: Rendering blocks', { 
+    totalBlocks: blocks.length, 
+    parentBlocks: parentBlocks.length, 
+    hasOptimistic: hasOptimisticChanges 
+  });
+
   return (
     <div className="relative">
       {hasOptimisticChanges && (
@@ -133,6 +142,7 @@ export function PageBlocks({ workspaceId, pageId, isEditable = false }: PageBloc
         onCreateBlock={handleCreateBlock}
         isEditable={isEditable}
         childBlocks={childBlocks}
+        hasOptimisticChanges={hasOptimisticChanges}
       />
     </div>
   );

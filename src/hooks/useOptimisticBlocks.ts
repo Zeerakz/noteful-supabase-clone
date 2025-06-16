@@ -75,19 +75,27 @@ export function useOptimisticBlocks({ blocks }: UseOptimisticBlocksProps) {
       in_trash: false,
     };
 
-    setOptimisticCreations(prev => [...prev, optimisticBlock]);
+    console.log('Optimistic: Creating block', { tempId, parentId, pos: optimisticBlock.pos });
+    setOptimisticCreations(prev => {
+      const newCreations = [...prev, optimisticBlock];
+      console.log('Optimistic: Updated creations list', newCreations.length);
+      return newCreations;
+    });
     
-    // Auto-cleanup after 15 seconds (increased from 10)
+    // Auto-cleanup after 15 seconds
     setTimeout(() => {
-      setOptimisticCreations(current => 
-        current.filter(block => block.id !== tempId)
-      );
+      setOptimisticCreations(current => {
+        const filtered = current.filter(block => block.id !== tempId);
+        console.log('Optimistic: Auto-cleanup for', tempId);
+        return filtered;
+      });
     }, 15000);
     
     return tempId;
   }, [getNextOptimisticPosition]);
 
   const optimisticUpdateBlock = useCallback((blockId: string, updates: Partial<Block>) => {
+    console.log('Optimistic: Updating block', blockId, updates);
     setOptimisticUpdates(prev => {
       const newMap = new Map(prev);
       newMap.set(blockId, {
@@ -98,7 +106,7 @@ export function useOptimisticBlocks({ blocks }: UseOptimisticBlocksProps) {
       return newMap;
     });
 
-    // Auto-cleanup after 10 seconds (reduced from 30)
+    // Auto-cleanup after 10 seconds
     setTimeout(() => {
       setOptimisticUpdates(current => {
         const newMap = new Map(current);
@@ -112,9 +120,10 @@ export function useOptimisticBlocks({ blocks }: UseOptimisticBlocksProps) {
   }, []);
 
   const optimisticDeleteBlock = useCallback((blockId: string) => {
+    console.log('Optimistic: Deleting block', blockId);
     setOptimisticDeletions(prev => new Set(prev).add(blockId));
     
-    // Auto-cleanup after 10 seconds (reduced from 30)
+    // Auto-cleanup after 10 seconds
     setTimeout(() => {
       setOptimisticDeletions(current => {
         const newSet = new Set(current);
@@ -125,6 +134,7 @@ export function useOptimisticBlocks({ blocks }: UseOptimisticBlocksProps) {
   }, []);
 
   const clearOptimisticUpdate = useCallback((blockId: string) => {
+    console.log('Optimistic: Clearing update for', blockId);
     setOptimisticUpdates(prev => {
       const newMap = new Map(prev);
       newMap.delete(blockId);
@@ -133,6 +143,7 @@ export function useOptimisticBlocks({ blocks }: UseOptimisticBlocksProps) {
   }, []);
 
   const clearOptimisticCreation = useCallback((tempId: string) => {
+    console.log('Optimistic: Clearing creation for', tempId);
     setOptimisticCreations(prev => prev.filter(block => block.id !== tempId));
   }, []);
 
@@ -145,6 +156,7 @@ export function useOptimisticBlocks({ blocks }: UseOptimisticBlocksProps) {
   }, []);
 
   const revertAllOptimisticChanges = useCallback(() => {
+    console.log('Optimistic: Reverting all changes');
     setOptimisticUpdates(new Map());
     setOptimisticCreations([]);
     setOptimisticDeletions(new Set());
