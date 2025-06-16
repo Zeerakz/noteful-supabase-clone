@@ -1,10 +1,11 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Plus, Type, Heading1, Heading2, Heading3, List, ListOrdered, Image, Table, Minus, Quote, MessageSquare, ChevronRight, Globe, Paperclip, Columns } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { BlockRenderer } from './BlockRenderer';
 import { SlashMenu } from './SlashMenu';
-import { useBlockOperations } from '@/hooks/blocks/useBlockOperations';
+import { useEnhancedBlocks } from '@/hooks/useEnhancedBlocks';
 import { useSlashMenu } from '@/hooks/useSlashMenu';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
@@ -19,7 +20,14 @@ interface BlockEditorProps {
 }
 
 export function BlockEditor({ pageId, isEditable, workspaceId }: BlockEditorProps) {
-  const { blocks, loading, createBlock, updateBlock, deleteBlock } = useBlockOperations(workspaceId, pageId);
+  const { 
+    blocks, 
+    loading, 
+    createBlock, 
+    updateBlock, 
+    deleteBlock, 
+    hasOptimisticChanges 
+  } = useEnhancedBlocks(pageId, workspaceId);
   const { toast } = useToast();
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -56,7 +64,7 @@ export function BlockEditor({ pageId, isEditable, workspaceId }: BlockEditorProp
       return;
     }
     
-    const { error } = await createBlock({ type: command as BlockType });
+    const { error } = await createBlock(command as BlockType);
     if (error) {
       toast({ title: "Error", description: error, variant: "destructive" });
     }
@@ -184,12 +192,21 @@ export function BlockEditor({ pageId, isEditable, workspaceId }: BlockEditorProp
   const childBlocks = blocks.filter(block => block.parent_id && block.parent_id !== pageId);
 
   return (
-    <div className="space-y-2 p-4" ref={editorRef}>
+    <div className="space-y-2 p-4 relative" ref={editorRef}>
+      {hasOptimisticChanges && (
+        <div className="absolute top-2 right-2 z-10 text-xs text-blue-600 flex items-center gap-1 bg-blue-50 px-2 py-1 rounded-md">
+          <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
+          Syncing...
+        </div>
+      )}
+      
       {parentBlocks.map((block) => (
         <div
           key={block.id}
-          className={`transition-opacity ${
-            block.id.startsWith('temp-') ? 'opacity-60' : 'opacity-100'
+          className={`transition-all duration-200 ${
+            block.id.startsWith('temp-') 
+              ? 'opacity-60 transform scale-[0.99] bg-blue-50/30 rounded-lg' 
+              : 'opacity-100 transform scale-100'
           }`}
         >
           <BlockRenderer

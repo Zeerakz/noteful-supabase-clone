@@ -33,7 +33,7 @@ export function useOptimisticBlocks({ blocks }: UseOptimisticBlocksProps) {
     return maxPos + 1;
   }, [blocks, optimisticCreations]);
 
-  // Apply optimistic updates to blocks list
+  // Apply optimistic updates to blocks list with proper sorting
   const optimisticBlocks = blocks
     .filter(block => !optimisticDeletions.has(block.id))
     .map(block => {
@@ -43,10 +43,18 @@ export function useOptimisticBlocks({ blocks }: UseOptimisticBlocksProps) {
     .concat(optimisticCreations.filter(optimisticBlock => {
       // Only include optimistic creations that haven't been replaced by real blocks
       return !blocks.some(realBlock => realBlock.id === optimisticBlock.id);
-    }));
+    }))
+    .sort((a, b) => {
+      // First sort by parent_id to group blocks
+      if (a.parent_id !== b.parent_id) {
+        return (a.parent_id || '').localeCompare(b.parent_id || '');
+      }
+      // Then sort by position within the same parent
+      return (a.pos || 0) - (b.pos || 0);
+    });
 
   const optimisticCreateBlock = useCallback((blockData: Partial<Block>) => {
-    const tempId = `temp-${Date.now()}-${Math.random()}`;
+    const tempId = `temp-${Date.now()}-${Math.random().toString(36).substring(2)}`;
     const now = new Date().toISOString();
     const parentId = blockData.parent_id || '';
     
@@ -69,12 +77,12 @@ export function useOptimisticBlocks({ blocks }: UseOptimisticBlocksProps) {
 
     setOptimisticCreations(prev => [...prev, optimisticBlock]);
     
-    // Auto-cleanup after 10 seconds
+    // Auto-cleanup after 15 seconds (increased from 10)
     setTimeout(() => {
       setOptimisticCreations(current => 
         current.filter(block => block.id !== tempId)
       );
-    }, 10000);
+    }, 15000);
     
     return tempId;
   }, [getNextOptimisticPosition]);
@@ -90,30 +98,30 @@ export function useOptimisticBlocks({ blocks }: UseOptimisticBlocksProps) {
       return newMap;
     });
 
-    // Auto-cleanup after 30 seconds
+    // Auto-cleanup after 10 seconds (reduced from 30)
     setTimeout(() => {
       setOptimisticUpdates(current => {
         const newMap = new Map(current);
         const update = newMap.get(blockId);
-        if (update && Date.now() - update.timestamp > 30000) {
+        if (update && Date.now() - update.timestamp > 10000) {
           newMap.delete(blockId);
         }
         return newMap;
       });
-    }, 30000);
+    }, 10000);
   }, []);
 
   const optimisticDeleteBlock = useCallback((blockId: string) => {
     setOptimisticDeletions(prev => new Set(prev).add(blockId));
     
-    // Auto-cleanup after 30 seconds
+    // Auto-cleanup after 10 seconds (reduced from 30)
     setTimeout(() => {
       setOptimisticDeletions(current => {
         const newSet = new Set(current);
         newSet.delete(blockId);
         return newSet;
       });
-    }, 30000);
+    }, 10000);
   }, []);
 
   const clearOptimisticUpdate = useCallback((blockId: string) => {

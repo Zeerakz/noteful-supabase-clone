@@ -13,6 +13,7 @@ import { CalloutBlock } from './CalloutBlock';
 import { ToggleBlock } from './ToggleBlock';
 import { EmbedBlock } from './EmbedBlock';
 import { FileAttachmentBlock } from './FileAttachmentBlock';
+import { OptimisticBlockWrapper } from './OptimisticBlockWrapper';
 import { ErrorBoundary } from '@/components/error/ErrorBoundary';
 import { errorHandler } from '@/utils/errorHandler';
 
@@ -24,9 +25,19 @@ interface BlockRendererProps {
   onCreateBlock?: (params: any) => Promise<void>;
   isEditable: boolean;
   childBlocks?: Block[];
+  hasOptimisticChanges?: boolean;
 }
 
-export function BlockRenderer({ block, pageId, onUpdateBlock, onDeleteBlock, onCreateBlock, isEditable, childBlocks = [] }: BlockRendererProps) {
+export function BlockRenderer({ 
+  block, 
+  pageId, 
+  onUpdateBlock, 
+  onDeleteBlock, 
+  onCreateBlock, 
+  isEditable, 
+  childBlocks = [],
+  hasOptimisticChanges = false 
+}: BlockRendererProps) {
   const handleContentUpdate = async (content: any) => {
     await onUpdateBlock(block.id, { content });
   };
@@ -183,7 +194,9 @@ export function BlockRenderer({ block, pageId, onUpdateBlock, onDeleteBlock, onC
         </div>
       }
     >
-      {renderBlock()}
+      <OptimisticBlockWrapper block={block} hasOptimisticChanges={hasOptimisticChanges}>
+        {renderBlock()}
+      </OptimisticBlockWrapper>
     </ErrorBoundary>
   );
 }
