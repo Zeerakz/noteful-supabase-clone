@@ -1,66 +1,28 @@
 
-import { useCallback, useEffect } from 'react';
+import { useCallback } from 'react';
 import { useEnhancedBlocks } from '@/hooks/useEnhancedBlocks';
-import { useRealtimeSubscriptions } from '@/hooks/useRealtimeSubscriptions';
-import { Block } from '@/types/block';
+import { useWorkspaceRealtime } from '@/hooks/useWorkspaceRealtime';
 
 export function useEnhancedBlocksWithRealtime(pageId?: string, workspaceId?: string) {
   const blocksHook = useEnhancedBlocks(pageId, workspaceId);
-  const { subscribe } = useRealtimeSubscriptions();
 
-  // Handle realtime updates for blocks
-  const handleBlockUpdate = useCallback((payload: any) => {
-    const { eventType, new: newBlock, old: oldBlock } = payload;
+  const handleBlockChange = useCallback((payload: any) => {
+    const { new: newBlock, old: oldBlock } = payload;
+    const block = newBlock || oldBlock;
     
-    console.log('📥 Block realtime update:', { eventType, pageId, workspaceId });
-
-    // Filter updates to only relevant blocks
-    const isRelevantBlock = (block: any) => {
-      if (!block) return false;
-      
-      // If we have a specific pageId, only process blocks for that page
-      if (pageId && block.parent_id !== pageId) {
-        return false;
-      }
-      
-      // If we have a workspaceId, only process blocks for that workspace
-      if (workspaceId && block.workspace_id !== workspaceId) {
-        return false;
-      }
-      
-      return true;
-    };
-
-    // Check if this update is relevant to our current context
-    const relevantBlock = newBlock || oldBlock;
-    if (!isRelevantBlock(relevantBlock)) {
-      return;
+    // Only refresh if this change affects our page
+    if (block && (block.parent_id === pageId || block.id === pageId)) {
+      console.log('📥 Block change detected for current page, refreshing blocks...');
+      setTimeout(() => {
+        blocksHook.fetchBlocks();
+      }, 100);
     }
+  }, [pageId, blocksHook.fetchBlocks]);
 
-    // Refresh blocks data to get latest state
-    console.log('🔄 Refreshing blocks due to realtime update');
-    setTimeout(() => {
-      blocksHook.fetchBlocks();
-    }, 100);
-  }, [pageId, workspaceId, blocksHook.fetchBlocks]);
-
-  // Subscribe to workspace-wide block changes
-  useEffect(() => {
-    if (!workspaceId) return;
-
-    console.log('🔗 Setting up workspace block subscription:', workspaceId);
-
-    const unsubscribe = subscribe(
-      {
-        table: 'blocks',
-        filter: `workspace_id=eq.${workspaceId}`,
-        event: '*'
-      },
-      handleBlockUpdate
-    );
-
-    return unsubscribe;
-  }, [workspaceId, subscribe, handleBlockUpdate]);
+  useWorkspaceRealtime({
+    workspaceId,
+    onBlockChange: handleBlockChange,
+  });
 
   return blocksHook;
 }
