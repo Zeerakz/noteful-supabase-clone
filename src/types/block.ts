@@ -14,7 +14,11 @@ export type BlockType =
   | 'code'
   | 'quote'
   | 'divider'
-  | 'callout';
+  | 'callout'
+  | 'two_column'
+  | 'table'
+  | 'embed'
+  | 'file_attachment';
 
 export interface Block {
   id: string;
