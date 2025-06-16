@@ -57,46 +57,46 @@ export function useWorkspaceRealtime({
     const channelName = `workspace_${workspaceId}_${Date.now()}`;
     const channel = supabase.channel(channelName);
 
-    channel.on(
-      'postgres_changes',
-      {
-        event: '*',
-        schema: 'public',
-        table: 'blocks',
-        filter: `workspace_id=eq.${workspaceId}`,
-      },
-      (payload: BlockPayload) => {
-        console.log('📨 Workspace realtime update:', payload);
-        
-        // Handle the payload more safely
-        const newBlock = payload.new;
-        const oldBlock = payload.old;
-        const block = newBlock || oldBlock;
-        
-        if (block && typeof block === 'object' && 'type' in block) {
-          if (block.type === 'page' && callbacksRef.current.onPageChange) {
-            callbacksRef.current.onPageChange(payload);
-          } else if (block.type !== 'page' && callbacksRef.current.onBlockChange) {
-            callbacksRef.current.onBlockChange(payload);
+    channel
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'blocks',
+          filter: `workspace_id=eq.${workspaceId}`,
+        },
+        (payload: BlockPayload) => {
+          console.log('📨 Workspace realtime update:', payload);
+          
+          // Handle the payload more safely
+          const newBlock = payload.new;
+          const oldBlock = payload.old;
+          const block = newBlock || oldBlock;
+          
+          if (block && typeof block === 'object' && 'type' in block) {
+            if (block.type === 'page' && callbacksRef.current.onPageChange) {
+              callbacksRef.current.onPageChange(payload);
+            } else if (block.type !== 'page' && callbacksRef.current.onBlockChange) {
+              callbacksRef.current.onBlockChange(payload);
+            }
           }
         }
-      }
-    );
-
-    channel.subscribe((status) => {
-      console.log(`📡 Workspace subscription status:`, status);
-      if (status === 'SUBSCRIBED') {
-        console.log('✅ Workspace realtime connected successfully');
-      } else if (status === 'TIMED_OUT') {
-        console.log('⏰ Workspace subscription timed out, retrying...');
-        // Retry after a delay
-        setTimeout(() => {
-          if (channelRef.current === channel) {
-            setupSubscription();
-          }
-        }, 2000);
-      }
-    });
+      )
+      .subscribe((status) => {
+        console.log(`📡 Workspace subscription status:`, status);
+        if (status === 'SUBSCRIBED') {
+          console.log('✅ Workspace realtime connected successfully');
+        } else if (status === 'TIMED_OUT') {
+          console.log('⏰ Workspace subscription timed out, retrying...');
+          // Retry after a delay
+          setTimeout(() => {
+            if (channelRef.current === channel) {
+              setupSubscription();
+            }
+          }, 2000);
+        }
+      });
 
     channelRef.current = channel;
   }, [user, workspaceId]);
