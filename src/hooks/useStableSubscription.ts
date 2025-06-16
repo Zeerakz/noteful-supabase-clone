@@ -26,9 +26,10 @@ export function useStableSubscription(
         supabase.removeChannel(channelRef.current);
       } catch (error) {
         console.warn('Warning during subscription cleanup:', error);
+      } finally {
+        channelRef.current = null;
+        isSubscribedRef.current = false;
       }
-      channelRef.current = null;
-      isSubscribedRef.current = false;
     }
   }, []);
 
@@ -63,7 +64,9 @@ export function useStableSubscription(
           ...(config.filter && { filter: config.filter }),
         },
         (payload) => {
-          console.log('📨 Subscription update:', payload.eventType, 'for', config.table);
+          // Fix: Access the correct property from payload
+          const eventType = payload.eventType || (payload as any).event || 'unknown';
+          console.log('📨 Subscription update:', eventType, 'for', config.table);
           onUpdate(payload);
         }
       );
