@@ -2,7 +2,7 @@
 import React from 'react';
 import { useBlockOperations } from '@/hooks/blocks/useBlockOperations';
 import { DraggableBlockList } from './DraggableBlockList';
-import { Block } from '@/types/block';
+import { Block, BlockType } from '@/types/block';
 
 interface PageBlocksProps {
   workspaceId: string;
@@ -21,7 +21,7 @@ export function PageBlocks({ workspaceId, pageId, isEditable = false }: PageBloc
     await deleteBlock(id);
   };
 
-  const handleCreateBlock = async (params: Partial<Block>) => {
+  const handleCreateBlock = async (params: { type: BlockType; content?: any; parent_id?: string; pos?: number }) => {
     await createBlock(params);
   };
 

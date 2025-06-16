@@ -54,7 +54,7 @@ export function useStableSubscription(
       const channel = supabase.channel(channelName);
       
       channel.on(
-        'postgres_changes',
+        'postgres_changes' as any,
         {
           event: config.event || '*',
           schema: config.schema || 'public',
