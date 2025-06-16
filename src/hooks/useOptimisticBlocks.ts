@@ -1,5 +1,4 @@
-
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Block } from '@/types/block';
 
 interface OptimisticBlockUpdate {
@@ -32,6 +31,31 @@ export function useOptimisticBlocks({ blocks }: UseOptimisticBlocksProps) {
     const maxPos = Math.max(...siblingBlocks.map(block => block.pos || 0));
     return maxPos + 1;
   }, [blocks, optimisticCreations]);
+
+  // Clean up optimistic creations when real blocks arrive
+  useEffect(() => {
+    if (blocks.length === 0) return;
+
+    setOptimisticCreations(prev => {
+      const filtered = prev.filter(optimisticBlock => {
+        // Keep optimistic blocks that don't have a corresponding real block
+        const hasRealBlock = blocks.some(realBlock => {
+          // Match by content and position for blocks that might have been created
+          return realBlock.parent_id === optimisticBlock.parent_id &&
+                 realBlock.pos === optimisticBlock.pos &&
+                 Math.abs(new Date(realBlock.created_time).getTime() - new Date(optimisticBlock.created_time).getTime()) < 10000; // Within 10 seconds
+        });
+
+        if (hasRealBlock) {
+          console.log('Optimistic: Removing optimistic creation as real block arrived:', optimisticBlock.id);
+          return false;
+        }
+        return true;
+      });
+
+      return filtered.length !== prev.length ? filtered : prev;
+    });
+  }, [blocks]);
 
   // Apply optimistic updates to blocks list with proper sorting and filtering
   const optimisticBlocks = blocks
@@ -111,17 +135,6 @@ export function useOptimisticBlocks({ blocks }: UseOptimisticBlocksProps) {
       return newCreations;
     });
     
-    // Enhanced auto-cleanup with error handling
-    setTimeout(() => {
-      setOptimisticCreations(current => {
-        const filtered = current.filter(block => block.id !== tempId);
-        if (filtered.length !== current.length) {
-          console.log('Optimistic: Auto-cleanup for', tempId);
-        }
-        return filtered;
-      });
-    }, 15000);
-    
     return tempId;
   }, [getNextOptimisticPosition]);
 
@@ -147,19 +160,6 @@ export function useOptimisticBlocks({ blocks }: UseOptimisticBlocksProps) {
       });
       return newMap;
     });
-
-    // Auto-cleanup with enhanced timing
-    setTimeout(() => {
-      setOptimisticUpdates(current => {
-        const newMap = new Map(current);
-        const update = newMap.get(blockId);
-        if (update && Date.now() - update.timestamp > 10000) {
-          newMap.delete(blockId);
-          console.log('Optimistic: Auto-cleanup update for', blockId);
-        }
-        return newMap;
-      });
-    }, 10000);
   }, []);
 
   const optimisticDeleteBlock = useCallback((blockId: string) => {
@@ -171,17 +171,6 @@ export function useOptimisticBlocks({ blocks }: UseOptimisticBlocksProps) {
 
     console.log('Optimistic: Deleting block', blockId);
     setOptimisticDeletions(prev => new Set(prev).add(blockId));
-    
-    // Auto-cleanup
-    setTimeout(() => {
-      setOptimisticDeletions(current => {
-        const newSet = new Set(current);
-        if (newSet.delete(blockId)) {
-          console.log('Optimistic: Auto-cleanup deletion for', blockId);
-        }
-        return newSet;
-      });
-    }, 10000);
   }, []);
 
   const clearOptimisticUpdate = useCallback((blockId: string) => {
@@ -196,6 +185,26 @@ export function useOptimisticBlocks({ blocks }: UseOptimisticBlocksProps) {
   const clearOptimisticCreation = useCallback((tempId: string) => {
     console.log('Optimistic: Clearing creation for', tempId);
     setOptimisticCreations(prev => prev.filter(block => block.id !== tempId));
+  }, []);
+
+  const clearOptimisticCreationByMatch = useCallback((realBlock: Block) => {
+    console.log('Optimistic: Clearing creation by match for', realBlock.id);
+    setOptimisticCreations(prev => {
+      const filtered = prev.filter(optimisticBlock => {
+        // Remove optimistic blocks that match the real block
+        const isMatch = optimisticBlock.parent_id === realBlock.parent_id &&
+                       optimisticBlock.pos === realBlock.pos &&
+                       optimisticBlock.type === realBlock.type &&
+                       Math.abs(new Date(realBlock.created_time).getTime() - new Date(optimisticBlock.created_time).getTime()) < 10000;
+        
+        if (isMatch) {
+          console.log('Optimistic: Found matching optimistic block to clear:', optimisticBlock.id);
+        }
+        return !isMatch;
+      });
+      
+      return filtered.length !== prev.length ? filtered : prev;
+    });
   }, []);
 
   const clearOptimisticDeletion = useCallback((blockId: string) => {
@@ -220,6 +229,7 @@ export function useOptimisticBlocks({ blocks }: UseOptimisticBlocksProps) {
     optimisticDeleteBlock,
     clearOptimisticUpdate,
     clearOptimisticCreation,
+    clearOptimisticCreationByMatch,
     clearOptimisticDeletion,
     revertAllOptimisticChanges,
     hasOptimisticChanges: optimisticUpdates.size > 0 || optimisticCreations.length > 0 || optimisticDeletions.size > 0,

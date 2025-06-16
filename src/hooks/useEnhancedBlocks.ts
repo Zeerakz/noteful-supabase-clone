@@ -16,6 +16,7 @@ export function useEnhancedBlocks(pageId?: string, workspaceId?: string) {
     optimisticDeleteBlock,
     clearOptimisticUpdate,
     clearOptimisticCreation,
+    clearOptimisticCreationByMatch,
     revertAllOptimisticChanges,
     hasOptimisticChanges,
   } = useOptimisticBlocks({ blocks });
@@ -62,8 +63,13 @@ export function useEnhancedBlocks(pageId?: string, workspaceId?: string) {
         return { data: null, error };
       }
 
-      console.log('Enhanced: Block created successfully, clearing optimistic', data);
-      clearOptimisticCreation(tempId);
+      console.log('Enhanced: Block created successfully, using match-based clearing', data);
+      // Use the new match-based clearing method
+      if (data) {
+        clearOptimisticCreationByMatch(data);
+      } else {
+        clearOptimisticCreation(tempId);
+      }
       return { data, error: null };
     } catch (err) {
       console.error('Enhanced: Unexpected error in block creation', err);
@@ -88,7 +94,7 @@ export function useEnhancedBlocks(pageId?: string, workspaceId?: string) {
       
       return { data: null, error: errorMessage };
     }
-  }, [pageId, workspaceId, createBlock, optimisticCreateBlock, clearOptimisticCreation, toast]);
+  }, [pageId, workspaceId, createBlock, optimisticCreateBlock, clearOptimisticCreation, clearOptimisticCreationByMatch, toast]);
 
   const enhancedUpdateBlock = useCallback(async (id: string, updates: BlockUpdateParams) => {
     // Validate that we're not trying to update with a temporary ID

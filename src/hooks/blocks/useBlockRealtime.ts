@@ -12,20 +12,80 @@ interface UseBlockRealtimeProps {
 export function useBlockRealtime({ pageId, onBlocksChange }: UseBlockRealtimeProps) {
   const mountedRef = useRef(true);
   const subscriptionRef = useRef<any>(null);
+  const lastPageIdRef = useRef<string | undefined>(pageId);
+  const isSubscribingRef = useRef(false);
+
+  const fetchAndUpdateBlocks = useRef(async (currentPageId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('blocks')
+        .select('*')
+        .eq('parent_id', currentPageId)
+        .order('pos', { ascending: true });
+
+      if (error) {
+        console.error('📡 BlockRealtime: Error fetching blocks:', error);
+        return;
+      }
+
+      if (mountedRef.current && lastPageIdRef.current === currentPageId) {
+        const normalizedBlocks = (data || []).map(normalizeBlock);
+        
+        // Filter out any blocks with temporary IDs (shouldn't happen but safety check)
+        const validBlocks = normalizedBlocks.filter(block => {
+          if (block.id.startsWith('temp-')) {
+            console.warn('📡 BlockRealtime: Filtered out block with temporary ID:', block.id);
+            return false;
+          }
+          return true;
+        });
+        
+        onBlocksChange(validBlocks);
+      }
+    } catch (err) {
+      console.error('📡 BlockRealtime: Unexpected error fetching blocks:', err);
+    }
+  });
+
+  const cleanup = useRef(() => {
+    console.log('📡 BlockRealtime: Cleaning up subscription for page:', lastPageIdRef.current);
+    if (subscriptionRef.current) {
+      try {
+        supabase.removeChannel(subscriptionRef.current);
+      } catch (error) {
+        console.warn('📡 BlockRealtime: Warning during cleanup:', error);
+      }
+      subscriptionRef.current = null;
+    }
+    isSubscribingRef.current = false;
+  });
 
   useEffect(() => {
     if (!pageId) {
-      console.log('BlockRealtime: No pageId, skipping subscription');
+      console.log('📡 BlockRealtime: No pageId, cleaning up subscription');
+      cleanup.current();
       return;
     }
 
     // Validate pageId is not a temporary ID
     if (pageId.startsWith('temp-')) {
-      console.warn('BlockRealtime: Attempted to subscribe with temporary pageId:', pageId);
+      console.warn('📡 BlockRealtime: Attempted to subscribe with temporary pageId:', pageId);
+      return;
+    }
+
+    // If pageId changed, cleanup and create new subscription
+    if (lastPageIdRef.current !== pageId) {
+      cleanup.current();
+      lastPageIdRef.current = pageId;
+    }
+
+    // Don't create subscription if already subscribing or already subscribed to this page
+    if (isSubscribingRef.current || (subscriptionRef.current && lastPageIdRef.current === pageId)) {
       return;
     }
 
     console.log('📡 BlockRealtime: Setting up subscription for page:', pageId);
+    isSubscribingRef.current = true;
 
     const channelName = `blocks_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
     
@@ -52,76 +112,51 @@ export function useBlockRealtime({ pageId, onBlocksChange }: UseBlockRealtimePro
             return;
           }
 
-          // Refetch blocks when changes occur
-          if (mountedRef.current) {
-            fetchAndUpdateBlocks();
+          // Only process if we're still mounted and this is for the current page
+          if (mountedRef.current && lastPageIdRef.current === pageId) {
+            // Add a small delay to avoid race conditions with optimistic updates
+            setTimeout(() => {
+              if (mountedRef.current && lastPageIdRef.current === pageId) {
+                fetchAndUpdateBlocks.current(pageId);
+              }
+            }, 50);
           }
         }
       )
       .subscribe((status) => {
         console.log('📡 BlockRealtime: Subscription status:', status, 'for channel:', channelName);
         
-        if (status === 'CHANNEL_ERROR') {
+        if (status === 'SUBSCRIBED' && lastPageIdRef.current === pageId) {
+          isSubscribingRef.current = false;
+          subscriptionRef.current = channel;
+          // Initial fetch after successful subscription
+          fetchAndUpdateBlocks.current(pageId);
+        } else if (status === 'CHANNEL_ERROR') {
           console.error('📡 BlockRealtime: Channel error, will retry subscription');
-          // Retry subscription after a short delay
+          isSubscribingRef.current = false;
+          // Retry subscription after a delay
           setTimeout(() => {
-            if (mountedRef.current && pageId) {
+            if (mountedRef.current && lastPageIdRef.current === pageId) {
               console.log('📡 BlockRealtime: Retrying subscription for page:', pageId);
-              // The useEffect will handle the retry when dependencies change
+              // Trigger effect to retry
+              lastPageIdRef.current = undefined;
             }
           }, 1000);
+        } else if (status === 'CLOSED') {
+          isSubscribingRef.current = false;
+          if (subscriptionRef.current === channel) {
+            subscriptionRef.current = null;
+          }
         }
       });
 
-    subscriptionRef.current = channel;
-
-    const fetchAndUpdateBlocks = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('blocks')
-          .select('*')
-          .eq('parent_id', pageId)
-          .order('pos', { ascending: true });
-
-        if (error) {
-          console.error('📡 BlockRealtime: Error fetching blocks:', error);
-          return;
-        }
-
-        if (mountedRef.current) {
-          const normalizedBlocks = (data || []).map(normalizeBlock);
-          
-          // Filter out any blocks with temporary IDs (shouldn't happen but safety check)
-          const validBlocks = normalizedBlocks.filter(block => {
-            if (block.id.startsWith('temp-')) {
-              console.warn('📡 BlockRealtime: Filtered out block with temporary ID:', block.id);
-              return false;
-            }
-            return true;
-          });
-          
-          onBlocksChange(validBlocks);
-        }
-      } catch (err) {
-        console.error('📡 BlockRealtime: Unexpected error fetching blocks:', err);
-      }
-    };
-
-    // Initial fetch
-    fetchAndUpdateBlocks();
-
-    return () => {
-      console.log('📡 BlockRealtime: Cleaning up subscription for channel:', channelName);
-      if (subscriptionRef.current) {
-        supabase.removeChannel(subscriptionRef.current);
-        subscriptionRef.current = null;
-      }
-    };
+    return cleanup.current;
   }, [pageId, onBlocksChange]);
 
   useEffect(() => {
     return () => {
       mountedRef.current = false;
+      cleanup.current();
     };
   }, []);
 

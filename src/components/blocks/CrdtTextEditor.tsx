@@ -39,20 +39,39 @@ export function CrdtTextEditor({
   const [lastSavedContent, setLastSavedContent] = useState('');
   const [hasError, setHasError] = useState(false);
   const isUpdatingRef = useRef(false);
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const isTemporaryBlockRef = useRef(blockId.startsWith('temp-'));
+
+  // Update temporary block status when blockId changes
+  useEffect(() => {
+    isTemporaryBlockRef.current = blockId.startsWith('temp-');
+    console.log('CrdtTextEditor: Block ID changed, isTemporary:', isTemporaryBlockRef.current, blockId);
+  }, [blockId]);
 
   const { ytext, isConnected, updateContent, getDocumentContent } = useYjsDocument({
     pageId: `${pageId}-${blockId}`,
     onContentChange: (content) => {
-      if (!isUpdatingRef.current && content !== lastSavedContent) {
-        console.log('Y.js content changed, saving:', content);
-        try {
-          onContentChange({ text: content });
-          setLastSavedContent(content);
-          setHasError(false);
-        } catch (error) {
-          console.error('Error saving content via Y.js:', error);
-          setHasError(true);
+      if (!isUpdatingRef.current && content !== lastSavedContent && !isTemporaryBlockRef.current) {
+        console.log('Y.js content changed, scheduling save:', content);
+        
+        // Clear any existing save timeout
+        if (saveTimeoutRef.current) {
+          clearTimeout(saveTimeoutRef.current);
         }
+        
+        // Debounce saves to prevent too frequent updates
+        saveTimeoutRef.current = setTimeout(() => {
+          if (!isTemporaryBlockRef.current) {
+            try {
+              onContentChange({ text: content });
+              setLastSavedContent(content);
+              setHasError(false);
+            } catch (error) {
+              console.error('Error saving content via Y.js:', error);
+              setHasError(true);
+            }
+          }
+        }, 300);
         
         // Update editor display if needed
         if (editorRef.current && editorRef.current.innerHTML !== content) {
@@ -76,14 +95,26 @@ export function CrdtTextEditor({
     }
   }, [initialContent, updateContent, ytext]);
 
-  // Simplified save function
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  // Simplified save function with temporary block protection
   const saveContent = async () => {
-    if (!editorRef.current) return;
+    if (!editorRef.current || isTemporaryBlockRef.current) {
+      console.log('CrdtTextEditor: Skipping save - temporary block or no editor ref');
+      return;
+    }
     
     const content = editorRef.current.innerHTML || '';
     if (content === lastSavedContent) return;
 
-    console.log('Saving content:', content);
+    console.log('CrdtTextEditor: Saving content:', content);
     try {
       // Save via parent component
       await onContentChange({ text: content });
@@ -108,7 +139,7 @@ export function CrdtTextEditor({
     
     const content = editorRef.current?.innerHTML || '';
     
-    // Update Y.js immediately for real-time collaboration
+    // Update Y.js immediately for real-time collaboration (even for temporary blocks)
     if (isConnected && content !== getDocumentContent()) {
       isUpdatingRef.current = true;
       updateContent(content);
@@ -122,7 +153,10 @@ export function CrdtTextEditor({
   
   const handleBlur = () => {
     setIsFocused(false);
-    saveContent();
+    // Only save if not a temporary block
+    if (!isTemporaryBlockRef.current) {
+      saveContent();
+    }
     setTimeout(() => setShowToolbar(false), 150);
   };
 
@@ -272,7 +306,9 @@ export function CrdtTextEditor({
     
     setTimeout(() => {
       handleInput();
-      saveContent();
+      if (!isTemporaryBlockRef.current) {
+        saveContent();
+      }
     }, 100);
   };
 
@@ -291,7 +327,9 @@ export function CrdtTextEditor({
     
     setTimeout(() => {
       handleInput();
-      saveContent();
+      if (!isTemporaryBlockRef.current) {
+        saveContent();
+      }
     }, 100);
   };
 
@@ -326,7 +364,9 @@ export function CrdtTextEditor({
           break;
         case 's':
           e.preventDefault();
-          saveContent();
+          if (!isTemporaryBlockRef.current) {
+            saveContent();
+          }
           break;
       }
     }
@@ -362,6 +402,7 @@ export function CrdtTextEditor({
           transition-all duration-200
           ${isFocused ? 'ring-2 ring-ring border-ring bg-background' : ''}
           ${hasError ? 'border-red-500' : ''}
+          ${isTemporaryBlockRef.current ? 'opacity-70' : ''}
         `}
         data-placeholder={placeholder}
         style={{
@@ -393,10 +434,13 @@ export function CrdtTextEditor({
           )}
           <div
             className={`w-2 h-2 rounded-full ${
-              hasError ? 'bg-red-500' : isConnected ? 'bg-green-500' : 'bg-yellow-500'
+              hasError ? 'bg-red-500' : 
+              isTemporaryBlockRef.current ? 'bg-yellow-500' :
+              isConnected ? 'bg-green-500' : 'bg-yellow-500'
             }`}
             title={
               hasError ? 'Save error' : 
+              isTemporaryBlockRef.current ? 'Creating block...' :
               isConnected ? 'Connected (CRDT enabled)' : 'Disconnected'
             }
           />

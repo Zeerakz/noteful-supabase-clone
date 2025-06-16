@@ -17,12 +17,17 @@ export function useYjsDocument({ pageId, onContentChange }: YjsDocumentOptions) 
   const isLocalUpdateRef = useRef(false);
   const isSubscribedRef = useRef<boolean>(false);
   const pageIdRef = useRef<string>(pageId);
+  const mountedRef = useRef(true);
+  const initializingRef = useRef(false);
 
   // Create a shared text object for the document content
   const ytext = ydoc.getText('content');
 
   const broadcastUpdate = useCallback(async (update: Uint8Array) => {
-    if (!user || !pageId || isLocalUpdateRef.current) return;
+    if (!user || !pageId || isLocalUpdateRef.current || !mountedRef.current) return;
+
+    // Don't broadcast if we're still initializing
+    if (initializingRef.current) return;
 
     try {
       // Convert Uint8Array to base64 for transmission
@@ -47,7 +52,7 @@ export function useYjsDocument({ pageId, onContentChange }: YjsDocumentOptions) 
   }, [user, pageId]);
 
   const applyRemoteUpdate = useCallback((deltaBlob: string, senderId: string) => {
-    if (!user || senderId === user.id) return;
+    if (!user || senderId === user.id || !mountedRef.current) return;
 
     try {
       // Convert base64 back to Uint8Array
@@ -71,7 +76,7 @@ export function useYjsDocument({ pageId, onContentChange }: YjsDocumentOptions) 
   }, [ytext]);
 
   const updateContent = useCallback((content: string) => {
-    if (ytext.toString() === content) return;
+    if (!mountedRef.current || ytext.toString() === content) return;
 
     isLocalUpdateRef.current = true;
     ytext.delete(0, ytext.length);
@@ -97,14 +102,17 @@ export function useYjsDocument({ pageId, onContentChange }: YjsDocumentOptions) 
   // Set up Y.js update listener
   useEffect(() => {
     const updateHandler = (update: Uint8Array, origin: any) => {
+      if (!mountedRef.current) return;
+
       // Only broadcast updates that originate from local changes
-      if (origin !== 'remote' && !isLocalUpdateRef.current) {
+      if (origin !== 'remote' && !isLocalUpdateRef.current && !initializingRef.current) {
         broadcastUpdate(update);
       }
       
       // Notify parent component of content changes
-      if (onContentChange && !isLocalUpdateRef.current) {
-        onContentChange(ytext.toString());
+      if (onContentChange && !isLocalUpdateRef.current && !initializingRef.current) {
+        const content = ytext.toString();
+        onContentChange(content);
       }
     };
 
@@ -117,7 +125,7 @@ export function useYjsDocument({ pageId, onContentChange }: YjsDocumentOptions) 
 
   // Set up real-time channel for Y.js updates
   useEffect(() => {
-    if (!user || !pageId) {
+    if (!user || !pageId || !mountedRef.current) {
       cleanup();
       return;
     }
@@ -131,12 +139,17 @@ export function useYjsDocument({ pageId, onContentChange }: YjsDocumentOptions) 
     cleanup();
     pageIdRef.current = pageId;
 
+    // Set initializing flag to prevent broadcasts during setup
+    initializingRef.current = true;
+
     const randomId = Math.random().toString(36).substring(7);
     const channelName = `yjs:${pageId}:${user.id}:${randomId}`;
     
     const channel = supabase
       .channel(channelName)
       .on('broadcast', { event: 'yjs-update' }, (payload) => {
+        if (!mountedRef.current) return;
+
         const { pageId: updatePageId, userId, deltaBlob } = payload.payload;
         
         if (updatePageId === pageId && userId !== user.id) {
@@ -144,13 +157,20 @@ export function useYjsDocument({ pageId, onContentChange }: YjsDocumentOptions) 
         }
       })
       .subscribe((status) => {
+        if (!mountedRef.current) return;
+
         console.log('Y.js channel status:', status, 'for channel:', channelName);
         if (status === 'SUBSCRIBED') {
           isSubscribedRef.current = true;
           setIsConnected(true);
+          // Clear initializing flag after successful connection
+          setTimeout(() => {
+            initializingRef.current = false;
+          }, 100);
         } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
           isSubscribedRef.current = false;
           setIsConnected(false);
+          initializingRef.current = false;
           if (channelRef.current === channel) {
             channelRef.current = null;
           }
@@ -161,6 +181,14 @@ export function useYjsDocument({ pageId, onContentChange }: YjsDocumentOptions) 
 
     return cleanup;
   }, [user, pageId, applyRemoteUpdate, cleanup]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      mountedRef.current = false;
+      cleanup();
+    };
+  }, [cleanup]);
 
   return {
     ydoc,
