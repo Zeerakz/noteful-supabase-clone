@@ -1,7 +1,9 @@
+
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMentionNotifications } from './useMentionNotifications';
+import { useStableSubscription } from '@/hooks/useStableSubscription';
 
 export interface Comment {
   id: string;
@@ -18,9 +20,7 @@ export function useComments(blockId?: string) {
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
   const { extractMentions, notifyMention } = useMentionNotifications();
-  const channelRef = useRef<any>(null);
-  const isSubscribedRef = useRef<boolean>(false);
-  const blockIdRef = useRef<string | undefined>(blockId);
+  const mountedRef = useRef(true);
 
   const fetchComments = async () => {
     if (!blockId || !user) return;
@@ -41,6 +41,41 @@ export function useComments(blockId?: string) {
       setLoading(false);
     }
   };
+
+  // Handle realtime updates
+  const handleRealtimeUpdate = useCallback((payload: any) => {
+    if (!mountedRef.current) return;
+    
+    console.log('Realtime comments update:', payload);
+    
+    if (payload.eventType === 'INSERT') {
+      const newComment = payload.new as Comment;
+      setComments(prev => {
+        if (prev.some(comment => comment.id === newComment.id)) {
+          return prev;
+        }
+        return [...prev, newComment].sort((a, b) => 
+          new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+        );
+      });
+    } else if (payload.eventType === 'UPDATE') {
+      const updatedComment = payload.new as Comment;
+      setComments(prev => prev.map(comment => 
+        comment.id === updatedComment.id ? updatedComment : comment
+      ));
+    } else if (payload.eventType === 'DELETE') {
+      const deletedComment = payload.old as Comment;
+      setComments(prev => prev.filter(comment => comment.id !== deletedComment.id));
+    }
+  }, []);
+
+  // Set up realtime subscription
+  const subscriptionConfig = blockId && user ? {
+    table: 'comments',
+    filter: `block_id=eq.${blockId}`,
+  } : null;
+
+  useStableSubscription(subscriptionConfig, handleRealtimeUpdate, [blockId, user?.id]);
 
   const createComment = async (body: string, parentCommentId?: string) => {
     if (!user || !blockId) return { error: 'User not authenticated or block not selected' };
@@ -141,96 +176,20 @@ export function useComments(blockId?: string) {
     }
   };
 
-  const cleanup = useCallback(() => {
-    if (channelRef.current && isSubscribedRef.current) {
-      try {
-        console.log('Cleaning up comments channel subscription');
-        channelRef.current.unsubscribe();
-        supabase.removeChannel(channelRef.current);
-        isSubscribedRef.current = false;
-      } catch (error) {
-        console.warn('Error removing comments channel:', error);
-      }
-      channelRef.current = null;
-    }
-  }, []);
-
   useEffect(() => {
+    mountedRef.current = true;
+    
     if (!blockId || !user) {
-      cleanup();
       setComments([]);
-      return;
-    }
-
-    // Only create new subscription if block changed
-    if (blockIdRef.current === blockId && channelRef.current && isSubscribedRef.current) {
       return;
     }
 
     fetchComments();
 
-    // Cleanup existing subscription
-    cleanup();
-    blockIdRef.current = blockId;
-
-    // Create unique channel name with random component
-    const randomId = Math.random().toString(36).substring(7);
-    const channelName = `comments:${blockId}:${user.id}:${randomId}`;
-    console.log('Creating comments channel:', channelName);
-
-    // Set up realtime subscription for comments
-    const channel = supabase.channel(channelName);
-    
-    channel.on(
-      'postgres_changes',
-      {
-        event: '*',
-        schema: 'public',
-        table: 'comments',
-        filter: `block_id=eq.${blockId}`
-      },
-      (payload) => {
-        console.log('Realtime comments update:', payload);
-        
-        if (payload.eventType === 'INSERT') {
-          const newComment = payload.new as Comment;
-          setComments(prev => {
-            if (prev.some(comment => comment.id === newComment.id)) {
-              return prev;
-            }
-            return [...prev, newComment].sort((a, b) => 
-              new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-            );
-          });
-        } else if (payload.eventType === 'UPDATE') {
-          const updatedComment = payload.new as Comment;
-          setComments(prev => prev.map(comment => 
-            comment.id === updatedComment.id ? updatedComment : comment
-          ));
-        } else if (payload.eventType === 'DELETE') {
-          const deletedComment = payload.old as Comment;
-          setComments(prev => prev.filter(comment => comment.id !== deletedComment.id));
-        }
-      }
-    );
-
-    // Subscribe only once and track status
-    channel.subscribe((status) => {
-      console.log('Comments subscription status:', status, 'for channel:', channelName);
-      if (status === 'SUBSCRIBED') {
-        isSubscribedRef.current = true;
-      } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
-        isSubscribedRef.current = false;
-        if (channelRef.current === channel) {
-          channelRef.current = null;
-        }
-      }
-    });
-
-    channelRef.current = channel;
-
-    return cleanup;
-  }, [user?.id, blockId, cleanup]);
+    return () => {
+      mountedRef.current = false;
+    };
+  }, [user?.id, blockId]);
 
   return {
     comments,

@@ -10,7 +10,7 @@ import {
   PageCreateRequest 
 } from '@/services/pageMutationService';
 import { usePageHierarchy } from '@/hooks/usePageHierarchy';
-import { supabase } from '@/integrations/supabase/client';
+import { useStableSubscription } from '@/hooks/useStableSubscription';
 
 export function usePages(workspaceId?: string) {
   const [pages, setPages] = useState<Block[]>([]);
@@ -18,9 +18,7 @@ export function usePages(workspaceId?: string) {
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
   const { updatePageHierarchy: updateHierarchy } = usePageHierarchy();
-  const channelRef = useRef<any>(null);
   const mountedRef = useRef(true);
-  const subscriptionActiveRef = useRef(false);
 
   const fetchPages = async () => {
     if (!user || !workspaceId) return;
@@ -43,6 +41,45 @@ export function usePages(workspaceId?: string) {
       }
     }
   };
+
+  // Handle realtime updates
+  const handleRealtimeUpdate = (payload: any) => {
+    if (!mountedRef.current) return;
+    
+    console.log('Realtime pages update:', payload);
+    
+    if (payload.eventType === 'INSERT') {
+      const newPage = payload.new as Block;
+      if (newPage.type === 'page') {
+        setPages(prev => {
+          if (prev.some(page => page.id === newPage.id)) {
+            return prev;
+          }
+          return [...prev, newPage].sort((a, b) => a.pos - b.pos);
+        });
+      }
+    } else if (payload.eventType === 'UPDATE') {
+      const updatedPage = payload.new as Block;
+      if (updatedPage.type === 'page') {
+        setPages(prev => prev.map(page => 
+          page.id === updatedPage.id ? updatedPage : page
+        ).sort((a, b) => a.pos - b.pos));
+      }
+    } else if (payload.eventType === 'DELETE') {
+      const deletedPage = payload.old as Block;
+      if (deletedPage.type === 'page') {
+        setPages(prev => prev.filter(page => page.id !== deletedPage.id));
+      }
+    }
+  };
+
+  // Set up realtime subscription
+  const subscriptionConfig = workspaceId ? {
+    table: 'blocks',
+    filter: `workspace_id=eq.${workspaceId}`,
+  } : null;
+
+  useStableSubscription(subscriptionConfig, handleRealtimeUpdate, [workspaceId]);
 
   const createPage = async (title: string, parentId?: string, databaseId?: string) => {
     if (!user || !workspaceId) return { error: 'User not authenticated or workspace not selected' };
@@ -83,26 +120,10 @@ export function usePages(workspaceId?: string) {
     return { error };
   };
 
-  const cleanup = () => {
-    if (channelRef.current && subscriptionActiveRef.current) {
-      try {
-        console.log('Cleaning up pages channel subscription');
-        channelRef.current.unsubscribe();
-        // Remove the channel from Supabase client
-        supabase.removeChannel(channelRef.current);
-      } catch (error) {
-        console.warn('Error cleaning up pages channel:', error);
-      }
-      channelRef.current = null;
-      subscriptionActiveRef.current = false;
-    }
-  };
-
   useEffect(() => {
     mountedRef.current = true;
 
     if (!user || !workspaceId) {
-      cleanup();
       setPages([]);
       setLoading(false);
       return;
@@ -110,76 +131,8 @@ export function usePages(workspaceId?: string) {
 
     fetchPages();
 
-    // Cleanup existing subscription before creating new one
-    cleanup();
-
-    // Create a unique channel name to avoid conflicts
-    const channelName = `pages_${workspaceId}_${user.id}_${Date.now()}`;
-    console.log('Creating pages channel:', channelName);
-    
-    try {
-      const channel = supabase.channel(channelName);
-
-      channel.on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'blocks',
-          filter: `workspace_id=eq.${workspaceId}`
-        },
-        (payload) => {
-          if (!mountedRef.current) return;
-          
-          console.log('Realtime pages update:', payload);
-          
-          if (payload.eventType === 'INSERT') {
-            const newPage = payload.new as Block;
-            if (newPage.type === 'page') {
-              setPages(prev => {
-                // Prevent duplicates
-                if (prev.some(page => page.id === newPage.id)) {
-                  return prev;
-                }
-                return [...prev, newPage].sort((a, b) => a.pos - b.pos);
-              });
-            }
-          } else if (payload.eventType === 'UPDATE') {
-            const updatedPage = payload.new as Block;
-            if (updatedPage.type === 'page') {
-              setPages(prev => prev.map(page => 
-                page.id === updatedPage.id ? updatedPage : page
-              ).sort((a, b) => a.pos - b.pos));
-            }
-          } else if (payload.eventType === 'DELETE') {
-            const deletedPage = payload.old as Block;
-            if (deletedPage.type === 'page') {
-              setPages(prev => prev.filter(page => page.id !== deletedPage.id));
-            }
-          }
-        }
-      );
-
-      // Subscribe with proper error handling
-      channel.subscribe((status, err) => {
-        console.log('Pages subscription status:', status);
-        if (err) {
-          console.error('Pages subscription error:', err);
-        } else if (status === 'SUBSCRIBED') {
-          subscriptionActiveRef.current = true;
-        } else if (status === 'CLOSED') {
-          subscriptionActiveRef.current = false;
-        }
-      });
-
-      channelRef.current = channel;
-    } catch (error) {
-      console.error('Error setting up pages channel:', error);
-    }
-
     return () => {
       mountedRef.current = false;
-      cleanup();
     };
   }, [user?.id, workspaceId]);
 

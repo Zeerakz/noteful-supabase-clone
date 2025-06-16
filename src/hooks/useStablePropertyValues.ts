@@ -3,6 +3,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { PropertyValue } from '@/types/database';
 import { errorHandler } from '@/utils/errorHandler';
+import { useStableSubscription } from '@/hooks/useStableSubscription';
 
 interface UseStablePropertyValuesResult {
   properties: PropertyValue[];
@@ -16,22 +17,7 @@ export function useStablePropertyValues(pageId?: string): UseStablePropertyValue
   const [properties, setProperties] = useState<PropertyValue[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const channelRef = useRef<any>(null);
   const mountedRef = useRef(true);
-  const lastPageIdRef = useRef<string | null>(null);
-
-  const cleanup = useCallback(() => {
-    if (channelRef.current) {
-      try {
-        console.log('🧹 Cleaning up page properties subscription');
-        channelRef.current.unsubscribe();
-        supabase.removeChannel(channelRef.current);
-      } catch (err) {
-        console.warn('Warning during subscription cleanup:', err);
-      }
-      channelRef.current = null;
-    }
-  }, []);
 
   const fetchProperties = useCallback(async () => {
     if (!pageId || !mountedRef.current) {
@@ -73,59 +59,40 @@ export function useStablePropertyValues(pageId?: string): UseStablePropertyValue
     }
   }, [pageId]);
 
-  const setupRealtimeSubscription = useCallback(() => {
-    if (!pageId || channelRef.current) return;
+  // Handle realtime updates
+  const handleRealtimeUpdate = useCallback((payload: any) => {
+    if (!mountedRef.current) return;
+    
+    console.log('📨 Properties update:', payload.eventType);
+    
+    setProperties(prev => {
+      switch (payload.eventType) {
+        case 'INSERT':
+          const newProperty = payload.new as PropertyValue;
+          if (prev.some(p => p.id === newProperty.id)) return prev;
+          return [...prev, newProperty];
+        
+        case 'UPDATE':
+          const updatedProperty = payload.new as PropertyValue;
+          return prev.map(p => p.id === updatedProperty.id ? updatedProperty : p);
+        
+        case 'DELETE':
+          const deletedProperty = payload.old as Partial<PropertyValue> & { id: string };
+          return prev.filter(p => p.id !== deletedProperty.id);
+        
+        default:
+          return prev;
+      }
+    });
+  }, []);
 
-    try {
-      const channelName = `property_values_${pageId}_${Date.now()}`;
-      console.log('📡 Setting up properties subscription:', channelName);
-      
-      const channel = supabase.channel(channelName);
-      
-      channel.on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'property_values',
-          filter: `page_id=eq.${pageId}`
-        },
-        (payload) => {
-          if (!mountedRef.current) return;
-          
-          console.log('📨 Properties update:', payload.eventType);
-          
-          setProperties(prev => {
-            switch (payload.eventType) {
-              case 'INSERT':
-                const newProperty = payload.new as PropertyValue;
-                if (prev.some(p => p.id === newProperty.id)) return prev;
-                return [...prev, newProperty];
-              
-              case 'UPDATE':
-                const updatedProperty = payload.new as PropertyValue;
-                return prev.map(p => p.id === updatedProperty.id ? updatedProperty : p);
-              
-              case 'DELETE':
-                const deletedProperty = payload.old as Partial<PropertyValue> & { id: string };
-                return prev.filter(p => p.id !== deletedProperty.id);
-              
-              default:
-                return prev;
-            }
-          });
-        }
-      );
+  // Set up realtime subscription
+  const subscriptionConfig = pageId ? {
+    table: 'property_values',
+    filter: `page_id=eq.${pageId}`,
+  } : null;
 
-      channel.subscribe((status) => {
-        console.log('📡 Properties subscription status:', status);
-      });
-
-      channelRef.current = channel;
-    } catch (err) {
-      console.error('❌ Failed to setup properties subscription:', err);
-    }
-  }, [pageId]);
+  useStableSubscription(subscriptionConfig, handleRealtimeUpdate, [pageId]);
 
   const updateProperty = useCallback(async (propertyId: string, value: string) => {
     if (!pageId) return { error: 'No page selected' };
@@ -153,33 +120,23 @@ export function useStablePropertyValues(pageId?: string): UseStablePropertyValue
   }, [pageId]);
 
   const retry = useCallback(() => {
-    cleanup();
     fetchProperties();
-    setupRealtimeSubscription();
-  }, [cleanup, fetchProperties, setupRealtimeSubscription]);
+  }, [fetchProperties]);
 
   useEffect(() => {
     mountedRef.current = true;
     
-    // Only fetch if pageId changed
-    if (pageId !== lastPageIdRef.current) {
-      cleanup();
-      lastPageIdRef.current = pageId;
-      
-      if (pageId) {
-        fetchProperties();
-        setupRealtimeSubscription();
-      } else {
-        setProperties([]);
-        setLoading(false);
-      }
+    if (pageId) {
+      fetchProperties();
+    } else {
+      setProperties([]);
+      setLoading(false);
     }
 
     return () => {
       mountedRef.current = false;
-      cleanup();
     };
-  }, [pageId, cleanup, fetchProperties, setupRealtimeSubscription]);
+  }, [pageId, fetchProperties]);
 
   return {
     properties,

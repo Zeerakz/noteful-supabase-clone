@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Block } from '@/types/block';
 import { supabase } from '@/integrations/supabase/client';
+import { useStableSubscription } from '@/hooks/useStableSubscription';
 
 const formatPageProperties = (page: any): Block => {
   const properties = (typeof page.properties === 'object' && page.properties !== null && !Array.isArray(page.properties))
@@ -16,9 +17,7 @@ export function useDatabasePages(databaseId: string, workspaceId: string) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
-  const channelRef = useRef<any>(null);
   const mountedRef = useRef(true);
-  const subscriptionActiveRef = useRef(false);
 
   const fetchPages = async () => {
     if (!user || !databaseId) return;
@@ -46,6 +45,39 @@ export function useDatabasePages(databaseId: string, workspaceId: string) {
       }
     }
   };
+
+  // Handle realtime updates
+  const handleRealtimeUpdate = (payload: any) => {
+    if (!mountedRef.current) return;
+    
+    console.log('Realtime database pages update:', payload);
+    
+    if (payload.eventType === 'INSERT') {
+      const newPage = formatPageProperties(payload.new);
+      setPages(prev => {
+        if (prev.some(page => page.id === newPage.id)) {
+          return prev;
+        }
+        return [newPage, ...prev];
+      });
+    } else if (payload.eventType === 'UPDATE') {
+      const updatedPage = formatPageProperties(payload.new);
+      setPages(prev => prev.map(page => 
+        page.id === updatedPage.id ? updatedPage : page
+      ));
+    } else if (payload.eventType === 'DELETE') {
+      const deletedPage = payload.old as Partial<Block> & { id: string };
+      setPages(prev => prev.filter(page => page.id !== deletedPage.id));
+    }
+  };
+
+  // Set up realtime subscription
+  const subscriptionConfig = databaseId ? {
+    table: 'blocks',
+    filter: `properties->>database_id=eq.${databaseId}`,
+  } : null;
+
+  useStableSubscription(subscriptionConfig, handleRealtimeUpdate, [databaseId]);
 
   const createDatabasePage = async (title: string) => {
     if (!user || !databaseId || !workspaceId) {
@@ -112,25 +144,10 @@ export function useDatabasePages(databaseId: string, workspaceId: string) {
     return { error: error ? error.message : null };
   };
 
-  const cleanup = () => {
-    if (channelRef.current && subscriptionActiveRef.current) {
-      try {
-        console.log('Cleaning up database pages channel subscription');
-        channelRef.current.unsubscribe();
-        supabase.removeChannel(channelRef.current);
-      } catch (error) {
-        console.warn('Error removing database pages channel:', error);
-      }
-      channelRef.current = null;
-      subscriptionActiveRef.current = false;
-    }
-  };
-
   useEffect(() => {
     mountedRef.current = true;
 
     if (!user || !databaseId) {
-      cleanup();
       setPages([]);
       setLoading(false);
       return;
@@ -138,65 +155,8 @@ export function useDatabasePages(databaseId: string, workspaceId: string) {
 
     fetchPages();
 
-    // Cleanup existing subscription
-    cleanup();
-
-    // Create a unique channel name
-    const channelName = `database_pages_${databaseId}_${user.id}_${Date.now()}`;
-    console.log('Creating database pages channel:', channelName);
-    
-    const channel = supabase.channel(channelName);
-
-    channel.on(
-      'postgres_changes',
-      {
-        event: '*',
-        schema: 'public',
-        table: 'blocks',
-        filter: `properties->>database_id=eq.${databaseId}`
-      },
-      (payload) => {
-        if (!mountedRef.current) return;
-        
-        console.log('Realtime database pages update:', payload);
-        
-        if (payload.eventType === 'INSERT') {
-          const newPage = formatPageProperties(payload.new);
-          setPages(prev => {
-            if (prev.some(page => page.id === newPage.id)) {
-              return prev;
-            }
-            return [newPage, ...prev];
-          });
-        } else if (payload.eventType === 'UPDATE') {
-          const updatedPage = formatPageProperties(payload.new);
-          setPages(prev => prev.map(page => 
-            page.id === updatedPage.id ? updatedPage : page
-          ));
-        } else if (payload.eventType === 'DELETE') {
-          const deletedPage = payload.old as Partial<Block> & { id: string };
-          setPages(prev => prev.filter(page => page.id !== deletedPage.id));
-        }
-      }
-    );
-
-    // Subscribe and track status
-    channel.subscribe((status, err) => {
-      console.log('Database pages subscription status:', status);
-      if (err) {
-        console.error('Database pages subscription error:', err);
-      } else if (status === 'SUBSCRIBED') {
-        subscriptionActiveRef.current = true;
-      } else if (status === 'CLOSED') {
-        subscriptionActiveRef.current = false;
-      }
-    });
-
-    channelRef.current = channel;
-
     return () => {
       mountedRef.current = false;
-      cleanup();
     };
   }, [user?.id, databaseId]);
 

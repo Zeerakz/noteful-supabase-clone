@@ -17,37 +17,47 @@ export function useOptimisticBlocks({ blocks }: UseOptimisticBlocksProps) {
   const [optimisticCreations, setOptimisticCreations] = useState<Block[]>([]);
   const [optimisticDeletions, setOptimisticDeletions] = useState<Set<string>>(new Set());
 
-  // Apply optimistic updates to the blocks list
+  // Apply optimistic updates to blocks list
   const optimisticBlocks = blocks
     .filter(block => !optimisticDeletions.has(block.id))
     .map(block => {
       const update = optimisticUpdates.get(block.id);
       return update ? { ...block, ...update.updates } : block;
     })
-    .concat(optimisticCreations)
-    .sort((a, b) => a.pos - b.pos);
+    .concat(optimisticCreations.filter(optimisticBlock => {
+      // Only include optimistic creations that haven't been replaced by real blocks
+      return !blocks.some(realBlock => realBlock.id === optimisticBlock.id);
+    }));
 
   const optimisticCreateBlock = useCallback((blockData: Partial<Block>) => {
-    const tempId = `temp-block-${Date.now()}-${Math.random()}`;
+    const tempId = `temp-${Date.now()}-${Math.random()}`;
+    const now = new Date().toISOString();
     const optimisticBlock: Block = {
       id: tempId,
-      workspace_id: blockData.workspace_id || '',
-      teamspace_id: blockData.teamspace_id ?? null,
       type: blockData.type || 'text',
+      workspace_id: blockData.workspace_id || '',
+      teamspace_id: blockData.teamspace_id || null,
       parent_id: blockData.parent_id || null,
       properties: blockData.properties || {},
       content: blockData.content || {},
       pos: blockData.pos ?? Date.now(),
-      created_time: new Date().toISOString(),
-      last_edited_time: new Date().toISOString(),
+      created_time: now,
+      last_edited_time: now,
       created_by: blockData.created_by || null,
       last_edited_by: null,
       archived: false,
       in_trash: false,
-      ...blockData,
     };
 
     setOptimisticCreations(prev => [...prev, optimisticBlock]);
+    
+    // Auto-cleanup after 10 seconds
+    setTimeout(() => {
+      setOptimisticCreations(current => 
+        current.filter(block => block.id !== tempId)
+      );
+    }, 10000);
+    
     return tempId;
   }, []);
 
@@ -61,10 +71,31 @@ export function useOptimisticBlocks({ blocks }: UseOptimisticBlocksProps) {
       });
       return newMap;
     });
+
+    // Auto-cleanup after 30 seconds
+    setTimeout(() => {
+      setOptimisticUpdates(current => {
+        const newMap = new Map(current);
+        const update = newMap.get(blockId);
+        if (update && Date.now() - update.timestamp > 30000) {
+          newMap.delete(blockId);
+        }
+        return newMap;
+      });
+    }, 30000);
   }, []);
 
   const optimisticDeleteBlock = useCallback((blockId: string) => {
     setOptimisticDeletions(prev => new Set(prev).add(blockId));
+    
+    // Auto-cleanup after 30 seconds
+    setTimeout(() => {
+      setOptimisticDeletions(current => {
+        const newSet = new Set(current);
+        newSet.delete(blockId);
+        return newSet;
+      });
+    }, 30000);
   }, []);
 
   const clearOptimisticUpdate = useCallback((blockId: string) => {
@@ -77,6 +108,14 @@ export function useOptimisticBlocks({ blocks }: UseOptimisticBlocksProps) {
 
   const clearOptimisticCreation = useCallback((tempId: string) => {
     setOptimisticCreations(prev => prev.filter(block => block.id !== tempId));
+  }, []);
+
+  const clearOptimisticDeletion = useCallback((blockId: string) => {
+    setOptimisticDeletions(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(blockId);
+      return newSet;
+    });
   }, []);
 
   const revertAllOptimisticChanges = useCallback(() => {
@@ -92,6 +131,7 @@ export function useOptimisticBlocks({ blocks }: UseOptimisticBlocksProps) {
     optimisticDeleteBlock,
     clearOptimisticUpdate,
     clearOptimisticCreation,
+    clearOptimisticDeletion,
     revertAllOptimisticChanges,
     hasOptimisticChanges: optimisticUpdates.size > 0 || optimisticCreations.length > 0 || optimisticDeletions.size > 0,
   };

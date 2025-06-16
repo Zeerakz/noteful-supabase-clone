@@ -1,3 +1,4 @@
+
 import { useBlockOperations } from '@/hooks/blocks/useBlockOperations';
 import { useOptimisticBlocks } from '@/hooks/useOptimisticBlocks';
 import { useCallback } from 'react';
@@ -36,14 +37,11 @@ export function useEnhancedBlocks(pageId?: string, workspaceId?: string) {
       const { data, error } = await createBlock({ type: type as any, content, parent_id: parentBlockId || pageId });
       
       if (error) {
-        // Revert optimistic update on error
         clearOptimisticCreation(tempId);
         throw new Error(error);
       }
 
-      // Clear optimistic update on success
       clearOptimisticCreation(tempId);
-      
       return { data, error: null };
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to create block';
@@ -57,21 +55,17 @@ export function useEnhancedBlocks(pageId?: string, workspaceId?: string) {
   }, [pageId, workspaceId, createBlock, optimisticCreateBlock, clearOptimisticCreation, toast]);
 
   const enhancedUpdateBlock = useCallback(async (id: string, updates: BlockUpdateParams) => {
-    // Optimistic update
     optimisticUpdateBlock(id, updates);
 
     try {
       const { data, error } = await updateBlock(id, updates);
       
       if (error) {
-        // Revert optimistic update on error
         clearOptimisticUpdate(id);
         throw new Error(error);
       }
 
-      // Clear optimistic update on success
       clearOptimisticUpdate(id);
-      
       return { data, error: null };
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to update block';
@@ -85,14 +79,12 @@ export function useEnhancedBlocks(pageId?: string, workspaceId?: string) {
   }, [updateBlock, optimisticUpdateBlock, clearOptimisticUpdate, toast]);
 
   const enhancedDeleteBlock = useCallback(async (id: string) => {
-    // Optimistic update
     optimisticDeleteBlock(id);
 
     try {
       const { error } = await deleteBlock(id);
       
       if (error) {
-        // Revert optimistic update on error
         revertAllOptimisticChanges();
         throw new Error(error);
       }
