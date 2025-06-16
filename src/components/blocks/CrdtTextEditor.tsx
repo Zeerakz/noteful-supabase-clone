@@ -39,69 +39,20 @@ export function CrdtTextEditor({
   const [lastSavedContent, setLastSavedContent] = useState('');
   const [hasError, setHasError] = useState(false);
   const isUpdatingRef = useRef(false);
-  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const isTemporaryBlockRef = useRef(blockId.startsWith('temp-'));
-  const hasAutoFocusedRef = useRef(false);
-
-  // Update temporary block status when blockId changes
-  useEffect(() => {
-    const wasTemporary = isTemporaryBlockRef.current;
-    isTemporaryBlockRef.current = blockId.startsWith('temp-');
-    
-    console.log('CrdtTextEditor: Block ID changed, isTemporary:', isTemporaryBlockRef.current, blockId);
-    
-    // Reset auto-focus flag when block ID changes
-    if (wasTemporary !== isTemporaryBlockRef.current) {
-      hasAutoFocusedRef.current = false;
-    }
-  }, [blockId]);
-
-  // Auto-focus for temporary blocks
-  useEffect(() => {
-    if (isTemporaryBlockRef.current && !hasAutoFocusedRef.current && editorRef.current) {
-      console.log('CrdtTextEditor: Auto-focusing temporary block:', blockId);
-      
-      // Use a small delay to ensure the DOM is ready and avoid race conditions
-      const focusTimeout = setTimeout(() => {
-        if (editorRef.current && isTemporaryBlockRef.current && !hasAutoFocusedRef.current) {
-          try {
-            editorRef.current.focus();
-            hasAutoFocusedRef.current = true;
-            console.log('CrdtTextEditor: Successfully auto-focused temporary block');
-          } catch (error) {
-            console.warn('CrdtTextEditor: Failed to auto-focus temporary block:', error);
-          }
-        }
-      }, 50);
-
-      return () => clearTimeout(focusTimeout);
-    }
-  }, [blockId, isTemporaryBlockRef.current]);
 
   const { ytext, isConnected, updateContent, getDocumentContent } = useYjsDocument({
     pageId: `${pageId}-${blockId}`,
     onContentChange: (content) => {
-      if (!isUpdatingRef.current && content !== lastSavedContent && !isTemporaryBlockRef.current) {
-        console.log('Y.js content changed, scheduling save:', content);
-        
-        // Clear any existing save timeout
-        if (saveTimeoutRef.current) {
-          clearTimeout(saveTimeoutRef.current);
+      if (!isUpdatingRef.current && content !== lastSavedContent) {
+        console.log('Y.js content changed, saving:', content);
+        try {
+          onContentChange({ text: content });
+          setLastSavedContent(content);
+          setHasError(false);
+        } catch (error) {
+          console.error('Error saving content via Y.js:', error);
+          setHasError(true);
         }
-        
-        // Debounce saves to prevent too frequent updates
-        saveTimeoutRef.current = setTimeout(() => {
-          if (!isTemporaryBlockRef.current) {
-            try {
-              onContentChange({ text: content });
-              setLastSavedContent(content);
-              setHasError(false);
-            } catch (error) {
-              console.error('Error saving content via Y.js:', error);
-              setHasError(true);
-            }
-          }
-        }, 300);
         
         // Update editor display if needed
         if (editorRef.current && editorRef.current.innerHTML !== content) {
@@ -125,26 +76,14 @@ export function CrdtTextEditor({
     }
   }, [initialContent, updateContent, ytext]);
 
-  // Cleanup timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
-      }
-    };
-  }, []);
-
-  // Simplified save function with temporary block protection
+  // Simplified save function
   const saveContent = async () => {
-    if (!editorRef.current || isTemporaryBlockRef.current) {
-      console.log('CrdtTextEditor: Skipping save - temporary block or no editor ref');
-      return;
-    }
+    if (!editorRef.current) return;
     
     const content = editorRef.current.innerHTML || '';
     if (content === lastSavedContent) return;
 
-    console.log('CrdtTextEditor: Saving content:', content);
+    console.log('Saving content:', content);
     try {
       // Save via parent component
       await onContentChange({ text: content });
@@ -169,7 +108,7 @@ export function CrdtTextEditor({
     
     const content = editorRef.current?.innerHTML || '';
     
-    // Update Y.js immediately for real-time collaboration (even for temporary blocks)
+    // Update Y.js immediately for real-time collaboration
     if (isConnected && content !== getDocumentContent()) {
       isUpdatingRef.current = true;
       updateContent(content);
@@ -183,10 +122,7 @@ export function CrdtTextEditor({
   
   const handleBlur = () => {
     setIsFocused(false);
-    // Only save if not a temporary block
-    if (!isTemporaryBlockRef.current) {
-      saveContent();
-    }
+    saveContent();
     setTimeout(() => setShowToolbar(false), 150);
   };
 
@@ -336,9 +272,7 @@ export function CrdtTextEditor({
     
     setTimeout(() => {
       handleInput();
-      if (!isTemporaryBlockRef.current) {
-        saveContent();
-      }
+      saveContent();
     }, 100);
   };
 
@@ -357,9 +291,7 @@ export function CrdtTextEditor({
     
     setTimeout(() => {
       handleInput();
-      if (!isTemporaryBlockRef.current) {
-        saveContent();
-      }
+      saveContent();
     }, 100);
   };
 
@@ -394,9 +326,7 @@ export function CrdtTextEditor({
           break;
         case 's':
           e.preventDefault();
-          if (!isTemporaryBlockRef.current) {
-            saveContent();
-          }
+          saveContent();
           break;
       }
     }
@@ -432,7 +362,6 @@ export function CrdtTextEditor({
           transition-all duration-200
           ${isFocused ? 'ring-2 ring-ring border-ring bg-background' : ''}
           ${hasError ? 'border-red-500' : ''}
-          ${isTemporaryBlockRef.current ? 'opacity-70' : ''}
         `}
         data-placeholder={placeholder}
         style={{
@@ -464,13 +393,10 @@ export function CrdtTextEditor({
           )}
           <div
             className={`w-2 h-2 rounded-full ${
-              hasError ? 'bg-red-500' : 
-              isTemporaryBlockRef.current ? 'bg-yellow-500' :
-              isConnected ? 'bg-green-500' : 'bg-yellow-500'
+              hasError ? 'bg-red-500' : isConnected ? 'bg-green-500' : 'bg-yellow-500'
             }`}
             title={
               hasError ? 'Save error' : 
-              isTemporaryBlockRef.current ? 'Creating block...' :
               isConnected ? 'Connected (CRDT enabled)' : 'Disconnected'
             }
           />

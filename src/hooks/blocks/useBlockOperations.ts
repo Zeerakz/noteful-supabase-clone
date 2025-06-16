@@ -1,22 +1,23 @@
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { useStableSubscription } from '@/hooks/useStableSubscription';
 import { Block, BlockType, BlockUpdateParams } from './types';
-import { BlockOperationsService } from '@/services/blockOperationsService';
-import { useBlockRealtime } from './useBlockRealtime';
-import { useToast } from '@/hooks/use-toast';
+
+// Helper function to convert Supabase data to our Block type
+const normalizeBlock = (data: any): Block => ({
+  ...data,
+  properties: data.properties && typeof data.properties === 'object' ? data.properties : {},
+  content: data.content && typeof data.content === 'object' ? data.content : null,
+});
 
 export function useBlockOperations(workspaceId?: string, pageId?: string) {
   const [blocks, setBlocks] = useState<Block[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
-  const { toast } = useToast();
-
-  const { mountedRef } = useBlockRealtime({
-    pageId,
-    onBlocksChange: setBlocks,
-  });
+  const mountedRef = useRef(true);
 
   const fetchBlocks = useCallback(async () => {
     if (!pageId || !workspaceId) {
@@ -29,29 +30,88 @@ export function useBlockOperations(workspaceId?: string, pageId?: string) {
       setLoading(true);
       setError(null);
       
-      const data = await BlockOperationsService.fetchBlocks(pageId, workspaceId);
+      const { data, error } = await supabase
+        .from('blocks')
+        .select('*')
+        .eq('parent_id', pageId)
+        .order('pos', { ascending: true });
+
+      if (error) throw error;
 
       if (mountedRef.current) {
-        setBlocks(data);
+        const normalizedBlocks = (data || []).map(normalizeBlock);
+        setBlocks(normalizedBlocks);
       }
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch blocks';
-      console.error('Error fetching blocks:', err);
-      
       if (mountedRef.current) {
-        setError(errorMessage);
-        toast({
-          title: "Error",
-          description: "Failed to load page content. Please refresh and try again.",
-          variant: "destructive",
-        });
+        setError(err instanceof Error ? err.message : 'Failed to fetch blocks');
       }
     } finally {
       if (mountedRef.current) {
         setLoading(false);
       }
     }
-  }, [pageId, workspaceId, mountedRef, toast]);
+  }, [pageId, workspaceId]);
+
+  // Helper function to get the next position for a block
+  const getNextBlockPosition = async (parentId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('blocks')
+        .select('pos')
+        .eq('parent_id', parentId)
+        .order('pos', { ascending: false })
+        .limit(1);
+
+      if (error) throw error;
+
+      const maxPos = data && data.length > 0 ? data[0].pos : -1;
+      return maxPos + 1;
+    } catch (err) {
+      console.error('Error getting next block position:', err);
+      // Fallback to a simple increment if query fails
+      return Date.now() % 1000000; // Use modulo to keep within integer range
+    }
+  };
+
+  // Handle realtime updates
+  const handleRealtimeUpdate = useCallback((payload: any) => {
+    if (!mountedRef.current) return;
+
+    const { eventType, new: newRecord, old: oldRecord } = payload;
+
+    setBlocks(prev => {
+      switch (eventType) {
+        case 'INSERT':
+          const newBlock = normalizeBlock(newRecord);
+          if (prev.some(block => block.id === newBlock.id)) {
+            return prev;
+          }
+          return [...prev, newBlock].sort((a, b) => (a.pos || 0) - (b.pos || 0));
+
+        case 'UPDATE':
+          const updatedBlock = normalizeBlock(newRecord);
+          return prev.map(block => 
+            block.id === updatedBlock.id ? updatedBlock : block
+          ).sort((a, b) => (a.pos || 0) - (b.pos || 0));
+
+        case 'DELETE':
+          const deletedBlock = oldRecord;
+          return prev.filter(block => block.id !== deletedBlock.id);
+
+        default:
+          return prev;
+      }
+    });
+  }, []);
+
+  // Set up realtime subscription
+  const subscriptionConfig = pageId ? {
+    table: 'blocks',
+    filter: `parent_id=eq.${pageId}`,
+  } : null;
+
+  useStableSubscription(subscriptionConfig, handleRealtimeUpdate, [pageId]);
 
   const createBlock = useCallback(async (params: {
     type: BlockType;
@@ -60,141 +120,88 @@ export function useBlockOperations(workspaceId?: string, pageId?: string) {
     pos?: number;
   }) => {
     if (!user || !workspaceId || !pageId) {
-      const errorMessage = 'Missing required parameters - user not authenticated or workspace/page not selected';
-      toast({
-        title: "Error",
-        description: "Cannot create block. Please ensure you're logged in and have selected a workspace.",
-        variant: "destructive",
-      });
-      return { data: null, error: errorMessage };
+      return { data: null, error: 'Missing required parameters' };
     }
 
     try {
       const parentId = params.parent_id || pageId;
-      
-      const data = await BlockOperationsService.createBlock({
-        workspaceId,
-        userId: user.id,
-        type: params.type,
-        content: params.content,
-        parent_id: parentId,
-        pos: params.pos,
-      });
+      const nextPos = params.pos !== undefined ? params.pos : await getNextBlockPosition(parentId);
 
-      toast({
-        title: "Success",
-        description: `Successfully created a new ${params.type.replace('_', ' ')} block.`,
-      });
+      const { data, error } = await supabase
+        .from('blocks')
+        .insert({
+          workspace_id: workspaceId,
+          type: params.type,
+          parent_id: parentId,
+          content: params.content || {},
+          pos: nextPos,
+          created_by: user.id,
+          last_edited_by: user.id,
+          properties: {},
+        })
+        .select()
+        .single();
 
-      return { data, error: null };
+      if (error) throw error;
+
+      return { data: normalizeBlock(data), error: null };
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to create block';
-      console.error('Error creating block:', err);
-      
-      // Provide specific error messages based on common error patterns
-      let userMessage = "Failed to create block. Please try again.";
-      if (errorMessage.includes('permission')) {
-        userMessage = "You don't have permission to create blocks in this workspace.";
-      } else if (errorMessage.includes('position')) {
-        userMessage = "Could not determine block position. Please refresh the page and try again.";
-      } else if (errorMessage.includes('violates row-level security')) {
-        userMessage = "Permission denied. Please check your workspace access.";
-      }
-      
-      toast({
-        title: "Error",
-        description: userMessage,
-        variant: "destructive",
-      });
-      
-      return { data: null, error: errorMessage };
+      return { data: null, error: err instanceof Error ? err.message : 'Failed to create block' };
     }
-  }, [user, workspaceId, pageId, toast]);
+  }, [user, workspaceId, pageId, getNextBlockPosition]);
 
   const updateBlock = useCallback(async (id: string, updates: BlockUpdateParams) => {
     if (!user) {
-      const errorMessage = 'User not authenticated';
-      toast({
-        title: "Error",
-        description: "You must be logged in to update blocks.",
-        variant: "destructive",
-      });
-      return { data: null, error: errorMessage };
+      return { data: null, error: 'User not authenticated' };
     }
 
     try {
-      const data = await BlockOperationsService.updateBlock(id, updates, user.id);
-      
-      // Only show success toast for significant updates, not minor ones
-      if (updates.content || updates.type) {
-        toast({
-          title: "Success",
-          description: "Block updated successfully.",
-        });
+      // Convert our updates to match Supabase schema
+      const supabaseUpdates: any = {
+        ...updates,
+        last_edited_by: user.id,
+        last_edited_time: new Date().toISOString(),
+      };
+
+      // Ensure properties is JSON-compatible
+      if (updates.properties) {
+        supabaseUpdates.properties = updates.properties;
       }
-      
-      return { data, error: null };
+
+      // Ensure content is JSON-compatible
+      if (updates.content !== undefined) {
+        supabaseUpdates.content = updates.content;
+      }
+
+      const { data, error } = await supabase
+        .from('blocks')
+        .update(supabaseUpdates)
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      return { data: normalizeBlock(data), error: null };
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to update block';
-      console.error('Error updating block:', err);
-      
-      let userMessage = "Failed to update block. Please try again.";
-      if (errorMessage.includes('permission')) {
-        userMessage = "You don't have permission to update this block.";
-      } else if (errorMessage.includes('not found')) {
-        userMessage = "Block not found. It may have been deleted.";
-      }
-      
-      toast({
-        title: "Error",
-        description: userMessage,
-        variant: "destructive",
-      });
-      
-      return { data: null, error: errorMessage };
+      return { data: null, error: err instanceof Error ? err.message : 'Failed to update block' };
     }
-  }, [user, toast]);
+  }, [user]);
 
   const deleteBlock = useCallback(async (id: string) => {
-    if (!user) {
-      const errorMessage = 'User not authenticated';
-      toast({
-        title: "Error",
-        description: "You must be logged in to delete blocks.",
-        variant: "destructive",
-      });
-      return { error: errorMessage };
-    }
-
     try {
-      await BlockOperationsService.deleteBlock(id);
-      
-      toast({
-        title: "Success",
-        description: "Block deleted successfully.",
-      });
-      
+      const { error } = await supabase
+        .from('blocks')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
       return { error: null };
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to delete block';
-      console.error('Error deleting block:', err);
-      
-      let userMessage = "Failed to delete block. Please try again.";
-      if (errorMessage.includes('permission')) {
-        userMessage = "You don't have permission to delete this block.";
-      } else if (errorMessage.includes('not found')) {
-        userMessage = "Block not found. It may have already been deleted.";
-      }
-      
-      toast({
-        title: "Error",
-        description: userMessage,
-        variant: "destructive",
-      });
-      
-      return { error: errorMessage };
+      return { error: err instanceof Error ? err.message : 'Failed to delete block' };
     }
-  }, [user, toast]);
+  }, []);
 
   useEffect(() => {
     mountedRef.current = true;

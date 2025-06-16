@@ -1,11 +1,8 @@
 
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { DatabaseField } from '@/types/database';
-import { CellContainer } from './cells/CellContainer';
-import { BasicTextEditor } from './cells/BasicTextEditor';
-import { FieldCellEditor } from './cells/FieldCellEditor';
-import { useCellEditing } from './cells/useCellEditing';
+import { FieldEditor } from '../fields/FieldEditor';
 
 interface EditableCellProps {
   value: string;
@@ -43,51 +40,135 @@ export function EditableCell({
   allFields = [],
   computedValue
 }: EditableCellProps) {
-  const {
-    isEditing,
-    localValue,
-    setLocalValue,
-    containerRef,
-    handleClick,
-    handleKeyDown,
-    handleBlur,
-    handleFocus
-  } = useCellEditing({
-    value,
-    onSave: onChange,
-    onBlur,
-    onFocus,
-    multiline
-  });
+  const [isEditing, setIsEditing] = useState(false);
+  const [localValue, setLocalValue] = useState(value);
+  const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  if (!isEditing) {
-    return (
-      <CellContainer
-        isEditing={false}
-        onClick={disabled ? undefined : handleClick}
-        className={className}
-        placeholder={placeholder}
-        disabled={disabled}
-        value={value}
-      />
-    );
-  }
+  // Update local value when prop value changes
+  useEffect(() => {
+    setLocalValue(value);
+  }, [value]);
 
-  return (
-    <div ref={containerRef}>
-      <CellContainer
-        isEditing={true}
-        onBlur={handleBlur}
-        onFocus={handleFocus}
-        onKeyDown={handleKeyDown}
-        className={className}
-      >
-        {/* If it's a field with specific type, use FieldCellEditor */}
-        {field && workspaceId && pageId ? (
-          <FieldCellEditor
+  // Clear timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const handleClick = () => {
+    if (!disabled) {
+      setIsEditing(true);
+    }
+  };
+
+  const handleSave = () => {
+    // Clear any pending save timeout
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+      saveTimeoutRef.current = null;
+    }
+    
+    onChange(localValue);
+    setIsEditing(false);
+    onBlur?.();
+  };
+
+  const handleCancel = () => {
+    // Clear any pending save timeout
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+      saveTimeoutRef.current = null;
+    }
+    
+    setLocalValue(value);
+    setIsEditing(false);
+    onBlur?.();
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !multiline) {
+      e.preventDefault();
+      e.stopPropagation();
+      handleSave();
+    } else if (e.key === 'Enter' && multiline && (e.metaKey || e.ctrlKey)) {
+      e.preventDefault();
+      e.stopPropagation();
+      handleSave();
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      e.stopPropagation();
+      handleCancel();
+    }
+  };
+
+  const handleBlur = (e: React.FocusEvent) => {
+    // Prevent blur handling if the focus is moving to an element within our container
+    const relatedTarget = e.relatedTarget as HTMLElement;
+    if (relatedTarget && containerRef.current?.contains(relatedTarget)) {
+      return;
+    }
+
+    // Also check if we're clicking on another cell in the same row
+    if (relatedTarget && relatedTarget.closest('tr') === e.currentTarget.closest('tr')) {
+      return;
+    }
+
+    // Use a timeout to allow for potential re-focus events
+    saveTimeoutRef.current = setTimeout(() => {
+      if (isEditing) {
+        handleSave();
+      }
+    }, 100);
+  };
+
+  const handleFocus = () => {
+    // Clear any pending save timeout when focusing
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+      saveTimeoutRef.current = null;
+    }
+    onFocus?.();
+  };
+
+  // For field editors, handle their change events
+  const handleFieldChange = (newValue: string) => {
+    setLocalValue(newValue);
+  };
+
+  // Focus input when editing starts
+  useEffect(() => {
+    if (isEditing && inputRef.current) {
+      inputRef.current.focus();
+      inputRef.current.select();
+    }
+  }, [isEditing]);
+
+  if (isEditing) {
+    // If it's a field with specific type, use FieldEditor in controlled mode
+    if (field && workspaceId && pageId) {
+      return (
+        <div
+          ref={containerRef}
+          className={cn(
+            "w-full h-full px-2 py-1",
+            "text-sm font-normal text-foreground leading-relaxed",
+            "tracking-normal bg-transparent",
+            className
+          )}
+          onBlur={handleBlur}
+          onFocus={handleFocus}
+          onKeyDown={handleKeyDown}
+          tabIndex={-1}
+        >
+          <FieldEditor
             field={field}
             value={localValue}
-            onChange={setLocalValue}
+            onChange={handleFieldChange}
             workspaceId={workspaceId}
             pageId={pageId}
             pageData={pageData}
@@ -95,19 +176,53 @@ export function EditableCell({
             allFields={allFields}
             computedValue={computedValue}
           />
-        ) : (
-          /* For simple text/title fields, use BasicTextEditor */
-          <BasicTextEditor
-            value={localValue}
-            onChange={setLocalValue}
-            onBlur={handleBlur}
-            onFocus={handleFocus}
-            onKeyDown={handleKeyDown}
-            className={className}
-            multiline={multiline}
-          />
-        )}
-      </CellContainer>
+        </div>
+      );
+    }
+
+    // For simple text/title fields, use input/textarea
+    const InputComponent = multiline ? 'textarea' : 'input';
+    
+    return (
+      <div ref={containerRef}>
+        <InputComponent
+          ref={inputRef as any}
+          value={localValue}
+          onChange={(e) => setLocalValue(e.target.value)}
+          onBlur={handleBlur}
+          onFocus={handleFocus}
+          onKeyDown={handleKeyDown}
+          className={cn(
+            "w-full h-full outline-none resize-none px-2 py-1",
+            "text-sm font-normal text-foreground leading-relaxed",
+            "tracking-normal bg-transparent border-none",
+            className
+          )}
+          style={{ 
+            minHeight: multiline ? '60px' : 'auto',
+            fontFamily: 'inherit'
+          }}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div
+      onClick={handleClick}
+      className={cn(
+        "w-full h-full cursor-text select-text px-2 py-1 rounded-sm",
+        "text-sm font-normal text-foreground leading-relaxed",
+        "hover:bg-muted/30 transition-colors",
+        "border-none outline-none tracking-normal",
+        // Empty state styling
+        !value && "text-muted-foreground/60 italic",
+        disabled && "cursor-default",
+        className
+      )}
+      style={{ fontFamily: 'inherit' }}
+    >
+      {value || placeholder}
     </div>
   );
 }
