@@ -1,8 +1,8 @@
 
-import { Block } from '@/types/block';
+import { Block, ExtendedBlockType } from '@/types/block';
 
 export type { Block };
-export type { BlockType } from '@/types/block';
+export type { BlockType, ExtendedBlockType } from '@/types/block';
 
 export type BlockCreateParams = Partial<Omit<Block, 'id' | 'created_time' | 'last_edited_time'>>;
 
