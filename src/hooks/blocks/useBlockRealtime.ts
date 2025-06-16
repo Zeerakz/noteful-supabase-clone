@@ -42,8 +42,12 @@ export function useBlockRealtime({ pageId, onBlocksChange }: UseBlockRealtimePro
         (payload) => {
           console.log('📡 BlockRealtime: Received payload:', payload);
           
-          // Validate that the payload doesn't contain temporary IDs
-          if (payload.new?.id?.startsWith('temp-') || payload.old?.id?.startsWith('temp-')) {
+          // Safely check for temporary IDs with proper type checking
+          const newRecord = payload.new as any;
+          const oldRecord = payload.old as any;
+          
+          if ((newRecord?.id && typeof newRecord.id === 'string' && newRecord.id.startsWith('temp-')) || 
+              (oldRecord?.id && typeof oldRecord.id === 'string' && oldRecord.id.startsWith('temp-'))) {
             console.warn('📡 BlockRealtime: Ignoring payload with temporary ID:', payload);
             return;
           }
