@@ -14,14 +14,19 @@ export class BlockPositionService {
         .order('pos', { ascending: false })
         .limit(1);
 
-      if (error) throw error;
+      if (error) {
+        // Log the specific database error and re-throw it
+        console.error('Error fetching max position for block:', error);
+        throw new Error(`Could not determine block position: ${error.message}`);
+      }
 
       const maxPos = data && data.length > 0 ? data[0].pos : -1;
       return maxPos + 1;
     } catch (err) {
-      console.error('Error getting next block position:', err);
-      // Fallback to a simple increment if query fails
-      return Date.now() % 1000000; // Use modulo to keep within integer range
+      console.error('Error in getNextBlockPosition:', err);
+      // Re-throw the error to be handled by the calling code.
+      // This prevents using an unreliable fallback.
+      throw err;
     }
   }
 }
