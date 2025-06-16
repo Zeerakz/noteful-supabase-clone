@@ -24,8 +24,14 @@ export function useStableSubscription(
     if (channelRef.current && isSubscribedRef.current) {
       try {
         console.log('🧹 Cleaning up subscription:', configRef.current);
-        channelRef.current.unsubscribe();
-        supabase.removeChannel(channelRef.current);
+        // Add null check before calling unsubscribe
+        if (channelRef.current && typeof channelRef.current.unsubscribe === 'function') {
+          channelRef.current.unsubscribe();
+        }
+        // Add null check before calling removeChannel
+        if (channelRef.current) {
+          supabase.removeChannel(channelRef.current);
+        }
       } catch (error) {
         console.warn('Warning during subscription cleanup:', error);
       } finally {
@@ -56,6 +62,12 @@ export function useStableSubscription(
     try {
       const channel = supabase.channel(channelName);
       
+      // Ensure we have a valid channel before proceeding
+      if (!channel) {
+        console.error('❌ Failed to create Supabase channel');
+        return;
+      }
+
       // Use the correct Supabase v2 syntax with better error handling
       const subscription = channel.on(
         'postgres_changes' as any,

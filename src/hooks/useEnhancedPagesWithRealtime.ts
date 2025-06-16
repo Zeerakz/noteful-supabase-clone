@@ -12,37 +12,50 @@ export function useEnhancedPagesWithRealtime(workspaceId?: string) {
   useEffect(() => {
     if (!workspaceId) return;
 
+    console.log('🔗 Setting up workspace subscription for pages:', workspaceId);
+
     const unsubscribe = subscribe('workspace', workspaceId, {
       onPageChange: (payload) => {
         console.log('📄 Workspace page change:', payload);
         
         const newPage = payload.new as Block;
         const oldPage = payload.old as Block;
+        const eventType = payload.eventType;
 
         // Handle new pages
-        if (payload.eventType === 'INSERT' && newPage?.type === 'page') {
+        if (eventType === 'INSERT' && newPage?.type === 'page') {
           console.log('✨ New page created:', newPage.properties?.title);
-          // The existing pages hook should handle this, but we can force refresh if needed
-          pagesHook.fetchPages();
+          // Force refresh to ensure new pages appear in navigation
+          setTimeout(() => {
+            pagesHook.fetchPages();
+          }, 100);
         }
 
         // Handle page updates (like title changes)
-        if (payload.eventType === 'UPDATE' && newPage?.type === 'page') {
+        if (eventType === 'UPDATE' && newPage?.type === 'page') {
           console.log('📝 Page updated:', newPage.properties?.title);
-          // The optimistic updates should handle this
+          // Refresh to ensure changes are reflected
+          setTimeout(() => {
+            pagesHook.fetchPages();
+          }, 100);
         }
 
         // Handle page deletions
-        if (payload.eventType === 'DELETE' && oldPage?.type === 'page') {
+        if (eventType === 'DELETE' && oldPage?.type === 'page') {
           console.log('🗑️ Page deleted:', oldPage.properties?.title);
-          // The existing pages hook should handle this
+          // Refresh to remove deleted pages
+          setTimeout(() => {
+            pagesHook.fetchPages();
+          }, 100);
         }
       },
       onBlockChange: (payload) => {
         // Handle any block changes that might affect page hierarchy
         const newBlock = payload.new as Block;
+        const eventType = payload.eventType;
         
-        if (payload.eventType === 'INSERT' && newBlock?.type === 'page') {
+        if (eventType === 'INSERT' && newBlock?.type === 'page') {
+          console.log('📄 New page block detected, refreshing pages');
           // Force refresh to ensure new pages appear in navigation
           setTimeout(() => {
             pagesHook.fetchPages();

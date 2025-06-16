@@ -18,13 +18,8 @@ interface ActiveSubscription {
   callbacks: Set<SubscriptionCallbacks>;
 }
 
-// Type guard to check if an object has a type property
-function hasBlockType(obj: any): obj is { type: string } {
-  return obj && typeof obj === 'object' && typeof obj.type === 'string';
-}
-
-// Type guard to check if an object is a Block
-function isBlock(obj: any): obj is Block {
+// Simplified type guard to check if an object is a Block
+function isValidBlock(obj: any): obj is Block {
   return obj && 
          typeof obj === 'object' && 
          typeof obj.id === 'string' && 
@@ -46,10 +41,14 @@ class RealtimeManager {
     
     if (!subscription) {
       subscription = this.createSubscription(type, id);
-      this.subscriptions.set(subscriptionKey, subscription);
+      if (subscription) {
+        this.subscriptions.set(subscriptionKey, subscription);
+      }
     }
     
-    subscription.callbacks.add(callbacks);
+    if (subscription) {
+      subscription.callbacks.add(callbacks);
+    }
     
     // Return unsubscribe function
     return () => {
@@ -64,9 +63,8 @@ class RealtimeManager {
     };
   }
 
-  private createSubscription(type: 'page' | 'workspace' | 'database', id: string): ActiveSubscription {
+  private createSubscription(type: 'page' | 'workspace' | 'database', id: string): ActiveSubscription | null {
     const channelName = `realtime_${type}_${id}_${Date.now()}`;
-    const channel = supabase.channel(channelName);
 
     let filter: string;
     
@@ -81,73 +79,99 @@ class RealtimeManager {
         filter = `properties->>database_id=eq.${id}`;
         break;
       default:
-        throw new Error(`Unknown subscription type: ${type}`);
+        console.error(`Unknown subscription type: ${type}`);
+        return null;
     }
 
-    const subscription: ActiveSubscription = {
-      id: channelName,
-      type,
-      filter,
-      channel,
-      callbacks: new Set(),
-    };
-
-    // Set up the actual Supabase subscription
-    channel.on(
-      'postgres_changes' as any,
-      {
-        event: '*',
-        schema: 'public',
-        table: 'blocks',
-        filter,
-      },
-      (payload) => {
-        console.log(`📨 Realtime update for ${type}:${id}:`, payload);
-        
-        // Safely check for block types with proper type guards
-        const newBlock = payload.new;
-        const oldBlock = payload.old;
-        
-        // Broadcast to all callbacks
-        subscription.callbacks.forEach(callback => {
-          if (payload.eventType === 'INSERT' && callback.onBlockChange) {
-            callback.onBlockChange(payload);
-          } else if (payload.eventType === 'UPDATE' && callback.onBlockChange) {
-            callback.onBlockChange(payload);
-          } else if (payload.eventType === 'DELETE' && callback.onBlockChange) {
-            callback.onBlockChange(payload);
-          }
-          
-          // Handle page-specific events with type guards
-          const isNewBlockPage = newBlock && hasBlockType(newBlock) && newBlock.type === 'page';
-          const isOldBlockPage = oldBlock && hasBlockType(oldBlock) && oldBlock.type === 'page';
-          
-          if ((isNewBlockPage || isOldBlockPage) && callback.onPageChange) {
-            callback.onPageChange(payload);
-          }
-        });
-
-        // Emit global event for cross-component communication
-        this.eventEmitter.dispatchEvent(new CustomEvent('realtimeUpdate', {
-          detail: { type, id, payload }
-        }));
+    try {
+      const channel = supabase.channel(channelName);
+      
+      if (!channel) {
+        console.error('Failed to create Supabase channel');
+        return null;
       }
-    );
 
-    channel.subscribe((status) => {
-      console.log(`📡 Subscription status for ${type}:${id}:`, status);
-    });
+      const subscription: ActiveSubscription = {
+        id: channelName,
+        type,
+        filter,
+        channel,
+        callbacks: new Set(),
+      };
 
-    return subscription;
+      // Set up the actual Supabase subscription
+      channel.on(
+        'postgres_changes' as any,
+        {
+          event: '*',
+          schema: 'public',
+          table: 'blocks',
+          filter,
+        },
+        (payload) => {
+          console.log(`📨 Realtime update for ${type}:${id}:`, payload);
+          
+          // Safely check for block types
+          const newBlock = payload.new;
+          const oldBlock = payload.old;
+          
+          // Broadcast to all callbacks
+          subscription.callbacks.forEach(callback => {
+            try {
+              if (callback.onBlockChange) {
+                callback.onBlockChange(payload);
+              }
+              
+              // Handle page-specific events
+              const isNewBlockPage = newBlock && isValidBlock(newBlock) && newBlock.type === 'page';
+              const isOldBlockPage = oldBlock && isValidBlock(oldBlock) && oldBlock.type === 'page';
+              
+              if ((isNewBlockPage || isOldBlockPage) && callback.onPageChange) {
+                callback.onPageChange(payload);
+              }
+            } catch (error) {
+              console.error('Error in subscription callback:', error);
+            }
+          });
+
+          // Emit global event for cross-component communication
+          try {
+            this.eventEmitter.dispatchEvent(new CustomEvent('realtimeUpdate', {
+              detail: { type, id, payload }
+            }));
+          } catch (error) {
+            console.error('Error dispatching global event:', error);
+          }
+        }
+      );
+
+      channel.subscribe((status) => {
+        console.log(`📡 Subscription status for ${type}:${id}:`, status);
+      });
+
+      return subscription;
+    } catch (error) {
+      console.error('Failed to create subscription:', error);
+      return null;
+    }
   }
 
   private cleanupSubscription(key: string) {
     const subscription = this.subscriptions.get(key);
     if (subscription) {
       console.log('🧹 Cleaning up subscription:', key);
-      subscription.channel.unsubscribe();
-      supabase.removeChannel(subscription.channel);
-      this.subscriptions.delete(key);
+      try {
+        if (subscription.channel && typeof subscription.channel.unsubscribe === 'function') {
+          subscription.channel.unsubscribe();
+        }
+        if (subscription.channel) {
+          supabase.removeChannel(subscription.channel);
+        }
+      } catch (error) {
+        console.warn('Warning during subscription cleanup:', error);
+      } finally {
+        this.subscriptions.delete(key);
+      }
     }
   }
 
