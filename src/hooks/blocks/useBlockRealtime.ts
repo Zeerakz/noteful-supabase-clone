@@ -3,6 +3,7 @@ import { useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Block } from './types';
 import { normalizeBlock } from '@/services/blocks/blockNormalizationService';
+import { useStableSubscription } from '@/hooks/useStableSubscription';
 
 interface UseBlockRealtimeProps {
   pageId?: string;
@@ -11,119 +12,114 @@ interface UseBlockRealtimeProps {
 
 export function useBlockRealtime({ pageId, onBlocksChange }: UseBlockRealtimeProps) {
   const mountedRef = useRef(true);
-  const subscriptionRef = useRef<any>(null);
+  const lastFetchRef = useRef<number>(0);
+  const pendingFetchRef = useRef<boolean>(false);
 
-  useEffect(() => {
-    if (!pageId) {
-      console.log('BlockRealtime: No pageId, skipping subscription');
+  // Debounced fetch function to prevent excessive database calls
+  const fetchAndUpdateBlocks = async () => {
+    if (!pageId || !mountedRef.current || pendingFetchRef.current) {
       return;
     }
 
-    // Validate pageId is not a temporary ID
-    if (pageId.startsWith('temp-')) {
-      console.warn('BlockRealtime: Attempted to subscribe with temporary pageId:', pageId);
+    // Debounce: Only fetch if it's been at least 100ms since last fetch
+    const now = Date.now();
+    if (now - lastFetchRef.current < 100) {
       return;
     }
 
-    console.log('📡 BlockRealtime: Setting up subscription for page:', pageId);
+    pendingFetchRef.current = true;
+    lastFetchRef.current = now;
 
-    const channelName = `blocks_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-    
-    const channel = supabase
-      .channel(channelName)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'blocks',
-          filter: `parent_id=eq.${pageId}`,
-        },
-        (payload) => {
-          console.log('📡 BlockRealtime: Received payload:', payload);
-          
-          // Safely check for temporary IDs with proper type checking
-          const newRecord = payload.new as any;
-          const oldRecord = payload.old as any;
-          
-          if ((newRecord?.id && typeof newRecord.id === 'string' && newRecord.id.startsWith('temp-')) || 
-              (oldRecord?.id && typeof oldRecord.id === 'string' && oldRecord.id.startsWith('temp-'))) {
-            console.warn('📡 BlockRealtime: Ignoring payload with temporary ID:', payload);
-            return;
-          }
+    try {
+      console.log('📡 BlockRealtime: Fetching updated blocks for page:', pageId);
+      
+      const { data, error } = await supabase
+        .from('blocks')
+        .select('*')
+        .eq('parent_id', pageId)
+        .order('pos', { ascending: true });
 
-          // Refetch blocks when changes occur
-          if (mountedRef.current) {
-            fetchAndUpdateBlocks();
-          }
-        }
-      )
-      .subscribe((status) => {
-        console.log('📡 BlockRealtime: Subscription status:', status, 'for channel:', channelName);
+      if (error) {
+        console.error('📡 BlockRealtime: Error fetching blocks:', error);
+        return;
+      }
+
+      if (mountedRef.current) {
+        const normalizedBlocks = (data || []).map(normalizeBlock);
         
-        if (status === 'CHANNEL_ERROR') {
-          console.error('📡 BlockRealtime: Channel error, will retry subscription');
-          // Retry subscription after a short delay
-          setTimeout(() => {
-            if (mountedRef.current && pageId) {
-              console.log('📡 BlockRealtime: Retrying subscription for page:', pageId);
-              // The useEffect will handle the retry when dependencies change
-            }
-          }, 1000);
-        }
-      });
-
-    subscriptionRef.current = channel;
-
-    const fetchAndUpdateBlocks = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('blocks')
-          .select('*')
-          .eq('parent_id', pageId)
-          .order('pos', { ascending: true });
-
-        if (error) {
-          console.error('📡 BlockRealtime: Error fetching blocks:', error);
-          return;
-        }
-
-        if (mountedRef.current) {
-          const normalizedBlocks = (data || []).map(normalizeBlock);
-          
-          // Filter out any blocks with temporary IDs (shouldn't happen but safety check)
-          const validBlocks = normalizedBlocks.filter(block => {
-            if (block.id.startsWith('temp-')) {
-              console.warn('📡 BlockRealtime: Filtered out block with temporary ID:', block.id);
-              return false;
-            }
-            return true;
-          });
-          
-          onBlocksChange(validBlocks);
-        }
-      } catch (err) {
-        console.error('📡 BlockRealtime: Unexpected error fetching blocks:', err);
+        // Filter out any blocks with temporary IDs (safety check)
+        const validBlocks = normalizedBlocks.filter(block => {
+          if (block.id.startsWith('temp-')) {
+            console.warn('📡 BlockRealtime: Filtered out block with temporary ID:', block.id);
+            return false;
+          }
+          return true;
+        });
+        
+        console.log(`📡 BlockRealtime: Updated ${validBlocks.length} blocks`);
+        onBlocksChange(validBlocks);
       }
-    };
+    } catch (err) {
+      console.error('📡 BlockRealtime: Unexpected error fetching blocks:', err);
+    } finally {
+      pendingFetchRef.current = false;
+    }
+  };
 
-    // Initial fetch
-    fetchAndUpdateBlocks();
+  const handleRealtimeUpdate = (payload: any) => {
+    if (!mountedRef.current) return;
+    
+    console.log('📡 BlockRealtime: Received payload:', payload);
+    
+    // Safely check for temporary IDs with proper type checking
+    const newRecord = payload.new as any;
+    const oldRecord = payload.old as any;
+    
+    if ((newRecord?.id && typeof newRecord.id === 'string' && newRecord.id.startsWith('temp-')) || 
+        (oldRecord?.id && typeof oldRecord.id === 'string' && oldRecord.id.startsWith('temp-'))) {
+      console.warn('📡 BlockRealtime: Ignoring payload with temporary ID:', payload);
+      return;
+    }
 
-    return () => {
-      console.log('📡 BlockRealtime: Cleaning up subscription for channel:', channelName);
-      if (subscriptionRef.current) {
-        supabase.removeChannel(subscriptionRef.current);
-        subscriptionRef.current = null;
+    // Use a small delay to allow for immediate optimistic updates to settle
+    // This prevents conflicts between optimistic updates and realtime updates
+    setTimeout(() => {
+      if (mountedRef.current) {
+        fetchAndUpdateBlocks();
       }
-    };
-  }, [pageId, onBlocksChange]);
+    }, 50);
+  };
+
+  // Set up realtime subscription with enhanced error handling
+  const subscriptionConfig = pageId && !pageId.startsWith('temp-') ? {
+    table: 'blocks',
+    filter: `parent_id=eq.${pageId}`,
+  } : null;
+
+  const { connectionStatus, reconnect } = useStableSubscription(
+    subscriptionConfig, 
+    handleRealtimeUpdate, 
+    [pageId]
+  );
+
+  // Initial fetch when page changes
+  useEffect(() => {
+    if (pageId && !pageId.startsWith('temp-')) {
+      console.log('📡 BlockRealtime: Initial fetch for page:', pageId);
+      fetchAndUpdateBlocks();
+    }
+  }, [pageId]);
 
   useEffect(() => {
+    mountedRef.current = true;
     return () => {
       mountedRef.current = false;
     };
   }, []);
 
-  return { mountedRef };
+  return { 
+    mountedRef, 
+    connectionStatus,
+    reconnect 
+  };
 }

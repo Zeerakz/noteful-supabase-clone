@@ -2,6 +2,7 @@
 import React from 'react';
 import { useEnhancedBlocks } from '@/hooks/useEnhancedBlocks';
 import { DraggableBlockList } from './DraggableBlockList';
+import { ConnectionStatusIndicator } from './ConnectionStatusIndicator';
 import { Block, BlockType } from '@/types/block';
 import { useToast } from '@/hooks/use-toast';
 
@@ -19,7 +20,8 @@ export function PageBlocks({ workspaceId, pageId, isEditable = false }: PageBloc
     createBlock, 
     updateBlock, 
     deleteBlock,
-    hasOptimisticChanges 
+    hasOptimisticChanges,
+    connectionStatus 
   } = useEnhancedBlocks(pageId, workspaceId);
   const { toast } = useToast();
 
@@ -28,7 +30,6 @@ export function PageBlocks({ workspaceId, pageId, isEditable = false }: PageBloc
       const { error } = await updateBlock(id, updates);
       if (error) {
         console.error('Failed to update block:', error);
-        // Error handling is done in useEnhancedBlocks
       }
     } catch (err) {
       console.error('Unexpected error updating block:', err);
@@ -45,7 +46,6 @@ export function PageBlocks({ workspaceId, pageId, isEditable = false }: PageBloc
       const { error } = await deleteBlock(id);
       if (error) {
         console.error('Failed to delete block:', error);
-        // Error handling is done in useEnhancedBlocks
       }
     } catch (err) {
       console.error('Unexpected error deleting block:', err);
@@ -63,7 +63,6 @@ export function PageBlocks({ workspaceId, pageId, isEditable = false }: PageBloc
       const { error } = await createBlock(params.type, params.content, params.parent_id);
       if (error) {
         console.error('Failed to create block:', error);
-        // Error handling is done in useEnhancedBlocks
       } else {
         console.log('PageBlocks: Block created successfully');
       }
@@ -107,10 +106,15 @@ export function PageBlocks({ workspaceId, pageId, isEditable = false }: PageBloc
     return (
       <div className="p-4 text-center text-gray-500">
         {isEditable ? 'No blocks yet. Start adding content!' : 'This page is empty.'}
-        {hasOptimisticChanges && (
-          <div className="mt-2 text-xs text-blue-600 flex items-center justify-center gap-1">
-            <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
-            Syncing changes...
+        {(hasOptimisticChanges || connectionStatus) && (
+          <div className="mt-4 flex justify-center">
+            {hasOptimisticChanges && (
+              <div className="text-xs text-blue-600 flex items-center gap-1 mr-4">
+                <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
+                Syncing changes...
+              </div>
+            )}
+            <ConnectionStatusIndicator connectionStatus={connectionStatus} />
           </div>
         )}
       </div>
@@ -123,15 +127,24 @@ export function PageBlocks({ workspaceId, pageId, isEditable = false }: PageBloc
   console.log('PageBlocks: Rendering blocks', { 
     totalBlocks: blocks.length, 
     parentBlocks: parentBlocks.length, 
-    hasOptimistic: hasOptimisticChanges 
+    hasOptimistic: hasOptimisticChanges,
+    isConnected: connectionStatus?.isConnected 
   });
 
   return (
     <div className="relative">
-      {hasOptimisticChanges && (
-        <div className="absolute top-0 right-4 z-10 text-xs text-blue-600 flex items-center gap-1 bg-blue-50 px-2 py-1 rounded-md">
-          <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
-          Syncing...
+      {(hasOptimisticChanges || !connectionStatus?.isConnected) && (
+        <div className="absolute top-0 right-4 z-10 flex items-center gap-2">
+          {hasOptimisticChanges && (
+            <div className="text-xs text-blue-600 flex items-center gap-1 bg-blue-50 px-2 py-1 rounded-md">
+              <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
+              Syncing...
+            </div>
+          )}
+          <ConnectionStatusIndicator 
+            connectionStatus={connectionStatus} 
+            onReconnect={() => window.location.reload()} 
+          />
         </div>
       )}
       <DraggableBlockList
