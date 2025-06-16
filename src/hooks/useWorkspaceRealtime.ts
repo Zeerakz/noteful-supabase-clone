@@ -59,14 +59,14 @@ export function useWorkspaceRealtime({
 
     channel
       .on(
-        'postgres_changes',
+        'postgres_changes' as any,
         {
           event: '*',
           schema: 'public',
           table: 'blocks',
           filter: `workspace_id=eq.${workspaceId}`,
         },
-        (payload: BlockPayload) => {
+        (payload: any) => {
           console.log('📨 Workspace realtime update:', payload);
           
           // Handle the payload more safely
