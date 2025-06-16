@@ -33,15 +33,28 @@ export function useOptimisticBlocks({ blocks }: UseOptimisticBlocksProps) {
     return maxPos + 1;
   }, [blocks, optimisticCreations]);
 
-  // Apply optimistic updates to blocks list with proper sorting
+  // Apply optimistic updates to blocks list with proper sorting and filtering
   const optimisticBlocks = blocks
-    .filter(block => !optimisticDeletions.has(block.id))
+    .filter(block => {
+      // Filter out deleted blocks and any blocks with temporary IDs (these shouldn't exist in the real blocks array)
+      if (optimisticDeletions.has(block.id)) return false;
+      if (block.id.startsWith('temp-')) {
+        console.warn('Optimistic: Found temporary ID in real blocks array, filtering out:', block.id);
+        return false;
+      }
+      return true;
+    })
     .map(block => {
       const update = optimisticUpdates.get(block.id);
       return update ? { ...block, ...update.updates } : block;
     })
     .concat(optimisticCreations.filter(optimisticBlock => {
       // Only include optimistic creations that haven't been replaced by real blocks
+      // and ensure they have valid temporary IDs
+      if (!optimisticBlock.id.startsWith('temp-')) {
+        console.warn('Optimistic: Found non-temporary ID in optimistic creations:', optimisticBlock.id);
+        return false;
+      }
       return !blocks.some(realBlock => realBlock.id === optimisticBlock.id);
     }))
     .sort((a, b) => {
@@ -54,14 +67,21 @@ export function useOptimisticBlocks({ blocks }: UseOptimisticBlocksProps) {
     });
 
   const optimisticCreateBlock = useCallback((blockData: Partial<Block>) => {
-    const tempId = `temp-${Date.now()}-${Math.random().toString(36).substring(2)}`;
+    // Generate a more robust temporary ID
+    const tempId = `temp-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
     const now = new Date().toISOString();
     const parentId = blockData.parent_id || '';
+    
+    // Validate required fields
+    if (!blockData.workspace_id) {
+      console.error('Optimistic: Cannot create block without workspace_id');
+      return tempId;
+    }
     
     const optimisticBlock: Block = {
       id: tempId,
       type: blockData.type || 'text',
-      workspace_id: blockData.workspace_id || '',
+      workspace_id: blockData.workspace_id,
       teamspace_id: blockData.teamspace_id || null,
       parent_id: parentId,
       properties: blockData.properties || {},
@@ -77,16 +97,27 @@ export function useOptimisticBlocks({ blocks }: UseOptimisticBlocksProps) {
 
     console.log('Optimistic: Creating block', { tempId, parentId, pos: optimisticBlock.pos });
     setOptimisticCreations(prev => {
+      // Prevent duplicate temporary IDs
+      const existingIndex = prev.findIndex(block => block.id === tempId);
+      if (existingIndex >= 0) {
+        console.warn('Optimistic: Duplicate temporary ID detected, replacing:', tempId);
+        const newCreations = [...prev];
+        newCreations[existingIndex] = optimisticBlock;
+        return newCreations;
+      }
+      
       const newCreations = [...prev, optimisticBlock];
       console.log('Optimistic: Updated creations list', newCreations.length);
       return newCreations;
     });
     
-    // Auto-cleanup after 15 seconds
+    // Enhanced auto-cleanup with error handling
     setTimeout(() => {
       setOptimisticCreations(current => {
         const filtered = current.filter(block => block.id !== tempId);
-        console.log('Optimistic: Auto-cleanup for', tempId);
+        if (filtered.length !== current.length) {
+          console.log('Optimistic: Auto-cleanup for', tempId);
+        }
         return filtered;
       });
     }, 15000);
@@ -95,6 +126,17 @@ export function useOptimisticBlocks({ blocks }: UseOptimisticBlocksProps) {
   }, [getNextOptimisticPosition]);
 
   const optimisticUpdateBlock = useCallback((blockId: string, updates: Partial<Block>) => {
+    // Validate that we're not updating with invalid data
+    if (!blockId || blockId.trim() === '') {
+      console.error('Optimistic: Cannot update block with empty ID');
+      return;
+    }
+
+    // Special handling for temporary IDs - we can update them optimistically but warn
+    if (blockId.startsWith('temp-')) {
+      console.warn('Optimistic: Updating temporary block (this is unusual):', blockId);
+    }
+
     console.log('Optimistic: Updating block', blockId, updates);
     setOptimisticUpdates(prev => {
       const newMap = new Map(prev);
@@ -106,13 +148,14 @@ export function useOptimisticBlocks({ blocks }: UseOptimisticBlocksProps) {
       return newMap;
     });
 
-    // Auto-cleanup after 10 seconds
+    // Auto-cleanup with enhanced timing
     setTimeout(() => {
       setOptimisticUpdates(current => {
         const newMap = new Map(current);
         const update = newMap.get(blockId);
         if (update && Date.now() - update.timestamp > 10000) {
           newMap.delete(blockId);
+          console.log('Optimistic: Auto-cleanup update for', blockId);
         }
         return newMap;
       });
@@ -120,14 +163,22 @@ export function useOptimisticBlocks({ blocks }: UseOptimisticBlocksProps) {
   }, []);
 
   const optimisticDeleteBlock = useCallback((blockId: string) => {
+    // Validate block ID
+    if (!blockId || blockId.trim() === '') {
+      console.error('Optimistic: Cannot delete block with empty ID');
+      return;
+    }
+
     console.log('Optimistic: Deleting block', blockId);
     setOptimisticDeletions(prev => new Set(prev).add(blockId));
     
-    // Auto-cleanup after 10 seconds
+    // Auto-cleanup
     setTimeout(() => {
       setOptimisticDeletions(current => {
         const newSet = new Set(current);
-        newSet.delete(blockId);
+        if (newSet.delete(blockId)) {
+          console.log('Optimistic: Auto-cleanup deletion for', blockId);
+        }
         return newSet;
       });
     }, 10000);

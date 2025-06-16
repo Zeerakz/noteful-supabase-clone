@@ -46,10 +46,13 @@ export function useEnhancedBlocks(pageId?: string, workspaceId?: string) {
     console.log('Enhanced: Optimistic block created with tempId', tempId);
 
     try {
+      // CRITICAL FIX: Pass only the necessary data to createBlock, excluding any ID
+      // The database will generate its own UUID
       const { data, error } = await createBlock({ 
         type: type as any, 
         content, 
         parent_id: parentBlockId || pageId 
+        // Note: Explicitly NOT passing any ID here - database generates its own
       });
       
       if (error) {
@@ -67,17 +70,33 @@ export function useEnhancedBlocks(pageId?: string, workspaceId?: string) {
       clearOptimisticCreation(tempId);
       const errorMessage = err instanceof Error ? err.message : 'Failed to create block';
       
-      toast({
-        title: "Error",
-        description: "An unexpected error occurred while creating the block.",
-        variant: "destructive",
-      });
+      // Enhanced error handling for UUID validation errors
+      if (errorMessage.includes('invalid input syntax for type uuid')) {
+        console.error('Enhanced: UUID validation error detected - temporary ID may have been sent to database');
+        toast({
+          title: "Error",
+          description: "Block creation failed due to invalid ID format. Please try again.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "An unexpected error occurred while creating the block.",
+          variant: "destructive",
+        });
+      }
       
       return { data: null, error: errorMessage };
     }
   }, [pageId, workspaceId, createBlock, optimisticCreateBlock, clearOptimisticCreation, toast]);
 
   const enhancedUpdateBlock = useCallback(async (id: string, updates: BlockUpdateParams) => {
+    // Validate that we're not trying to update with a temporary ID
+    if (id.startsWith('temp-')) {
+      console.warn('Enhanced: Attempted to update block with temporary ID, ignoring', id);
+      return { data: null, error: 'Cannot update temporary block' };
+    }
+
     optimisticUpdateBlock(id, updates);
 
     try {
@@ -96,17 +115,33 @@ export function useEnhancedBlocks(pageId?: string, workspaceId?: string) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to update block';
       console.error('Unexpected error in enhancedUpdateBlock:', err);
       
-      toast({
-        title: "Error",
-        description: "An unexpected error occurred while updating the block.",
-        variant: "destructive",
-      });
+      // Enhanced error handling for UUID validation errors
+      if (errorMessage.includes('invalid input syntax for type uuid')) {
+        console.error('Enhanced: UUID validation error during update - temporary ID may have been used');
+        toast({
+          title: "Error",
+          description: "Block update failed due to invalid ID format. Please refresh the page.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "An unexpected error occurred while updating the block.",
+          variant: "destructive",
+        });
+      }
       
       return { data: null, error: errorMessage };
     }
   }, [updateBlock, optimisticUpdateBlock, clearOptimisticUpdate, toast]);
 
   const enhancedDeleteBlock = useCallback(async (id: string) => {
+    // Validate that we're not trying to delete with a temporary ID
+    if (id.startsWith('temp-')) {
+      console.warn('Enhanced: Attempted to delete block with temporary ID, ignoring', id);
+      return { error: 'Cannot delete temporary block' };
+    }
+
     optimisticDeleteBlock(id);
 
     try {
@@ -124,11 +159,21 @@ export function useEnhancedBlocks(pageId?: string, workspaceId?: string) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to delete block';
       console.error('Unexpected error in enhancedDeleteBlock:', err);
       
-      toast({
-        title: "Error",
-        description: "An unexpected error occurred while deleting the block.",
-        variant: "destructive",
-      });
+      // Enhanced error handling for UUID validation errors
+      if (errorMessage.includes('invalid input syntax for type uuid')) {
+        console.error('Enhanced: UUID validation error during delete - temporary ID may have been used');
+        toast({
+          title: "Error",
+          description: "Block deletion failed due to invalid ID format. Please refresh the page.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "An unexpected error occurred while deleting the block.",
+          variant: "destructive",
+        });
+      }
       
       return { error: errorMessage };
     }
