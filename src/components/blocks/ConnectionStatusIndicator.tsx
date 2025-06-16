@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Wifi, WifiOff, RotateCcw } from 'lucide-react';
+import { Wifi, WifiOff, RotateCcw, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ConnectionStatus } from '@/hooks/useStableSubscription';
 
@@ -13,27 +13,36 @@ export function ConnectionStatusIndicator({
   connectionStatus, 
   onReconnect 
 }: ConnectionStatusIndicatorProps) {
+  // Only show indicator when there are connection issues
   if (connectionStatus.isConnected && !connectionStatus.isRetrying) {
-    return null; // Don't show indicator when everything is working
+    return null;
   }
 
   const getStatusColor = () => {
-    if (connectionStatus.isRetrying) return 'text-yellow-600 bg-yellow-50';
-    if (!connectionStatus.isConnected) return 'text-red-600 bg-red-50';
-    return 'text-green-600 bg-green-50';
+    if (connectionStatus.isRetrying) return 'text-yellow-600 bg-yellow-50 border-yellow-200';
+    if (!connectionStatus.isConnected) return 'text-red-600 bg-red-50 border-red-200';
+    return 'text-green-600 bg-green-50 border-green-200';
   };
 
   const getStatusIcon = () => {
     if (connectionStatus.isRetrying) return <RotateCcw className="h-3 w-3 animate-spin" />;
-    if (!connectionStatus.isConnected) return <WifiOff className="h-3 w-3" />;
+    if (!connectionStatus.isConnected) {
+      if (connectionStatus.retryCount >= 3) {
+        return <AlertTriangle className="h-3 w-3" />;
+      }
+      return <WifiOff className="h-3 w-3" />;
+    }
     return <Wifi className="h-3 w-3" />;
   };
 
   const getStatusText = () => {
     if (connectionStatus.isRetrying) {
-      return `Reconnecting... (${connectionStatus.retryCount}/5)`;
+      return `Reconnecting... (${connectionStatus.retryCount}/3)`;
     }
     if (!connectionStatus.isConnected) {
+      if (connectionStatus.retryCount >= 3) {
+        return 'Connection failed';
+      }
       return 'Connection lost';
     }
     return 'Connected';

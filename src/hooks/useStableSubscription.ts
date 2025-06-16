@@ -26,6 +26,7 @@ export function useStableSubscription(
   const configRef = useRef<string>('');
   const retryTimeoutRef = useRef<NodeJS.Timeout>();
   const mountedRef = useRef(true);
+  const lastUpdateRef = useRef<number>(0);
   
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>({
     isConnected: false,
@@ -43,15 +44,24 @@ export function useStableSubscription(
       try {
         console.log('🧹 Cleaning up subscription:', configRef.current);
         
-        // Safe cleanup - check if channel and methods exist
-        if (channelRef.current && typeof channelRef.current.unsubscribe === 'function') {
-          channelRef.current.unsubscribe();
+        // More robust cleanup - check each method exists before calling
+        const channel = channelRef.current;
+        
+        if (typeof channel?.unsubscribe === 'function') {
+          channel.unsubscribe();
         }
         
-        // Only remove channel if supabase client exists and has removeChannel method
-        if (supabase && typeof supabase.removeChannel === 'function' && channelRef.current) {
-          supabase.removeChannel(channelRef.current);
-        }
+        // Give unsubscribe time to complete before removing channel
+        setTimeout(() => {
+          if (supabase?.removeChannel && typeof supabase.removeChannel === 'function') {
+            try {
+              supabase.removeChannel(channel);
+            } catch (error) {
+              console.warn('Non-critical error removing channel:', error);
+            }
+          }
+        }, 100);
+        
       } catch (error) {
         console.warn('Warning during subscription cleanup (non-critical):', error);
       } finally {
@@ -78,16 +88,25 @@ export function useStableSubscription(
     cleanup();
     configRef.current = configString;
 
-    // Create unique channel name with better uniqueness
-    const channelName = `${config.table}_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
-    console.log('📡 Creating subscription:', channelName);
+    // Create more unique channel name with table prefix to avoid conflicts
+    const timestamp = Date.now();
+    const random = Math.random().toString(36).substring(2, 10);
+    const channelName = `${config.table}_${timestamp}_${random}`;
+    
+    console.log('📡 Creating subscription:', channelName, 'for config:', config);
 
     try {
       if (!mountedRef.current) return;
 
-      const channel = supabase.channel(channelName);
+      const channel = supabase.channel(channelName, {
+        config: {
+          presence: {
+            key: channelName
+          }
+        }
+      });
       
-      // Set up the subscription
+      // Set up the subscription with better error handling
       const subscription = channel.on(
         'postgres_changes' as any,
         {
@@ -99,15 +118,18 @@ export function useStableSubscription(
         (payload) => {
           if (!mountedRef.current) return;
           
-          console.log('📨 Subscription update received:', payload);
+          // Debounce rapid updates to prevent spam
+          const now = Date.now();
+          if (now - lastUpdateRef.current < 50) return;
+          lastUpdateRef.current = now;
+          
+          console.log('📨 Subscription update received:', payload.eventType || payload.event, 'for', config.table);
           
           // Create a normalized payload with eventType for backward compatibility
           const normalizedPayload = {
             ...payload,
-            eventType: payload.event || 'unknown'
+            eventType: payload.event || payload.eventType || 'unknown'
           };
-          
-          console.log('📨 Normalized payload:', normalizedPayload.eventType, 'for', config.table);
           
           try {
             onUpdate(normalizedPayload);
@@ -131,12 +153,25 @@ export function useStableSubscription(
             retryCount: 0,
             lastError: undefined,
           }));
-        } else if (status === 'CLOSED') {
+        } else if (status === 'CLOSED' || status === 'TIMED_OUT') {
           isSubscribedRef.current = false;
           if (channelRef.current === channel) {
             channelRef.current = null;
           }
+          
           setConnectionStatus(prev => ({ ...prev, isConnected: false }));
+          
+          // For timeouts, try to reconnect immediately (once)
+          if (status === 'TIMED_OUT' && connectionStatus.retryCount === 0) {
+            console.log('📡 Subscription timed out, attempting immediate reconnect');
+            setConnectionStatus(prev => ({ ...prev, retryCount: 1, isRetrying: true }));
+            
+            setTimeout(() => {
+              if (mountedRef.current) {
+                createSubscription();
+              }
+            }, 1000);
+          }
         } else if (status === 'CHANNEL_ERROR') {
           isSubscribedRef.current = false;
           if (channelRef.current === channel) {
@@ -144,7 +179,7 @@ export function useStableSubscription(
           }
           
           const currentRetryCount = connectionStatus.retryCount + 1;
-          const maxRetries = 5;
+          const maxRetries = 3; // Reduce max retries to prevent excessive attempts
           
           setConnectionStatus(prev => ({
             ...prev,
@@ -156,7 +191,7 @@ export function useStableSubscription(
           
           // Retry with exponential backoff if under retry limit
           if (currentRetryCount <= maxRetries && mountedRef.current) {
-            const delay = Math.min(1000 * Math.pow(2, currentRetryCount - 1), 10000);
+            const delay = Math.min(2000 * Math.pow(2, currentRetryCount - 1), 15000);
             console.log(`📡 Retrying subscription in ${delay}ms (attempt ${currentRetryCount}/${maxRetries})`);
             
             retryTimeoutRef.current = setTimeout(() => {

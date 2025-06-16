@@ -68,13 +68,14 @@ export function useEnhancedBlocks(pageId?: string, workspaceId?: string) {
         return { data: null, error };
       }
 
-      console.log('Enhanced: Block created successfully, clearing optimistic after short delay', data);
+      console.log('Enhanced: Block created successfully, will clear optimistic after delay', data);
       
-      // Clear optimistic update after a small delay to allow realtime to catch up
+      // Clear optimistic update after a longer delay to ensure realtime has time to catch up
       // This prevents the "flash" effect where the block temporarily disappears
       setTimeout(() => {
+        console.log('Enhanced: Clearing optimistic creation for', tempId);
         clearOptimisticCreation(tempId);
-      }, 200);
+      }, 2000); // Increased delay to 2 seconds
       
       return { data, error: null };
     } catch (err) {
@@ -119,10 +120,10 @@ export function useEnhancedBlocks(pageId?: string, workspaceId?: string) {
         return { data: null, error };
       }
 
-      // Clear optimistic update after delay to allow realtime sync
+      // Clear optimistic update after a longer delay to allow realtime sync
       setTimeout(() => {
         clearOptimisticUpdate(id);
-      }, 150);
+      }, 1000); // Increased delay
       
       return { data, error: null };
     } catch (err) {

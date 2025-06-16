@@ -111,7 +111,7 @@ export function useOptimisticBlocks({ blocks }: UseOptimisticBlocksProps) {
       return newCreations;
     });
     
-    // Enhanced auto-cleanup with error handling
+    // Enhanced auto-cleanup with longer timeout since we increased the clear delay
     setTimeout(() => {
       setOptimisticCreations(current => {
         const filtered = current.filter(block => block.id !== tempId);
@@ -120,7 +120,7 @@ export function useOptimisticBlocks({ blocks }: UseOptimisticBlocksProps) {
         }
         return filtered;
       });
-    }, 15000);
+    }, 30000); // Increased to 30 seconds to match the longer clear delays
     
     return tempId;
   }, [getNextOptimisticPosition]);
@@ -153,13 +153,13 @@ export function useOptimisticBlocks({ blocks }: UseOptimisticBlocksProps) {
       setOptimisticUpdates(current => {
         const newMap = new Map(current);
         const update = newMap.get(blockId);
-        if (update && Date.now() - update.timestamp > 10000) {
+        if (update && Date.now() - update.timestamp > 20000) {
           newMap.delete(blockId);
           console.log('Optimistic: Auto-cleanup update for', blockId);
         }
         return newMap;
       });
-    }, 10000);
+    }, 20000); // Increased timeout to match longer delays
   }, []);
 
   const optimisticDeleteBlock = useCallback((blockId: string) => {
@@ -181,7 +181,7 @@ export function useOptimisticBlocks({ blocks }: UseOptimisticBlocksProps) {
         }
         return newSet;
       });
-    }, 10000);
+    }, 20000); // Increased timeout
   }, []);
 
   const clearOptimisticUpdate = useCallback((blockId: string) => {
