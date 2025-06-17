@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -54,14 +55,14 @@ export function useFileAttachment(blockId: string, pageId: string) {
   const uploadFile = async (file: File) => {
     if (!file || !user) return;
 
-    // Get workspace_id from the block's page
-    const { data: pageData, error: pageError } = await supabase
+    // Get workspace_id from the block
+    const { data: blockData, error: blockError } = await supabase
       .from('blocks')
       .select('workspace_id')
-      .eq('id', pageId)
+      .eq('id', blockId)
       .single();
 
-    if (pageError || !pageData) {
+    if (blockError || !blockData) {
       toast({
         title: "Error",
         description: "Could not determine workspace for file upload",
@@ -93,7 +94,7 @@ export function useFileAttachment(blockId: string, pageId: string) {
           mime_type: file.type,
           storage_path: uploadData.path,
           block_id: blockId,
-          workspace_id: pageData.workspace_id,
+          workspace_id: blockData.workspace_id,
           uploaded_by: user.id,
         })
         .select()

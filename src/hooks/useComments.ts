@@ -102,26 +102,38 @@ export function useComments(blockId?: string) {
       const mentionedEmails = extractMentions(body);
       if (mentionedEmails.length > 0) {
         try {
-          // Get page information for the notification.
-          // We assume the block's direct parent is the page. This might not be true for nested blocks.
+          // Get the page information for notifications
+          // First, find the root page by traversing up the block hierarchy
           const { data: blockData } = await supabase
             .from('blocks')
-            .select('parent_id, workspace_id')
+            .select('id, parent_id, workspace_id, properties, type')
             .eq('id', blockId)
             .single();
 
-          if (blockData?.parent_id) {
-            const { data: pageData } = await supabase
-              .from('blocks')
-              .select('properties')
-              .eq('id', blockData.parent_id)
-              .single();
+          if (blockData) {
+            let currentBlock = blockData;
+            
+            // Traverse up to find the root page
+            while (currentBlock.parent_id && currentBlock.type !== 'page') {
+              const { data: parentData } = await supabase
+                .from('blocks')
+                .select('id, parent_id, workspace_id, properties, type')
+                .eq('id', currentBlock.parent_id)
+                .single();
+              
+              if (parentData) {
+                currentBlock = parentData;
+              } else {
+                break;
+              }
+            }
 
-            if (pageData) {
-              const pageUrl = `${window.location.origin}/workspace/${blockData.workspace_id}/page/${blockData.parent_id}`;
-              const pageProperties = pageData.properties as { title?: string };
-              // Call notifyMention with the list of mentioned emails
-              await notifyMention(mentionedEmails, body, pageProperties?.title || 'Untitled', pageUrl);
+            // If we found a page block or reached the root, use it for the notification
+            if (currentBlock.type === 'page' || !currentBlock.parent_id) {
+              const pageUrl = `${window.location.origin}/workspace/${currentBlock.workspace_id}/page/${currentBlock.id}`;
+              const pageTitle = currentBlock.properties?.title || 'Untitled';
+              
+              await notifyMention(mentionedEmails, body, pageTitle, pageUrl);
             }
           }
         } catch (mentionError) {
