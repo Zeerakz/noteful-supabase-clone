@@ -13,10 +13,13 @@ export interface Workspace {
   owner_user_id: string;
   created_at: string;
   updated_at: string;
+  deleted_at?: string;
+  deleted_by?: string;
 }
 
 export function useWorkspaces() {
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
+  const [trashedWorkspaces, setTrashedWorkspaces] = useState<Workspace[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { user, loading: authLoading } = useAuth();
@@ -24,6 +27,7 @@ export function useWorkspaces() {
   const fetchWorkspaces = async () => {
     if (!user) {
       setWorkspaces([]);
+      setTrashedWorkspaces([]);
       setLoading(false);
       setError(null);
       return;
@@ -33,20 +37,36 @@ export function useWorkspaces() {
       setLoading(true);
       setError(null);
       
-      const { data, error } = await supabase
+      // Fetch active workspaces (not deleted)
+      const { data: activeData, error: activeError } = await supabase
         .from('workspace_members')
         .select('workspaces(*)')
-        .eq('user_id', user.id);
+        .eq('user_id', user.id)
+        .is('workspaces.deleted_at', null);
 
-      if (error) {
-        throw error;
+      if (activeError) {
+        throw activeError;
       }
       
-      const userWorkspaces = data?.map(item => (item as any).workspaces).filter(Boolean) as Workspace[];
+      const userWorkspaces = activeData?.map(item => (item as any).workspaces).filter(Boolean) as Workspace[];
       setWorkspaces(userWorkspaces || []);
+
+      // Fetch trashed workspaces (only those owned by the user)
+      const { data: trashedData, error: trashedError } = await supabase
+        .from('workspaces')
+        .select('*')
+        .eq('owner_user_id', user.id)
+        .not('deleted_at', 'is', null);
+
+      if (trashedError) {
+        throw trashedError;
+      }
+
+      setTrashedWorkspaces(trashedData || []);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch workspaces');
       setWorkspaces([]);
+      setTrashedWorkspaces([]);
     } finally {
       setLoading(false);
     }
@@ -56,8 +76,6 @@ export function useWorkspaces() {
     if (!user) return { error: 'User not authenticated' };
 
     try {
-      // To debug the RLS issue, we'll separate the insert from the select.
-      // This helps determine if the INSERT is failing, or if the subsequent SELECT RLS check is the problem.
       const { error } = await supabase
         .from('workspaces')
         .insert([
@@ -67,18 +85,13 @@ export function useWorkspaces() {
             owner_user_id: user.id,
           },
         ]);
-        // Note: .select().single() has been removed for this test.
 
       if (error) throw error;
       
-      // Manually refetch the workspaces list to get the new one.
       await fetchWorkspaces();
       
-      // Since we are not selecting the data back, we return null for the data.
-      // The calling component handles this gracefully.
       return { data: null, error: null };
     } catch (err) {
-      // Adding more detailed logging to help debug.
       console.error("Full error from createWorkspace:", err);
       const error = err instanceof Error ? err.message : 'Failed to create workspace';
       return { data: null, error };
@@ -106,11 +119,19 @@ export function useWorkspaces() {
   };
 
   const deleteWorkspace = async (id: string) => {
+    if (!user) return { error: 'User not authenticated' };
+
     try {
+      // Soft delete the workspace
       const { error } = await supabase
         .from('workspaces')
-        .delete()
-        .eq('id', id);
+        .update({ 
+          deleted_at: new Date().toISOString(),
+          deleted_by: user.id,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', id)
+        .eq('owner_user_id', user.id); // Ensure only owner can delete
 
       if (error) throw error;
       
@@ -119,6 +140,54 @@ export function useWorkspaces() {
       return { error: null };
     } catch (err) {
       const error = err instanceof Error ? err.message : 'Failed to delete workspace';
+      return { error };
+    }
+  };
+
+  const restoreWorkspace = async (id: string) => {
+    if (!user) return { error: 'User not authenticated' };
+
+    try {
+      // Use the database function to restore workspace
+      const { data, error } = await supabase.rpc('restore_workspace', {
+        p_workspace_id: id,
+        p_user_id: user.id
+      });
+
+      if (error) throw error;
+      
+      if (!data) {
+        return { error: 'Failed to restore workspace. You may not have permission or the workspace was not found.' };
+      }
+      
+      await fetchWorkspaces();
+      
+      return { error: null };
+    } catch (err) {
+      const error = err instanceof Error ? err.message : 'Failed to restore workspace';
+      return { error };
+    }
+  };
+
+  const permanentlyDeleteWorkspace = async (id: string) => {
+    if (!user) return { error: 'User not authenticated' };
+
+    try {
+      // Permanently delete the workspace (hard delete from database)
+      const { error } = await supabase
+        .from('workspaces')
+        .delete()
+        .eq('id', id)
+        .eq('owner_user_id', user.id) // Ensure only owner can permanently delete
+        .not('deleted_at', 'is', null); // Ensure it's already soft deleted
+
+      if (error) throw error;
+      
+      await fetchWorkspaces();
+      
+      return { error: null };
+    } catch (err) {
+      const error = err instanceof Error ? err.message : 'Failed to permanently delete workspace';
       return { error };
     }
   };
@@ -153,12 +222,15 @@ export function useWorkspaces() {
 
   return {
     workspaces,
+    trashedWorkspaces,
     loading: loading || authLoading,
     error,
     fetchWorkspaces,
     createWorkspace,
     updateWorkspace,
     deleteWorkspace,
+    restoreWorkspace,
+    permanentlyDeleteWorkspace,
     inviteUserToWorkspace,
   };
 }

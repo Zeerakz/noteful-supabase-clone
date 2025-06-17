@@ -1269,6 +1269,8 @@ export type Database = {
       workspaces: {
         Row: {
           created_at: string | null
+          deleted_at: string | null
+          deleted_by: string | null
           description: string | null
           id: string
           is_public: boolean | null
@@ -1278,6 +1280,8 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
           description?: string | null
           id?: string
           is_public?: boolean | null
@@ -1287,6 +1291,8 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
           description?: string | null
           id?: string
           is_public?: boolean | null
@@ -1343,6 +1349,10 @@ export type Database = {
         Returns: boolean
       }
       cleanup_expired_invitations: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      cleanup_old_deleted_workspaces: {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
@@ -1454,6 +1464,10 @@ export type Database = {
       remove_properties_from_page: {
         Args: { p_page_id: string; p_database_id: string }
         Returns: undefined
+      }
+      restore_workspace: {
+        Args: { p_workspace_id: string; p_user_id: string }
+        Returns: boolean
       }
       update_block_teamspace_recursive: {
         Args: { p_block_id: string; p_teamspace_id: string }
