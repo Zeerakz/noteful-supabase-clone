@@ -1,7 +1,5 @@
 
 import { QueryClient } from '@tanstack/react-query';
-import { persistQueryClient } from '@tanstack/query-persist-client-core';
-import { indexedDBPersister } from './indexedDBPersister';
 
 // Custom query client with optimized settings for blocks
 export const blocksQueryClient = new QueryClient({
@@ -19,13 +17,22 @@ export const blocksQueryClient = new QueryClient({
   },
 });
 
-// Set up persistence with IndexedDB
-export const setupQueryPersistence = () => {
-  persistQueryClient({
-    queryClient: blocksQueryClient,
-    persister: indexedDBPersister,
-    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-  });
+// Set up persistence with IndexedDB (optional - can be called later)
+export const setupQueryPersistence = async () => {
+  try {
+    // Dynamic import to avoid potential circular dependencies
+    const { persistQueryClient } = await import('@tanstack/query-persist-client-core');
+    const { indexedDBPersister } = await import('./indexedDBPersister');
+    
+    persistQueryClient({
+      queryClient: blocksQueryClient,
+      persister: indexedDBPersister,
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    });
 
-  console.log('🔧 Query persistence setup complete');
+    console.log('🔧 Query persistence setup complete');
+  } catch (error) {
+    console.warn('⚠️ Query persistence setup failed:', error);
+    // Continue without persistence if it fails
+  }
 };

@@ -1,3 +1,4 @@
+
 import { useCallback, useEffect, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
@@ -277,12 +278,12 @@ export function useOfflineMutations(workspaceId: string, pageId: string) {
         };
         const mutationId = await storePendingMutation('createBlock', storageData);
         
-        // Create optimistic block with valid type
+        // Create optimistic block with valid type for UI
         const optimisticBlock: Block = {
           id: mutationId || crypto.randomUUID(),
           workspace_id: blockData.workspace_id,
           teamspace_id: null,
-          type: validType as ExtendedBlockType, // Use valid type for optimistic update
+          type: validType as ExtendedBlockType, // Use validType instead of blockData.type
           parent_id: blockData.parent_id || pageId,
           properties: blockData.properties || {},
           content: blockData.content || {},
