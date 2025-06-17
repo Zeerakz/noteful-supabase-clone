@@ -1,21 +1,20 @@
-import { useState, useMemo, useCallback } from 'react';
-import { useQueryClient, useMutation } from '@tanstack/react-query';
+import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useQueryClient, useMutation, useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { createPage, deletePage, updatePage } from '@/services/pageMutationService';
 import { PropertyValueService } from '@/services/propertyValueService';
-import { useFilteredDatabasePagesQuery } from '@/hooks/useFilteredDatabasePagesQuery';
+import { EnhancedDatabaseQueryService } from '@/services/database/enhancedDatabaseQueryService';
 import { useOptimisticDatabaseFields } from '@/hooks/useOptimisticDatabaseFields';
 import { useEnhancedDatabaseFieldOperations } from '@/hooks/useEnhancedDatabaseFieldOperations';
 import { useUserProfiles } from '@/hooks/useUserProfiles';
-import { useEnhancedDatabaseTableData } from '@/hooks/useEnhancedDatabaseTableData';
 import { createMultiLevelGroups } from '@/utils/multiLevelGrouping';
 import { DatabaseField } from '@/types/database';
 import { FilterGroup } from '@/types/filters';
 import { SortRule } from '@/components/database/SortingModal';
 import { Block } from '@/types/block';
 
-interface UseDatabaseTableDataProps {
+interface UseEnhancedDatabaseTableDataProps {
   databaseId: string;
   workspaceId: string;
   fields: DatabaseField[];
@@ -24,11 +23,20 @@ interface UseDatabaseTableDataProps {
   onFieldsChange?: () => void;
   groupingConfig?: any;
   collapsedGroups?: string[];
-  enableServerSidePagination?: boolean;
-  paginationConfig?: {
+  pagination?: {
+    enabled: boolean;
     page: number;
     limit: number;
   };
+}
+
+interface PaginationState {
+  currentPage: number;
+  itemsPerPage: number;
+  totalItems: number;
+  totalPages: number;
+  hasNextPage: boolean;
+  hasPreviousPage: boolean;
 }
 
 interface PageWithProperties {
@@ -45,7 +53,7 @@ interface PageWithProperties {
   rawPage: Block;
 }
 
-export function useDatabaseTableData({
+export function useEnhancedDatabaseTableData({
   databaseId,
   workspaceId,
   fields: propFields,
@@ -54,32 +62,21 @@ export function useDatabaseTableData({
   onFieldsChange,
   groupingConfig,
   collapsedGroups = [],
-  enableServerSidePagination = false,
-  paginationConfig = { page: 1, limit: 50 }
-}: UseDatabaseTableDataProps) {
-  // Use enhanced hook if server-side pagination is enabled
-  const enhancedResult = useEnhancedDatabaseTableData({
-    databaseId,
-    workspaceId,
-    fields: propFields,
-    filterGroup,
-    sortRules,
-    onFieldsChange,
-    groupingConfig,
-    collapsedGroups,
-    pagination: enableServerSidePagination ? {
-      enabled: true,
-      page: paginationConfig.page,
-      limit: paginationConfig.limit
-    } : { enabled: false, page: 1, limit: 50 }
-  });
-
-  // Legacy implementation for backward compatibility
-  const [enablePagination, setEnablePagination] = useState(false);
-  const [itemsPerPage, setItemsPerPage] = useState(50);
+  pagination = { enabled: false, page: 1, limit: 50 }
+}: UseEnhancedDatabaseTableDataProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Pagination state
+  const [paginationState, setPaginationState] = useState<PaginationState>({
+    currentPage: pagination.page,
+    itemsPerPage: pagination.limit,
+    totalItems: 0,
+    totalPages: 0,
+    hasNextPage: false,
+    hasPreviousPage: false,
+  });
 
   const { userProfiles } = useUserProfiles(workspaceId);
 
@@ -110,31 +107,64 @@ export function useDatabaseTableData({
     }));
   }, [optimisticFields, propFields, databaseId]);
 
+  // Query key for caching
+  const queryKey = useMemo(() => [
+    'enhanced-database-pages',
+    databaseId,
+    JSON.stringify(filterGroup),
+    JSON.stringify(sortRules),
+    pagination.enabled ? paginationState.currentPage : 'all',
+    pagination.enabled ? paginationState.itemsPerPage : 'all',
+    user?.id || 'no-user'
+  ], [databaseId, filterGroup, sortRules, paginationState.currentPage, paginationState.itemsPerPage, pagination.enabled, user?.id]);
+
+  // Enhanced query with server-side pagination
   const {
-    pages,
-    loading: pagesLoading,
+    data: queryResult,
+    isLoading: pagesLoading,
     error: pagesError,
     refetch: refetchPages,
+  } = useQuery({
     queryKey,
-  } = useFilteredDatabasePagesQuery({
-    databaseId,
-    filterGroup,
-    fields: fieldsToUse,
-    sortRules,
-    enabled: !!databaseId && !enableServerSidePagination
+    queryFn: async () => {
+      const options = pagination.enabled ? {
+        pagination: {
+          page: paginationState.currentPage,
+          limit: paginationState.itemsPerPage
+        },
+        enableCounting: true
+      } : { enableCounting: false };
+
+      return EnhancedDatabaseQueryService.fetchDatabasePages(
+        databaseId,
+        filterGroup,
+        fieldsToUse,
+        sortRules,
+        user?.id,
+        options
+      );
+    },
+    enabled: !!databaseId && !!user,
+    staleTime: 30000, // 30 seconds
+    gcTime: 5 * 60 * 1000, // 5 minutes
   });
 
-  // If server-side pagination is enabled, use enhanced results
-  if (enableServerSidePagination) {
-    return {
-      ...enhancedResult,
-      handleItemsPerPageChange: enhancedResult.pagination?.changeItemsPerPage || (() => {}),
-      totalPages: enhancedResult.pagination?.totalPages || 1,
-      itemsPerPage: enhancedResult.pagination?.itemsPerPage || 50,
-    };
-  }
+  // Update pagination state when query result changes
+  useEffect(() => {
+    if (queryResult && pagination.enabled) {
+      setPaginationState(prev => ({
+        ...prev,
+        totalItems: queryResult.totalCount || 0,
+        totalPages: Math.ceil((queryResult.totalCount || 0) / prev.itemsPerPage),
+        hasNextPage: queryResult.hasNextPage || false,
+        hasPreviousPage: queryResult.hasPreviousPage || false,
+      }));
+    }
+  }, [queryResult, pagination.enabled]);
 
-  // Legacy client-side implementation
+  const pages = queryResult?.data || [];
+  const error = queryResult?.error || (pagesError as Error)?.message;
+
   const pagesWithProperties: PageWithProperties[] = useMemo(() => {
     return pages.map(page => {
       const pageProperties: Record<string, any> = {};
@@ -159,6 +189,35 @@ export function useDatabaseTableData({
     });
   }, [pages]);
 
+  // Pagination controls
+  const goToPage = useCallback((page: number) => {
+    if (page >= 1 && page <= paginationState.totalPages) {
+      setPaginationState(prev => ({ ...prev, currentPage: page }));
+    }
+  }, [paginationState.totalPages]);
+
+  const nextPage = useCallback(() => {
+    if (paginationState.hasNextPage) {
+      goToPage(paginationState.currentPage + 1);
+    }
+  }, [paginationState.hasNextPage, paginationState.currentPage, goToPage]);
+
+  const prevPage = useCallback(() => {
+    if (paginationState.hasPreviousPage) {
+      goToPage(paginationState.currentPage - 1);
+    }
+  }, [paginationState.hasPreviousPage, paginationState.currentPage, goToPage]);
+
+  const changeItemsPerPage = useCallback((newLimit: number) => {
+    setPaginationState(prev => ({
+      ...prev,
+      itemsPerPage: newLimit,
+      currentPage: 1, // Reset to first page
+      totalPages: Math.ceil(prev.totalItems / newLimit),
+    }));
+  }, []);
+
+  // Mutations with optimistic updates
   const { mutateAsync: createRowMutation } = useMutation({
     mutationFn: async ({ title = 'Untitled' }: { title?: string }) => {
       if (!user) throw new Error('User not authenticated');
@@ -168,7 +227,7 @@ export function useDatabaseTableData({
     },
     onSuccess: () => {
       toast({ title: "Success", description: "New row created." });
-      queryClient.invalidateQueries({ queryKey });
+      queryClient.invalidateQueries({ queryKey: ['enhanced-database-pages', databaseId] });
     },
     onError: (error: Error) => {
       toast({ title: "Error", description: error.message || "Failed to create row.", variant: "destructive" });
@@ -178,7 +237,8 @@ export function useDatabaseTableData({
   const handleCreateRow = useCallback(async () => {
     await createRowMutation({ title: 'Untitled' });
   }, [createRowMutation]);
-  
+
+  // Other mutation handlers remain the same but with updated query invalidation
   const { mutateAsync: deleteRowMutation } = useMutation({
     mutationFn: (pageId: string) => deletePage(pageId),
     onMutate: async (pageId: string) => {
@@ -197,7 +257,7 @@ export function useDatabaseTableData({
       toast({ title: "Error", description: "Failed to delete row.", variant: "destructive" });
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey });
+      queryClient.invalidateQueries({ queryKey: ['enhanced-database-pages', databaseId] });
     }
   });
 
@@ -227,7 +287,7 @@ export function useDatabaseTableData({
       toast({ title: "Error", description: "Failed to update title.", variant: "destructive" });
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey });
+      queryClient.invalidateQueries({ queryKey: ['enhanced-database-pages', databaseId] });
     }
   });
 
@@ -263,7 +323,7 @@ export function useDatabaseTableData({
         toast({ title: "Error", description: "Failed to update property.", variant: "destructive" });
     },
     onSettled: () => {
-        queryClient.invalidateQueries({ queryKey });
+        queryClient.invalidateQueries({ queryKey: ['enhanced-database-pages', databaseId] });
     }
   });
 
@@ -303,10 +363,6 @@ export function useDatabaseTableData({
 
     await fieldOperations.reorderFields(reorderedFields);
   };
-  
-  const handleItemsPerPageChange = (newItemsPerPage: number) => {
-    setItemsPerPage(newItemsPerPage);
-  };
 
   return {
     userProfiles,
@@ -314,18 +370,23 @@ export function useDatabaseTableData({
     fieldOperations,
     pagesWithProperties,
     pagesLoading,
-    pagesError,
+    pagesError: error,
     refetchPages,
     handleCreateRow,
     handleDeleteRow,
     handleTitleUpdate,
     handlePropertyUpdate,
-    pagination: null, // Simplified for now
-    totalPages: enablePagination ? Math.ceil(pages.length / itemsPerPage) : 1,
-    itemsPerPage,
-    handleItemsPerPageChange,
     handleFieldReorder,
     groupedData,
     hasGrouping,
+    
+    // Enhanced pagination
+    pagination: pagination.enabled ? {
+      ...paginationState,
+      goToPage,
+      nextPage,
+      prevPage,
+      changeItemsPerPage,
+    } : null,
   };
 }

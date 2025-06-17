@@ -20,6 +20,11 @@ interface DatabaseTableViewProps {
   onGroupingConfigChange?: (config: any) => void;
   collapsedGroups?: string[];
   onToggleGroupCollapse?: (groupKey: string) => void;
+  enableServerSidePagination?: boolean;
+  paginationConfig?: {
+    page: number;
+    limit: number;
+  };
 }
 
 export function DatabaseTableView({ 
@@ -33,7 +38,9 @@ export function DatabaseTableView({
   groupingConfig,
   onGroupingConfigChange,
   collapsedGroups = [],
-  onToggleGroupCollapse
+  onToggleGroupCollapse,
+  enableServerSidePagination = false,
+  paginationConfig = { page: 1, limit: 50 }
 }: DatabaseTableViewProps) {
   const [showManageProperties, setShowManageProperties] = useState(false);
 
@@ -65,6 +72,8 @@ export function DatabaseTableView({
     onFieldsChange,
     groupingConfig,
     collapsedGroups,
+    enableServerSidePagination,
+    paginationConfig,
   });
 
   if (hasGrouping && groupedData.length > 0) {
@@ -112,20 +121,20 @@ export function DatabaseTableView({
         onFieldsChange={onFieldsChange}
         onFieldReorder={handleFieldReorder}
         pagination={pagination ? {
-          ...pagination,
-          totalItems: totalPages,
-          itemsPerPage: itemsPerPage,
-          prevPage: () => {},
-          nextPage: () => {},
-          goToPage: () => {},
-          currentPage: 1,
+          totalItems: pagination.totalItems,
+          currentPage: pagination.currentPage,
+          itemsPerPage: pagination.itemsPerPage,
+          totalPages: pagination.totalPages,
+          nextPage: pagination.nextPage,
+          prevPage: pagination.prevPage,
+          goToPage: pagination.goToPage,
         } : null}
         totalPages={totalPages}
         databaseId={databaseId}
         sortRules={sortRules}
         setSortRules={setSortRules}
         workspaceId={workspaceId}
-        onItemsPerPageChange={handleItemsPerPageChange}
+        onItemsPerPageChange={pagination?.changeItemsPerPage || handleItemsPerPageChange}
         onShowManageProperties={() => setShowManageProperties(true)}
         userProfiles={userProfiles}
         allFields={fieldsToUse}

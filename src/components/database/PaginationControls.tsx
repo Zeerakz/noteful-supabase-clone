@@ -20,7 +20,9 @@ interface PaginationControlsProps {
   itemsPerPage: number;
   onNextPage: () => void;
   onPrevPage: () => void;
+  onGoToPage?: (page: number) => void;
   onItemsPerPageChange?: (itemsPerPage: number) => void;
+  isLoading?: boolean;
 }
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100, 250];
@@ -32,16 +34,60 @@ export function PaginationControls({
   itemsPerPage,
   onNextPage,
   onPrevPage,
-  onItemsPerPageChange
+  onGoToPage,
+  onItemsPerPageChange,
+  isLoading = false
 }: PaginationControlsProps) {
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
 
-  const onPageChange = (page: number) => {
-    if (page > currentPage) {
+  const handlePageChange = (page: number) => {
+    if (page === currentPage || isLoading) return;
+    
+    if (onGoToPage) {
+      onGoToPage(page);
+    } else if (page > currentPage) {
       onNextPage();
     } else if (page < currentPage) {
       onPrevPage();
+    }
+  };
+
+  const handleNextPage = () => {
+    if (currentPage < totalPages && !isLoading) {
+      onNextPage();
+    }
+  };
+
+  const handlePrevPage = () => {
+    if (currentPage > 1 && !isLoading) {
+      onPrevPage();
+    }
+  };
+
+  const handleFirstPage = () => {
+    if (currentPage > 1 && !isLoading) {
+      if (onGoToPage) {
+        onGoToPage(1);
+      } else {
+        // Fallback for legacy implementations
+        for (let i = currentPage; i > 1; i--) {
+          onPrevPage();
+        }
+      }
+    }
+  };
+
+  const handleLastPage = () => {
+    if (currentPage < totalPages && !isLoading) {
+      if (onGoToPage) {
+        onGoToPage(totalPages);
+      } else {
+        // Fallback for legacy implementations
+        for (let i = currentPage; i < totalPages; i++) {
+          onNextPage();
+        }
+      }
     }
   };
 
@@ -85,7 +131,12 @@ export function PaginationControls({
           <>
             <Select 
               value={itemsPerPage.toString()} 
-              onValueChange={(value) => onItemsPerPageChange(Number(value))}
+              onValueChange={(value) => {
+                if (!isLoading) {
+                  onItemsPerPageChange(Number(value));
+                }
+              }}
+              disabled={isLoading}
             >
               <SelectTrigger className="w-20 h-8">
                 <SelectValue />
@@ -109,8 +160,8 @@ export function PaginationControls({
             <Button
               variant="outline"
               size="sm"
-              onClick={() => onPageChange(1)}
-              disabled={currentPage === 1}
+              onClick={handleFirstPage}
+              disabled={currentPage === 1 || isLoading}
               className="gap-1"
             >
               <ChevronFirst className="h-4 w-4" />
@@ -119,8 +170,12 @@ export function PaginationControls({
           
           <PaginationItem>
             <PaginationPrevious 
-              onClick={onPrevPage}
-              className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+              onClick={handlePrevPage}
+              className={`${
+                currentPage === 1 || isLoading 
+                  ? 'pointer-events-none opacity-50' 
+                  : 'cursor-pointer'
+              }`}
             />
           </PaginationItem>
 
@@ -130,9 +185,11 @@ export function PaginationControls({
                 <PaginationEllipsis />
               ) : (
                 <PaginationLink
-                  onClick={() => onPageChange(page as number)}
+                  onClick={() => handlePageChange(page as number)}
                   isActive={currentPage === page}
-                  className="cursor-pointer"
+                  className={`cursor-pointer ${
+                    isLoading ? 'pointer-events-none opacity-50' : ''
+                  }`}
                 >
                   {page}
                 </PaginationLink>
@@ -142,8 +199,12 @@ export function PaginationControls({
 
           <PaginationItem>
             <PaginationNext 
-              onClick={onNextPage}
-              className={currentPage === totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+              onClick={handleNextPage}
+              className={`${
+                currentPage === totalPages || isLoading 
+                  ? 'pointer-events-none opacity-50' 
+                  : 'cursor-pointer'
+              }`}
             />
           </PaginationItem>
 
@@ -151,8 +212,8 @@ export function PaginationControls({
             <Button
               variant="outline"
               size="sm"
-              onClick={() => onPageChange(totalPages)}
-              disabled={currentPage === totalPages}
+              onClick={handleLastPage}
+              disabled={currentPage === totalPages || isLoading}
               className="gap-1"
             >
               <ChevronLast className="h-4 w-4" />
