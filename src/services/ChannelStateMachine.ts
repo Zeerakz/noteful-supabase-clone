@@ -108,6 +108,20 @@ export function channelStateReducer(
             context,
           };
         case 'CONNECTION_FAILED':
+          if (context.autoReconnect && context.reconnectAttempts < context.maxReconnectAttempts) {
+            return {
+              state: 'reconnecting',
+              context: {
+                ...context,
+                reconnectAttempts: context.reconnectAttempts + 1,
+                lastError: event.error,
+              },
+            };
+          }
+          return {
+            state: 'error',
+            context: { ...context, lastError: event.error },
+          };
         case 'ERROR':
           if (context.autoReconnect && context.reconnectAttempts < context.maxReconnectAttempts) {
             return {
@@ -115,13 +129,13 @@ export function channelStateReducer(
               context: {
                 ...context,
                 reconnectAttempts: context.reconnectAttempts + 1,
-                lastError: 'error' in event ? event.error : event.error,
+                lastError: event.error,
               },
             };
           }
           return {
             state: 'error',
-            context: { ...context, lastError: 'error' in event ? event.error : event.error },
+            context: { ...context, lastError: event.error },
           };
         case 'CLOSE':
           return {
