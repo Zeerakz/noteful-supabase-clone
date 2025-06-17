@@ -3,7 +3,7 @@ import { useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useBlocksQuery, useCreateBlockMutation, useUpdateBlockMutation, useDeleteBlockMutation, useInvalidateBlocks } from './useBlocksQuery';
 import { BlocksQueryFilters } from './queryKeys';
-import { Block, BlockType } from '@/types/block';
+import { Block, BlockType, ExtendedBlockType } from '@/types/block';
 
 interface UseBlocksWithQueryOptions {
   filters?: BlocksQueryFilters;
@@ -39,6 +39,17 @@ export function useBlocksWithQuery(
   // Invalidation helpers
   const { invalidateAll, invalidateWorkspace, invalidatePage } = useInvalidateBlocks();
 
+  // Helper function to convert ExtendedBlockType to BlockType
+  const toValidBlockType = (type: ExtendedBlockType): BlockType | null => {
+    const validBlockTypes: BlockType[] = [
+      'page', 'database', 'text', 'image', 'heading_1', 'heading_2', 'heading_3',
+      'todo_item', 'bulleted_list_item', 'numbered_list_item', 'toggle_list',
+      'code', 'quote', 'divider', 'callout'
+    ];
+    
+    return validBlockTypes.includes(type as BlockType) ? (type as BlockType) : null;
+  };
+
   // Helper functions
   const createBlock = useCallback(async (params: {
     type: BlockType;
@@ -72,19 +83,27 @@ export function useBlocksWithQuery(
       throw new Error('User not authenticated');
     }
 
-    // Filter out ExtendedBlockType values that aren't valid BlockType
-    const validUpdates = { ...updates };
-    if (validUpdates.type && !['page', 'database', 'text', 'image', 'heading_1', 'heading_2', 'heading_3', 'todo_item', 'bulleted_list_item', 'numbered_list_item', 'toggle_list', 'code', 'quote', 'divider', 'callout'].includes(validUpdates.type)) {
-      delete validUpdates.type;
+    // Create a copy of updates and handle type conversion
+    const validUpdates: Partial<Omit<Block, 'type'>> & { type?: BlockType } = {
+      ...updates,
+      last_edited_by: user.id,
+      last_edited_time: new Date().toISOString(),
+    };
+
+    // Handle type conversion from ExtendedBlockType to BlockType
+    if (updates.type) {
+      const validType = toValidBlockType(updates.type);
+      if (validType) {
+        validUpdates.type = validType;
+      } else {
+        // Remove invalid type to avoid database error
+        delete validUpdates.type;
+      }
     }
 
     return updateBlockMutation.mutateAsync({
       id,
-      updates: {
-        ...validUpdates,
-        last_edited_by: user.id,
-        last_edited_time: new Date().toISOString(),
-      },
+      updates: validUpdates,
     });
   }, [user, updateBlockMutation]);
 

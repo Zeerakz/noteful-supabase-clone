@@ -32,8 +32,9 @@ const fetchBlocks = async (
       'code', 'quote', 'divider', 'callout'
     ];
     
+    // Type guard to ensure we only pass valid BlockType values
     if (validBlockTypes.includes(filters.type as BlockType)) {
-      query = query.eq('type', filters.type);
+      query = query.eq('type', filters.type as BlockType);
     }
   }
 
