@@ -2,15 +2,11 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { usePresence } from '@/hooks/usePresence';
 import { UserCursor } from './UserCursor';
-import { PresenceActivity } from '@/types/presence';
+import { PresenceActivity, CursorPosition } from '@/types/presence';
 
 interface ActiveUser {
   user_id: string;
-  cursor?: {
-    x: number;
-    y: number;
-    blockId?: string;
-  };
+  cursor?: CursorPosition;
   activity: PresenceActivity;
   last_heartbeat: string;
 }

@@ -69,7 +69,7 @@ function App() {
                     <ProtectedRoute>
                       <RouteErrorBoundary>
                         <AppLayout>
-                          <WorkspaceSettingsView />
+                          <WorkspaceSettingsViewWrapper />
                         </AppLayout>
                       </RouteErrorBoundary>
                     </ProtectedRoute>
@@ -110,6 +110,18 @@ function App() {
       </ThemeProvider>
     </QueryClientProvider>
   );
+}
+
+// Wrapper component to extract workspaceId from URL params
+function WorkspaceSettingsViewWrapper() {
+  const { useParams } = require('react-router-dom');
+  const { workspaceId } = useParams<{ workspaceId: string }>();
+  
+  if (!workspaceId) {
+    return <Navigate to="/" replace />;
+  }
+  
+  return <WorkspaceSettingsView workspaceId={workspaceId} />;
 }
 
 export default App;

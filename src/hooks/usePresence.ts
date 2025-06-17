@@ -3,18 +3,19 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRealtimeManager } from '@/hooks/useRealtimeManager';
 import { supabase } from '@/integrations/supabase/client';
+import { PresenceActivity, CursorPosition } from '@/types/presence';
 
-interface PresenceUser {
+interface ActiveUser {
   user_id: string;
-  full_name: string;
-  avatar_url?: string;
-  last_seen: string;
+  cursor?: CursorPosition;
+  activity: PresenceActivity;
+  last_heartbeat: string;
 }
 
 export function usePresence(pageId?: string) {
   const { user } = useAuth();
   const { subscribe } = useRealtimeManager();
-  const [activeUsers, setActiveUsers] = useState<PresenceUser[]>([]);
+  const [activeUsers, setActiveUsers] = useState<ActiveUser[]>([]);
   const [loading, setLoading] = useState(true);
 
   const handlePresenceChange = useCallback((payload: any) => {
@@ -36,7 +37,7 @@ export function usePresence(pageId?: string) {
     } else {
       // Handle sync - full presence state
       const presenceState = payload;
-      const users: PresenceUser[] = [];
+      const users: ActiveUser[] = [];
       
       Object.keys(presenceState).forEach(key => {
         const presences = presenceState[key];
@@ -44,9 +45,9 @@ export function usePresence(pageId?: string) {
           const presence = presences[0]; // Take the first presence for each user
           users.push({
             user_id: presence.user_id,
-            full_name: presence.full_name,
-            avatar_url: presence.avatar_url,
-            last_seen: presence.last_seen
+            cursor: presence.cursor,
+            activity: presence.activity || 'viewing',
+            last_heartbeat: presence.last_heartbeat
           });
         }
       });
@@ -55,6 +56,76 @@ export function usePresence(pageId?: string) {
     }
     setLoading(false);
   }, []);
+
+  const updateCursorPosition = useCallback(async (x: number, y: number, blockId?: string) => {
+    if (!pageId || !user) return;
+
+    try {
+      const { error } = await supabase
+        .from('presence')
+        .upsert({
+          page_id: pageId,
+          user_id: user.id,
+          cursor: { x, y, blockId } as any,
+          activity: 'viewing' as PresenceActivity,
+          last_heartbeat: new Date().toISOString(),
+        }, {
+          onConflict: 'page_id,user_id'
+        });
+
+      if (error) {
+        console.error('Error updating cursor position:', error);
+      }
+    } catch (err) {
+      console.error('Failed to update cursor position:', err);
+    }
+  }, [pageId, user]);
+
+  const updateActivity = useCallback(async (activity: PresenceActivity) => {
+    if (!pageId || !user) return;
+
+    try {
+      const { error } = await supabase
+        .from('presence')
+        .upsert({
+          page_id: pageId,
+          user_id: user.id,
+          activity: activity,
+          last_heartbeat: new Date().toISOString(),
+        }, {
+          onConflict: 'page_id,user_id',
+        });
+
+      if (error) {
+        console.error('Error updating activity:', error);
+      }
+    } catch (err) {
+      console.error('Failed to update activity:', err);
+    }
+  }, [pageId, user]);
+
+  const sendHeartbeat = useCallback(async () => {
+    if (!pageId || !user) return;
+
+    try {
+      const { error } = await supabase
+        .from('presence')
+        .upsert({
+          page_id: pageId,
+          user_id: user.id,
+          activity: 'viewing' as PresenceActivity,
+          last_heartbeat: new Date().toISOString(),
+        }, {
+          onConflict: 'page_id,user_id'
+        });
+
+      if (error) {
+        console.error('Error sending heartbeat:', error);
+      }
+    } catch (err) {
+      console.error('Failed to send heartbeat:', err);
+    }
+  }, [pageId, user]);
 
   // Track our own presence
   useEffect(() => {
@@ -82,7 +153,7 @@ export function usePresence(pageId?: string) {
           .upsert({
             page_id: pageId,
             user_id: user.id,
-            activity: 'viewing',
+            activity: 'viewing' as PresenceActivity,
             last_heartbeat: new Date().toISOString()
           })
           .select()
@@ -101,7 +172,7 @@ export function usePresence(pageId?: string) {
             .upsert({
               page_id: pageId,
               user_id: user.id,
-              activity: 'viewing',
+              activity: 'viewing' as PresenceActivity,
               last_heartbeat: new Date().toISOString()
             });
         }, 30000); // Update every 30 seconds
@@ -136,6 +207,9 @@ export function usePresence(pageId?: string) {
 
   return {
     activeUsers: activeUsers.filter(u => u.user_id !== user?.id), // Exclude current user
-    loading
+    loading,
+    updateCursorPosition,
+    updateActivity,
+    sendHeartbeat
   };
 }
