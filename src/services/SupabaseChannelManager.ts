@@ -1,13 +1,23 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { RealtimeChannel, RealtimeChannelSendResponse, REALTIME_SUBSCRIBE_STATES } from '@supabase/supabase-js';
-
-export type ChannelState = 'CLOSED' | 'JOINING' | 'JOINED' | 'LEAVING' | 'ERRORED';
+import {
+  ChannelState,
+  ChannelEvent,
+  ChannelStateValue,
+  createChannelStateMachine,
+  channelStateReducer,
+  calculateReconnectDelay,
+  canReconnect,
+  isConnectedState,
+  isConnectingState,
+  isErrorState
+} from './ChannelStateMachine';
 
 export interface ChannelInfo {
   channel: RealtimeChannel;
   key: string;
-  state: ChannelState;
+  stateMachine: ChannelStateValue;
   subscribeCount: number;
   createdAt: Date;
   lastActivity: Date;
@@ -19,6 +29,9 @@ export interface ChannelConfig {
   heartbeatInterval?: number;
   timeout?: number;
   rejoinUntilConnected?: boolean;
+  maxReconnectAttempts?: number;
+  baseDelay?: number;
+  maxDelay?: number;
 }
 
 export interface SubscriptionOptions {
@@ -69,14 +82,20 @@ class SupabaseChannelManager {
         broadcast: {
           self: true,
         },
-        ...config,
       },
+    });
+
+    const stateMachine = createChannelStateMachine({
+      autoReconnect: config.autoReconnect ?? true,
+      maxReconnectAttempts: config.maxReconnectAttempts ?? 5,
+      baseDelay: config.baseDelay ?? 1000,
+      maxDelay: config.maxDelay ?? 30000,
     });
 
     const channelInfo: ChannelInfo = {
       channel,
       key,
-      state: 'CLOSED',
+      stateMachine,
       subscribeCount: 1,
       createdAt: new Date(),
       lastActivity: new Date(),
@@ -195,6 +214,9 @@ class SupabaseChannelManager {
 
     console.log(`📡 Removing channel: ${key}`);
 
+    // Update state machine to closed
+    this.updateChannelState(key, { type: 'CLOSE' });
+
     // Clear any pending reconnection
     const reconnectTimeout = this.reconnectTimeouts.get(key);
     if (reconnectTimeout) {
@@ -229,7 +251,7 @@ class SupabaseChannelManager {
    */
   getChannelState(key: string): ChannelState | null {
     const channelInfo = this.channels.get(key);
-    return channelInfo ? channelInfo.state : null;
+    return channelInfo ? channelInfo.stateMachine.state : null;
   }
 
   /**
@@ -279,25 +301,58 @@ class SupabaseChannelManager {
     this.heartbeatIntervals.clear();
   }
 
+  private updateChannelState(key: string, event: ChannelEvent): void {
+    const channelInfo = this.channels.get(key);
+    if (!channelInfo) return;
+
+    const previousState = channelInfo.stateMachine.state;
+    channelInfo.stateMachine = channelStateReducer(channelInfo.stateMachine, event);
+    const newState = channelInfo.stateMachine.state;
+
+    if (previousState !== newState) {
+      console.log(`📡 Channel ${key} state: ${previousState} → ${newState}`);
+      
+      // Handle state transitions
+      switch (newState) {
+        case 'reconnecting':
+          this.scheduleReconnection(key);
+          break;
+        case 'connected':
+          this.setupHeartbeat(key);
+          break;
+        case 'error':
+          console.error(`📡 Channel ${key} error:`, channelInfo.stateMachine.context.lastError);
+          break;
+      }
+    }
+  }
+
   private setupChannelStateTracking(channelInfo: ChannelInfo): void {
-    const { channel, key, config } = channelInfo;
+    const { channel, key } = channelInfo;
 
     // Track channel state changes
     channel.subscribe((status) => {
       console.log(`📡 Channel ${key} status: ${status}`);
       
-      const previousState = channelInfo.state;
-      channelInfo.state = status as ChannelState;
       channelInfo.lastActivity = new Date();
 
-      // Handle reconnection logic
-      if (status === REALTIME_SUBSCRIBE_STATES.CLOSED && previousState === 'JOINED' && config.autoReconnect) {
-        this.scheduleReconnection(key);
-      }
-
-      // Set up heartbeat for active channels
-      if (status === REALTIME_SUBSCRIBE_STATES.SUBSCRIBED && config.heartbeatInterval) {
-        this.setupHeartbeat(key);
+      // Map Supabase status to state machine events
+      switch (status) {
+        case REALTIME_SUBSCRIBE_STATES.JOINING:
+          this.updateChannelState(key, { type: 'CONNECT' });
+          break;
+        case REALTIME_SUBSCRIBE_STATES.SUBSCRIBED:
+          this.updateChannelState(key, { type: 'CONNECTION_SUCCESS' });
+          break;
+        case REALTIME_SUBSCRIBE_STATES.TIMED_OUT:
+          this.updateChannelState(key, { type: 'CONNECTION_FAILED', error: 'Connection timed out' });
+          break;
+        case REALTIME_SUBSCRIBE_STATES.CLOSED:
+          this.updateChannelState(key, { type: 'DISCONNECT' });
+          break;
+        case REALTIME_SUBSCRIBE_STATES.CHANNEL_ERROR:
+          this.updateChannelState(key, { type: 'ERROR', error: 'Channel error' });
+          break;
       }
     });
   }
@@ -306,9 +361,10 @@ class SupabaseChannelManager {
     const channelInfo = this.channels.get(key);
     if (!channelInfo) return;
 
-    if (channelInfo.state === 'CLOSED') {
+    const state = channelInfo.stateMachine.state;
+    if (state === 'idle' || state === 'closed') {
       console.log(`📡 Subscribing to channel: ${key}`);
-      // The subscription is handled by the subscribe() call in setupChannelStateTracking
+      this.updateChannelState(key, { type: 'CONNECT' });
     }
   }
 
@@ -333,7 +389,7 @@ class SupabaseChannelManager {
 
   private scheduleReconnection(key: string): void {
     const channelInfo = this.channels.get(key);
-    if (!channelInfo || !channelInfo.config.autoReconnect) return;
+    if (!channelInfo || !canReconnect(channelInfo.stateMachine.context)) return;
 
     // Clear any existing reconnection timeout
     const existingTimeout = this.reconnectTimeouts.get(key);
@@ -341,39 +397,54 @@ class SupabaseChannelManager {
       clearTimeout(existingTimeout);
     }
 
+    const delay = calculateReconnectDelay(channelInfo.stateMachine.context);
+    console.log(`📡 Scheduling reconnection for ${key} in ${delay}ms (attempt ${channelInfo.stateMachine.context.reconnectAttempts})`);
+
     const timeout = setTimeout(() => {
       console.log(`📡 Attempting to reconnect channel: ${key}`);
       
-      if (channelInfo.state === 'CLOSED' && channelInfo.subscribeCount > 0) {
-        // Recreate the channel
-        const newChannel = supabase.channel(key, {
-          config: channelInfo.config,
-        });
-        channelInfo.channel = newChannel;
-        
-        // Restore subscriptions
-        const subscriptions = this.subscriptions.get(key);
-        if (subscriptions) {
-          subscriptions.forEach(sub => {
-            newChannel.on(
-              'postgres_changes' as any,
-              {
-                event: sub.event as any,
-                schema: sub.schema || 'public',
-                table: sub.table,
-                filter: sub.filter,
-              },
-              sub.callback
-            );
-          });
-        }
-
-        // Re-setup state tracking
-        this.setupChannelStateTracking(channelInfo);
+      const currentChannelInfo = this.channels.get(key);
+      if (!currentChannelInfo || currentChannelInfo.subscribeCount === 0) {
+        this.reconnectTimeouts.delete(key);
+        return;
       }
+
+      // Recreate the channel
+      const newChannel = supabase.channel(key, {
+        config: {
+          presence: {
+            key: key,
+          },
+          broadcast: {
+            self: true,
+          },
+        },
+      });
+      
+      currentChannelInfo.channel = newChannel;
+      
+      // Restore subscriptions
+      const subscriptions = this.subscriptions.get(key);
+      if (subscriptions) {
+        subscriptions.forEach(sub => {
+          newChannel.on(
+            'postgres_changes' as any,
+            {
+              event: sub.event as any,
+              schema: sub.schema || 'public',
+              table: sub.table,
+              filter: sub.filter,
+            },
+            sub.callback
+          );
+        });
+      }
+
+      // Re-setup state tracking
+      this.setupChannelStateTracking(currentChannelInfo);
       
       this.reconnectTimeouts.delete(key);
-    }, 3000); // Reconnect after 3 seconds
+    }, delay);
 
     this.reconnectTimeouts.set(key, timeout);
   }
@@ -389,7 +460,7 @@ class SupabaseChannelManager {
     }
 
     const interval = setInterval(() => {
-      if (channelInfo.state === 'JOINED') {
+      if (isConnectedState(channelInfo.stateMachine.state)) {
         channelInfo.lastActivity = new Date();
         // Send a broadcast message instead of heartbeat event type
         channelInfo.channel.send({

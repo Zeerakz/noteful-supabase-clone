@@ -1,6 +1,7 @@
 
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback, useState } from 'react';
 import { supabaseChannelManager, ChannelConfig, SubscriptionOptions } from '@/services/SupabaseChannelManager';
+import { ChannelState, isConnectedState, isConnectingState, isErrorState } from '@/services/ChannelStateMachine';
 
 interface UseSupabaseChannelOptions {
   key: string;
@@ -16,8 +17,12 @@ interface UseSupabaseChannelReturn {
     onLeave?: (presence: any) => void;
   }) => () => void;
   trackPresence: (presence: any) => Promise<any>;
-  getChannelState: () => string | null;
+  getChannelState: () => ChannelState | null;
   isConnected: boolean;
+  isConnecting: boolean;
+  isError: boolean;
+  reconnectAttempts: number;
+  lastError?: string;
 }
 
 export function useSupabaseChannel({
@@ -27,9 +32,22 @@ export function useSupabaseChannel({
 }: UseSupabaseChannelOptions): UseSupabaseChannelReturn {
   const unsubscribeFunctionsRef = useRef<(() => void)[]>([]);
   const isEnabledRef = useRef(enabled);
+  const [channelState, setChannelState] = useState<ChannelState | null>(null);
 
   // Update enabled ref
   isEnabledRef.current = enabled;
+
+  // Poll channel state for reactive updates
+  useEffect(() => {
+    if (!enabled) return;
+
+    const interval = setInterval(() => {
+      const state = supabaseChannelManager.getChannelState(key);
+      setChannelState(state);
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [key, enabled]);
 
   const subscribeToChanges = useCallback((options: SubscriptionOptions) => {
     if (!isEnabledRef.current) {
@@ -80,7 +98,8 @@ export function useSupabaseChannel({
     return supabaseChannelManager.getChannelState(key);
   }, [key]);
 
-  const isConnected = getChannelState() === 'JOINED';
+  // Get channel info for additional state details
+  const channelInfo = supabaseChannelManager.getChannelInfo(key);
 
   // Cleanup on unmount or when key changes
   useEffect(() => {
@@ -96,6 +115,10 @@ export function useSupabaseChannel({
     subscribeToPresence,
     trackPresence,
     getChannelState,
-    isConnected,
+    isConnected: channelState ? isConnectedState(channelState) : false,
+    isConnecting: channelState ? isConnectingState(channelState) : false,
+    isError: channelState ? isErrorState(channelState) : false,
+    reconnectAttempts: channelInfo?.stateMachine.context.reconnectAttempts || 0,
+    lastError: channelInfo?.stateMachine.context.lastError,
   };
 }
