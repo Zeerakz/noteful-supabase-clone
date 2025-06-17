@@ -35,6 +35,11 @@ export function useOfflineMutations(workspaceId: string, pageId: string) {
     return validBlockTypes.includes(type as BlockType) ? (type as BlockType) : null;
   }, []);
 
+  // Helper function to check if a type can be stored in database
+  const canStoreInDatabase = useCallback((type: ExtendedBlockType): boolean => {
+    return toValidBlockType(type) !== null;
+  }, [toValidBlockType]);
+
   // Monitor online/offline status
   useEffect(() => {
     const handleOnline = () => {
@@ -239,6 +244,11 @@ export function useOfflineMutations(workspaceId: string, pageId: string) {
   // Offline-aware mutations
   const createBlockOffline = useMutation({
     mutationFn: async (blockData: Partial<Block> & { type: ExtendedBlockType; workspace_id: string }) => {
+      // Check if this type can be stored in database
+      if (!canStoreInDatabase(blockData.type)) {
+        throw new Error(`Block type '${blockData.type}' is UI-only and cannot be stored in database. Use a valid BlockType instead.`);
+      }
+
       // Convert ExtendedBlockType to BlockType for database operations
       const validType = toValidBlockType(blockData.type);
       if (!validType) {
