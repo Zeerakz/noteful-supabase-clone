@@ -64,10 +64,11 @@ export class EnhancedDatabaseQueryService {
     databaseId: string,
     filterGroup: any,
     fields: any[],
+    sortRules: any[] = [],
     userId?: string
   ): Promise<{ count: number | null; error: string | null }> {
     try {
-      const params = { databaseId, filterGroup, fields, userId };
+      const params = { databaseId, filterGroup, fields, sortRules, userId };
       const query = DatabaseQueryBuilder.buildCountQuery(params);
       const { count, error } = await query;
 
