@@ -168,16 +168,24 @@ class SupabaseChannelManager {
   ): () => void {
     const channel = this.getChannel(key, config);
     
+    // Subscribe to presence events using the correct Supabase syntax
     if (callbacks.onSync) {
-      channel.on('presence', { event: 'sync' }, callbacks.onSync);
+      channel.on('presence', { event: 'sync' }, () => {
+        const presences = channel.presenceState();
+        callbacks.onSync!(presences);
+      });
     }
     
     if (callbacks.onJoin) {
-      channel.on('presence', { event: 'join' }, callbacks.onJoin);
+      channel.on('presence', { event: 'join' }, ({ key: presenceKey, newPresences }) => {
+        callbacks.onJoin!({ key: presenceKey, newPresences });
+      });
     }
     
     if (callbacks.onLeave) {
-      channel.on('presence', { event: 'leave' }, callbacks.onLeave);
+      channel.on('presence', { event: 'leave' }, ({ key: presenceKey, leftPresences }) => {
+        callbacks.onLeave!({ key: presenceKey, leftPresences });
+      });
     }
 
     // Subscribe to the channel if not already subscribed
