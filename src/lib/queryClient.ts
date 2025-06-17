@@ -25,13 +25,6 @@ export const setupQueryPersistence = () => {
     queryClient: blocksQueryClient,
     persister: indexedDBPersister,
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-    dehydrateOptions: {
-      shouldDehydrateQuery: (query) => {
-        // Only persist block queries
-        const queryKey = query.queryKey;
-        return Array.isArray(queryKey) && queryKey[0] === 'blocks';
-      },
-    },
   });
 
   console.log('🔧 Query persistence setup complete');

@@ -240,7 +240,7 @@ export function useOfflineMutations(workspaceId: string, pageId: string) {
       }
 
       if (isOnline) {
-        // Execute immediately if online
+        // Execute immediately if online - use valid BlockType for database
         const dbData = {
           workspace_id: blockData.workspace_id,
           teamspace_id: blockData.teamspace_id || null,
