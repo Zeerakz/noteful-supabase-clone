@@ -13,6 +13,8 @@ interface DraggableBlockListProps {
   isEditable: boolean;
   childBlocks?: Block[];
   parentBlockId?: string;
+  onReportError?: (blockId: string, error: Error) => void;
+  onRetry?: () => void;
 }
 
 export function DraggableBlockList({
@@ -24,6 +26,8 @@ export function DraggableBlockList({
   isEditable,
   childBlocks = [],
   parentBlockId,
+  onReportError,
+  onRetry,
 }: DraggableBlockListProps) {
   const handleDragEnd = async (result: DropResult) => {
     if (!result.destination || !isEditable) return;
@@ -64,6 +68,8 @@ export function DraggableBlockList({
             onCreateBlock={onCreateBlock}
             isEditable={isEditable}
             childBlocks={childBlocks}
+            onReportError={onReportError}
+            onRetry={onRetry}
           />
         ))}
       </div>
@@ -113,6 +119,8 @@ export function DraggableBlockList({
                       onCreateBlock={onCreateBlock}
                       isEditable={isEditable}
                       childBlocks={childBlocks}
+                      onReportError={onReportError}
+                      onRetry={onRetry}
                     />
                   </div>
                 )}
