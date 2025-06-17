@@ -62,24 +62,28 @@ export class EnhancedDatabaseQueryService {
    */
   static async getDatabasePageCount(
     databaseId: string,
-    filterGroup: any,
-    fields: any[],
-    sortRules: any[] = [],
+    filterGroup: any = {},
     userId?: string
-  ): Promise<{ count: number | null; error: string | null }> {
+  ): Promise<number> {
     try {
-      const params = { databaseId, filterGroup, fields, sortRules, userId };
+      const params: DatabaseQueryParams = {
+        databaseId,
+        filterGroup,
+        fields: [],
+        sortRules: [],
+        userId,
+        options: { enableCounting: true }
+      };
+
       const query = DatabaseQueryBuilder.buildCountQuery(params);
       const { count, error } = await query;
 
       if (error) throw error;
 
-      return { count: count || 0, error: null };
+      return count || 0;
     } catch (err) {
-      return {
-        count: null,
-        error: err instanceof Error ? err.message : 'Failed to get page count',
-      };
+      console.error('Error getting database page count:', err);
+      return 0;
     }
   }
 }

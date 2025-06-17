@@ -6,9 +6,14 @@ import { WorkspaceGrid } from './WorkspaceGrid';
 import { WorkspaceListHeader } from './WorkspaceListHeader';
 import { useWorkspaces } from '@/hooks/useWorkspaces';
 import { useSessionTracking } from '@/hooks/useSessionTracking';
+import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 export function WorkspaceList() {
-  const { workspaces, loading, error } = useWorkspaces();
+  const { workspaces, loading, error, refetch } = useWorkspaces();
+  const { signOut } = useAuth();
+  const { toast } = useToast();
   
   // Track session for analytics
   useSessionTracking();
@@ -18,6 +23,76 @@ export function WorkspaceList() {
     loading, 
     error: !!error 
   });
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+    } catch (error) {
+      console.error('Error signing out:', error);
+      toast({
+        title: "Error",
+        description: "Failed to sign out. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleCreateWorkspace = async (name: string, description: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('workspaces')
+        .insert([
+          {
+            name,
+            description,
+            owner_user_id: (await supabase.auth.getUser()).data.user?.id,
+          }
+        ])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Workspace created successfully",
+      });
+
+      refetch();
+    } catch (error) {
+      console.error('Error creating workspace:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create workspace. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteWorkspace = async (workspaceId: string) => {
+    try {
+      const { error } = await supabase
+        .from('workspaces')
+        .update({ deleted_at: new Date().toISOString() })
+        .eq('id', workspaceId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success", 
+        description: "Workspace deleted successfully",
+      });
+
+      refetch();
+    } catch (error) {
+      console.error('Error deleting workspace:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete workspace. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
 
   // If loading, show loading state
   if (loading) {
@@ -62,8 +137,14 @@ export function WorkspaceList() {
   return (
     <AppLayout>
       <div className="container mx-auto px-6 py-8">
-        <WorkspaceListHeader />
-        <WorkspaceGrid workspaces={workspaces || []} />
+        <WorkspaceListHeader 
+          onSignOut={handleSignOut}
+          onCreateWorkspace={handleCreateWorkspace}
+        />
+        <WorkspaceGrid 
+          workspaces={workspaces || []} 
+          onDeleteWorkspace={handleDeleteWorkspace}
+        />
       </div>
     </AppLayout>
   );

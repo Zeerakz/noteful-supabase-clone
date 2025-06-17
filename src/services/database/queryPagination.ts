@@ -1,36 +1,25 @@
 
-import { PaginationOptions } from './types';
-
 export class DatabaseQueryPagination {
-  /**
-   * Apply pagination to the query
-   */
-  static applyPagination(query: any, pagination?: PaginationOptions) {
-    if (!pagination) {
-      return query;
-    }
+  static calculatePaginationMeta(page: number, limit: number, totalCount: number) {
+    const totalPages = Math.ceil(totalCount / limit);
+    const hasNextPage = page < totalPages;
+    const hasPreviousPage = page > 1;
 
-    const { page, limit } = pagination;
-    const from = (page - 1) * limit;
-    const to = from + limit - 1;
-    
-    return query.range(from, to);
+    return {
+      totalPages,
+      hasNextPage,
+      hasPreviousPage,
+      currentPage: page,
+      itemsPerPage: limit,
+      totalItems: totalCount
+    };
   }
 
-  /**
-   * Calculate pagination metadata
-   */
-  static calculatePaginationMeta(
-    page: number,
-    limit: number,
-    totalCount: number
-  ) {
-    const totalPages = Math.ceil(totalCount / limit);
-    
-    return {
-      hasNextPage: page < totalPages,
-      hasPreviousPage: page > 1,
-      totalPages
-    };
+  static getOffset(page: number, limit: number): number {
+    return (page - 1) * limit;
+  }
+
+  static getPageFromOffset(offset: number, limit: number): number {
+    return Math.floor(offset / limit) + 1;
   }
 }

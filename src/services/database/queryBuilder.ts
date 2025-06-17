@@ -1,57 +1,50 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { DatabaseQueryFilters } from './queryFilters';
-import { DatabaseQuerySorting } from './querySorting';
-import { DatabaseQueryPagination } from './queryPagination';
-import { DatabaseQueryParams, QueryOptions } from './types';
+import { DatabaseQueryParams } from './types';
 
 export class DatabaseQueryBuilder {
-  /**
-   * Build a complete database query with filters, sorting, and pagination
-   */
   static buildQuery(params: DatabaseQueryParams) {
-    const { databaseId, filterGroup, fields, sortRules, userId, options = {} } = params;
+    const { databaseId, filterGroup, sortRules, userId, options } = params;
 
-    if (!databaseId || databaseId === 'null' || databaseId === 'undefined') {
-      throw new Error('Invalid database ID');
-    }
-
-    // Build base query
     let query = supabase
       .from('blocks')
-      .select('*', { count: options.enableCounting ? 'exact' : undefined })
+      .select('*', { count: options?.enableCounting ? 'exact' : undefined })
       .eq('properties->>database_id', databaseId)
       .eq('type', 'page')
-      .is('in_trash', false);
+      .eq('archived', false)
+      .eq('in_trash', false);
 
-    // Apply filters
-    query = DatabaseQueryFilters.applyFilters(query, filterGroup, fields, userId);
+    // Apply pagination if enabled
+    if (options?.pagination) {
+      const { page, limit } = options.pagination;
+      const from = (page - 1) * limit;
+      const to = from + limit - 1;
+      query = query.range(from, to);
+    }
 
     // Apply sorting
-    query = DatabaseQuerySorting.applySorting(query, sortRules, fields);
-
-    // Apply pagination
-    query = DatabaseQueryPagination.applyPagination(query, options.pagination);
+    if (sortRules && sortRules.length > 0) {
+      sortRules.forEach((rule: any) => {
+        const column = rule.fieldId === 'title' ? 'properties->>title' : `properties->>prop_${rule.fieldId}`;
+        query = query.order(column, { ascending: rule.direction === 'asc' });
+      });
+    } else {
+      // Default sort by creation time
+      query = query.order('created_time', { ascending: false });
+    }
 
     return query;
   }
 
-  /**
-   * Build a count-only query for pagination
-   */
-  static buildCountQuery(params: Omit<DatabaseQueryParams, 'options'>) {
-    const { databaseId, filterGroup, fields, userId } = params;
+  static buildCountQuery(params: DatabaseQueryParams) {
+    const { databaseId } = params;
 
-    let query = supabase
+    return supabase
       .from('blocks')
       .select('*', { count: 'exact', head: true })
       .eq('properties->>database_id', databaseId)
       .eq('type', 'page')
-      .is('in_trash', false);
-
-    // Apply filters (but not sorting or pagination for count)
-    query = DatabaseQueryFilters.applyFilters(query, filterGroup, fields, userId);
-
-    return query;
+      .eq('archived', false)
+      .eq('in_trash', false);
   }
 }
