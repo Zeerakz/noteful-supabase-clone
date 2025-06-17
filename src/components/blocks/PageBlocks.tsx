@@ -1,8 +1,11 @@
 
 import React from 'react';
 import { useBlockOperations } from '@/hooks/blocks/useBlockOperations';
+import { useErrorRecovery } from '@/hooks/blocks/useErrorRecovery';
 import { DraggableBlockList } from './DraggableBlockList';
 import { Block, BlockType } from '@/types/block';
+import { Button } from '@/components/ui/button';
+import { RefreshCw, AlertTriangle } from 'lucide-react';
 
 interface PageBlocksProps {
   workspaceId: string;
@@ -11,13 +14,20 @@ interface PageBlocksProps {
 }
 
 export function PageBlocks({ workspaceId, pageId, isEditable = false }: PageBlocksProps) {
-  const { blocks, loading, error, createBlock, updateBlock, deleteBlock } = useBlockOperations(workspaceId, pageId);
+  const { blocks, loading, error, createBlock, updateBlock, deleteBlock, refetch } = useBlockOperations(workspaceId, pageId);
+  const { 
+    errors, 
+    reportBlockError, 
+    retryFailedBlocks, 
+    hasErrors 
+  } = useErrorRecovery(workspaceId, pageId);
 
   const handleUpdateBlock = async (id: string, updates: any) => {
     try {
       await updateBlock(id, updates);
     } catch (error) {
       console.error('Error updating block:', error);
+      reportBlockError(id, error as Error);
     }
   };
 
@@ -26,6 +36,7 @@ export function PageBlocks({ workspaceId, pageId, isEditable = false }: PageBloc
       await deleteBlock(id);
     } catch (error) {
       console.error('Error deleting block:', error);
+      reportBlockError(id, error as Error);
     }
   };
 
@@ -34,6 +45,7 @@ export function PageBlocks({ workspaceId, pageId, isEditable = false }: PageBloc
       await createBlock(params);
     } catch (error) {
       console.error('Error creating block:', error);
+      reportBlockError('new-block', error as Error);
     }
   };
 
@@ -52,7 +64,20 @@ export function PageBlocks({ workspaceId, pageId, isEditable = false }: PageBloc
   if (error) {
     return (
       <div className="p-4 text-red-600">
-        <p>Error loading blocks: {error}</p>
+        <div className="flex items-center gap-2 mb-2">
+          <AlertTriangle className="h-4 w-4" />
+          <span className="font-medium">Error loading blocks</span>
+        </div>
+        <p className="text-sm mb-3">{error}</p>
+        <Button 
+          size="sm" 
+          variant="outline" 
+          onClick={() => refetch()}
+          className="text-xs"
+        >
+          <RefreshCw className="h-3 w-3 mr-1" />
+          Retry
+        </Button>
       </div>
     );
   }
@@ -69,14 +94,40 @@ export function PageBlocks({ workspaceId, pageId, isEditable = false }: PageBloc
   const childBlocks = blocks.filter(block => block.parent_id && block.parent_id !== pageId);
 
   return (
-    <DraggableBlockList
-      blocks={parentBlocks}
-      pageId={pageId}
-      onUpdateBlock={handleUpdateBlock}
-      onDeleteBlock={handleDeleteBlock}
-      onCreateBlock={handleCreateBlock}
-      isEditable={isEditable}
-      childBlocks={childBlocks}
-    />
+    <div className="space-y-2">
+      {hasErrors && (
+        <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4 text-amber-600" />
+              <span className="text-sm font-medium text-amber-800">
+                {errors.length} block error{errors.length > 1 ? 's' : ''} detected
+              </span>
+            </div>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={retryFailedBlocks}
+              className="text-xs h-7"
+            >
+              <RefreshCw className="h-3 w-3 mr-1" />
+              Retry All
+            </Button>
+          </div>
+        </div>
+      )}
+      
+      <DraggableBlockList
+        blocks={parentBlocks}
+        pageId={pageId}
+        onUpdateBlock={handleUpdateBlock}
+        onDeleteBlock={handleDeleteBlock}
+        onCreateBlock={handleCreateBlock}
+        isEditable={isEditable}
+        childBlocks={childBlocks}
+        onReportError={reportBlockError}
+        onRetry={refetch}
+      />
+    </div>
   );
 }

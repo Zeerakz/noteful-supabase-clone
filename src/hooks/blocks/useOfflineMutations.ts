@@ -18,8 +18,8 @@ interface PendingMutation {
   };
 }
 
-// Type for database operations - only BlockType allowed
-type DatabaseBlockData = Omit<Block, 'type'> & { type: BlockType };
+// Type for database operations - all BlockType values are now valid
+type DatabaseBlockData = Block;
 
 export function useOfflineMutations(workspaceId: string, pageId: string) {
   const { user } = useAuth();
@@ -27,39 +27,29 @@ export function useOfflineMutations(workspaceId: string, pageId: string) {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [pendingMutations, setPendingMutations] = useState<PendingMutation[]>([]);
 
-  // Helper function to convert ExtendedBlockType to BlockType
-  const toValidBlockType = useCallback((type: ExtendedBlockType): BlockType | null => {
+  // Helper function to validate block types - all ExtendedBlockType values are now valid
+  const isValidBlockType = useCallback((type: ExtendedBlockType): type is BlockType => {
     const validBlockTypes: BlockType[] = [
       'page', 'database', 'text', 'image', 'heading_1', 'heading_2', 'heading_3',
       'todo_item', 'bulleted_list_item', 'numbered_list_item', 'toggle_list',
-      'code', 'quote', 'divider', 'callout'
+      'code', 'quote', 'divider', 'callout', 'two_column', 'table', 'embed', 'file_attachment'
     ];
     
-    return validBlockTypes.includes(type as BlockType) ? (type as BlockType) : null;
+    return validBlockTypes.includes(type as BlockType);
   }, []);
-
-  // Helper function to check if a type can be stored in database
-  const canStoreInDatabase = useCallback((type: ExtendedBlockType): boolean => {
-    return toValidBlockType(type) !== null;
-  }, [toValidBlockType]);
 
   // Helper function to sanitize updates for database operations
   const sanitizeUpdatesForDatabase = useCallback((updates: Partial<Block>): Partial<DatabaseBlockData> => {
     const sanitized = { ...updates } as any;
     
-    // Handle type conversion if type is being updated
-    if (sanitized.type) {
-      const validType = toValidBlockType(sanitized.type);
-      if (validType) {
-        sanitized.type = validType;
-      } else {
-        // Remove invalid type from updates
-        delete sanitized.type;
-      }
+    // Validate type if it's being updated
+    if (sanitized.type && !isValidBlockType(sanitized.type)) {
+      console.warn(`Invalid block type '${sanitized.type}' - removing from updates`);
+      delete sanitized.type;
     }
     
     return sanitized as Partial<DatabaseBlockData>;
-  }, [toValidBlockType]);
+  }, [isValidBlockType]);
 
   // Monitor online/offline status
   useEffect(() => {
@@ -167,7 +157,6 @@ export function useOfflineMutations(workspaceId: string, pageId: string) {
 
     switch (mutationFn) {
       case 'createBlock':
-        // Variables should already have valid BlockType from storage
         const createData = {
           ...variables,
           properties: variables.properties || {},
@@ -182,10 +171,8 @@ export function useOfflineMutations(workspaceId: string, pageId: string) {
         
         if (createError) throw createError;
         
-        // Convert database response to Block type
         const blockFromDb: Block = {
           ...newBlock,
-          type: newBlock.type as ExtendedBlockType, // Safe cast back to ExtendedBlockType for UI
           properties: (newBlock.properties as any) || {},
           content: (newBlock.content as any) || {},
         };
@@ -198,7 +185,6 @@ export function useOfflineMutations(workspaceId: string, pageId: string) {
         break;
 
       case 'updateBlock':
-        // Variables should already have valid types from storage
         const updateData = sanitizeUpdatesForDatabase(variables.updates);
 
         const { data: updatedBlock, error: updateError } = await supabase
@@ -210,10 +196,8 @@ export function useOfflineMutations(workspaceId: string, pageId: string) {
         
         if (updateError) throw updateError;
         
-        // Convert database response to Block type
         const updatedBlockFromDb: Block = {
           ...updatedBlock,
-          type: updatedBlock.type as ExtendedBlockType, // Safe cast back to ExtendedBlockType for UI
           properties: (updatedBlock.properties as any) || {},
           content: (updatedBlock.content as any) || {},
         };
@@ -250,23 +234,17 @@ export function useOfflineMutations(workspaceId: string, pageId: string) {
   // Offline-aware mutations
   const createBlockOffline = useMutation({
     mutationFn: async (blockData: Partial<Block> & { type: ExtendedBlockType; workspace_id: string }) => {
-      // Check if this type can be stored in database
-      if (!canStoreInDatabase(blockData.type)) {
-        throw new Error(`Block type '${blockData.type}' is UI-only and cannot be stored in database. Use a valid BlockType instead.`);
-      }
-
-      // Convert ExtendedBlockType to BlockType for database operations
-      const validType = toValidBlockType(blockData.type);
-      if (!validType) {
-        throw new Error(`Block type '${blockData.type}' cannot be stored in database`);
+      // Validate block type
+      if (!isValidBlockType(blockData.type)) {
+        throw new Error(`Block type '${blockData.type}' is not supported. Please use a valid block type.`);
       }
 
       if (isOnline) {
-        // Execute immediately if online - use valid BlockType for database
+        // Execute immediately if online
         const dbData: Partial<DatabaseBlockData> = {
           workspace_id: blockData.workspace_id,
           teamspace_id: blockData.teamspace_id || null,
-          type: validType, // Use converted type for database
+          type: blockData.type,
           parent_id: blockData.parent_id || pageId,
           properties: blockData.properties || {},
           content: blockData.content || {},
@@ -287,24 +265,19 @@ export function useOfflineMutations(workspaceId: string, pageId: string) {
         
         return {
           ...data,
-          type: validType as ExtendedBlockType, // Cast back to ExtendedBlockType for UI consistency
           properties: (data.properties as any) || {},
           content: (data.content as any) || {},
         } as Block;
       } else {
-        // Store for later if offline (convert type for storage)
-        const storageData = {
-          ...blockData,
-          type: validType, // Store only valid BlockType for offline processing
-        };
-        const mutationId = await storePendingMutation('createBlock', storageData);
+        // Store for later if offline
+        const mutationId = await storePendingMutation('createBlock', blockData);
         
-        // Create optimistic block with valid type for UI
+        // Create optimistic block
         const optimisticBlock: Block = {
           id: mutationId || crypto.randomUUID(),
           workspace_id: blockData.workspace_id,
           teamspace_id: null,
-          type: validType as ExtendedBlockType, // Use validType instead of blockData.type
+          type: blockData.type,
           parent_id: blockData.parent_id || pageId,
           properties: blockData.properties || {},
           content: blockData.content || {},
@@ -346,7 +319,6 @@ export function useOfflineMutations(workspaceId: string, pageId: string) {
         
         return {
           ...data,
-          type: data.type as ExtendedBlockType, // Cast database BlockType back to ExtendedBlockType for UI
           properties: (data.properties as any) || {},
           content: (data.content as any) || {},
         } as Block;
@@ -356,7 +328,7 @@ export function useOfflineMutations(workspaceId: string, pageId: string) {
         
         await storePendingMutation('updateBlock', { id, updates: storageUpdates });
         
-        // Return optimistic update with ExtendedBlockType
+        // Return optimistic update
         const currentBlocks = queryClient.getQueryData<Block[]>(
           blocksQueryKeys.page(workspaceId, pageId)
         );

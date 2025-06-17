@@ -1492,6 +1492,10 @@ export type Database = {
         | "quote"
         | "divider"
         | "callout"
+        | "two_column"
+        | "table"
+        | "embed"
+        | "file_attachment"
       grantable_permission_level: "view" | "comment" | "edit" | "full_access"
       grantee_type: "user" | "group"
       permission_grantee_type: "user" | "group"
@@ -1673,6 +1677,10 @@ export const Constants = {
         "quote",
         "divider",
         "callout",
+        "two_column",
+        "table",
+        "embed",
+        "file_attachment",
       ],
       grantable_permission_level: ["view", "comment", "edit", "full_access"],
       grantee_type: ["user", "group"],

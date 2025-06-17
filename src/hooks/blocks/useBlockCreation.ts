@@ -1,4 +1,5 @@
-import { Block } from './types';
+
+import { Block } from '@/types/block';
 
 export interface BlockInitializer {
   getInitialContent(type: string, customContent?: any): any;
@@ -17,13 +18,13 @@ export class BlockCreationService implements BlockInitializer {
       case 'text':
         return {};
       
-      case 'heading1':
-      case 'heading2':
-      case 'heading3':
+      case 'heading_1':
+      case 'heading_2':
+      case 'heading_3':
         return {};
       
-      case 'bullet_list':
-      case 'numbered_list':
+      case 'bulleted_list_item':
+      case 'numbered_list_item':
         return { items: [''] };
       
       case 'image':
@@ -36,7 +37,7 @@ export class BlockCreationService implements BlockInitializer {
           text: '' 
         };
       
-      case 'toggle':
+      case 'toggle_list':
         return { 
           title: '', 
           expanded: true 

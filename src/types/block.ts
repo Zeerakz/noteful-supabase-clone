@@ -14,10 +14,14 @@ export type BlockType =
   | 'code'
   | 'quote'
   | 'divider'
-  | 'callout';
+  | 'callout'
+  | 'two_column'
+  | 'table'
+  | 'embed'
+  | 'file_attachment';
 
-// Extended block types for UI rendering (not stored in database)
-export type ExtendedBlockType = BlockType | 'two_column' | 'table' | 'embed' | 'file_attachment';
+// Extended block types for UI rendering (all types are now supported in database)
+export type ExtendedBlockType = BlockType;
 
 export interface Block {
   id: string;

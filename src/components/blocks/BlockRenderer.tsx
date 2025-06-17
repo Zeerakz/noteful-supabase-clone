@@ -13,8 +13,7 @@ import { CalloutBlock } from './CalloutBlock';
 import { ToggleBlock } from './ToggleBlock';
 import { EmbedBlock } from './EmbedBlock';
 import { FileAttachmentBlock } from './FileAttachmentBlock';
-import { ErrorBoundary } from '@/components/error/ErrorBoundary';
-import { errorHandler } from '@/utils/errorHandler';
+import { BlockErrorBoundary } from './BlockErrorBoundary';
 
 interface BlockRendererProps {
   block: Block;
@@ -24,9 +23,21 @@ interface BlockRendererProps {
   onCreateBlock?: (params: any) => Promise<void>;
   isEditable: boolean;
   childBlocks?: Block[];
+  onReportError?: (blockId: string, error: Error) => void;
+  onRetry?: () => void;
 }
 
-export function BlockRenderer({ block, pageId, onUpdateBlock, onDeleteBlock, onCreateBlock, isEditable, childBlocks = [] }: BlockRendererProps) {
+export function BlockRenderer({ 
+  block, 
+  pageId, 
+  onUpdateBlock, 
+  onDeleteBlock, 
+  onCreateBlock, 
+  isEditable, 
+  childBlocks = [],
+  onReportError,
+  onRetry
+}: BlockRendererProps) {
   const handleContentUpdate = async (content: any) => {
     await onUpdateBlock(block.id, { content });
   };
@@ -159,31 +170,29 @@ export function BlockRenderer({ block, pageId, onUpdateBlock, onDeleteBlock, onC
         );
       default:
         return (
-          <div className="p-2 bg-gray-100 border border-dashed border-gray-300 rounded">
-            <span className="text-gray-500">Unknown block type: {block.type}</span>
+          <div className="p-3 my-2 bg-amber-50 border border-amber-200 rounded-lg">
+            <div className="flex items-center gap-2 text-amber-700">
+              <span className="text-sm font-medium">Unsupported block type:</span>
+              <span className="text-sm font-mono bg-amber-100 px-2 py-1 rounded">
+                {block.type}
+              </span>
+            </div>
+            <p className="text-xs text-amber-600 mt-1">
+              This block type is not yet implemented. Block ID: {block.id}
+            </p>
           </div>
         );
     }
   };
 
   return (
-    <ErrorBoundary
-      onError={(error, errorInfo) => {
-        errorHandler.logError(error, {
-          context: 'block_renderer',
-          componentStack: errorInfo.componentStack,
-          blockType: block.type,
-          blockId: block.id,
-        });
-      }}
-      fallback={
-        <div className="p-2 my-2 bg-red-50 border border-red-200 rounded">
-          <p className="text-sm font-medium text-red-700">Error rendering block: {block.type}</p>
-          <p className="text-xs text-red-600">Check console for details. Block ID: {block.id}</p>
-        </div>
-      }
+    <BlockErrorBoundary
+      blockId={block.id}
+      blockType={block.type}
+      onReportError={onReportError}
+      onRetry={onRetry}
     >
       {renderBlock()}
-    </ErrorBoundary>
+    </BlockErrorBoundary>
   );
 }
