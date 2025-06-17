@@ -1,4 +1,3 @@
-
 import { useCallback, useEffect, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
@@ -146,15 +145,9 @@ export function useOfflineMutations(workspaceId: string, pageId: string) {
 
     switch (mutationFn) {
       case 'createBlock':
-        // Validate and convert type before database operation
-        const validType = toValidBlockType(variables.type);
-        if (!validType) {
-          throw new Error(`Invalid block type for database: ${variables.type}`);
-        }
-
+        // Variables should already have valid BlockType from storage
         const createData = {
           ...variables,
-          type: validType,
           properties: variables.properties || {},
           content: variables.content || {},
         };
@@ -183,17 +176,8 @@ export function useOfflineMutations(workspaceId: string, pageId: string) {
         break;
 
       case 'updateBlock':
-        // Handle type conversion for updates
-        const updateData = { ...variables.updates };
-        if (updateData.type) {
-          const validUpdateType = toValidBlockType(updateData.type);
-          if (validUpdateType) {
-            updateData.type = validUpdateType;
-          } else {
-            // Remove invalid type from update
-            delete updateData.type;
-          }
-        }
+        // Variables should already have valid types from storage
+        const updateData = variables.updates;
 
         const { data: updatedBlock, error: updateError } = await supabase
           .from('blocks')
@@ -281,20 +265,24 @@ export function useOfflineMutations(workspaceId: string, pageId: string) {
         
         return {
           ...data,
-          type: blockData.type, // Preserve original ExtendedBlockType for UI
+          type: validType as ExtendedBlockType, // Cast back to ExtendedBlockType for UI consistency
           properties: (data.properties as any) || {},
           content: (data.content as any) || {},
         } as Block;
       } else {
-        // Store for later if offline (with original ExtendedBlockType)
-        const mutationId = await storePendingMutation('createBlock', blockData);
+        // Store for later if offline (convert type for storage)
+        const storageData = {
+          ...blockData,
+          type: validType, // Store only valid BlockType for offline processing
+        };
+        const mutationId = await storePendingMutation('createBlock', storageData);
         
-        // Create optimistic block
+        // Create optimistic block with valid type
         const optimisticBlock: Block = {
           id: mutationId || crypto.randomUUID(),
           workspace_id: blockData.workspace_id,
           teamspace_id: null,
-          type: blockData.type, // Keep original ExtendedBlockType
+          type: validType as ExtendedBlockType, // Use valid type for optimistic update
           parent_id: blockData.parent_id || pageId,
           properties: blockData.properties || {},
           content: blockData.content || {},
@@ -305,7 +293,6 @@ export function useOfflineMutations(workspaceId: string, pageId: string) {
           last_edited_by: user?.id || null,
           archived: false,
           in_trash: false,
-          ...blockData,
         };
 
         return optimisticBlock;
@@ -346,12 +333,23 @@ export function useOfflineMutations(workspaceId: string, pageId: string) {
         
         return {
           ...data,
-          type: updates.type || data.type, // Preserve original type if provided
+          type: (updates.type || data.type) as ExtendedBlockType, // Preserve original type if provided
           properties: (data.properties as any) || {},
           content: (data.content as any) || {},
         } as Block;
       } else {
-        await storePendingMutation('updateBlock', { id, updates });
+        // Store offline update with type conversion
+        const storageUpdates = { ...updates };
+        if (storageUpdates.type) {
+          const validType = toValidBlockType(storageUpdates.type);
+          if (validType) {
+            storageUpdates.type = validType;
+          } else {
+            delete storageUpdates.type;
+          }
+        }
+        
+        await storePendingMutation('updateBlock', { id, updates: storageUpdates });
         
         // Return optimistic update
         const currentBlocks = queryClient.getQueryData<Block[]>(
