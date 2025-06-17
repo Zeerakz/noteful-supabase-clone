@@ -8,6 +8,12 @@ interface ChannelManager {
   subscribers: Set<string>;
 }
 
+interface SubscriptionConfig {
+  onBlockChange?: (payload: any) => void;
+  onPageChange?: (payload: any) => void;
+  onPresenceChange?: (payload: any) => void;
+}
+
 class RealtimeManager {
   private channels = new Map<string, ChannelManager>();
   private blockSubscriptions = new Map<string, Set<(payload: any) => void>>();
@@ -77,6 +83,81 @@ class RealtimeManager {
     };
   }
 
+  subscribe(type: string, id: string, config: SubscriptionConfig): () => void {
+    const channelKey = `${type}-${id}`;
+    
+    let channelManager = this.channels.get(channelKey);
+    
+    if (!channelManager) {
+      const channel = supabase.channel(channelKey);
+      
+      // Set up different types of subscriptions based on type
+      if (type === 'page' && config.onBlockChange) {
+        channel.on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'blocks',
+            filter: `parent_id=eq.${id}`,
+          },
+          config.onBlockChange
+        );
+      }
+      
+      if (type === 'workspace' && config.onPageChange) {
+        channel.on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'blocks',
+            filter: `workspace_id=eq.${id}`,
+          },
+          config.onPageChange
+        );
+      }
+      
+      if (type === 'page' && config.onPresenceChange) {
+        // Set up presence tracking
+        channel.on('presence', { event: 'sync' }, () => {
+          const presences = channel.presenceState();
+          config.onPresenceChange?.({ type: 'sync', ...presences });
+        });
+        
+        channel.on('presence', { event: 'join' }, ({ newPresences }) => {
+          config.onPresenceChange?.({ type: 'join', newPresences });
+        });
+        
+        channel.on('presence', { event: 'leave' }, ({ leftPresences }) => {
+          config.onPresenceChange?.({ type: 'leave', leftPresences });
+        });
+      }
+      
+      channel.subscribe();
+      
+      channelManager = {
+        channel,
+        subscribers: new Set([id])
+      };
+      this.channels.set(channelKey, channelManager);
+    } else {
+      channelManager.subscribers.add(id);
+    }
+
+    // Return unsubscribe function
+    return () => {
+      const manager = this.channels.get(channelKey);
+      if (manager) {
+        manager.subscribers.delete(id);
+        if (manager.subscribers.size === 0) {
+          manager.channel.unsubscribe();
+          this.channels.delete(channelKey);
+        }
+      }
+    };
+  }
+
   cleanup() {
     // Cleanup all channels
     this.channels.forEach(({ channel }) => {
@@ -94,7 +175,11 @@ export function useRealtimeManager() {
     return realtimeManager.subscribeToBlock(blockId, callback);
   }, []);
 
-  return { subscribeToBlock };
+  const subscribe = useCallback((type: string, id: string, config: SubscriptionConfig) => {
+    return realtimeManager.subscribe(type, id, config);
+  }, []);
+
+  return { subscribeToBlock, subscribe };
 }
 
 export function cleanupRealtimeManager() {

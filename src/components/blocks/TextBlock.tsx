@@ -21,7 +21,7 @@ export function TextBlock({ block, pageId, onUpdate, onDelete, isEditable }: Tex
   const updateTimeoutRef = useRef<NodeJS.Timeout>();
   
   // Use the centralized realtime manager to avoid duplicate subscriptions
-  const { subscribeToBlock, unsubscribeFromBlock } = useRealtimeManager();
+  const { subscribeToBlock } = useRealtimeManager();
 
   useEffect(() => {
     if (!isEditable) return;
