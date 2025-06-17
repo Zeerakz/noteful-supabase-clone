@@ -24,14 +24,19 @@ export const setupQueryPersistence = async () => {
     const { persistQueryClient } = await import('@tanstack/query-persist-client-core');
     const { indexedDBPersister } = await import('./indexedDBPersister');
     
-    // Remove await to avoid type conflict
-    persistQueryClient({
+    // Call without await and handle as fire-and-forget to avoid type conflicts
+    const persistencePromise = persistQueryClient({
       queryClient: blocksQueryClient,
       persister: indexedDBPersister,
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
 
-    console.log('🔧 Query persistence setup complete');
+    // Handle the promise without blocking
+    persistencePromise.catch((error) => {
+      console.warn('⚠️ Query persistence failed:', error);
+    });
+
+    console.log('🔧 Query persistence setup initiated');
   } catch (error) {
     console.warn('⚠️ Query persistence setup failed:', error);
     // Continue without persistence if it fails

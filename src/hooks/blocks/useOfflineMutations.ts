@@ -18,6 +18,9 @@ interface PendingMutation {
   };
 }
 
+// Type for database operations - only BlockType allowed
+type DatabaseBlockData = Omit<Block, 'type'> & { type: BlockType };
+
 export function useOfflineMutations(workspaceId: string, pageId: string) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -41,8 +44,8 @@ export function useOfflineMutations(workspaceId: string, pageId: string) {
   }, [toValidBlockType]);
 
   // Helper function to sanitize updates for database operations
-  const sanitizeUpdatesForDatabase = useCallback((updates: Partial<Block>) => {
-    const sanitized = { ...updates };
+  const sanitizeUpdatesForDatabase = useCallback((updates: Partial<Block>): Partial<DatabaseBlockData> => {
+    const sanitized = { ...updates } as any;
     
     // Handle type conversion if type is being updated
     if (sanitized.type) {
@@ -55,7 +58,7 @@ export function useOfflineMutations(workspaceId: string, pageId: string) {
       }
     }
     
-    return sanitized;
+    return sanitized as Partial<DatabaseBlockData>;
   }, [toValidBlockType]);
 
   // Monitor online/offline status
@@ -169,7 +172,7 @@ export function useOfflineMutations(workspaceId: string, pageId: string) {
           ...variables,
           properties: variables.properties || {},
           content: variables.content || {},
-        };
+        } as DatabaseBlockData;
 
         const { data: newBlock, error: createError } = await supabase
           .from('blocks')
@@ -260,7 +263,7 @@ export function useOfflineMutations(workspaceId: string, pageId: string) {
 
       if (isOnline) {
         // Execute immediately if online - use valid BlockType for database
-        const dbData = {
+        const dbData: Partial<DatabaseBlockData> = {
           workspace_id: blockData.workspace_id,
           teamspace_id: blockData.teamspace_id || null,
           type: validType, // Use converted type for database
@@ -276,7 +279,7 @@ export function useOfflineMutations(workspaceId: string, pageId: string) {
 
         const { data, error } = await supabase
           .from('blocks')
-          .insert(dbData)
+          .insert(dbData as any)
           .select()
           .single();
 
@@ -334,7 +337,7 @@ export function useOfflineMutations(workspaceId: string, pageId: string) {
 
         const { data, error } = await supabase
           .from('blocks')
-          .update(dbUpdates)
+          .update(dbUpdates as any)
           .eq('id', id)
           .select()
           .single();
