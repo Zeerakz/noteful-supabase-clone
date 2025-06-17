@@ -24,7 +24,7 @@ export function BlockErrorBoundary({
     onReportError?.(blockId, error);
   };
 
-  const createErrorFallback = (error: Error, resetError: () => void) => (
+  const ErrorFallback = ({ error, resetError }: { error: Error; resetError: () => void }) => (
     <div className="p-4 my-2 bg-red-50 border border-red-200 rounded-lg">
       <div className="flex items-start gap-3">
         <AlertTriangle className="h-5 w-5 text-red-500 mt-0.5 flex-shrink-0" />
@@ -68,7 +68,7 @@ export function BlockErrorBoundary({
   return (
     <ErrorBoundary
       onError={handleError}
-      fallback={createErrorFallback}
+      fallback={ErrorFallback}
     >
       {children}
     </ErrorBoundary>
