@@ -21,11 +21,19 @@ export function TextBlock({ block, pageId, onUpdate, onDelete, isEditable }: Tex
   const { comments } = useComments(block.id);
 
   const handleContentChange = async (content: any) => {
-    await onUpdate(content);
+    try {
+      await onUpdate(content);
+    } catch (error) {
+      console.error('Error updating text block:', error);
+    }
   };
 
   const handleDelete = async () => {
-    await onDelete();
+    try {
+      await onDelete();
+    } catch (error) {
+      console.error('Error deleting text block:', error);
+    }
   };
 
   const handleOpenComments = () => {

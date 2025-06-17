@@ -14,15 +14,27 @@ export function PageBlocks({ workspaceId, pageId, isEditable = false }: PageBloc
   const { blocks, loading, error, createBlock, updateBlock, deleteBlock } = useBlockOperations(workspaceId, pageId);
 
   const handleUpdateBlock = async (id: string, updates: any) => {
-    await updateBlock(id, updates);
+    try {
+      await updateBlock(id, updates);
+    } catch (error) {
+      console.error('Error updating block:', error);
+    }
   };
 
   const handleDeleteBlock = async (id: string) => {
-    await deleteBlock(id);
+    try {
+      await deleteBlock(id);
+    } catch (error) {
+      console.error('Error deleting block:', error);
+    }
   };
 
   const handleCreateBlock = async (params: { type: BlockType; content?: any; parent_id?: string; pos?: number }) => {
-    await createBlock(params);
+    try {
+      await createBlock(params);
+    } catch (error) {
+      console.error('Error creating block:', error);
+    }
   };
 
   if (loading) {

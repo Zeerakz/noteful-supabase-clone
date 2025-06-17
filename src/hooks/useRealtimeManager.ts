@@ -16,6 +16,7 @@ interface ActiveSubscription {
   filter: string;
   channel: any;
   callbacks: Set<SubscriptionCallbacks>;
+  isSubscribed: boolean;
 }
 
 // Simplified type guard to check if an object is a Block
@@ -68,7 +69,7 @@ class RealtimeManager {
 
   private createSubscription(type: 'page' | 'workspace' | 'database', id: string): ActiveSubscription | null {
     try {
-      const channelName = `realtime_${type}_${id}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      const channelName = `realtime_${type}_${id}`;
 
       let filter: string;
       
@@ -100,6 +101,7 @@ class RealtimeManager {
         filter,
         channel,
         callbacks: new Set(),
+        isSubscribed: false,
       };
 
       // Set up the actual Supabase subscription
@@ -150,6 +152,11 @@ class RealtimeManager {
         )
         .subscribe((status) => {
           console.log(`📡 Subscription status for ${type}:${id}:`, status);
+          if (status === 'SUBSCRIBED') {
+            subscription.isSubscribed = true;
+          } else if (status === 'TIMED_OUT' || status === 'CLOSED') {
+            subscription.isSubscribed = false;
+          }
         });
 
       return subscription;
@@ -164,7 +171,7 @@ class RealtimeManager {
     if (subscription) {
       console.log('🧹 Cleaning up subscription:', key);
       try {
-        if (subscription.channel && typeof subscription.channel.unsubscribe === 'function') {
+        if (subscription.channel && subscription.isSubscribed) {
           subscription.channel.unsubscribe();
         }
         if (subscription.channel) {

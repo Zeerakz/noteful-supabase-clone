@@ -2,7 +2,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { useRealtimeManager } from '@/hooks/useRealtimeManager';
 import { Block, BlockType, BlockUpdateParams } from './types';
 
 // Helper function to convert Supabase data to our Block type
@@ -17,9 +16,8 @@ export function useBlockOperations(workspaceId?: string, pageId?: string) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
-  const { subscribe } = useRealtimeManager();
   const mountedRef = useRef(true);
-  const unsubscribeRef = useRef<(() => void) | null>(null);
+  const channelRef = useRef<any>(null);
 
   const fetchBlocks = useCallback(async () => {
     if (!pageId || !workspaceId) {
@@ -57,7 +55,7 @@ export function useBlockOperations(workspaceId?: string, pageId?: string) {
     }
   }, [pageId, workspaceId]);
 
-  // Handle realtime updates using the centralized manager
+  // Handle realtime updates with a single subscription
   const handleRealtimeUpdate = useCallback((payload: any) => {
     if (!mountedRef.current) return;
 
@@ -95,24 +93,49 @@ export function useBlockOperations(workspaceId?: string, pageId?: string) {
     });
   }, []);
 
-  // Set up realtime subscription using the centralized manager
+  // Set up realtime subscription
   useEffect(() => {
-    if (pageId && user) {
-      console.log('🔌 Setting up realtime subscription for page:', pageId);
-      const unsubscribe = subscribe('page', pageId, {
-        onBlockChange: handleRealtimeUpdate,
-      });
-      unsubscribeRef.current = unsubscribe;
+    if (!pageId || !user) return;
 
-      return () => {
-        console.log('🔌 Cleaning up realtime subscription for page:', pageId);
-        if (unsubscribeRef.current) {
-          unsubscribeRef.current();
-          unsubscribeRef.current = null;
-        }
-      };
+    console.log('🔌 Setting up realtime subscription for page:', pageId);
+    
+    // Clean up existing subscription
+    if (channelRef.current) {
+      console.log('🧹 Cleaning up existing subscription');
+      channelRef.current.unsubscribe();
+      supabase.removeChannel(channelRef.current);
+      channelRef.current = null;
     }
-  }, [pageId, user, subscribe, handleRealtimeUpdate]);
+
+    const channelName = `blocks_${pageId}`;
+    const channel = supabase.channel(channelName);
+
+    channel
+      .on(
+        'postgres_changes' as any,
+        {
+          event: '*',
+          schema: 'public',
+          table: 'blocks',
+          filter: `parent_id=eq.${pageId}`,
+        },
+        handleRealtimeUpdate
+      )
+      .subscribe((status) => {
+        console.log(`📡 Block subscription status:`, status);
+      });
+
+    channelRef.current = channel;
+
+    return () => {
+      console.log('🔌 Cleaning up realtime subscription for page:', pageId);
+      if (channelRef.current) {
+        channelRef.current.unsubscribe();
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
+    };
+  }, [pageId, user, handleRealtimeUpdate]);
 
   // Helper function to get the next position for a block
   const getNextBlockPosition = async (parentId: string) => {
