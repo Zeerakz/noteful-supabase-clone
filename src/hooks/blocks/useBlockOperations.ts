@@ -2,7 +2,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { useStableSubscription } from '@/hooks/useStableSubscription';
+import { useRealtimeManager } from '@/hooks/useRealtimeManager';
 import { Block, BlockType, BlockUpdateParams } from './types';
 
 // Helper function to convert Supabase data to our Block type
@@ -17,6 +17,7 @@ export function useBlockOperations(workspaceId?: string, pageId?: string) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
+  const { subscribe } = useRealtimeManager();
   const mountedRef = useRef(true);
 
   const fetchBlocks = useCallback(async () => {
@@ -53,28 +54,7 @@ export function useBlockOperations(workspaceId?: string, pageId?: string) {
     }
   }, [pageId, workspaceId]);
 
-  // Helper function to get the next position for a block
-  const getNextBlockPosition = async (parentId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('blocks')
-        .select('pos')
-        .eq('parent_id', parentId)
-        .order('pos', { ascending: false })
-        .limit(1);
-
-      if (error) throw error;
-
-      const maxPos = data && data.length > 0 ? data[0].pos : -1;
-      return maxPos + 1;
-    } catch (err) {
-      console.error('Error getting next block position:', err);
-      // Fallback to a simple increment if query fails
-      return Date.now() % 1000000; // Use modulo to keep within integer range
-    }
-  };
-
-  // Handle realtime updates
+  // Handle realtime updates using the centralized manager
   const handleRealtimeUpdate = useCallback((payload: any) => {
     if (!mountedRef.current) return;
 
@@ -105,13 +85,32 @@ export function useBlockOperations(workspaceId?: string, pageId?: string) {
     });
   }, []);
 
-  // Set up realtime subscription
-  const subscriptionConfig = pageId ? {
-    table: 'blocks',
-    filter: `parent_id=eq.${pageId}`,
-  } : null;
+  // Set up realtime subscription using the centralized manager
+  if (pageId && user) {
+    subscribe('page', pageId, {
+      onBlockChange: handleRealtimeUpdate,
+    });
+  }
 
-  useStableSubscription(subscriptionConfig, handleRealtimeUpdate, [pageId]);
+  // Helper function to get the next position for a block
+  const getNextBlockPosition = async (parentId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('blocks')
+        .select('pos')
+        .eq('parent_id', parentId)
+        .order('pos', { ascending: false })
+        .limit(1);
+
+      if (error) throw error;
+
+      const maxPos = data && data.length > 0 ? data[0].pos : -1;
+      return maxPos + 1;
+    } catch (err) {
+      console.error('Error getting next block position:', err);
+      return Date.now() % 1000000;
+    }
+  };
 
   const createBlock = useCallback(async (params: {
     type: BlockType;
@@ -156,19 +155,16 @@ export function useBlockOperations(workspaceId?: string, pageId?: string) {
     }
 
     try {
-      // Convert our updates to match Supabase schema
       const supabaseUpdates: any = {
         ...updates,
         last_edited_by: user.id,
         last_edited_time: new Date().toISOString(),
       };
 
-      // Ensure properties is JSON-compatible
       if (updates.properties) {
         supabaseUpdates.properties = updates.properties;
       }
 
-      // Ensure content is JSON-compatible
       if (updates.content !== undefined) {
         supabaseUpdates.content = updates.content;
       }

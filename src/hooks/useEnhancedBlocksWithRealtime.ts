@@ -1,10 +1,11 @@
 
 import { useCallback } from 'react';
 import { useEnhancedBlocks } from '@/hooks/useEnhancedBlocks';
-import { useWorkspaceRealtime } from '@/hooks/useWorkspaceRealtime';
+import { useRealtimeManager } from '@/hooks/useRealtimeManager';
 
 export function useEnhancedBlocksWithRealtime(pageId?: string, workspaceId?: string) {
   const blocksHook = useEnhancedBlocks(pageId, workspaceId);
+  const { subscribe } = useRealtimeManager();
 
   const handleBlockChange = useCallback((payload: any) => {
     const { new: newBlock, old: oldBlock } = payload;
@@ -19,10 +20,12 @@ export function useEnhancedBlocksWithRealtime(pageId?: string, workspaceId?: str
     }
   }, [pageId, blocksHook]);
 
-  useWorkspaceRealtime({
-    workspaceId,
-    onBlockChange: handleBlockChange,
-  });
+  // Use the centralized realtime manager instead of direct subscription
+  if (pageId && workspaceId) {
+    subscribe('page', pageId, {
+      onBlockChange: handleBlockChange,
+    });
+  }
 
   return blocksHook;
 }

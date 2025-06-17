@@ -1,10 +1,11 @@
 
 import { useCallback } from 'react';
 import { useEnhancedPages } from '@/hooks/useEnhancedPages';
-import { useWorkspaceRealtime } from '@/hooks/useWorkspaceRealtime';
+import { useRealtimeManager } from '@/hooks/useRealtimeManager';
 
 export function useEnhancedPagesWithRealtime(workspaceId?: string) {
   const pagesHook = useEnhancedPages(workspaceId);
+  const { subscribe } = useRealtimeManager();
 
   const handlePageChange = useCallback((payload: any) => {
     console.log('📄 Page change detected, refreshing pages...');
@@ -14,10 +15,12 @@ export function useEnhancedPagesWithRealtime(workspaceId?: string) {
     }, 50);
   }, [pagesHook]);
 
-  useWorkspaceRealtime({
-    workspaceId,
-    onPageChange: handlePageChange,
-  });
+  // Use the centralized realtime manager
+  if (workspaceId) {
+    subscribe('workspace', workspaceId, {
+      onPageChange: handlePageChange,
+    });
+  }
 
   return pagesHook;
 }
