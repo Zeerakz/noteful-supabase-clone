@@ -5,6 +5,18 @@ import { supabase } from '@/integrations/supabase/client';
 import { Block, BlockType } from '@/types/block';
 import { useToast } from '@/hooks/use-toast';
 
+// Type helper to transform Supabase data to Block type
+function transformSupabaseDataToBlock(data: any): Block {
+  return {
+    ...data,
+    properties: data.properties || {},
+    content: data.content || null,
+    created_by: data.created_by || null,
+    last_edited_by: data.last_edited_by || null,
+    teamspace_id: data.teamspace_id || null,
+  };
+}
+
 export function useBlockOperations(workspaceId?: string, pageId?: string) {
   const [blocks, setBlocks] = useState<Block[]>([]);
   const [loading, setLoading] = useState(true);
@@ -34,7 +46,8 @@ export function useBlockOperations(workspaceId?: string, pageId?: string) {
       if (error) throw error;
 
       console.log('📦 Fetched blocks:', data);
-      setBlocks(data || []);
+      const transformedBlocks = (data || []).map(transformSupabaseDataToBlock);
+      setBlocks(transformedBlocks);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch blocks';
       setError(errorMessage);
@@ -87,10 +100,11 @@ export function useBlockOperations(workspaceId?: string, pageId?: string) {
 
       console.log('✅ Block created:', data);
       
-      // Add to local state optimistically
-      setBlocks(prev => [...prev, data].sort((a, b) => (a.pos || 0) - (b.pos || 0)));
+      // Transform and add to local state optimistically
+      const transformedBlock = transformSupabaseDataToBlock(data);
+      setBlocks(prev => [...prev, transformedBlock].sort((a, b) => (a.pos || 0) - (b.pos || 0)));
       
-      return { data, error: null };
+      return { data: transformedBlock, error: null };
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to create block';
       console.error('❌ Error creating block:', err);
@@ -122,12 +136,13 @@ export function useBlockOperations(workspaceId?: string, pageId?: string) {
 
       console.log('✅ Block updated:', data);
       
-      // Update local state
+      // Transform and update local state
+      const transformedBlock = transformSupabaseDataToBlock(data);
       setBlocks(prev => prev.map(block => 
-        block.id === id ? { ...block, ...data } : block
+        block.id === id ? { ...block, ...transformedBlock } : block
       ));
       
-      return { data, error: null };
+      return { data: transformedBlock, error: null };
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to update block';
       console.error('❌ Error updating block:', err);

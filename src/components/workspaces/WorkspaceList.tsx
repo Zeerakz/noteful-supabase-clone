@@ -11,7 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
 export function WorkspaceList() {
-  const { workspaces, loading, error, refetch } = useWorkspaces();
+  const { workspaces, loading, error, fetchWorkspaces } = useWorkspaces();
   const { signOut } = useAuth();
   const { toast } = useToast();
   
@@ -58,7 +58,7 @@ export function WorkspaceList() {
         description: "Workspace created successfully",
       });
 
-      refetch();
+      fetchWorkspaces();
     } catch (error) {
       console.error('Error creating workspace:', error);
       toast({
@@ -83,7 +83,7 @@ export function WorkspaceList() {
         description: "Workspace deleted successfully",
       });
 
-      refetch();
+      fetchWorkspaces();
     } catch (error) {
       console.error('Error deleting workspace:', error);
       toast({
