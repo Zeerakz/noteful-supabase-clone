@@ -31,7 +31,7 @@ export function useBlocksWithQuery(
     refetchInterval,
   });
 
-  // Mutations
+  // Mutations with optimistic updates
   const createBlockMutation = useCreateBlockMutation(workspaceId || '', pageId || '');
   const updateBlockMutation = useUpdateBlockMutation(workspaceId || '', pageId || '');
   const deleteBlockMutation = useDeleteBlockMutation(workspaceId || '', pageId || '');

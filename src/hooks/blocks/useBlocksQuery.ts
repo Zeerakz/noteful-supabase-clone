@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Block, BlockType } from '@/types/block';
 import { blocksQueryKeys, BlocksQueryFilters } from './queryKeys';
 import { blocksQueryClient } from '@/lib/queryClient';
+import { toast } from '@/hooks/use-toast';
 
 // Fetch blocks function
 const fetchBlocks = async (
@@ -94,7 +95,7 @@ export function useInvalidateBlocks() {
   };
 }
 
-// Mutation hook for creating blocks
+// Mutation hook for creating blocks with optimistic updates
 export function useCreateBlockMutation(workspaceId: string, pageId: string) {
   const queryClient = useQueryClient();
 
@@ -113,8 +114,66 @@ export function useCreateBlockMutation(workspaceId: string, pageId: string) {
       if (error) throw error;
       return data as Block;
     },
+    onMutate: async (newBlock) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ 
+        queryKey: blocksQueryKeys.page(workspaceId, pageId) 
+      });
+
+      // Snapshot the previous value
+      const previousBlocks = queryClient.getQueryData<Block[]>(
+        blocksQueryKeys.page(workspaceId, pageId)
+      );
+
+      // Create optimistic block with temporary ID
+      const optimisticBlock: Block = {
+        id: crypto.randomUUID(),
+        workspace_id: workspaceId,
+        teamspace_id: null,
+        type: newBlock.type,
+        parent_id: pageId,
+        properties: newBlock.properties || {},
+        content: newBlock.content || {},
+        pos: newBlock.pos ?? Date.now() % 1000000,
+        created_time: new Date().toISOString(),
+        last_edited_time: new Date().toISOString(),
+        created_by: newBlock.created_by || null,
+        last_edited_by: newBlock.last_edited_by || null,
+        archived: false,
+        in_trash: false,
+        ...newBlock,
+      };
+
+      // Optimistically update the cache
+      queryClient.setQueryData<Block[]>(
+        blocksQueryKeys.page(workspaceId, pageId),
+        (old) => old ? [...old, optimisticBlock] : [optimisticBlock]
+      );
+
+      // Return context object with the snapshot value
+      return { previousBlocks, optimisticBlock };
+    },
+    onError: (err, newBlock, context) => {
+      // If the mutation fails, use the context returned from onMutate to roll back
+      queryClient.setQueryData(
+        blocksQueryKeys.page(workspaceId, pageId),
+        context?.previousBlocks
+      );
+
+      toast({
+        title: "Failed to create block",
+        description: "There was an error creating the block. Please try again.",
+        variant: "destructive",
+      });
+    },
     onSuccess: () => {
-      // Invalidate blocks queries for this page
+      toast({
+        title: "Block created",
+        description: "Block has been created successfully.",
+      });
+    },
+    onSettled: () => {
+      // Always refetch after error or success to ensure we have the latest data
       queryClient.invalidateQueries({
         queryKey: blocksQueryKeys.page(workspaceId, pageId),
       });
@@ -122,7 +181,7 @@ export function useCreateBlockMutation(workspaceId: string, pageId: string) {
   }, blocksQueryClient);
 }
 
-// Mutation hook for updating blocks
+// Mutation hook for updating blocks with optimistic updates
 export function useUpdateBlockMutation(workspaceId: string, pageId: string) {
   const queryClient = useQueryClient();
 
@@ -138,8 +197,54 @@ export function useUpdateBlockMutation(workspaceId: string, pageId: string) {
       if (error) throw error;
       return data as Block;
     },
+    onMutate: async ({ id, updates }) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ 
+        queryKey: blocksQueryKeys.page(workspaceId, pageId) 
+      });
+
+      // Snapshot the previous value
+      const previousBlocks = queryClient.getQueryData<Block[]>(
+        blocksQueryKeys.page(workspaceId, pageId)
+      );
+
+      // Optimistically update the cache
+      queryClient.setQueryData<Block[]>(
+        blocksQueryKeys.page(workspaceId, pageId),
+        (old) => {
+          if (!old) return old;
+          return old.map((block) =>
+            block.id === id
+              ? { ...block, ...updates, last_edited_time: new Date().toISOString() }
+              : block
+          );
+        }
+      );
+
+      // Return context object with the snapshot value
+      return { previousBlocks };
+    },
+    onError: (err, { id, updates }, context) => {
+      // If the mutation fails, use the context returned from onMutate to roll back
+      queryClient.setQueryData(
+        blocksQueryKeys.page(workspaceId, pageId),
+        context?.previousBlocks
+      );
+
+      toast({
+        title: "Failed to update block",
+        description: "There was an error updating the block. Please try again.",
+        variant: "destructive",
+      });
+    },
     onSuccess: () => {
-      // Invalidate blocks queries for this page
+      toast({
+        title: "Block updated",
+        description: "Block has been updated successfully.",
+      });
+    },
+    onSettled: () => {
+      // Always refetch after error or success to ensure we have the latest data
       queryClient.invalidateQueries({
         queryKey: blocksQueryKeys.page(workspaceId, pageId),
       });
@@ -147,7 +252,7 @@ export function useUpdateBlockMutation(workspaceId: string, pageId: string) {
   }, blocksQueryClient);
 }
 
-// Mutation hook for deleting blocks
+// Mutation hook for deleting blocks with optimistic updates
 export function useDeleteBlockMutation(workspaceId: string, pageId: string) {
   const queryClient = useQueryClient();
 
@@ -161,8 +266,48 @@ export function useDeleteBlockMutation(workspaceId: string, pageId: string) {
       if (error) throw error;
       return blockId;
     },
+    onMutate: async (blockId) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ 
+        queryKey: blocksQueryKeys.page(workspaceId, pageId) 
+      });
+
+      // Snapshot the previous value
+      const previousBlocks = queryClient.getQueryData<Block[]>(
+        blocksQueryKeys.page(workspaceId, pageId)
+      );
+
+      // Optimistically update the cache
+      queryClient.setQueryData<Block[]>(
+        blocksQueryKeys.page(workspaceId, pageId),
+        (old) => old ? old.filter((block) => block.id !== blockId) : old
+      );
+
+      // Return context object with the snapshot value and deleted block
+      const deletedBlock = previousBlocks?.find(block => block.id === blockId);
+      return { previousBlocks, deletedBlock };
+    },
+    onError: (err, blockId, context) => {
+      // If the mutation fails, use the context returned from onMutate to roll back
+      queryClient.setQueryData(
+        blocksQueryKeys.page(workspaceId, pageId),
+        context?.previousBlocks
+      );
+
+      toast({
+        title: "Failed to delete block",
+        description: "There was an error deleting the block. Please try again.",
+        variant: "destructive",
+      });
+    },
     onSuccess: () => {
-      // Invalidate blocks queries for this page
+      toast({
+        title: "Block deleted",
+        description: "Block has been deleted successfully.",
+      });
+    },
+    onSettled: () => {
+      // Always refetch after error or success to ensure we have the latest data
       queryClient.invalidateQueries({
         queryKey: blocksQueryKeys.page(workspaceId, pageId),
       });
