@@ -24,7 +24,10 @@ export function PageBlocks({ workspaceId, pageId, isEditable = false }: PageBloc
 
   const handleUpdateBlock = async (id: string, updates: any) => {
     try {
-      await updateBlock(id, updates);
+      const result = await updateBlock(id, updates);
+      if (result.error) {
+        throw new Error(result.error);
+      }
     } catch (error) {
       console.error('Error updating block:', error);
       reportBlockError(id, error as Error);
@@ -33,7 +36,10 @@ export function PageBlocks({ workspaceId, pageId, isEditable = false }: PageBloc
 
   const handleDeleteBlock = async (id: string) => {
     try {
-      await deleteBlock(id);
+      const result = await deleteBlock(id);
+      if (result.error) {
+        throw new Error(result.error);
+      }
     } catch (error) {
       console.error('Error deleting block:', error);
       reportBlockError(id, error as Error);
@@ -42,7 +48,10 @@ export function PageBlocks({ workspaceId, pageId, isEditable = false }: PageBloc
 
   const handleCreateBlock = async (params: { type: BlockType; content?: any; parent_id?: string; pos?: number }) => {
     try {
-      await createBlock(params);
+      const result = await createBlock(params);
+      if (result.error) {
+        throw new Error(result.error);
+      }
     } catch (error) {
       console.error('Error creating block:', error);
       reportBlockError('new-block', error as Error);

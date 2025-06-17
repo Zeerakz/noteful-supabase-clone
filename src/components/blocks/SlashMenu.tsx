@@ -18,7 +18,8 @@ import {
   Copy,
   FileText,
   Globe,
-  Paperclip
+  Paperclip,
+  Columns
 } from 'lucide-react';
 
 interface SlashMenuProps {
@@ -131,7 +132,7 @@ const menuItems = [
   { 
     type: 'two_column', 
     label: 'Columns', 
-    icon: Copy, 
+    icon: Columns, 
     description: 'Create a two-column layout',
     keywords: ['columns', 'layout', 'two', 'split'] 
   },
