@@ -1,42 +1,37 @@
+
 import React, { useState } from 'react';
+import { DatabaseField, RelationFieldSettings } from '@/types/database';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
-import { DatabaseField, RelationFieldSettings } from '@/types/database';
-import { Plus } from 'lucide-react';
-import { useRelationFieldState } from './relation/useRelationFieldState';
-import { SelectedRelationItems } from './relation/SelectedRelationItems';
+import { Plus, X, ExternalLink } from 'lucide-react';
 import { RelationSelectorDialogContent } from './relation/RelationSelectorDialogContent';
+import { useRelationFieldState } from './relation/useRelationFieldState';
 
 interface RelationFieldEditorProps {
-  settings: RelationFieldSettings;
-  workspaceId: string;
-  isMultiple?: boolean;
-  showBacklink?: boolean;
-  onBacklinkToggle?: (enabled: boolean) => void;
-  pageId: string;
   field: DatabaseField;
+  pageId: string;
+  value?: string;
+  onValueChange?: (value: string) => void;
+  workspaceId: string;
 }
 
-export function RelationFieldEditor({ 
-  settings, 
-  workspaceId, 
-  isMultiple = false,
-  showBacklink = false,
-  onBacklinkToggle,
+export function RelationFieldEditor({
+  field,
   pageId,
-  field
+  value,
+  onValueChange,
+  workspaceId,
 }: RelationFieldEditorProps) {
-  const [isOpen, setIsOpen] = useState(false);
-  const [localBacklink, setLocalBacklink] = useState(showBacklink);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  
+  const settings = field.settings as RelationFieldSettings;
+  const isMultiple = settings?.is_multiple || false;
 
   const {
     selectedPages,
     relatedPageIds,
     loadingRelations,
-    pages,
-    loadingTargetPages,
     handlePageSelect,
     handleRemove,
   } = useRelationFieldState({
@@ -45,63 +40,62 @@ export function RelationFieldEditor({
     isMultiple,
     settings,
     workspaceId,
-    onCloseDialog: () => setIsOpen(false),
+    onCloseDialog: () => setIsDialogOpen(false),
   });
 
-  const handleBacklinkToggle = (enabled: boolean) => {
-    setLocalBacklink(enabled);
-    if (onBacklinkToggle) {
-      onBacklinkToggle(enabled);
-    }
-  };
+  const selectedPageCount = relatedPageIds.length;
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-2">
       {/* Selected items display */}
-      <div className="space-y-2">
-        <SelectedRelationItems selectedPages={selectedPages} onRemove={handleRemove} />
-      </div>
+      {selectedPages.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {selectedPages.map((page) => (
+            <Badge key={page.id} variant="secondary" className="flex items-center gap-1">
+              <span className="truncate max-w-32">
+                {(page.properties as any)?.title || 'Untitled'}
+              </span>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-4 w-4 p-0 hover:bg-destructive hover:text-destructive-foreground"
+                onClick={() => handleRemove(page.id)}
+              >
+                <X className="h-3 w-3" />
+              </Button>
+            </Badge>
+          ))}
+        </div>
+      )}
 
-      {/* Controls */}
-      <div className="flex items-center justify-between">
-        {/* Add/Select button */}
-        <Dialog open={isOpen} onOpenChange={setIsOpen}>
-          <DialogTrigger asChild>
-            <Button variant="outline" size="sm" className="gap-2">
-              <Plus className="h-4 w-4" />
-              {selectedPages.length === 0 ? 'Select items' : isMultiple ? 'Add more' : 'Change selection'}
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-md max-h-[600px] flex flex-col">
-            <RelationSelectorDialogContent
-              pages={pages}
-              loadingTargetPages={loadingTargetPages}
-              loadingRelations={loadingRelations}
-              relatedPageIds={relatedPageIds}
-              handlePageSelect={handlePageSelect}
-              isMultiple={isMultiple}
-              selectedPageCount={selectedPages.length}
-            />
-          </DialogContent>
-        </Dialog>
+      {/* Add relation button */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogTrigger asChild>
+          <Button variant="outline" size="sm" className="w-full">
+            <Plus className="h-4 w-4 mr-2" />
+            {selectedPages.length === 0 
+              ? `Add ${field.name}` 
+              : isMultiple 
+                ? `Add more ${field.name}` 
+                : `Change ${field.name}`
+            }
+          </Button>
+        </DialogTrigger>
+        <DialogContent className="max-w-md max-h-[80vh] flex flex-col">
+          <RelationSelectorDialogContent
+            field={field}
+            loadingRelations={loadingRelations}
+            relatedPageIds={relatedPageIds}
+            handlePageSelect={handlePageSelect}
+            isMultiple={isMultiple}
+            selectedPageCount={selectedPageCount}
+          />
+        </DialogContent>
+      </Dialog>
 
-        {/* Backlink toggle */}
-        {onBacklinkToggle && (
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              id="show-backlink"
-              checked={localBacklink}
-              onCheckedChange={(checked) => handleBacklinkToggle(Boolean(checked))}
-            />
-            <Label 
-              htmlFor="show-backlink" 
-              className="text-sm cursor-pointer select-none"
-            >
-              Show backlink
-            </Label>
-          </div>
-        )}
-      </div>
+      {loadingRelations && (
+        <div className="text-xs text-muted-foreground">Loading relations...</div>
+      )}
     </div>
   );
 }

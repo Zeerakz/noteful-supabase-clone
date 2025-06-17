@@ -6,10 +6,11 @@ import { Label } from '@/components/ui/label';
 import { Block } from '@/types/block';
 import { Link, Search } from 'lucide-react';
 import { RelationPageList } from './RelationPageList';
+import { useDatabaseSearch } from '@/hooks/useDatabaseSearch';
+import { DatabaseField, RelationFieldSettings } from '@/types/database';
 
 interface RelationSelectorDialogContentProps {
-  pages: Block[];
-  loadingTargetPages: boolean;
+  field: DatabaseField;
   loadingRelations: boolean;
   relatedPageIds: string[];
   handlePageSelect: (pageId: string) => void;
@@ -18,8 +19,7 @@ interface RelationSelectorDialogContentProps {
 }
 
 export function RelationSelectorDialogContent({
-  pages,
-  loadingTargetPages,
+  field,
   loadingRelations,
   relatedPageIds,
   handlePageSelect,
@@ -27,12 +27,22 @@ export function RelationSelectorDialogContent({
   selectedPageCount,
 }: RelationSelectorDialogContentProps) {
   const [searchTerm, setSearchTerm] = useState('');
-
-  const filteredPages = pages.filter(page =>
-    ((page.properties as any)?.title || '').toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  
+  const settings = field.settings as RelationFieldSettings;
+  
+  const { 
+    pages, 
+    loading: loadingSearch, 
+    error: searchError 
+  } = useDatabaseSearch({
+    databaseId: settings?.target_database_id || '',
+    searchTerm,
+    enabled: !!settings?.target_database_id
+  });
 
   const isPageSelected = (pageId: string) => relatedPageIds.includes(pageId);
+
+  const isLoading = loadingRelations || loadingSearch;
 
   return (
     <>
@@ -64,10 +74,17 @@ export function RelationSelectorDialogContent({
           {isMultiple ? 'Multi-select: Click to toggle selection' : 'Single-select: Click to select'}
         </div>
 
+        {/* Error display */}
+        {searchError && (
+          <div className="text-sm text-destructive bg-destructive/10 px-3 py-2 rounded">
+            Error: {searchError}
+          </div>
+        )}
+
         {/* Page list */}
         <RelationPageList
-          filteredPages={filteredPages}
-          loading={loadingTargetPages || loadingRelations}
+          filteredPages={pages}
+          loading={isLoading}
           searchTerm={searchTerm}
           isPageSelected={isPageSelected}
           onPageSelect={handlePageSelect}

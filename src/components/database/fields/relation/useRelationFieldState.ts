@@ -3,7 +3,6 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Block } from '@/types/block';
 import { DatabaseField, RelationFieldSettings } from '@/types/database';
-import { useDatabasePages } from '@/hooks/useDatabasePages';
 
 interface UseRelationFieldStateProps {
   pageId: string;
@@ -25,8 +24,6 @@ export function useRelationFieldState({
   const [relatedPageIds, setRelatedPageIds] = useState<string[]>([]);
   const [loadingRelations, setLoadingRelations] = useState(true);
   const [selectedPages, setSelectedPages] = useState<Block[]>([]);
-
-  const { pages, loading: loadingTargetPages } = useDatabasePages(settings.target_database_id, workspaceId);
 
   // Fetch initial related page IDs
   useEffect(() => {
@@ -54,15 +51,31 @@ export function useRelationFieldState({
     fetchRelations();
   }, [pageId, field.id]);
 
-  // Update selected pages based on fetched IDs and available pages
+  // Fetch selected pages details for display
   useEffect(() => {
-    if (loadingRelations || !pages.length) {
-      if (!loadingRelations) setSelectedPages([]);
-      return;
-    }
-    const selected = pages.filter(page => relatedPageIds.includes(page.id));
-    setSelectedPages(selected);
-  }, [relatedPageIds, pages, loadingRelations]);
+    const fetchSelectedPages = async () => {
+      if (relatedPageIds.length === 0) {
+        setSelectedPages([]);
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from('blocks')
+          .select('*')
+          .in('id', relatedPageIds)
+          .eq('type', 'page');
+
+        if (error) throw error;
+        setSelectedPages((data as Block[]) || []);
+      } catch (err) {
+        console.error('Error fetching selected pages:', err);
+        setSelectedPages([]);
+      }
+    };
+
+    fetchSelectedPages();
+  }, [relatedPageIds]);
 
   const handleRemove = async (pageIdToRemove: string) => {
     const { error } = await supabase
@@ -113,9 +126,8 @@ export function useRelationFieldState({
     selectedPages,
     relatedPageIds,
     loadingRelations,
-    pages,
-    loadingTargetPages,
     handlePageSelect,
     handleRemove,
+    field, // Export field for use in dialog
   };
 }
