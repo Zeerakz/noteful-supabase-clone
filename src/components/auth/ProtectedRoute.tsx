@@ -19,7 +19,8 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   }
 
   if (!user) {
-    return <Navigate to="/login" replace />;
+    // Use replace to avoid adding to history stack
+    return <Navigate to="/auth" replace />;
   }
 
   return <>{children}</>;

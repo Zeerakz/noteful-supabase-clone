@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useWorkspaces } from '@/hooks/useWorkspaces';
@@ -14,12 +14,29 @@ export function WorkspaceList() {
   const { signOut } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const hasRedirected = useRef(false);
 
   useEffect(() => {
-    if (!loading && !error && workspaces.length === 1) {
-      navigate(`/workspace/${workspaces[0].id}`, { replace: true });
+    // Prevent multiple redirects and only redirect once when conditions are met
+    if (!loading && !error && workspaces.length === 1 && !hasRedirected.current) {
+      hasRedirected.current = true;
+      console.log('🔄 Auto-redirecting to single workspace:', workspaces[0].id);
+      
+      // Use setTimeout to avoid immediate redirect issues
+      const timeoutId = setTimeout(() => {
+        navigate(`/workspace/${workspaces[0].id}`, { replace: true });
+      }, 100);
+
+      return () => clearTimeout(timeoutId);
     }
   }, [workspaces, loading, error, navigate]);
+
+  // Reset redirect flag when workspaces change significantly
+  useEffect(() => {
+    if (workspaces.length !== 1) {
+      hasRedirected.current = false;
+    }
+  }, [workspaces.length]);
 
   const handleCreateWorkspace = async (name: string, description: string) => {
     const { error: createError } = await createWorkspace(name, description);
@@ -61,7 +78,7 @@ export function WorkspaceList() {
 
   const handleSignOut = async () => {
     await signOut();
-    navigate('/login');
+    navigate('/auth');
   };
 
   if (loading) {
@@ -87,8 +104,8 @@ export function WorkspaceList() {
     );
   }
 
-  // If there's only one workspace, show a redirecting message while the effect runs.
-  if (workspaces.length === 1 && !loading && !error) {
+  // Show redirecting message only if we have one workspace and are about to redirect
+  if (workspaces.length === 1 && !loading && !error && hasRedirected.current) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-lg">Redirecting to your workspace...</div>
