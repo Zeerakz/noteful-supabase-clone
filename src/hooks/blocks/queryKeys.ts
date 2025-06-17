@@ -7,12 +7,8 @@ export interface BlocksQueryFilters {
   [key: string]: any;
 }
 
-export interface BlocksQueryKey {
-  0: 'blocks';
-  1: string; // workspaceId
-  2: string; // pageId
-  3: BlocksQueryFilters; // filters
-}
+// Simplified query key type that properly extends array
+export type BlocksQueryKey = readonly ['blocks', string, string, BlocksQueryFilters];
 
 // Query key factory for blocks
 export const blocksQueryKeys = {
@@ -25,7 +21,7 @@ export const blocksQueryKeys = {
     ['blocks', workspaceId, pageId] as const,
   
   filtered: (workspaceId: string, pageId: string, filters: BlocksQueryFilters = {}): BlocksQueryKey =>
-    ['blocks', workspaceId, pageId, filters],
+    ['blocks', workspaceId, pageId, filters] as const,
   
   // Helper to create query key for specific block
   block: (workspaceId: string, pageId: string, blockId: string) =>
@@ -33,6 +29,6 @@ export const blocksQueryKeys = {
 };
 
 // Type guard to check if a query key is a blocks query
-export const isBlocksQueryKey = (queryKey: unknown[]): queryKey is BlocksQueryKey => {
+export const isBlocksQueryKey = (queryKey: readonly unknown[]): queryKey is BlocksQueryKey => {
   return Array.isArray(queryKey) && queryKey[0] === 'blocks' && queryKey.length >= 4;
 };

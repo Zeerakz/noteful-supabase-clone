@@ -16,6 +16,3 @@ export const blocksQueryClient = new QueryClient({
     },
   },
 });
-
-// Export the main query client as well for other parts of the app
-export { queryClient } from '@tanstack/react-query';

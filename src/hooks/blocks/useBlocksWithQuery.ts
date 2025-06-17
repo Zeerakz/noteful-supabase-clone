@@ -72,10 +72,16 @@ export function useBlocksWithQuery(
       throw new Error('User not authenticated');
     }
 
+    // Filter out ExtendedBlockType values that aren't valid BlockType
+    const validUpdates = { ...updates };
+    if (validUpdates.type && !['page', 'database', 'text', 'image', 'heading_1', 'heading_2', 'heading_3', 'todo_item', 'bulleted_list_item', 'numbered_list_item', 'toggle_list', 'code', 'quote', 'divider', 'callout'].includes(validUpdates.type)) {
+      delete validUpdates.type;
+    }
+
     return updateBlockMutation.mutateAsync({
       id,
       updates: {
-        ...updates,
+        ...validUpdates,
         last_edited_by: user.id,
         last_edited_time: new Date().toISOString(),
       },

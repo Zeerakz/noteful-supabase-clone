@@ -1,7 +1,7 @@
 
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Block } from '@/types/block';
+import { Block, BlockType } from '@/types/block';
 import { blocksQueryKeys, BlocksQueryFilters } from './queryKeys';
 import { blocksQueryClient } from '@/lib/queryClient';
 
@@ -25,7 +25,16 @@ const fetchBlocks = async (
 
   // Apply filters
   if (filters.type) {
-    query = query.eq('type', filters.type);
+    // Only filter by valid block types that exist in the database
+    const validBlockTypes: BlockType[] = [
+      'page', 'database', 'text', 'image', 'heading_1', 'heading_2', 'heading_3',
+      'todo_item', 'bulleted_list_item', 'numbered_list_item', 'toggle_list',
+      'code', 'quote', 'divider', 'callout'
+    ];
+    
+    if (validBlockTypes.includes(filters.type as BlockType)) {
+      query = query.eq('type', filters.type);
+    }
   }
 
   if (filters.search) {
@@ -89,7 +98,7 @@ export function useCreateBlockMutation(workspaceId: string, pageId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (blockData: Partial<Block>) => {
+    mutationFn: async (blockData: Partial<Omit<Block, 'type'>> & { type: BlockType }) => {
       const { data, error } = await supabase
         .from('blocks')
         .insert({
@@ -117,7 +126,7 @@ export function useUpdateBlockMutation(workspaceId: string, pageId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ id, updates }: { id: string; updates: Partial<Block> }) => {
+    mutationFn: async ({ id, updates }: { id: string; updates: Partial<Omit<Block, 'type'>> & { type?: BlockType } }) => {
       const { data, error } = await supabase
         .from('blocks')
         .update(updates)
