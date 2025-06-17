@@ -19,6 +19,7 @@ export function useBlockOperations(workspaceId?: string, pageId?: string) {
   const { user } = useAuth();
   const { subscribe } = useRealtimeManager();
   const mountedRef = useRef(true);
+  const unsubscribeRef = useRef<(() => void) | null>(null);
 
   const fetchBlocks = useCallback(async () => {
     if (!pageId || !workspaceId) {
@@ -42,10 +43,12 @@ export function useBlockOperations(workspaceId?: string, pageId?: string) {
       if (mountedRef.current) {
         const normalizedBlocks = (data || []).map(normalizeBlock);
         setBlocks(normalizedBlocks);
+        console.log('📦 Fetched blocks:', normalizedBlocks);
       }
     } catch (err) {
       if (mountedRef.current) {
         setError(err instanceof Error ? err.message : 'Failed to fetch blocks');
+        console.error('❌ Error fetching blocks:', err);
       }
     } finally {
       if (mountedRef.current) {
@@ -59,6 +62,7 @@ export function useBlockOperations(workspaceId?: string, pageId?: string) {
     if (!mountedRef.current) return;
 
     const { eventType, new: newRecord, old: oldRecord } = payload;
+    console.log('🔄 Realtime block update:', { eventType, newRecord, oldRecord });
 
     setBlocks(prev => {
       switch (eventType) {
@@ -67,17 +71,23 @@ export function useBlockOperations(workspaceId?: string, pageId?: string) {
           if (prev.some(block => block.id === newBlock.id)) {
             return prev;
           }
-          return [...prev, newBlock].sort((a, b) => (a.pos || 0) - (b.pos || 0));
+          const insertedBlocks = [...prev, newBlock].sort((a, b) => (a.pos || 0) - (b.pos || 0));
+          console.log('➕ Block inserted:', newBlock);
+          return insertedBlocks;
 
         case 'UPDATE':
           const updatedBlock = normalizeBlock(newRecord);
-          return prev.map(block => 
+          const updatedBlocks = prev.map(block => 
             block.id === updatedBlock.id ? updatedBlock : block
           ).sort((a, b) => (a.pos || 0) - (b.pos || 0));
+          console.log('✏️ Block updated:', updatedBlock);
+          return updatedBlocks;
 
         case 'DELETE':
           const deletedBlock = oldRecord;
-          return prev.filter(block => block.id !== deletedBlock.id);
+          const filteredBlocks = prev.filter(block => block.id !== deletedBlock.id);
+          console.log('🗑️ Block deleted:', deletedBlock);
+          return filteredBlocks;
 
         default:
           return prev;
@@ -86,11 +96,23 @@ export function useBlockOperations(workspaceId?: string, pageId?: string) {
   }, []);
 
   // Set up realtime subscription using the centralized manager
-  if (pageId && user) {
-    subscribe('page', pageId, {
-      onBlockChange: handleRealtimeUpdate,
-    });
-  }
+  useEffect(() => {
+    if (pageId && user) {
+      console.log('🔌 Setting up realtime subscription for page:', pageId);
+      const unsubscribe = subscribe('page', pageId, {
+        onBlockChange: handleRealtimeUpdate,
+      });
+      unsubscribeRef.current = unsubscribe;
+
+      return () => {
+        console.log('🔌 Cleaning up realtime subscription for page:', pageId);
+        if (unsubscribeRef.current) {
+          unsubscribeRef.current();
+          unsubscribeRef.current = null;
+        }
+      };
+    }
+  }, [pageId, user, subscribe, handleRealtimeUpdate]);
 
   // Helper function to get the next position for a block
   const getNextBlockPosition = async (parentId: string) => {
@@ -143,8 +165,10 @@ export function useBlockOperations(workspaceId?: string, pageId?: string) {
 
       if (error) throw error;
 
+      console.log('✅ Block created:', data);
       return { data: normalizeBlock(data), error: null };
     } catch (err) {
+      console.error('❌ Error creating block:', err);
       return { data: null, error: err instanceof Error ? err.message : 'Failed to create block' };
     }
   }, [user, workspaceId, pageId, getNextBlockPosition]);
@@ -178,8 +202,10 @@ export function useBlockOperations(workspaceId?: string, pageId?: string) {
 
       if (error) throw error;
 
+      console.log('✅ Block updated:', data);
       return { data: normalizeBlock(data), error: null };
     } catch (err) {
+      console.error('❌ Error updating block:', err);
       return { data: null, error: err instanceof Error ? err.message : 'Failed to update block' };
     }
   }, [user]);
@@ -193,8 +219,10 @@ export function useBlockOperations(workspaceId?: string, pageId?: string) {
 
       if (error) throw error;
 
+      console.log('✅ Block deleted:', id);
       return { error: null };
     } catch (err) {
+      console.error('❌ Error deleting block:', err);
       return { error: err instanceof Error ? err.message : 'Failed to delete block' };
     }
   }, []);

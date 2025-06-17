@@ -43,6 +43,9 @@ class RealtimeManager {
       subscription = this.createSubscription(type, id);
       if (subscription) {
         this.subscriptions.set(subscriptionKey, subscription);
+      } else {
+        console.warn(`Failed to create subscription for ${subscriptionKey}`);
+        return () => {};
       }
     }
     
@@ -64,26 +67,26 @@ class RealtimeManager {
   }
 
   private createSubscription(type: 'page' | 'workspace' | 'database', id: string): ActiveSubscription | null {
-    const channelName = `realtime_${type}_${id}_${Date.now()}`;
-
-    let filter: string;
-    
-    switch (type) {
-      case 'page':
-        filter = `parent_id=eq.${id}`;
-        break;
-      case 'workspace':
-        filter = `workspace_id=eq.${id}`;
-        break;
-      case 'database':
-        filter = `properties->>database_id=eq.${id}`;
-        break;
-      default:
-        console.error(`Unknown subscription type: ${type}`);
-        return null;
-    }
-
     try {
+      const channelName = `realtime_${type}_${id}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+      let filter: string;
+      
+      switch (type) {
+        case 'page':
+          filter = `parent_id=eq.${id}`;
+          break;
+        case 'workspace':
+          filter = `workspace_id=eq.${id}`;
+          break;
+        case 'database':
+          filter = `properties->>database_id=eq.${id}`;
+          break;
+        default:
+          console.error(`Unknown subscription type: ${type}`);
+          return null;
+      }
+
       const channel = supabase.channel(channelName);
       
       if (!channel) {
@@ -100,54 +103,54 @@ class RealtimeManager {
       };
 
       // Set up the actual Supabase subscription
-      channel.on(
-        'postgres_changes' as any,
-        {
-          event: '*',
-          schema: 'public',
-          table: 'blocks',
-          filter,
-        },
-        (payload) => {
-          console.log(`📨 Realtime update for ${type}:${id}:`, payload);
-          
-          // Safely check for block types
-          const newBlock = payload.new;
-          const oldBlock = payload.old;
-          
-          // Broadcast to all callbacks
-          subscription.callbacks.forEach(callback => {
+      channel
+        .on(
+          'postgres_changes' as any,
+          {
+            event: '*',
+            schema: 'public',
+            table: 'blocks',
+            filter,
+          },
+          (payload) => {
+            console.log(`📨 Realtime update for ${type}:${id}:`, payload);
+            
+            // Safely check for block types
+            const newBlock = payload.new;
+            const oldBlock = payload.old;
+            
+            // Broadcast to all callbacks
+            subscription.callbacks.forEach(callback => {
+              try {
+                if (callback.onBlockChange) {
+                  callback.onBlockChange(payload);
+                }
+                
+                // Handle page-specific events
+                const isNewBlockPage = newBlock && isValidBlock(newBlock) && newBlock.type === 'page';
+                const isOldBlockPage = oldBlock && isValidBlock(oldBlock) && oldBlock.type === 'page';
+                
+                if ((isNewBlockPage || isOldBlockPage) && callback.onPageChange) {
+                  callback.onPageChange(payload);
+                }
+              } catch (error) {
+                console.error('Error in subscription callback:', error);
+              }
+            });
+
+            // Emit global event for cross-component communication
             try {
-              if (callback.onBlockChange) {
-                callback.onBlockChange(payload);
-              }
-              
-              // Handle page-specific events
-              const isNewBlockPage = newBlock && isValidBlock(newBlock) && newBlock.type === 'page';
-              const isOldBlockPage = oldBlock && isValidBlock(oldBlock) && oldBlock.type === 'page';
-              
-              if ((isNewBlockPage || isOldBlockPage) && callback.onPageChange) {
-                callback.onPageChange(payload);
-              }
+              this.eventEmitter.dispatchEvent(new CustomEvent('realtimeUpdate', {
+                detail: { type, id, payload }
+              }));
             } catch (error) {
-              console.error('Error in subscription callback:', error);
+              console.error('Error dispatching global event:', error);
             }
-          });
-
-          // Emit global event for cross-component communication
-          try {
-            this.eventEmitter.dispatchEvent(new CustomEvent('realtimeUpdate', {
-              detail: { type, id, payload }
-            }));
-          } catch (error) {
-            console.error('Error dispatching global event:', error);
           }
-        }
-      );
-
-      channel.subscribe((status) => {
-        console.log(`📡 Subscription status for ${type}:${id}:`, status);
-      });
+        )
+        .subscribe((status) => {
+          console.log(`📡 Subscription status for ${type}:${id}:`, status);
+        });
 
       return subscription;
     } catch (error) {
@@ -196,13 +199,16 @@ const realtimeManager = new RealtimeManager();
 export function useRealtimeManager() {
   const { user } = useAuth();
   const [isConnected, setIsConnected] = useState(false);
+  const hasInitialized = useRef(false);
 
   useEffect(() => {
-    if (user) {
+    if (user && !hasInitialized.current) {
       setIsConnected(true);
-    } else {
+      hasInitialized.current = true;
+    } else if (!user) {
       setIsConnected(false);
       realtimeManager.destroy();
+      hasInitialized.current = false;
     }
   }, [user]);
 
@@ -211,7 +217,7 @@ export function useRealtimeManager() {
     id: string,
     callbacks: SubscriptionCallbacks
   ) => {
-    if (!user || !id) return () => {};
+    if (!user || !id || !hasInitialized.current) return () => {};
     return realtimeManager.subscribe(type, id, callbacks);
   }, [user]);
 
