@@ -138,10 +138,17 @@ export function useOfflineMutations(workspaceId: string, pageId: string) {
         
         if (createError) throw createError;
         
+        // Convert database response to Block type
+        const blockFromDb: Block = {
+          ...newBlock,
+          properties: (newBlock.properties as any) || {},
+          content: (newBlock.content as any) || {},
+        };
+        
         // Update cache
         queryClient.setQueryData<Block[]>(
           blocksQueryKeys.page(workspaceId, pageId),
-          (old) => old ? [...old, newBlock] : [newBlock]
+          (old) => old ? [...old, blockFromDb] : [blockFromDb]
         );
         break;
 
@@ -155,11 +162,18 @@ export function useOfflineMutations(workspaceId: string, pageId: string) {
         
         if (updateError) throw updateError;
         
+        // Convert database response to Block type
+        const updatedBlockFromDb: Block = {
+          ...updatedBlock,
+          properties: (updatedBlock.properties as any) || {},
+          content: (updatedBlock.content as any) || {},
+        };
+        
         // Update cache
         queryClient.setQueryData<Block[]>(
           blocksQueryKeys.page(workspaceId, pageId),
           (old) => old ? old.map(block => 
-            block.id === variables.id ? updatedBlock : block
+            block.id === variables.id ? updatedBlockFromDb : block
           ) : []
         );
         break;
@@ -186,17 +200,26 @@ export function useOfflineMutations(workspaceId: string, pageId: string) {
 
   // Offline-aware mutations
   const createBlockOffline = useMutation({
-    mutationFn: async (blockData: Partial<Omit<Block, 'type'>> & { type: BlockType }) => {
+    mutationFn: async (blockData: Partial<Block> & { type: BlockType; workspace_id: string }) => {
       if (isOnline) {
         // Execute immediately if online
         const { data, error } = await supabase
           .from('blocks')
-          .insert(blockData)
+          .insert({
+            ...blockData,
+            properties: blockData.properties || {},
+            content: blockData.content || {},
+          })
           .select()
           .single();
 
         if (error) throw error;
-        return data as Block;
+        
+        return {
+          ...data,
+          properties: (data.properties as any) || {},
+          content: (data.content as any) || {},
+        } as Block;
       } else {
         // Store for later if offline
         const mutationId = await storePendingMutation('createBlock', blockData);
@@ -204,10 +227,10 @@ export function useOfflineMutations(workspaceId: string, pageId: string) {
         // Create optimistic block
         const optimisticBlock: Block = {
           id: mutationId || crypto.randomUUID(),
-          workspace_id: workspaceId,
+          workspace_id: blockData.workspace_id,
           teamspace_id: null,
           type: blockData.type,
-          parent_id: pageId,
+          parent_id: blockData.parent_id || pageId,
           properties: blockData.properties || {},
           content: blockData.content || {},
           pos: blockData.pos ?? Date.now() % 1000000,
@@ -243,7 +266,12 @@ export function useOfflineMutations(workspaceId: string, pageId: string) {
           .single();
 
         if (error) throw error;
-        return data as Block;
+        
+        return {
+          ...data,
+          properties: (data.properties as any) || {},
+          content: (data.content as any) || {},
+        } as Block;
       } else {
         await storePendingMutation('updateBlock', { id, updates });
         
