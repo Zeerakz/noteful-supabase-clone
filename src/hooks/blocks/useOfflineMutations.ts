@@ -334,7 +334,7 @@ export function useOfflineMutations(workspaceId: string, pageId: string) {
         
         return {
           ...data,
-          type: (updates.type || data.type) as ExtendedBlockType, // Preserve original type if provided
+          type: (data.type) as ExtendedBlockType, // Cast database BlockType back to ExtendedBlockType for UI
           properties: (data.properties as any) || {},
           content: (data.content as any) || {},
         } as Block;
@@ -352,7 +352,7 @@ export function useOfflineMutations(workspaceId: string, pageId: string) {
         
         await storePendingMutation('updateBlock', { id, updates: storageUpdates });
         
-        // Return optimistic update
+        // Return optimistic update with ExtendedBlockType
         const currentBlocks = queryClient.getQueryData<Block[]>(
           blocksQueryKeys.page(workspaceId, pageId)
         );
