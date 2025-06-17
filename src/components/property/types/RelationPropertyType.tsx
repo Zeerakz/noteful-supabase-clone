@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Link } from 'lucide-react';
 import { PropertyTypeDefinition } from '@/types/propertyRegistry';
@@ -91,18 +92,11 @@ export const relationPropertyType: PropertyTypeDefinition<RelationPropertyConfig
   
   FieldEditor: ({ value, config, onChange, workspaceId, pageId, field }) => (
     <RelationFieldEditor
-      settings={{
-        target_database_id: config.targetDatabaseId,
-        display_property: config.displayProperty,
-        allow_multiple: config.allowMultiple,
-        bidirectional: config.bidirectional,
-        related_property_name: config.relatedPropertyName,
-      }}
-      workspaceId={workspaceId || ''}
-      isMultiple={config.allowMultiple || false}
-      showBacklink={config.bidirectional || false}
-      pageId={pageId || ''}
       field={field as DatabaseField}
+      pageId={pageId || ''}
+      value={value}
+      onValueChange={onChange}
+      workspaceId={workspaceId || ''}
     />
   ),
 

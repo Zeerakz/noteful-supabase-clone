@@ -147,12 +147,11 @@ export function FieldEditor({
     case 'relation':
       return (
         <RelationFieldEditor
-          settings={field.settings}
-          workspaceId={workspaceId}
-          isMultiple={field.settings?.allowMultiple || false}
-          showBacklink={field.settings?.bidirectional || false}
-          pageId={pageId}
           field={field}
+          pageId={pageId}
+          value={value}
+          onValueChange={onChange}
+          workspaceId={workspaceId}
         />
       );
 

@@ -26,7 +26,7 @@ export function RelationFieldEditor({
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   
   const settings = field.settings as RelationFieldSettings;
-  const isMultiple = settings?.is_multiple || false;
+  const isMultiple = settings?.allow_multiple || false;
 
   const {
     selectedPages,
