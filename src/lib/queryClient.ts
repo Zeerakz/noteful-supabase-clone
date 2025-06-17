@@ -24,7 +24,8 @@ export const setupQueryPersistence = async () => {
     const { persistQueryClient } = await import('@tanstack/query-persist-client-core');
     const { indexedDBPersister } = await import('./indexedDBPersister');
     
-    await persistQueryClient({
+    // Remove await to avoid type conflict
+    persistQueryClient({
       queryClient: blocksQueryClient,
       persister: indexedDBPersister,
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days

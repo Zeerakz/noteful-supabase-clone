@@ -40,6 +40,24 @@ export function useOfflineMutations(workspaceId: string, pageId: string) {
     return toValidBlockType(type) !== null;
   }, [toValidBlockType]);
 
+  // Helper function to sanitize updates for database operations
+  const sanitizeUpdatesForDatabase = useCallback((updates: Partial<Block>) => {
+    const sanitized = { ...updates };
+    
+    // Handle type conversion if type is being updated
+    if (sanitized.type) {
+      const validType = toValidBlockType(sanitized.type);
+      if (validType) {
+        sanitized.type = validType;
+      } else {
+        // Remove invalid type from updates
+        delete sanitized.type;
+      }
+    }
+    
+    return sanitized;
+  }, [toValidBlockType]);
+
   // Monitor online/offline status
   useEffect(() => {
     const handleOnline = () => {
@@ -178,7 +196,7 @@ export function useOfflineMutations(workspaceId: string, pageId: string) {
 
       case 'updateBlock':
         // Variables should already have valid types from storage
-        const updateData = variables.updates;
+        const updateData = sanitizeUpdatesForDatabase(variables.updates);
 
         const { data: updatedBlock, error: updateError } = await supabase
           .from('blocks')
@@ -311,17 +329,8 @@ export function useOfflineMutations(workspaceId: string, pageId: string) {
   const updateBlockOffline = useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: Partial<Block> }) => {
       if (isOnline) {
-        // Handle type conversion for database
-        const dbUpdates = { ...updates };
-        if (dbUpdates.type) {
-          const validType = toValidBlockType(dbUpdates.type);
-          if (validType) {
-            dbUpdates.type = validType;
-          } else {
-            // Remove invalid type from update
-            delete dbUpdates.type;
-          }
-        }
+        // Sanitize updates for database operation
+        const dbUpdates = sanitizeUpdatesForDatabase(updates);
 
         const { data, error } = await supabase
           .from('blocks')
@@ -334,21 +343,13 @@ export function useOfflineMutations(workspaceId: string, pageId: string) {
         
         return {
           ...data,
-          type: (data.type) as ExtendedBlockType, // Cast database BlockType back to ExtendedBlockType for UI
+          type: data.type as ExtendedBlockType, // Cast database BlockType back to ExtendedBlockType for UI
           properties: (data.properties as any) || {},
           content: (data.content as any) || {},
         } as Block;
       } else {
-        // Store offline update with type conversion
-        const storageUpdates = { ...updates };
-        if (storageUpdates.type) {
-          const validType = toValidBlockType(storageUpdates.type);
-          if (validType) {
-            storageUpdates.type = validType;
-          } else {
-            delete storageUpdates.type;
-          }
-        }
+        // Store offline update with sanitized updates
+        const storageUpdates = sanitizeUpdatesForDatabase(updates);
         
         await storePendingMutation('updateBlock', { id, updates: storageUpdates });
         
