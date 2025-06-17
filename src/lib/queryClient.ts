@@ -30,7 +30,7 @@ export const setupQueryPersistence = async () => {
       queryClient: blocksQueryClient as any,
       persister: indexedDBPersister,
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-    });
+    }) as Promise<void> | [() => void, Promise<void>];
 
     // Handle both possible return types (promise vs tuple)
     if (Array.isArray(result)) {
@@ -46,8 +46,8 @@ export const setupQueryPersistence = async () => {
       // Return unsubscribe function in case caller needs it
       return unsubscribe;
     } else {
-      // Handle as promise directly
-      result.catch((error) => {
+      // Handle as promise directly - now TypeScript knows result is a Promise
+      (result as Promise<void>).catch((error) => {
         console.warn('⚠️ Query persistence failed:', error);
       });
 
