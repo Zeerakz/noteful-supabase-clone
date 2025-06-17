@@ -106,10 +106,10 @@ export class EnhancedDatabaseQueryService {
     // For complex filtering, we'll build a more sophisticated filter system
     // For now, implement basic text and select filters
     filterGroup.rules.forEach(rule => {
-      const field = fields.find(f => f.id === rule.property);
+      const field = fields.find(f => f.id === rule.fieldId);
       if (!field) return;
 
-      const propertyPath = `properties->${rule.property}`;
+      const propertyPath = `properties->${rule.fieldId}`;
 
       switch (rule.operator) {
         case 'equals':
@@ -130,23 +130,23 @@ export class EnhancedDatabaseQueryService {
           query = query.ilike(propertyPath, `%${rule.value}%`);
           break;
         case 'not_contains':
-          query = query.not('properties', 'cs', `{"${rule.property}": "${rule.value}"}`);
+          query = query.not('properties', 'cs', `{"${rule.fieldId}": "${rule.value}"}`);
           break;
         case 'is_empty':
-          query = query.or(`properties->${rule.property}.is.null,properties->${rule.property}.eq.""`);
+          query = query.or(`properties->${rule.fieldId}.is.null,properties->${rule.fieldId}.eq.""`);
           break;
         case 'is_not_empty':
-          query = query.not('properties', 'cs', `{"${rule.property}": null}`)
-                      .not('properties', 'cs', `{"${rule.property}": ""}`);
+          query = query.not('properties', 'cs', `{"${rule.fieldId}": null}`)
+                      .not('properties', 'cs', `{"${rule.fieldId}": ""}`);
           break;
-        case 'greater_than':
+        case 'is_greater_than':
           if (field.type === 'date') {
             query = query.gt(propertyPath, rule.value);
           } else if (field.type === 'number') {
             query = query.gt(`(${propertyPath})::numeric`, parseFloat(rule.value));
           }
           break;
-        case 'less_than':
+        case 'is_less_than':
           if (field.type === 'date') {
             query = query.lt(propertyPath, rule.value);
           } else if (field.type === 'number') {
@@ -180,8 +180,13 @@ export class EnhancedDatabaseQueryService {
 
       // Handle different field types for sorting
       switch (field.type) {
-        case 'title':
-          query = query.order('properties->>title', { ascending });
+        case 'text':
+          // Check if this is the title field by comparing field name
+          if (field.name === 'Title' || field.name === 'title') {
+            query = query.order('properties->>title', { ascending });
+          } else {
+            query = query.order(`properties->>${rule.fieldId}`, { ascending });
+          }
           break;
         case 'date':
           query = query.order(`properties->>${rule.fieldId}`, { ascending });
@@ -191,7 +196,6 @@ export class EnhancedDatabaseQueryService {
           break;
         case 'select':
         case 'status':
-        case 'text':
         default:
           query = query.order(`properties->>${rule.fieldId}`, { ascending });
           break;
