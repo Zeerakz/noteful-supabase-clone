@@ -8,14 +8,19 @@ export function useEnhancedPagesWithRealtime(workspaceId?: string) {
   const { subscribe } = useRealtimeManager();
 
   const handlePageChange = useCallback((payload: any) => {
-    console.log('📄 Page change detected, refreshing pages...');
-    // Small delay to ensure the database write is complete
-    setTimeout(() => {
-      pagesHook.fetchPages();
-    }, 50);
-  }, [pagesHook]);
+    const { new: newPage, old: oldPage } = payload;
+    const page = newPage || oldPage;
+    
+    // Only refresh if this change affects our workspace
+    if (page && page.workspace_id === workspaceId) {
+      console.log('📥 Page change detected for current workspace, refreshing pages...');
+      setTimeout(() => {
+        pagesHook.fetchPages();
+      }, 50);
+    }
+  }, [workspaceId, pagesHook]);
 
-  // Use the centralized realtime manager
+  // Use the centralized realtime manager instead of direct subscription
   if (workspaceId) {
     subscribe('workspace', workspaceId, {
       onPageChange: handlePageChange,

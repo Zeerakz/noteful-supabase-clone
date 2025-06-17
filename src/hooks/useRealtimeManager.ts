@@ -1,240 +1,180 @@
 
-import { useEffect, useRef, useCallback, useState } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
-import { Block } from '@/types/block';
+import { RealtimeChannel } from '@supabase/supabase-js';
 
 interface SubscriptionCallbacks {
   onBlockChange?: (payload: any) => void;
   onPageChange?: (payload: any) => void;
-  onDatabaseChange?: (payload: any) => void;
+  onPresenceChange?: (payload: any) => void;
 }
 
-interface ActiveSubscription {
-  id: string;
-  type: 'page' | 'workspace' | 'database';
-  filter: string;
-  channel: any;
-  callbacks: Set<SubscriptionCallbacks>;
-  isSubscribed: boolean;
-}
-
-// Simplified type guard to check if an object is a Block
-function isValidBlock(obj: any): obj is Block {
-  return obj && 
-         typeof obj === 'object' && 
-         typeof obj.id === 'string' && 
-         typeof obj.type === 'string';
+interface ChannelManager {
+  channel: RealtimeChannel;
+  subscribers: Set<string>;
+  callbacks: Map<string, SubscriptionCallbacks>;
 }
 
 class RealtimeManager {
-  private subscriptions = new Map<string, ActiveSubscription>();
-  private eventEmitter = new EventTarget();
+  private channels = new Map<string, ChannelManager>();
+  private isConnected = false;
 
-  subscribe(
-    type: 'page' | 'workspace' | 'database',
-    id: string,
-    callbacks: SubscriptionCallbacks
-  ): () => void {
-    const subscriptionKey = `${type}:${id}`;
-    
-    let subscription = this.subscriptions.get(subscriptionKey);
-    
-    if (!subscription) {
-      subscription = this.createSubscription(type, id);
-      if (subscription) {
-        this.subscriptions.set(subscriptionKey, subscription);
-      } else {
-        console.warn(`Failed to create subscription for ${subscriptionKey}`);
-        return () => {};
-      }
-    }
-    
-    if (subscription) {
-      subscription.callbacks.add(callbacks);
-    }
-    
-    // Return unsubscribe function
-    return () => {
-      if (subscription) {
-        subscription.callbacks.delete(callbacks);
-        
-        // Clean up subscription if no more callbacks
-        if (subscription.callbacks.size === 0) {
-          this.cleanupSubscription(subscriptionKey);
-        }
-      }
-    };
-  }
+  subscribe(type: 'page' | 'workspace', id: string, callbacks: SubscriptionCallbacks): string {
+    const channelKey = `${type}-${id}`;
+    const subscriberId = crypto.randomUUID();
 
-  private createSubscription(type: 'page' | 'workspace' | 'database', id: string): ActiveSubscription | null {
-    try {
-      const channelName = `realtime_${type}_${id}`;
+    console.log(`📡 Subscribing to channel: ${channelKey} with subscriber: ${subscriberId}`);
 
-      let filter: string;
+    let channelManager = this.channels.get(channelKey);
+
+    if (!channelManager) {
+      // Create new channel
+      const channel = supabase.channel(channelKey);
       
-      switch (type) {
-        case 'page':
-          filter = `parent_id=eq.${id}`;
-          break;
-        case 'workspace':
-          filter = `workspace_id=eq.${id}`;
-          break;
-        case 'database':
-          filter = `properties->>database_id=eq.${id}`;
-          break;
-        default:
-          console.error(`Unknown subscription type: ${type}`);
-          return null;
-      }
-
-      const channel = supabase.channel(channelName);
-      
-      if (!channel) {
-        console.error('Failed to create Supabase channel');
-        return null;
-      }
-
-      const subscription: ActiveSubscription = {
-        id: channelName,
-        type,
-        filter,
+      channelManager = {
         channel,
-        callbacks: new Set(),
-        isSubscribed: false,
+        subscribers: new Set(),
+        callbacks: new Map()
       };
 
-      // Set up the actual Supabase subscription
-      channel
-        .on(
-          'postgres_changes' as any,
-          {
-            event: '*',
-            schema: 'public',
-            table: 'blocks',
-            filter,
-          },
-          (payload) => {
-            console.log(`📨 Realtime update for ${type}:${id}:`, payload);
-            
-            // Safely check for block types
-            const newBlock = payload.new;
-            const oldBlock = payload.old;
-            
-            // Broadcast to all callbacks
-            subscription.callbacks.forEach(callback => {
-              try {
-                if (callback.onBlockChange) {
-                  callback.onBlockChange(payload);
-                }
-                
-                // Handle page-specific events
-                const isNewBlockPage = newBlock && isValidBlock(newBlock) && newBlock.type === 'page';
-                const isOldBlockPage = oldBlock && isValidBlock(oldBlock) && oldBlock.type === 'page';
-                
-                if ((isNewBlockPage || isOldBlockPage) && callback.onPageChange) {
-                  callback.onPageChange(payload);
-                }
-              } catch (error) {
-                console.error('Error in subscription callback:', error);
-              }
-            });
-
-            // Emit global event for cross-component communication
-            try {
-              this.eventEmitter.dispatchEvent(new CustomEvent('realtimeUpdate', {
-                detail: { type, id, payload }
-              }));
-            } catch (error) {
-              console.error('Error dispatching global event:', error);
-            }
-          }
-        )
-        .subscribe((status) => {
-          console.log(`📡 Subscription status for ${type}:${id}:`, status);
-          if (status === 'SUBSCRIBED') {
-            subscription.isSubscribed = true;
-          } else if (status === 'TIMED_OUT' || status === 'CLOSED') {
-            subscription.isSubscribed = false;
-          }
+      // Set up the channel subscriptions
+      if (type === 'page') {
+        channel.on('postgres_changes', {
+          event: '*',
+          schema: 'public',
+          table: 'blocks',
+          filter: `parent_id=eq.${id}`
+        }, (payload) => {
+          console.log('📥 Block change received:', payload);
+          channelManager!.callbacks.forEach(cb => cb.onBlockChange?.(payload));
         });
 
-      return subscription;
-    } catch (error) {
-      console.error('Failed to create subscription:', error);
-      return null;
-    }
-  }
+        channel.on('postgres_changes', {
+          event: '*',
+          schema: 'public',
+          table: 'blocks',
+          filter: `id=eq.${id}`
+        }, (payload) => {
+          console.log('📥 Page change received:', payload);
+          channelManager!.callbacks.forEach(cb => cb.onPageChange?.(payload));
+        });
 
-  private cleanupSubscription(key: string) {
-    const subscription = this.subscriptions.get(key);
-    if (subscription) {
-      console.log('🧹 Cleaning up subscription:', key);
-      try {
-        if (subscription.channel && subscription.isSubscribed) {
-          subscription.channel.unsubscribe();
-        }
-        if (subscription.channel) {
-          supabase.removeChannel(subscription.channel);
-        }
-      } catch (error) {
-        console.warn('Warning during subscription cleanup:', error);
-      } finally {
-        this.subscriptions.delete(key);
+        channel.on('presence', { event: 'sync' }, () => {
+          console.log('👥 Presence sync');
+          const presenceState = channel.presenceState();
+          channelManager!.callbacks.forEach(cb => cb.onPresenceChange?.(presenceState));
+        });
+
+        channel.on('presence', { event: 'join' }, ({ key, newPresences }) => {
+          console.log('👋 User joined:', key, newPresences);
+          channelManager!.callbacks.forEach(cb => cb.onPresenceChange?.({ type: 'join', key, newPresences }));
+        });
+
+        channel.on('presence', { event: 'leave' }, ({ key, leftPresences }) => {
+          console.log('👋 User left:', key, leftPresences);
+          channelManager!.callbacks.forEach(cb => cb.onPresenceChange?.({ type: 'leave', key, leftPresences }));
+        });
       }
+
+      // Subscribe to the channel
+      channel.subscribe((status) => {
+        console.log(`📡 Channel ${channelKey} status:`, status);
+        if (status === 'SUBSCRIBED') {
+          this.isConnected = true;
+        } else if (status === 'CLOSED') {
+          this.isConnected = false;
+        }
+      });
+
+      this.channels.set(channelKey, channelManager);
+    }
+
+    // Add subscriber
+    channelManager.subscribers.add(subscriberId);
+    channelManager.callbacks.set(subscriberId, callbacks);
+
+    console.log(`📊 Channel ${channelKey} now has ${channelManager.subscribers.size} subscribers`);
+
+    return subscriberId;
+  }
+
+  unsubscribe(type: 'page' | 'workspace', id: string, subscriberId: string) {
+    const channelKey = `${type}-${id}`;
+    const channelManager = this.channels.get(channelKey);
+
+    if (!channelManager) {
+      console.warn(`⚠️ Attempted to unsubscribe from non-existent channel: ${channelKey}`);
+      return;
+    }
+
+    console.log(`📡 Unsubscribing ${subscriberId} from channel: ${channelKey}`);
+
+    // Remove subscriber
+    channelManager.subscribers.delete(subscriberId);
+    channelManager.callbacks.delete(subscriberId);
+
+    console.log(`📊 Channel ${channelKey} now has ${channelManager.subscribers.size} subscribers`);
+
+    // If no more subscribers, unsubscribe and remove channel
+    if (channelManager.subscribers.size === 0) {
+      console.log(`🗑️ Removing channel: ${channelKey} (no more subscribers)`);
+      supabase.removeChannel(channelManager.channel);
+      this.channels.delete(channelKey);
     }
   }
 
-  // Global event listener for cross-component communication
-  addEventListener(callback: (event: CustomEvent) => void) {
-    this.eventEmitter.addEventListener('realtimeUpdate', callback as EventListener);
-    return () => {
-      this.eventEmitter.removeEventListener('realtimeUpdate', callback as EventListener);
-    };
+  getConnectionStatus() {
+    return this.isConnected;
   }
 
-  destroy() {
-    this.subscriptions.forEach((_, key) => {
-      this.cleanupSubscription(key);
+  cleanup() {
+    console.log('🧹 Cleaning up all realtime channels');
+    this.channels.forEach((channelManager, channelKey) => {
+      console.log(`🗑️ Removing channel: ${channelKey}`);
+      supabase.removeChannel(channelManager.channel);
     });
+    this.channels.clear();
+    this.isConnected = false;
   }
 }
 
-// Singleton instance
+// Global singleton instance
 const realtimeManager = new RealtimeManager();
 
 export function useRealtimeManager() {
-  const { user } = useAuth();
-  const [isConnected, setIsConnected] = useState(false);
-  const hasInitialized = useRef(false);
+  const subscribersRef = useRef<Array<{ type: 'page' | 'workspace', id: string, subscriberId: string }>>([]);
 
+  const subscribe = useCallback((type: 'page' | 'workspace', id: string, callbacks: SubscriptionCallbacks) => {
+    const subscriberId = realtimeManager.subscribe(type, id, callbacks);
+    subscribersRef.current.push({ type, id, subscriberId });
+    
+    return () => {
+      realtimeManager.unsubscribe(type, id, subscriberId);
+      subscribersRef.current = subscribersRef.current.filter(s => s.subscriberId !== subscriberId);
+    };
+  }, []);
+
+  const getConnectionStatus = useCallback(() => {
+    return realtimeManager.getConnectionStatus();
+  }, []);
+
+  // Cleanup on unmount
   useEffect(() => {
-    if (user && !hasInitialized.current) {
-      setIsConnected(true);
-      hasInitialized.current = true;
-    } else if (!user) {
-      setIsConnected(false);
-      realtimeManager.destroy();
-      hasInitialized.current = false;
-    }
-  }, [user]);
-
-  const subscribe = useCallback((
-    type: 'page' | 'workspace' | 'database',
-    id: string,
-    callbacks: SubscriptionCallbacks
-  ) => {
-    if (!user || !id || !hasInitialized.current) return () => {};
-    return realtimeManager.subscribe(type, id, callbacks);
-  }, [user]);
-
-  const addGlobalListener = useCallback((callback: (event: CustomEvent) => void) => {
-    return realtimeManager.addEventListener(callback);
+    return () => {
+      subscribersRef.current.forEach(({ type, id, subscriberId }) => {
+        realtimeManager.unsubscribe(type, id, subscriberId);
+      });
+      subscribersRef.current = [];
+    };
   }, []);
 
   return {
     subscribe,
-    addGlobalListener,
-    isConnected,
+    getConnectionStatus
   };
+}
+
+// Export cleanup function for app-level cleanup
+export function cleanupRealtimeManager() {
+  realtimeManager.cleanup();
 }
