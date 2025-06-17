@@ -4,6 +4,7 @@ import ReactDOM from 'react-dom/client'
 import App from './App.tsx'
 import './index.css'
 import { errorHandler } from './utils/errorHandler'
+import { setupQueryPersistence } from './lib/queryClient'
 
 console.log('🚀 Application starting...');
 console.log('📊 Environment:', {
@@ -12,6 +13,9 @@ console.log('📊 Environment:', {
   userAgent: navigator.userAgent,
   url: window.location.href
 });
+
+// Set up IndexedDB persistence for React Query
+setupQueryPersistence();
 
 // Log any stored errors from previous sessions
 try {
