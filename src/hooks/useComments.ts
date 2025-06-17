@@ -131,7 +131,15 @@ export function useComments(blockId?: string) {
             // If we found a page block or reached the root, use it for the notification
             if (currentBlock.type === 'page' || !currentBlock.parent_id) {
               const pageUrl = `${window.location.origin}/workspace/${currentBlock.workspace_id}/page/${currentBlock.id}`;
-              const pageTitle = currentBlock.properties?.title || 'Untitled';
+              
+              // Safely extract title from properties with proper type checking
+              let pageTitle = 'Untitled';
+              if (currentBlock.properties && typeof currentBlock.properties === 'object' && currentBlock.properties !== null) {
+                const props = currentBlock.properties as Record<string, any>;
+                if (props.title && typeof props.title === 'string') {
+                  pageTitle = props.title;
+                }
+              }
               
               await notifyMention(mentionedEmails, body, pageTitle, pageUrl);
             }
