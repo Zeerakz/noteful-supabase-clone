@@ -25,13 +25,6 @@ export const setupQueryPersistence = () => {
     queryClient: blocksQueryClient,
     persister: indexedDBPersister,
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-    hydrateOptions: {
-      defaultOptions: {
-        queries: {
-          staleTime: 5 * 60 * 1000, // 5 minutes
-        },
-      },
-    },
     dehydrateOptions: {
       shouldDehydrateQuery: (query) => {
         // Only persist block queries

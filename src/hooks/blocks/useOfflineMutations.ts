@@ -258,18 +258,22 @@ export function useOfflineMutations(workspaceId: string, pageId: string) {
       if (isOnline) {
         // Execute immediately if online
         const dbData = {
-          ...blockData,
+          workspace_id: blockData.workspace_id,
+          teamspace_id: blockData.teamspace_id || null,
           type: validType, // Use converted type for database
+          parent_id: blockData.parent_id || pageId,
           properties: blockData.properties || {},
           content: blockData.content || {},
+          pos: blockData.pos ?? Date.now() % 1000000,
+          created_by: user?.id || null,
+          last_edited_by: user?.id || null,
+          archived: blockData.archived || false,
+          in_trash: blockData.in_trash || false,
         };
-
-        // Remove any ExtendedBlockType specific properties before database insert
-        const { ...cleanDbData } = dbData;
 
         const { data, error } = await supabase
           .from('blocks')
-          .insert(cleanDbData)
+          .insert(dbData)
           .select()
           .single();
 
