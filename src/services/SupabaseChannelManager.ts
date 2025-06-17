@@ -1,5 +1,6 @@
+
 import { supabase } from '@/integrations/supabase/client';
-import { RealtimeChannel, RealtimeChannelSendResponse } from '@supabase/supabase-js';
+import { RealtimeChannel, RealtimeChannelSendResponse, REALTIME_SUBSCRIBE_STATES } from '@supabase/supabase-js';
 
 export type ChannelState = 'CLOSED' | 'JOINING' | 'JOINED' | 'LEAVING' | 'ERRORED';
 
@@ -59,11 +60,14 @@ class SupabaseChannelManager {
       return existingChannel.channel;
     }
 
-    // Create new channel
+    // Create new channel with proper options
     const channel = supabase.channel(key, {
       config: {
         presence: {
           key: key,
+        },
+        broadcast: {
+          self: true,
         },
         ...config,
       },
@@ -287,12 +291,12 @@ class SupabaseChannelManager {
       channelInfo.lastActivity = new Date();
 
       // Handle reconnection logic
-      if (status === 'CLOSED' && previousState === 'JOINED' && config.autoReconnect) {
+      if (status === REALTIME_SUBSCRIBE_STATES.CLOSED && previousState === 'JOINED' && config.autoReconnect) {
         this.scheduleReconnection(key);
       }
 
       // Set up heartbeat for active channels
-      if (status === 'JOINED' && config.heartbeatInterval) {
+      if (status === REALTIME_SUBSCRIBE_STATES.SUBSCRIBED && config.heartbeatInterval) {
         this.setupHeartbeat(key);
       }
     });
@@ -342,7 +346,9 @@ class SupabaseChannelManager {
       
       if (channelInfo.state === 'CLOSED' && channelInfo.subscribeCount > 0) {
         // Recreate the channel
-        const newChannel = supabase.channel(key, channelInfo.config);
+        const newChannel = supabase.channel(key, {
+          config: channelInfo.config,
+        });
         channelInfo.channel = newChannel;
         
         // Restore subscriptions
@@ -385,9 +391,9 @@ class SupabaseChannelManager {
     const interval = setInterval(() => {
       if (channelInfo.state === 'JOINED') {
         channelInfo.lastActivity = new Date();
-        // Send a small heartbeat message to keep connection alive
+        // Send a broadcast message instead of heartbeat event type
         channelInfo.channel.send({
-          type: 'heartbeat',
+          type: 'broadcast',
           event: 'ping',
           payload: { timestamp: Date.now() }
         });
