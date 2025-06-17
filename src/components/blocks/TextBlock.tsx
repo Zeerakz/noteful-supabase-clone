@@ -1,11 +1,10 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Block } from '@/types/block';
+import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Trash2 } from 'lucide-react';
-import { CrdtTextEditor } from './CrdtTextEditor';
-import { CommentThreadPanel } from './CommentThreadPanel';
-import { useComments } from '@/hooks/useComments';
+import { useRealtimeManager } from '@/hooks/useRealtimeManager';
 
 interface TextBlockProps {
   block: Block;
@@ -16,16 +15,63 @@ interface TextBlockProps {
 }
 
 export function TextBlock({ block, pageId, onUpdate, onDelete, isEditable }: TextBlockProps) {
-  const [isHovered, setIsHovered] = useState(false);
-  const [isCommentPanelOpen, setIsCommentPanelOpen] = useState(false);
-  const { comments } = useComments(block.id);
+  const [text, setText] = useState(block.content?.text || '');
+  const [isUpdating, setIsUpdating] = useState(false);
+  const prevTextRef = useRef(text);
+  const updateTimeoutRef = useRef<NodeJS.Timeout>();
+  
+  // Use the centralized realtime manager to avoid duplicate subscriptions
+  const { subscribeToBlock, unsubscribeFromBlock } = useRealtimeManager();
 
-  const handleContentChange = async (content: any) => {
-    try {
-      await onUpdate(content);
-    } catch (error) {
-      console.error('Error updating text block:', error);
+  useEffect(() => {
+    if (!isEditable) return;
+
+    // Subscribe to realtime updates for this block
+    const unsubscribe = subscribeToBlock(block.id, (payload: any) => {
+      if (payload.new && payload.new.id === block.id) {
+        const newText = payload.new.content?.text || '';
+        if (newText !== text && newText !== prevTextRef.current) {
+          setText(newText);
+          prevTextRef.current = newText;
+        }
+      }
+    });
+
+    return () => {
+      unsubscribe();
+      if (updateTimeoutRef.current) {
+        clearTimeout(updateTimeoutRef.current);
+      }
+    };
+  }, [block.id, isEditable, subscribeToBlock, text]);
+
+  const handleTextChange = (newText: string) => {
+    setText(newText);
+    prevTextRef.current = newText;
+
+    if (!isEditable) return;
+
+    // Clear existing timeout
+    if (updateTimeoutRef.current) {
+      clearTimeout(updateTimeoutRef.current);
     }
+
+    // Debounce updates
+    updateTimeoutRef.current = setTimeout(async () => {
+      if (newText !== block.content?.text) {
+        setIsUpdating(true);
+        try {
+          await onUpdate({ text: newText });
+        } catch (error) {
+          console.error('Error updating text block:', error);
+          // Revert to original text on error
+          setText(block.content?.text || '');
+          prevTextRef.current = block.content?.text || '';
+        } finally {
+          setIsUpdating(false);
+        }
+      }
+    }, 500);
   };
 
   const handleDelete = async () => {
@@ -36,78 +82,38 @@ export function TextBlock({ block, pageId, onUpdate, onDelete, isEditable }: Tex
     }
   };
 
-  const handleOpenComments = () => {
-    console.log('Opening comments panel for block:', block.id);
-    setIsCommentPanelOpen(true);
-  };
-
-  const textContent = block.content?.text || '';
-
-  // Handle clicks on links in read-only mode
-  const handleReadOnlyClick = (e: React.MouseEvent) => {
-    const target = e.target as HTMLElement;
-    const linkElement = target.closest('a');
-    
-    if (linkElement && linkElement.href) {
-      e.preventDefault();
-      e.stopPropagation();
-      window.open(linkElement.href, '_blank', 'noopener,noreferrer');
-    }
-  };
-
   if (!isEditable) {
     return (
-      <div className="py-1">
-        <div 
-          className="text-sm whitespace-pre-wrap rich-text-content cursor-default"
-          dangerouslySetInnerHTML={{ 
-            __html: textContent || '<span class="text-muted-foreground italic">Empty text block</span>' 
-          }}
-          onClick={handleReadOnlyClick}
-          style={{ pointerEvents: 'auto' }}
-        />
+      <div className="p-2">
+        <p className="text-foreground">{text || 'Empty text block'}</p>
       </div>
     );
   }
 
   return (
-    <div
-      className="group relative flex items-center gap-2"
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-    >
-      <div className="flex-1">
-        <CrdtTextEditor
-          pageId={pageId}
-          blockId={block.id}
-          initialContent={textContent}
-          onContentChange={handleContentChange}
+    <div className="group relative p-2 rounded-md hover:bg-accent/50 transition-colors">
+      <div className="flex items-center gap-2">
+        <Input
+          value={text}
+          onChange={(e) => handleTextChange(e.target.value)}
           placeholder="Type something..."
-          className="w-full"
-          showCommentButton={isHovered}
-          comments={comments}
-          onOpenComments={handleOpenComments}
+          className="flex-1 border-none bg-transparent focus:bg-background"
+          disabled={isUpdating}
         />
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleDelete}
+          className="opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8 p-0"
+        >
+          <Trash2 className="h-4 w-4" />
+        </Button>
       </div>
-      
-      {isHovered && (
-        <div className="opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-          <Button
-            onClick={handleDelete}
-            variant="ghost"
-            size="sm"
-            className="h-6 w-6 p-0 text-destructive hover:text-destructive/80"
-          >
-            <Trash2 className="h-3 w-3" />
-          </Button>
+      {isUpdating && (
+        <div className="absolute top-2 right-2">
+          <div className="h-2 w-2 bg-blue-500 rounded-full animate-pulse" />
         </div>
       )}
-
-      <CommentThreadPanel
-        blockId={block.id}
-        isOpen={isCommentPanelOpen}
-        onOpenChange={setIsCommentPanelOpen}
-      />
     </div>
   );
 }
