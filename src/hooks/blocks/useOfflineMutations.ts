@@ -3,7 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
 import { indexedDBPersister } from '@/lib/indexedDBPersister';
-import { Block, BlockType } from '@/types/block';
+import { Block, BlockType, ExtendedBlockType } from '@/types/block';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { blocksQueryKeys } from './queryKeys';
@@ -23,6 +23,17 @@ export function useOfflineMutations(workspaceId: string, pageId: string) {
   const queryClient = useQueryClient();
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [pendingMutations, setPendingMutations] = useState<PendingMutation[]>([]);
+
+  // Helper function to convert ExtendedBlockType to BlockType
+  const toValidBlockType = useCallback((type: ExtendedBlockType): BlockType | null => {
+    const validBlockTypes: BlockType[] = [
+      'page', 'database', 'text', 'image', 'heading_1', 'heading_2', 'heading_3',
+      'todo_item', 'bulleted_list_item', 'numbered_list_item', 'toggle_list',
+      'code', 'quote', 'divider', 'callout'
+    ];
+    
+    return validBlockTypes.includes(type as BlockType) ? (type as BlockType) : null;
+  }, []);
 
   // Monitor online/offline status
   useEffect(() => {
@@ -130,9 +141,22 @@ export function useOfflineMutations(workspaceId: string, pageId: string) {
 
     switch (mutationFn) {
       case 'createBlock':
+        // Validate and convert type before database operation
+        const validType = toValidBlockType(variables.type);
+        if (!validType) {
+          throw new Error(`Invalid block type for database: ${variables.type}`);
+        }
+
+        const createData = {
+          ...variables,
+          type: validType,
+          properties: variables.properties || {},
+          content: variables.content || {},
+        };
+
         const { data: newBlock, error: createError } = await supabase
           .from('blocks')
-          .insert(variables)
+          .insert(createData)
           .select()
           .single();
         
@@ -141,6 +165,7 @@ export function useOfflineMutations(workspaceId: string, pageId: string) {
         // Convert database response to Block type
         const blockFromDb: Block = {
           ...newBlock,
+          type: newBlock.type as ExtendedBlockType, // Safe cast back to ExtendedBlockType for UI
           properties: (newBlock.properties as any) || {},
           content: (newBlock.content as any) || {},
         };
@@ -153,9 +178,21 @@ export function useOfflineMutations(workspaceId: string, pageId: string) {
         break;
 
       case 'updateBlock':
+        // Handle type conversion for updates
+        const updateData = { ...variables.updates };
+        if (updateData.type) {
+          const validUpdateType = toValidBlockType(updateData.type);
+          if (validUpdateType) {
+            updateData.type = validUpdateType;
+          } else {
+            // Remove invalid type from update
+            delete updateData.type;
+          }
+        }
+
         const { data: updatedBlock, error: updateError } = await supabase
           .from('blocks')
-          .update(variables.updates)
+          .update(updateData)
           .eq('id', variables.id)
           .select()
           .single();
@@ -165,6 +202,7 @@ export function useOfflineMutations(workspaceId: string, pageId: string) {
         // Convert database response to Block type
         const updatedBlockFromDb: Block = {
           ...updatedBlock,
+          type: updatedBlock.type as ExtendedBlockType, // Safe cast back to ExtendedBlockType for UI
           properties: (updatedBlock.properties as any) || {},
           content: (updatedBlock.content as any) || {},
         };
@@ -200,16 +238,25 @@ export function useOfflineMutations(workspaceId: string, pageId: string) {
 
   // Offline-aware mutations
   const createBlockOffline = useMutation({
-    mutationFn: async (blockData: Partial<Block> & { type: BlockType; workspace_id: string }) => {
+    mutationFn: async (blockData: Partial<Block> & { type: ExtendedBlockType; workspace_id: string }) => {
+      // Convert ExtendedBlockType to BlockType for database operations
+      const validType = toValidBlockType(blockData.type);
+      if (!validType) {
+        throw new Error(`Block type '${blockData.type}' cannot be stored in database`);
+      }
+
       if (isOnline) {
         // Execute immediately if online
+        const dbData = {
+          ...blockData,
+          type: validType, // Use converted type for database
+          properties: blockData.properties || {},
+          content: blockData.content || {},
+        };
+
         const { data, error } = await supabase
           .from('blocks')
-          .insert({
-            ...blockData,
-            properties: blockData.properties || {},
-            content: blockData.content || {},
-          })
+          .insert(dbData)
           .select()
           .single();
 
@@ -217,11 +264,12 @@ export function useOfflineMutations(workspaceId: string, pageId: string) {
         
         return {
           ...data,
+          type: blockData.type, // Preserve original ExtendedBlockType for UI
           properties: (data.properties as any) || {},
           content: (data.content as any) || {},
         } as Block;
       } else {
-        // Store for later if offline
+        // Store for later if offline (with original ExtendedBlockType)
         const mutationId = await storePendingMutation('createBlock', blockData);
         
         // Create optimistic block
@@ -229,7 +277,7 @@ export function useOfflineMutations(workspaceId: string, pageId: string) {
           id: mutationId || crypto.randomUUID(),
           workspace_id: blockData.workspace_id,
           teamspace_id: null,
-          type: blockData.type,
+          type: blockData.type, // Keep original ExtendedBlockType
           parent_id: blockData.parent_id || pageId,
           properties: blockData.properties || {},
           content: blockData.content || {},
@@ -258,9 +306,21 @@ export function useOfflineMutations(workspaceId: string, pageId: string) {
   const updateBlockOffline = useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: Partial<Block> }) => {
       if (isOnline) {
+        // Handle type conversion for database
+        const dbUpdates = { ...updates };
+        if (dbUpdates.type) {
+          const validType = toValidBlockType(dbUpdates.type);
+          if (validType) {
+            dbUpdates.type = validType;
+          } else {
+            // Remove invalid type from update
+            delete dbUpdates.type;
+          }
+        }
+
         const { data, error } = await supabase
           .from('blocks')
-          .update(updates)
+          .update(dbUpdates)
           .eq('id', id)
           .select()
           .single();
@@ -269,6 +329,7 @@ export function useOfflineMutations(workspaceId: string, pageId: string) {
         
         return {
           ...data,
+          type: updates.type || data.type, // Preserve original type if provided
           properties: (data.properties as any) || {},
           content: (data.content as any) || {},
         } as Block;
