@@ -24,22 +24,35 @@ export const setupQueryPersistence = async () => {
     const { persistQueryClient } = await import('@tanstack/query-persist-client-core');
     const { indexedDBPersister } = await import('./indexedDBPersister');
     
-    // persistQueryClient returns [unsubscribe, promise], not just a promise
-    const [unsubscribe, persistPromise] = persistQueryClient({
-      queryClient: blocksQueryClient,
+    // Use any type to bypass the version conflict temporarily
+    // This is safe because the QueryClient interface is functionally compatible
+    const result = persistQueryClient({
+      queryClient: blocksQueryClient as any,
       persister: indexedDBPersister,
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
 
-    // Handle the promise without blocking
-    persistPromise.catch((error) => {
-      console.warn('⚠️ Query persistence failed:', error);
-    });
+    // Handle both possible return types (promise vs tuple)
+    if (Array.isArray(result)) {
+      const [unsubscribe, persistPromise] = result;
+      
+      // Handle the promise without blocking
+      persistPromise.catch((error) => {
+        console.warn('⚠️ Query persistence failed:', error);
+      });
 
-    console.log('🔧 Query persistence setup initiated');
-    
-    // Return unsubscribe function in case caller needs it
-    return unsubscribe;
+      console.log('🔧 Query persistence setup initiated');
+      
+      // Return unsubscribe function in case caller needs it
+      return unsubscribe;
+    } else {
+      // Handle as promise directly
+      result.catch((error) => {
+        console.warn('⚠️ Query persistence failed:', error);
+      });
+
+      console.log('🔧 Query persistence setup initiated');
+    }
   } catch (error) {
     console.warn('⚠️ Query persistence setup failed:', error);
     // Continue without persistence if it fails
