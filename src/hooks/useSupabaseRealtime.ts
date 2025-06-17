@@ -32,6 +32,15 @@ interface UseSupabaseRealtimeReturn {
   retry: () => void;
 }
 
+// Global subscription management for deduplication
+interface SubscriptionState {
+  unsubscribe: () => void;
+  callbacks: Set<RealtimeCallbacks>;
+  channelKey: string;
+}
+
+const globalSubscriptions = new Map<string, SubscriptionState>();
+
 export function useSupabaseRealtime({
   type,
   filter,
@@ -40,12 +49,25 @@ export function useSupabaseRealtime({
   enabled = true
 }: UseSupabaseRealtimeOptions): UseSupabaseRealtimeReturn {
   const { user } = useAuth();
-  const unsubscribeRef = useRef<(() => void) | null>(null);
+  const callbacksRef = useRef<RealtimeCallbacks>(callbacks);
+  const subscriptionKeyRef = useRef<string | null>(null);
   const [channelState, setChannelState] = useState<ChannelState | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // Generate a unique channel key based on type and filter
-  const channelKey = useCallback(() => {
+  // Update callbacks ref when callbacks change
+  callbacksRef.current = callbacks;
+
+  // Generate a stable subscription key based on type and filter
+  const generateSubscriptionKey = useCallback(() => {
+    const filterParts = [];
+    if (filter.workspace_id) filterParts.push(`workspace:${filter.workspace_id}`);
+    if (filter.parent_id) filterParts.push(`parent:${filter.parent_id}`);
+    
+    return `${type}_${filterParts.join('_')}`;
+  }, [type, filter]);
+
+  // Generate a unique channel key for the SupabaseChannelManager
+  const generateChannelKey = useCallback(() => {
     const filterParts = [];
     if (filter.workspace_id) filterParts.push(`workspace:${filter.workspace_id}`);
     if (filter.parent_id) filterParts.push(`parent:${filter.parent_id}`);
@@ -65,56 +87,86 @@ export function useSupabaseRealtime({
     return filters.join(',');
   }, [filter]);
 
-  // Handle postgres changes events
-  const handlePostgresChanges = useCallback((payload: any) => {
-    const { eventType, new: newRecord, old: oldRecord } = payload;
-    
-    console.log(`📨 Realtime ${type} update:`, { eventType, newRecord, oldRecord });
-    
-    switch (eventType) {
-      case 'INSERT':
-        if (callbacks.onInsert) {
-          callbacks.onInsert(payload);
-        }
-        break;
-      case 'UPDATE':
-        if (callbacks.onUpdate) {
-          callbacks.onUpdate(payload);
-        }
-        break;
-      case 'DELETE':
-        if (callbacks.onDelete) {
-          callbacks.onDelete(payload);
-        }
-        break;
-    }
-  }, [type, callbacks]);
+  // Aggregated callback handlers that distribute to all registered callbacks
+  const createAggregatedCallbacks = useCallback((subscriptionKey: string) => {
+    const getActiveCallbacks = () => {
+      const subscription = globalSubscriptions.get(subscriptionKey);
+      return subscription ? Array.from(subscription.callbacks) : [];
+    };
 
-  // Set up the subscription
-  useEffect(() => {
+    return {
+      handlePostgresChanges: (payload: any) => {
+        const { eventType, new: newRecord, old: oldRecord } = payload;
+        
+        console.log(`📨 Realtime ${type} update:`, { eventType, newRecord, oldRecord });
+        
+        const activeCallbacks = getActiveCallbacks();
+        
+        switch (eventType) {
+          case 'INSERT':
+            activeCallbacks.forEach(cb => cb.onInsert?.(payload));
+            break;
+          case 'UPDATE':
+            activeCallbacks.forEach(cb => cb.onUpdate?.(payload));
+            break;
+          case 'DELETE':
+            activeCallbacks.forEach(cb => cb.onDelete?.(payload));
+            break;
+        }
+      },
+      handlePresenceSync: (presences: any) => {
+        const activeCallbacks = getActiveCallbacks();
+        activeCallbacks.forEach(cb => cb.onPresenceSync?.(presences));
+      },
+      handlePresenceJoin: (presence: any) => {
+        const activeCallbacks = getActiveCallbacks();
+        activeCallbacks.forEach(cb => cb.onPresenceJoin?.(presence));
+      },
+      handlePresenceLeave: (presence: any) => {
+        const activeCallbacks = getActiveCallbacks();
+        activeCallbacks.forEach(cb => cb.onPresenceLeave?.(presence));
+      }
+    };
+  }, [type]);
+
+  // Create or reuse subscription
+  const setupSubscription = useCallback(() => {
     if (!enabled || !user) {
-      return;
+      return null;
     }
 
-    const key = channelKey();
-    console.log(`🔌 Setting up ${type} realtime subscription:`, key);
+    const subscriptionKey = generateSubscriptionKey();
+    const channelKey = generateChannelKey();
+    
+    console.log(`🔌 Setting up ${type} realtime subscription:`, subscriptionKey);
 
-    // Clean up existing subscription
-    if (unsubscribeRef.current) {
-      unsubscribeRef.current();
-      unsubscribeRef.current = null;
+    // Check if subscription already exists
+    let existingSubscription = globalSubscriptions.get(subscriptionKey);
+    
+    if (existingSubscription) {
+      // Add callbacks to existing subscription
+      existingSubscription.callbacks.add(callbacksRef.current);
+      console.log(`♻️ Reusing existing subscription:`, subscriptionKey, `(${existingSubscription.callbacks.size} callbacks)`);
+      
+      return {
+        subscriptionKey,
+        channelKey: existingSubscription.channelKey,
+        isNewSubscription: false
+      };
     }
 
+    // Create new subscription
+    const aggregatedCallbacks = createAggregatedCallbacks(subscriptionKey);
     let unsubscribe: (() => void) | null = null;
 
     if (type === 'presence') {
       // Handle presence subscription
       unsubscribe = supabaseChannelManager.subscribeToPresence(
-        key,
+        channelKey,
         {
-          onSync: callbacks.onPresenceSync,
-          onJoin: callbacks.onPresenceJoin,
-          onLeave: callbacks.onPresenceLeave,
+          onSync: aggregatedCallbacks.handlePresenceSync,
+          onJoin: aggregatedCallbacks.handlePresenceJoin,
+          onLeave: aggregatedCallbacks.handlePresenceLeave,
         },
         config
       );
@@ -124,83 +176,113 @@ export function useSupabaseRealtime({
       const table = type === 'blocks' ? 'blocks' : 'blocks'; // Both use blocks table
       
       unsubscribe = supabaseChannelManager.subscribeToChanges(
-        key,
+        channelKey,
         {
           event: '*',
           schema: 'public',
           table,
           filter: filterString,
-          callback: handlePostgresChanges,
+          callback: aggregatedCallbacks.handlePostgresChanges,
         },
         config
       );
     }
 
-    unsubscribeRef.current = unsubscribe;
+    if (unsubscribe) {
+      // Create new subscription state
+      const subscriptionState: SubscriptionState = {
+        unsubscribe,
+        callbacks: new Set([callbacksRef.current]),
+        channelKey
+      };
 
-    // Poll for channel state updates
-    const stateInterval = setInterval(() => {
-      const state = supabaseChannelManager.getChannelState(key);
-      setChannelState(state);
+      globalSubscriptions.set(subscriptionKey, subscriptionState);
+      console.log(`✨ Created new subscription:`, subscriptionKey);
       
-      const channelInfo = supabaseChannelManager.getChannelInfo(key);
-      if (channelInfo?.stateMachine.context.lastError) {
-        setError(channelInfo.stateMachine.context.lastError);
-      } else {
-        setError(null);
-      }
-    }, 1000);
+      return {
+        subscriptionKey,
+        channelKey,
+        isNewSubscription: true
+      };
+    }
 
-    return () => {
-      clearInterval(stateInterval);
-      if (unsubscribeRef.current) {
-        unsubscribeRef.current();
-        unsubscribeRef.current = null;
-      }
-    };
-  }, [
-    enabled,
-    user,
-    type,
-    channelKey,
-    buildFilterString,
-    handlePostgresChanges,
-    callbacks.onPresenceSync,
-    callbacks.onPresenceJoin,
-    callbacks.onPresenceLeave,
-    config
-  ]);
+    return null;
+  }, [enabled, user, generateSubscriptionKey, generateChannelKey, createAggregatedCallbacks, type, buildFilterString, config]);
+
+  // Clean up subscription
+  const cleanupSubscription = useCallback((subscriptionKey: string) => {
+    const subscription = globalSubscriptions.get(subscriptionKey);
+    if (!subscription) return;
+
+    // Remove our callbacks from the subscription
+    subscription.callbacks.delete(callbacksRef.current);
+    
+    console.log(`🧹 Removed callbacks from subscription:`, subscriptionKey, `(${subscription.callbacks.size} remaining)`);
+
+    // If no more callbacks, clean up the subscription
+    if (subscription.callbacks.size === 0) {
+      console.log(`🗑️ Cleaning up empty subscription:`, subscriptionKey);
+      subscription.unsubscribe();
+      globalSubscriptions.delete(subscriptionKey);
+    }
+  }, []);
+
+  // Set up the subscription
+  useEffect(() => {
+    const subscriptionInfo = setupSubscription();
+    
+    if (subscriptionInfo) {
+      subscriptionKeyRef.current = subscriptionInfo.subscriptionKey;
+      
+      // Poll for channel state updates
+      const stateInterval = setInterval(() => {
+        const state = supabaseChannelManager.getChannelState(subscriptionInfo.channelKey);
+        setChannelState(state);
+        
+        const channelInfo = supabaseChannelManager.getChannelInfo(subscriptionInfo.channelKey);
+        if (channelInfo?.stateMachine.context.lastError) {
+          setError(channelInfo.stateMachine.context.lastError);
+        } else {
+          setError(null);
+        }
+      }, 1000);
+
+      return () => {
+        clearInterval(stateInterval);
+        if (subscriptionKeyRef.current) {
+          cleanupSubscription(subscriptionKeyRef.current);
+          subscriptionKeyRef.current = null;
+        }
+      };
+    }
+
+    return undefined;
+  }, [setupSubscription, cleanupSubscription]);
 
   // Retry function to manually reconnect
   const retry = useCallback(() => {
-    if (!enabled || !user) return;
+    if (!enabled || !user || !subscriptionKeyRef.current) return;
 
-    const key = channelKey();
-    const channelInfo = supabaseChannelManager.getChannelInfo(key);
+    const subscription = globalSubscriptions.get(subscriptionKeyRef.current);
+    if (!subscription) return;
+
+    console.log(`🔄 Manually retrying connection for ${type}:`, subscriptionKeyRef.current);
+    
+    const channelInfo = supabaseChannelManager.getChannelInfo(subscription.channelKey);
     
     if (channelInfo) {
-      console.log(`🔄 Manually retrying connection for ${type}:`, key);
+      // Remove the channel and let it reconnect
+      supabaseChannelManager.removeChannel(subscription.channelKey);
       
-      // Remove the channel and recreate subscription
-      supabaseChannelManager.removeChannel(key);
-      
-      // Clear current subscription
-      if (unsubscribeRef.current) {
-        unsubscribeRef.current();
-        unsubscribeRef.current = null;
-      }
-
       // Reset error state
       setError(null);
       
-      // Trigger re-subscription by updating a dependency
-      // This will cause the useEffect to run again
+      // The subscription will be recreated on the next effect run
       setTimeout(() => {
-        // Force re-render to trigger useEffect
         setChannelState(null);
       }, 100);
     }
-  }, [enabled, user, type, channelKey]);
+  }, [enabled, user, type]);
 
   return {
     isConnected: channelState ? isConnectedState(channelState) : false,
