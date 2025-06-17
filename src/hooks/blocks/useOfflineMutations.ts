@@ -264,9 +264,12 @@ export function useOfflineMutations(workspaceId: string, pageId: string) {
           content: blockData.content || {},
         };
 
+        // Remove any ExtendedBlockType specific properties before database insert
+        const { ...cleanDbData } = dbData;
+
         const { data, error } = await supabase
           .from('blocks')
-          .insert(dbData)
+          .insert(cleanDbData)
           .select()
           .single();
 

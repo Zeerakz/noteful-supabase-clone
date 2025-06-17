@@ -1,5 +1,4 @@
-
-import { PersistedClient, Persister } from '@tanstack/react-query-persist-client-core';
+import { PersistedClient, Persister } from '@tanstack/query-persist-client-core';
 
 const DB_NAME = 'lovable_blocks_cache';
 const DB_VERSION = 1;

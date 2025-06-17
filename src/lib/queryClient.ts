@@ -1,6 +1,6 @@
 
 import { QueryClient } from '@tanstack/react-query';
-import { persistQueryClient } from '@tanstack/react-query-persist-client-core';
+import { persistQueryClient } from '@tanstack/query-persist-client-core';
 import { indexedDBPersister } from './indexedDBPersister';
 
 // Custom query client with optimized settings for blocks
