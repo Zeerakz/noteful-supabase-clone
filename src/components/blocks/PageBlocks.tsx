@@ -24,36 +24,39 @@ export function PageBlocks({ workspaceId, pageId, isEditable = false }: PageBloc
 
   const handleUpdateBlock = async (id: string, updates: any) => {
     try {
+      console.log('🔄 PageBlocks - updating block:', id, updates);
       const result = await updateBlock(id, updates);
       if (result.error) {
         throw new Error(result.error);
       }
     } catch (error) {
-      console.error('Error updating block:', error);
+      console.error('❌ Error updating block:', error);
       reportBlockError(id, error as Error);
     }
   };
 
   const handleDeleteBlock = async (id: string) => {
     try {
+      console.log('🗑️ PageBlocks - deleting block:', id);
       const result = await deleteBlock(id);
       if (result.error) {
         throw new Error(result.error);
       }
     } catch (error) {
-      console.error('Error deleting block:', error);
+      console.error('❌ Error deleting block:', error);
       reportBlockError(id, error as Error);
     }
   };
 
   const handleCreateBlock = async (params: { type: BlockType; content?: any; parent_id?: string; pos?: number }) => {
     try {
+      console.log('➕ PageBlocks - creating block:', params);
       const result = await createBlock(params);
       if (result.error) {
         throw new Error(result.error);
       }
     } catch (error) {
-      console.error('Error creating block:', error);
+      console.error('❌ Error creating block:', error);
       reportBlockError('new-block', error as Error);
     }
   };
@@ -91,16 +94,25 @@ export function PageBlocks({ workspaceId, pageId, isEditable = false }: PageBloc
     );
   }
 
-  if (blocks.length === 0 && !loading) {
+  // Sort blocks by position to ensure correct order
+  const sortedBlocks = [...blocks].sort((a, b) => (a.pos || 0) - (b.pos || 0));
+  const parentBlocks = sortedBlocks.filter(block => block.parent_id === pageId);
+  const childBlocks = sortedBlocks.filter(block => block.parent_id && block.parent_id !== pageId);
+
+  console.log('📦 PageBlocks render - blocks:', {
+    total: blocks.length,
+    parent: parentBlocks.length,
+    child: childBlocks.length,
+    isEditable
+  });
+
+  if (parentBlocks.length === 0 && !loading) {
     return (
       <div className="p-4 text-center text-gray-500">
         {isEditable ? 'No blocks yet. Start adding content!' : 'This page is empty.'}
       </div>
     );
   }
-
-  const parentBlocks = blocks.filter(block => block.parent_id === pageId);
-  const childBlocks = blocks.filter(block => block.parent_id && block.parent_id !== pageId);
 
   return (
     <div className="space-y-2">

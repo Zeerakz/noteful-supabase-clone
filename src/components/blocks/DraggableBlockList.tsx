@@ -37,20 +37,28 @@ export function DraggableBlockList({
     // Don't do anything if dropped in the same position
     if (source.index === destination.index) return;
 
-    const draggedBlock = blocks[source.index];
-    const reorderedBlocks = Array.from(blocks);
-    
-    // Remove the dragged block from its original position
-    reorderedBlocks.splice(source.index, 1);
-    // Insert it at the new position
-    reorderedBlocks.splice(destination.index, 0, draggedBlock);
+    console.log('🔄 Drag and drop - moving block from', source.index, 'to', destination.index);
 
-    // Update positions for all affected blocks
-    for (let i = 0; i < reorderedBlocks.length; i++) {
-      const block = reorderedBlocks[i];
-      if (block.pos !== i) {
-        await onUpdateBlock(block.id, { pos: i });
-      }
+    try {
+      // Create a copy of blocks array for reordering
+      const reorderedBlocks = Array.from(blocks);
+      const [draggedBlock] = reorderedBlocks.splice(source.index, 1);
+      reorderedBlocks.splice(destination.index, 0, draggedBlock);
+
+      // Update positions for all affected blocks in batch
+      const updatePromises = reorderedBlocks.map((block, index) => {
+        if (block.pos !== index) {
+          console.log(`📍 Updating block ${block.id} position from ${block.pos} to ${index}`);
+          return onUpdateBlock(block.id, { pos: index });
+        }
+        return Promise.resolve();
+      });
+
+      await Promise.all(updatePromises);
+      console.log('✅ Drag and drop completed successfully');
+    } catch (error) {
+      console.error('❌ Error during drag and drop:', error);
+      onReportError?.('drag-drop', error as Error);
     }
   };
 
@@ -78,13 +86,13 @@ export function DraggableBlockList({
 
   return (
     <DragDropContext onDragEnd={handleDragEnd}>
-      <Droppable droppableId={parentBlockId || 'root'}>
+      <Droppable droppableId={parentBlockId || `page-${pageId}`}>
         {(provided, snapshot) => (
           <div
             ref={provided.innerRef}
             {...provided.droppableProps}
-            className={`space-y-2 ${
-              snapshot.isDraggingOver ? 'bg-muted/20 rounded-lg p-2' : ''
+            className={`space-y-2 min-h-[20px] ${
+              snapshot.isDraggingOver ? 'bg-muted/20 rounded-lg p-2 transition-colors' : ''
             }`}
           >
             {blocks.map((block, index) => (
@@ -98,35 +106,52 @@ export function DraggableBlockList({
                   <div
                     ref={provided.innerRef}
                     {...provided.draggableProps}
-                    {...provided.dragHandleProps}
-                    className={`${
+                    className={`transition-all duration-200 ${
                       snapshot.isDragging
-                        ? 'shadow-lg ring-2 ring-primary/20 bg-background rounded-lg'
-                        : ''
+                        ? 'shadow-lg ring-2 ring-primary/20 bg-background rounded-lg scale-105 rotate-1 z-50'
+                        : 'hover:shadow-sm'
                     }`}
                     style={{
                       ...provided.draggableProps.style,
-                      transform: snapshot.isDragging
-                        ? provided.draggableProps.style?.transform
-                        : 'none',
                     }}
                   >
-                    <BlockRenderer
-                      block={block}
-                      pageId={pageId}
-                      onUpdateBlock={onUpdateBlock}
-                      onDeleteBlock={onDeleteBlock}
-                      onCreateBlock={onCreateBlock}
-                      isEditable={isEditable}
-                      childBlocks={childBlocks}
-                      onReportError={onReportError}
-                      onRetry={onRetry}
-                    />
+                    <div className="group relative">
+                      {/* Drag handle - visible on hover */}
+                      <div
+                        {...provided.dragHandleProps}
+                        className={`absolute left-0 top-1/2 -translate-y-1/2 -translate-x-6 w-4 h-4 rounded bg-muted hover:bg-muted-foreground/20 cursor-grab active:cursor-grabbing transition-all ${
+                          snapshot.isDragging ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                        }`}
+                      >
+                        <div className="w-full h-full flex items-center justify-center">
+                          <div className="w-1.5 h-1.5 bg-muted-foreground/40 rounded-full"></div>
+                        </div>
+                      </div>
+                      
+                      <BlockRenderer
+                        block={block}
+                        pageId={pageId}
+                        onUpdateBlock={onUpdateBlock}
+                        onDeleteBlock={onDeleteBlock}
+                        onCreateBlock={onCreateBlock}
+                        isEditable={isEditable}
+                        childBlocks={childBlocks}
+                        onReportError={onReportError}
+                        onRetry={onRetry}
+                      />
+                    </div>
                   </div>
                 )}
               </Draggable>
             ))}
             {provided.placeholder}
+            
+            {/* Drop zone indicator when dragging */}
+            {snapshot.isDraggingOver && blocks.length === 0 && (
+              <div className="border-2 border-dashed border-muted-foreground/20 rounded-lg p-8 text-center text-muted-foreground text-sm">
+                Drop block here
+              </div>
+            )}
           </div>
         )}
       </Droppable>
