@@ -1,6 +1,5 @@
-
 import { supabase } from '@/integrations/supabase/client';
-import { RealtimeChannel, RealtimeChannelSendResponse, REALTIME_SUBSCRIBE_STATES, REALTIME_LISTEN_TYPES } from '@supabase/supabase-js';
+import { RealtimeChannel, RealtimeChannelSendResponse, REALTIME_SUBSCRIBE_STATES } from '@supabase/supabase-js';
 import {
   ChannelState,
   ChannelEvent,
@@ -170,15 +169,15 @@ class SupabaseChannelManager {
     const channel = this.getChannel(key, config);
     
     if (callbacks.onSync) {
-      channel.on(REALTIME_LISTEN_TYPES.PRESENCE, { event: 'sync' }, callbacks.onSync);
+      channel.on('presence', { event: 'sync' }, callbacks.onSync);
     }
     
     if (callbacks.onJoin) {
-      channel.on(REALTIME_LISTEN_TYPES.PRESENCE, { event: 'join' }, callbacks.onJoin);
+      channel.on('presence', { event: 'join' }, callbacks.onJoin);
     }
     
     if (callbacks.onLeave) {
-      channel.on(REALTIME_LISTEN_TYPES.PRESENCE, { event: 'leave' }, callbacks.onLeave);
+      channel.on('presence', { event: 'leave' }, callbacks.onLeave);
     }
 
     // Subscribe to the channel if not already subscribed
