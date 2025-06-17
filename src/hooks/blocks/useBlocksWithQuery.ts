@@ -83,22 +83,23 @@ export function useBlocksWithQuery(
       throw new Error('User not authenticated');
     }
 
-    // Create a copy of updates and handle type conversion
+    // Create a copy of updates without the type field first
+    const { type: updateType, ...otherUpdates } = updates;
+    
+    // Create the valid updates object
     const validUpdates: Partial<Omit<Block, 'type'>> & { type?: BlockType } = {
-      ...updates,
+      ...otherUpdates,
       last_edited_by: user.id,
       last_edited_time: new Date().toISOString(),
     };
 
-    // Handle type conversion from ExtendedBlockType to BlockType
-    if (updates.type) {
-      const validType = toValidBlockType(updates.type);
+    // Handle type conversion from ExtendedBlockType to BlockType if provided
+    if (updateType) {
+      const validType = toValidBlockType(updateType);
       if (validType) {
         validUpdates.type = validType;
-      } else {
-        // Remove invalid type to avoid database error
-        delete validUpdates.type;
       }
+      // If invalid type, we simply don't include it (don't throw error)
     }
 
     return updateBlockMutation.mutateAsync({
