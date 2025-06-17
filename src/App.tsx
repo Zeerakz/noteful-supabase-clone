@@ -1,7 +1,7 @@
 
 import './App.css';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useParams } from 'react-router-dom';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { AnalyticsProvider } from '@/contexts/AnalyticsContext';
@@ -114,7 +114,6 @@ function App() {
 
 // Wrapper component to extract workspaceId from URL params
 function WorkspaceSettingsViewWrapper() {
-  const { useParams } = require('react-router-dom');
   const { workspaceId } = useParams<{ workspaceId: string }>();
   
   if (!workspaceId) {
