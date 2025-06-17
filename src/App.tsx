@@ -59,9 +59,7 @@ function App() {
                   <Route path="/workspace/:workspaceId" element={
                     <ProtectedRoute>
                       <RouteErrorBoundary>
-                        <AppLayout>
-                          <WorkspaceView />
-                        </AppLayout>
+                        <WorkspaceView />
                       </RouteErrorBoundary>
                     </ProtectedRoute>
                   } />
