@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Trash2, Save, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useDebounce } from '@/hooks/useDebounce';
 
 interface ImprovedTextBlockProps {
   block: Block;
@@ -22,107 +23,141 @@ export function ImprovedTextBlock({ block, pageId, onUpdate, onDelete, isEditabl
   const [saveError, setSaveError] = useState<string | null>(null);
   
   const { toast } = useToast();
-  const updateTimeoutRef = useRef<NodeJS.Timeout>();
-  const saveAttemptRef = useRef<number>(0);
+  const saveRequestId = useRef<number>(0);
+  const isMountedRef = useRef(true);
+  
+  // Debounce text changes with longer timeout for better UX
+  const debouncedText = useDebounce(text, 2000);
 
   // Update local state when block content changes externally
   useEffect(() => {
     const newText = block.content?.text || '';
     if (newText !== text && newText !== lastSavedText) {
+      console.log('📝 External content change detected, updating local state');
       setText(newText);
       setLastSavedText(newText);
       setHasUnsavedChanges(false);
+      setSaveError(null);
     }
   }, [block.content?.text]);
 
-  // Debounced save function
-  const debouncedSave = useCallback(async (textToSave: string) => {
-    // Skip saving if text is the same as last saved
-    if (textToSave === lastSavedText) {
-      console.log('📝 Text unchanged, skipping save');
+  // Auto-save when debounced text changes
+  useEffect(() => {
+    if (!isEditable || !isMountedRef.current) return;
+    
+    // Skip if text hasn't actually changed from last saved
+    if (debouncedText === lastSavedText) {
+      console.log('📝 Text unchanged from last saved, skipping auto-save');
       return;
     }
 
-    // Allow empty text (remove overly strict validation)
-    const trimmedText = textToSave.trim();
+    // Skip if currently updating to prevent duplicate saves
+    if (isUpdating) {
+      console.log('📝 Save already in progress, skipping auto-save');
+      return;
+    }
+
+    console.log('📝 Auto-saving debounced text change');
+    handleSave(debouncedText, false);
+  }, [debouncedText, isEditable, lastSavedText, isUpdating]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
+  // Enhanced save function with deduplication
+  const handleSave = useCallback(async (textToSave: string, showToast: boolean = false) => {
+    // Skip if text is the same as last saved
+    if (textToSave === lastSavedText) {
+      console.log('📝 Text unchanged, skipping save');
+      setHasUnsavedChanges(false);
+      return;
+    }
+
+    // Skip if already saving
+    if (isUpdating) {
+      console.log('📝 Save already in progress, skipping duplicate');
+      return;
+    }
+
+    // Generate unique request ID for deduplication
+    const requestId = ++saveRequestId.current;
     
     setIsUpdating(true);
     setSaveError(null);
-    saveAttemptRef.current += 1;
-    const currentAttempt = saveAttemptRef.current;
 
     try {
-      console.log('💾 Saving text block:', block.id, textToSave);
+      console.log(`📝 [${requestId}] Saving text block:`, block.id, textToSave.length, 'chars');
       
       await onUpdate({ text: textToSave });
       
-      // Check if this is still the latest save attempt
-      if (currentAttempt === saveAttemptRef.current) {
-        console.log('✅ Text block saved successfully');
+      // Check if this is still the latest save request and component is mounted
+      if (requestId === saveRequestId.current && isMountedRef.current) {
+        console.log(`✅ [${requestId}] Text block saved successfully`);
         setLastSavedText(textToSave);
         setHasUnsavedChanges(false);
         setSaveError(null);
         
-        // Only show success toast for manual saves, not auto-saves
-        if (trimmedText.length === 0) {
-          toast({
-            title: "Block Updated",
-            description: "Text block has been cleared",
-          });
-        } else if (textToSave !== lastSavedText) {
+        // Show success toast only for manual saves
+        if (showToast) {
           toast({
             title: "Block Saved",
             description: "Your changes have been saved",
           });
         }
+      } else {
+        console.log(`⏭️ [${requestId}] Save request superseded or component unmounted`);
       }
     } catch (error) {
-      console.error('❌ Error saving text block:', error);
-      if (currentAttempt === saveAttemptRef.current) {
+      console.error(`❌ [${requestId}] Error saving text block:`, error);
+      
+      // Only handle error if this is still the latest request and component is mounted
+      if (requestId === saveRequestId.current && isMountedRef.current) {
         const errorMessage = error instanceof Error ? error.message : 'Failed to save changes';
         setSaveError(errorMessage);
         setHasUnsavedChanges(true);
+        
+        toast({
+          title: "Save Failed",
+          description: errorMessage,
+          variant: "destructive",
+        });
       }
     } finally {
-      if (currentAttempt === saveAttemptRef.current) {
+      // Only update state if this is still the latest request and component is mounted
+      if (requestId === saveRequestId.current && isMountedRef.current) {
         setIsUpdating(false);
       }
     }
-  }, [block.id, onUpdate, lastSavedText, toast]);
+  }, [block.id, onUpdate, lastSavedText, isUpdating, toast]);
 
-  // Handle text changes with improved debouncing
+  // Handle text input changes
   const handleTextChange = useCallback((newText: string) => {
     setText(newText);
     setHasUnsavedChanges(newText !== lastSavedText);
-    setSaveError(null);
-
-    if (!isEditable) return;
-
-    // Clear existing timeout
-    if (updateTimeoutRef.current) {
-      clearTimeout(updateTimeoutRef.current);
+    
+    // Clear save error when user starts typing
+    if (saveError) {
+      setSaveError(null);
     }
-
-    // Debounce save - shorter delay for better UX
-    updateTimeoutRef.current = setTimeout(() => {
-      debouncedSave(newText);
-    }, 800);
-  }, [isEditable, lastSavedText, debouncedSave]);
+  }, [lastSavedText, saveError]);
 
   // Manual save function
   const handleManualSave = useCallback(() => {
-    if (updateTimeoutRef.current) {
-      clearTimeout(updateTimeoutRef.current);
-    }
-    debouncedSave(text);
-  }, [text, debouncedSave]);
+    console.log('📝 Manual save triggered');
+    handleSave(text, true);
+  }, [text, handleSave]);
 
-  // Handle blur - save immediately
+  // Handle blur - save immediately if there are unsaved changes
   const handleBlur = useCallback(() => {
-    if (hasUnsavedChanges && isEditable) {
-      handleManualSave();
+    if (hasUnsavedChanges && isEditable && !isUpdating) {
+      console.log('📝 Blur save triggered');
+      handleSave(text, false);
     }
-  }, [hasUnsavedChanges, isEditable, handleManualSave]);
+  }, [hasUnsavedChanges, isEditable, isUpdating, text, handleSave]);
 
   // Handle delete
   const handleDelete = useCallback(async () => {
@@ -140,19 +175,9 @@ export function ImprovedTextBlock({ block, pageId, onUpdate, onDelete, isEditabl
         description: "Failed to delete block. Please try again.",
         variant: "destructive",
       });
-    } finally {
       setIsUpdating(false);
     }
   }, [onDelete, toast]);
-
-  // Cleanup timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (updateTimeoutRef.current) {
-        clearTimeout(updateTimeoutRef.current);
-      }
-    };
-  }, []);
 
   // Read-only mode
   if (!isEditable) {
@@ -177,19 +202,20 @@ export function ImprovedTextBlock({ block, pageId, onUpdate, onDelete, isEditabl
             className={`border-none bg-transparent focus:bg-background ${
               saveError ? 'border-red-300 focus:border-red-500' : ''
             } ${hasUnsavedChanges ? 'bg-yellow-50 dark:bg-yellow-950/20' : ''}`}
-            disabled={isUpdating}
+            // Never disable input to prevent blocking typing
+            disabled={false}
           />
           
           {/* Status indicators */}
           <div className="absolute top-2 right-2 flex items-center gap-1">
             {isUpdating && (
-              <div className="h-2 w-2 bg-blue-500 rounded-full animate-pulse" />
+              <div className="h-2 w-2 bg-blue-500 rounded-full animate-pulse" title="Saving..." />
             )}
             {hasUnsavedChanges && !isUpdating && (
-              <div className="h-2 w-2 bg-orange-500 rounded-full" />
+              <div className="h-2 w-2 bg-orange-500 rounded-full" title="Unsaved changes" />
             )}
             {saveError && (
-              <AlertCircle className="h-3 w-3 text-red-500" />
+              <AlertCircle className="h-3 w-3 text-red-500" title={saveError} />
             )}
           </div>
         </div>
