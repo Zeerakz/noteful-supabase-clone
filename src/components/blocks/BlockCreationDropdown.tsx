@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Plus, Type, Heading1, Heading2, Heading3, List, ListOrdered, Image, Table, Minus, Quote, MessageSquare, ChevronRight, Globe, Paperclip, Columns } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -9,11 +9,47 @@ interface BlockCreationDropdownProps {
 }
 
 export function BlockCreationDropdown({ onCommand }: BlockCreationDropdownProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const [adjustedSide, setAdjustedSide] = useState<'top' | 'bottom'>('bottom');
+
+  // Smart positioning logic
+  useEffect(() => {
+    if (!isOpen || !triggerRef.current) return;
+
+    const triggerElement = triggerRef.current;
+    const triggerRect = triggerElement.getBoundingClientRect();
+    const viewport = {
+      width: window.innerWidth,
+      height: window.innerHeight
+    };
+
+    // Dropdown dimensions (approximate)
+    const dropdownHeight = 16 * 32; // 16 items * ~32px per item
+    const padding = 16;
+    const estimatedDropdownHeight = dropdownHeight + padding * 2;
+
+    // Calculate available space
+    const spaceBelow = viewport.height - triggerRect.bottom;
+    const spaceAbove = triggerRect.top;
+
+    // Determine best positioning
+    if (spaceBelow < estimatedDropdownHeight && spaceAbove > spaceBelow) {
+      // Not enough space below and more space above - flip to top
+      setAdjustedSide('top');
+    } else {
+      // Default to bottom
+      setAdjustedSide('bottom');
+    }
+  }, [isOpen]);
+
   return (
-    <div className="flex justify-start pt-4">
-      <DropdownMenu>
+    <div className="flex justify-start pt-4" ref={dropdownRef}>
+      <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
         <DropdownMenuTrigger asChild>
           <Button 
+            ref={triggerRef}
             variant="outline" 
             size="sm" 
             className="h-8 px-3 text-muted-foreground border-dashed hover:border-solid hover:text-foreground transition-colors"
@@ -23,7 +59,12 @@ export function BlockCreationDropdown({ onCommand }: BlockCreationDropdownProps)
             Add Block
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" className="w-56">
+        <DropdownMenuContent 
+          align="start" 
+          side={adjustedSide}
+          className="w-56 max-h-[400px] overflow-y-auto"
+          sideOffset={4}
+        >
           <DropdownMenuItem onClick={() => onCommand('text')} data-cy="text-block-option">
             <Type className="h-4 w-4 mr-3" />
             <div className="flex flex-col">
