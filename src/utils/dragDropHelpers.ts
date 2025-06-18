@@ -36,18 +36,21 @@ export function parseDragDropResult(result: DropResult): DragDropResult | null {
 }
 
 export function isDragDropValid(result: DragDropResult): { isValid: boolean; error?: string } {
-  // Prevent dropping pages into database-only sections
-  if (result.type === 'page' && result.destinationSection === 'databases') {
+  // Prevent dropping pages into database sections
+  if (result.type === 'page' && 
+      (result.destinationSection === 'databases' || 
+       result.destinationSection === 'databases-empty')) {
     return { 
       isValid: false, 
       error: 'Pages cannot be moved to the databases section' 
     };
   }
 
-  // Prevent dropping databases into page-specific sections  
+  // Prevent dropping databases into page sections  
   if (result.type === 'database' && 
       (result.destinationSection.startsWith('teamspace-') || 
-       result.destinationSection.startsWith('private-'))) {
+       result.destinationSection.startsWith('private-') ||
+       result.destinationSection.startsWith('sub-'))) {
     return { 
       isValid: false, 
       error: 'Databases cannot be moved to page sections' 
@@ -66,6 +69,14 @@ export function isDragDropValid(result: DragDropResult): { isValid: boolean; err
     return { isValid: true };
   }
 
+  // Allow moving pages between page sections
+  if (result.type === 'page' && 
+      (result.destinationSection.startsWith('teamspace-') || 
+       result.destinationSection.startsWith('private-') ||
+       result.destinationSection.startsWith('sub-'))) {
+    return { isValid: true };
+  }
+
   return { isValid: true };
 }
 
@@ -74,7 +85,7 @@ export function getDropZoneMessage(droppableId: string, dragType?: 'page' | 'dat
     return dragType === 'page' ? 'Pages cannot be dropped here' : 'Drop databases here';
   }
   
-  if (droppableId.startsWith('teamspace-') || droppableId.startsWith('private-')) {
+  if (droppableId.startsWith('teamspace-') || droppableId.startsWith('private-') || droppableId.startsWith('sub-')) {
     return dragType === 'database' ? 'Databases cannot be dropped here' : 'Drop pages here';
   }
   

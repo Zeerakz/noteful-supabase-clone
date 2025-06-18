@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { DragDropContext, DropResult } from 'react-beautiful-dnd';
 import { Loader2 } from 'lucide-react';
@@ -218,7 +219,7 @@ export function WorkspacePagesGroup({ workspaceId, workspaceName }: WorkspacePag
                 onDeletePage={handleDeletePage}
               />
               
-              {((teamspaces.length > 0 || privatePages.length > 0) && databases.length > 0 && !databasesLoading) && (
+              {((teamspaces.length > 0 || privatePages.length > 0) && !databasesLoading) && (
                 <div className="px-2 pt-2 pb-1">
                   <Separator />
                 </div>
