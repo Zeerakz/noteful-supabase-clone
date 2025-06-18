@@ -1,7 +1,6 @@
-
 import React from 'react';
 import { Block } from '@/types/block';
-import { TextBlock } from './TextBlock';
+import { ImprovedTextBlock } from './ImprovedTextBlock';
 import { HeadingBlock } from './HeadingBlock';
 import { ListBlock } from './ListBlock';
 import { ImageBlock } from './ImageBlock';
@@ -18,7 +17,7 @@ import { BlockErrorBoundary } from './BlockErrorBoundary';
 interface BlockRendererProps {
   block: Block;
   pageId: string;
-  onUpdateBlock: (id: string, updates: any) => Promise<void>;
+  onUpdateBlock: (id: string, updates: any) => Promise<{ data: any; error: string | null }>;
   onDeleteBlock: (id: string) => Promise<void>;
   onCreateBlock?: (params: any) => Promise<void>;
   isEditable: boolean;
@@ -40,10 +39,11 @@ export function BlockRenderer({
 }: BlockRendererProps) {
   const handleContentUpdate = async (content: any) => {
     try {
-      await onUpdateBlock(block.id, { content });
+      return await onUpdateBlock(block.id, { content });
     } catch (error) {
       console.error('Error updating block content:', error);
       onReportError?.(block.id, error as Error);
+      return { data: null, error: (error as Error).message };
     }
   };
 
@@ -61,7 +61,7 @@ export function BlockRenderer({
       switch (block.type) {
         case 'text':
           return (
-            <TextBlock
+            <ImprovedTextBlock
               block={block}
               pageId={pageId}
               onUpdate={handleContentUpdate}
