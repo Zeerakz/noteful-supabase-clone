@@ -1,39 +1,81 @@
 
 import React from 'react';
+import { useWorkspaces } from '@/hooks/useWorkspaces';
+import { AppLayoutWithSidebar } from '@/components/layout/AppLayoutWithSidebar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { MembersManagementTab } from './MembersManagementTab';
-import { GroupsManagementTab } from './GroupsManagementTab';
 import { WorkspaceGeneralSettingsTab } from './WorkspaceGeneralSettingsTab';
+import { MembersManagementTab } from './MembersManagementTab';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface WorkspaceSettingsViewProps {
   workspaceId: string;
 }
 
 export function WorkspaceSettingsView({ workspaceId }: WorkspaceSettingsViewProps) {
+  const { workspaces, loading } = useWorkspaces();
+  
+  if (loading) {
+    return (
+      <AppLayoutWithSidebar>
+        <ScrollArea className="h-full">
+          <div className="p-6">
+            <div className="flex items-center justify-center h-64">
+              <div className="text-lg">Loading workspace settings...</div>
+            </div>
+          </div>
+        </ScrollArea>
+      </AppLayoutWithSidebar>
+    );
+  }
+
+  const workspace = workspaces.find(w => w.id === workspaceId);
+
+  if (!workspace) {
+    return (
+      <AppLayoutWithSidebar>
+        <ScrollArea className="h-full">
+          <div className="p-6">
+            <div className="flex items-center justify-center h-64">
+              <div className="text-center space-y-4">
+                <p className="text-muted-foreground">Workspace not found</p>
+              </div>
+            </div>
+          </div>
+        </ScrollArea>
+      </AppLayoutWithSidebar>
+    );
+  }
+
+  const breadcrumbs = [
+    { label: workspace.name, href: `/workspace/${workspaceId}` },
+    { label: 'Settings' }
+  ];
+
   return (
-    <div className="p-4 sm:p-6 md:p-8 h-full overflow-y-auto">
-      <header className="mb-8">
-        <h1 className="text-3xl font-bold tracking-tight">Settings & Members</h1>
-        <p className="text-muted-foreground mt-1">Manage your workspace members, groups, and settings.</p>
-      </header>
-      <Tabs defaultValue="members">
-        <TabsList className="bg-muted/60 p-1 rounded-lg h-10">
-          <TabsTrigger value="members">Members</TabsTrigger>
-          <TabsTrigger value="groups">Groups</TabsTrigger>
-          <TabsTrigger value="settings">Settings</TabsTrigger>
-        </TabsList>
-        <div className="mt-6">
-            <TabsContent value="members">
+    <AppLayoutWithSidebar breadcrumbs={breadcrumbs}>
+      <ScrollArea className="h-full">
+        <div className="p-6 space-y-6">
+          <div>
+            <h1 className="text-2xl font-bold">Workspace Settings</h1>
+            <p className="text-muted-foreground">Manage your workspace settings and members</p>
+          </div>
+
+          <Tabs defaultValue="general" className="space-y-4">
+            <TabsList>
+              <TabsTrigger value="general">General</TabsTrigger>
+              <TabsTrigger value="members">Members</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="general" className="space-y-4">
+              <WorkspaceGeneralSettingsTab workspaceId={workspaceId} />
+            </TabsContent>
+            
+            <TabsContent value="members" className="space-y-4">
               <MembersManagementTab workspaceId={workspaceId} />
             </TabsContent>
-            <TabsContent value="groups">
-              <GroupsManagementTab />
-            </TabsContent>
-            <TabsContent value="settings">
-              <WorkspaceGeneralSettingsTab />
-            </TabsContent>
+          </Tabs>
         </div>
-      </Tabs>
-    </div>
+      </ScrollArea>
+    </AppLayoutWithSidebar>
   );
 }

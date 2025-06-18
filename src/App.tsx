@@ -6,14 +6,13 @@ import { ThemeProvider } from '@/contexts/ThemeContext';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { AnalyticsProvider } from '@/contexts/AnalyticsContext';
 import { Toaster } from '@/components/ui/toaster';
-import { AppLayout } from '@/components/layout/AppLayout';
 import { AuthForm } from '@/components/auth/AuthForm';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { RouteErrorBoundary } from '@/components/error/RouteErrorBoundary';
 import { WorkspaceList } from '@/components/workspaces/WorkspaceList';
 import { WorkspaceView } from '@/components/workspaces/WorkspaceView';
 import { WorkspaceSettingsView } from '@/components/workspaces/WorkspaceSettingsView';
-import { DatabaseView } from '@/components/database/DatabaseView';
+import { DatabasePage } from '@/pages/DatabasePage';
 import { PageEditor } from '@/pages/PageEditor';
 import { PageView } from '@/pages/PageView';
 import { cleanupRealtimeManager } from '@/hooks/useRealtimeManager';
@@ -42,7 +41,7 @@ function App() {
         <AnalyticsProvider>
           <AuthProvider>
             <Router>
-              <div className="min-h-screen bg-background">
+              <div className="min-h-screen w-full bg-background">
                 <Routes>
                   {/* Auth routes */}
                   <Route path="/auth" element={<AuthForm />} />
@@ -50,9 +49,7 @@ function App() {
                   {/* Protected routes */}
                   <Route path="/" element={
                     <ProtectedRoute>
-                      <AppLayout>
-                        <WorkspaceList />
-                      </AppLayout>
+                      <WorkspaceList />
                     </ProtectedRoute>
                   } />
                   
@@ -67,20 +64,15 @@ function App() {
                   <Route path="/workspace/:workspaceId/settings" element={
                     <ProtectedRoute>
                       <RouteErrorBoundary>
-                        <AppLayout>
-                          <WorkspaceSettingsViewWrapper />
-                        </AppLayout>
+                        <WorkspaceSettingsViewWrapper />
                       </RouteErrorBoundary>
                     </ProtectedRoute>
                   } />
                   
-                  {/* Add the missing database route */}
                   <Route path="/workspace/:workspaceId/database/:databaseId" element={
                     <ProtectedRoute>
                       <RouteErrorBoundary>
-                        <AppLayout>
-                          <DatabaseViewWrapper />
-                        </AppLayout>
+                        <DatabasePage />
                       </RouteErrorBoundary>
                     </ProtectedRoute>
                   } />
@@ -131,20 +123,6 @@ function WorkspaceSettingsViewWrapper() {
   }
   
   return <WorkspaceSettingsView workspaceId={workspaceId} />;
-}
-
-// Wrapper component to extract workspaceId and databaseId from URL params
-function DatabaseViewWrapper() {
-  const { workspaceId, databaseId } = useParams<{ workspaceId: string; databaseId: string }>();
-  
-  console.log('🗄️ DatabaseViewWrapper params:', { workspaceId, databaseId });
-  
-  if (!workspaceId || !databaseId) {
-    console.warn('⚠️ Missing required params, redirecting to workspace');
-    return <Navigate to={workspaceId ? `/workspace/${workspaceId}` : "/"} replace />;
-  }
-  
-  return <DatabaseView workspaceId={workspaceId} />;
 }
 
 export default App;

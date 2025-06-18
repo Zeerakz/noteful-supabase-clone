@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Navigate } from 'react-router-dom';
-import { AppLayout } from '@/components/layout/AppLayout';
+import { AppLayoutWithSidebar } from '@/components/layout/AppLayoutWithSidebar';
 import { WorkspaceGrid } from './WorkspaceGrid';
 import { WorkspaceListHeader } from './WorkspaceListHeader';
 import { useWorkspaces } from '@/hooks/useWorkspaces';
@@ -9,6 +9,7 @@ import { useSessionTracking } from '@/hooks/useSessionTracking';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 export function WorkspaceList() {
   const { workspaces, loading, error, fetchWorkspaces } = useWorkspaces();
@@ -98,13 +99,15 @@ export function WorkspaceList() {
   if (loading) {
     console.log('⏳ WorkspaceList showing loading state');
     return (
-      <AppLayout>
-        <div className="container mx-auto px-6 py-8">
-          <div className="flex items-center justify-center h-64">
-            <div className="text-lg">Loading workspaces...</div>
+      <AppLayoutWithSidebar>
+        <ScrollArea className="h-full">
+          <div className="p-6">
+            <div className="flex items-center justify-center h-64">
+              <div className="text-lg">Loading workspaces...</div>
+            </div>
           </div>
-        </div>
-      </AppLayout>
+        </ScrollArea>
+      </AppLayoutWithSidebar>
     );
   }
 
@@ -112,16 +115,18 @@ export function WorkspaceList() {
   if (error) {
     console.error('❌ WorkspaceList error:', error);
     return (
-      <AppLayout>
-        <div className="container mx-auto px-6 py-8">
-          <div className="flex items-center justify-center h-64">
-            <div className="text-center space-y-4">
-              <p className="text-destructive">Error loading workspaces</p>
-              <p className="text-muted-foreground text-sm">{error}</p>
+      <AppLayoutWithSidebar>
+        <ScrollArea className="h-full">
+          <div className="p-6">
+            <div className="flex items-center justify-center h-64">
+              <div className="text-center space-y-4">
+                <p className="text-destructive">Error loading workspaces</p>
+                <p className="text-muted-foreground text-sm">{error}</p>
+              </div>
             </div>
           </div>
-        </div>
-      </AppLayout>
+        </ScrollArea>
+      </AppLayoutWithSidebar>
     );
   }
 
@@ -134,18 +139,24 @@ export function WorkspaceList() {
 
   console.log('📋 Showing workspace grid with', workspaces?.length, 'workspaces');
 
+  const breadcrumbs = [
+    { label: 'Workspaces' }
+  ];
+
   return (
-    <AppLayout>
-      <div className="container mx-auto px-6 py-8">
-        <WorkspaceListHeader 
-          onSignOut={handleSignOut}
-          onCreateWorkspace={handleCreateWorkspace}
-        />
-        <WorkspaceGrid 
-          workspaces={workspaces || []} 
-          onDeleteWorkspace={handleDeleteWorkspace}
-        />
-      </div>
-    </AppLayout>
+    <AppLayoutWithSidebar breadcrumbs={breadcrumbs}>
+      <ScrollArea className="h-full">
+        <div className="p-6 space-y-6">
+          <WorkspaceListHeader 
+            onSignOut={handleSignOut}
+            onCreateWorkspace={handleCreateWorkspace}
+          />
+          <WorkspaceGrid 
+            workspaces={workspaces || []} 
+            onDeleteWorkspace={handleDeleteWorkspace}
+          />
+        </div>
+      </ScrollArea>
+    </AppLayoutWithSidebar>
   );
 }
