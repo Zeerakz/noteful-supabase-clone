@@ -8,7 +8,7 @@ import { GripVertical } from 'lucide-react';
 interface DraggableBlockListProps {
   blocks: Block[];
   pageId: string;
-  onUpdateBlock: (id: string, updates: any) => Promise<void>;
+  onUpdateBlock: (id: string, updates: any) => Promise<{ data: any; error: string | null }>;
   onDeleteBlock: (id: string) => Promise<void>;
   onCreateBlock?: (params: any) => Promise<void>;
   isEditable: boolean;
@@ -47,12 +47,14 @@ export function DraggableBlockList({
       reorderedBlocks.splice(destination.index, 0, draggedBlock);
 
       // Update positions for all affected blocks in batch
-      const updatePromises = reorderedBlocks.map((block, index) => {
+      const updatePromises = reorderedBlocks.map(async (block, index) => {
         if (block.pos !== index) {
           console.log(`📍 Updating block ${block.id} position from ${block.pos} to ${index}`);
-          return onUpdateBlock(block.id, { pos: index });
+          const result = await onUpdateBlock(block.id, { pos: index });
+          if (result.error) {
+            throw new Error(result.error);
+          }
         }
-        return Promise.resolve();
       });
 
       await Promise.all(updatePromises);

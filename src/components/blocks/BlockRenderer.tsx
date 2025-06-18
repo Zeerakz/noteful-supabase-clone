@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Block } from '@/types/block';
 import { ImprovedTextBlock } from './ImprovedTextBlock';
@@ -56,6 +57,26 @@ export function BlockRenderer({
     }
   };
 
+  // Wrapper to convert the standardized return type to void for component compatibility
+  const createVoidUpdateHandler = (updateFn: (content: any) => Promise<{ data: any; error: string | null }>) => {
+    return async (content: any): Promise<void> => {
+      const result = await updateFn(content);
+      if (result.error) {
+        throw new Error(result.error);
+      }
+    };
+  };
+
+  // Wrapper for onUpdateBlock to match TwoColumnBlock and ToggleBlock expectations
+  const createCompatibleUpdateHandler = () => {
+    return async (id: string, updates: any): Promise<void> => {
+      const result = await onUpdateBlock(id, updates);
+      if (result.error) {
+        throw new Error(result.error);
+      }
+    };
+  };
+
   const renderBlock = () => {
     try {
       switch (block.type) {
@@ -64,7 +85,7 @@ export function BlockRenderer({
             <ImprovedTextBlock
               block={block}
               pageId={pageId}
-              onUpdate={handleContentUpdate}
+              onUpdate={createVoidUpdateHandler(handleContentUpdate)}
               onDelete={handleDelete}
               isEditable={isEditable}
             />
@@ -75,7 +96,7 @@ export function BlockRenderer({
           return (
             <HeadingBlock
               block={block}
-              onUpdate={handleContentUpdate}
+              onUpdate={createVoidUpdateHandler(handleContentUpdate)}
               onDelete={handleDelete}
               isEditable={isEditable}
             />
@@ -85,7 +106,7 @@ export function BlockRenderer({
           return (
             <ListBlock
               block={block}
-              onUpdate={handleContentUpdate}
+              onUpdate={createVoidUpdateHandler(handleContentUpdate)}
               onDelete={handleDelete}
               isEditable={isEditable}
             />
@@ -94,7 +115,7 @@ export function BlockRenderer({
           return (
             <ImageBlock
               block={block}
-              onUpdate={handleContentUpdate}
+              onUpdate={createVoidUpdateHandler(handleContentUpdate)}
               onDelete={handleDelete}
               isEditable={isEditable}
             />
@@ -104,7 +125,7 @@ export function BlockRenderer({
             <TwoColumnBlock
               block={block}
               pageId={pageId}
-              onUpdateBlock={onUpdateBlock}
+              onUpdateBlock={createCompatibleUpdateHandler()}
               onDeleteBlock={onDeleteBlock}
               isEditable={isEditable}
               childBlocks={childBlocks}
@@ -114,7 +135,7 @@ export function BlockRenderer({
           return (
             <TableBlock
               block={block}
-              onUpdate={handleContentUpdate}
+              onUpdate={createVoidUpdateHandler(handleContentUpdate)}
               onDelete={handleDelete}
               isEditable={isEditable}
             />
@@ -123,7 +144,7 @@ export function BlockRenderer({
           return (
             <DividerBlock
               block={block}
-              onUpdate={handleContentUpdate}
+              onUpdate={createVoidUpdateHandler(handleContentUpdate)}
               onDelete={handleDelete}
               isEditable={isEditable}
             />
@@ -132,7 +153,7 @@ export function BlockRenderer({
           return (
             <QuoteBlock
               block={block}
-              onUpdate={handleContentUpdate}
+              onUpdate={createVoidUpdateHandler(handleContentUpdate)}
               onDelete={handleDelete}
               isEditable={isEditable}
             />
@@ -141,7 +162,7 @@ export function BlockRenderer({
           return (
             <CalloutBlock
               block={block}
-              onUpdate={handleContentUpdate}
+              onUpdate={createVoidUpdateHandler(handleContentUpdate)}
               onDelete={handleDelete}
               isEditable={isEditable}
             />
@@ -151,9 +172,9 @@ export function BlockRenderer({
             <ToggleBlock
               block={block}
               pageId={pageId}
-              onUpdate={handleContentUpdate}
+              onUpdate={createVoidUpdateHandler(handleContentUpdate)}
               onDelete={handleDelete}
-              onUpdateBlock={onUpdateBlock}
+              onUpdateBlock={createCompatibleUpdateHandler()}
               onDeleteBlock={onDeleteBlock}
               onCreateBlock={onCreateBlock}
               isEditable={isEditable}
@@ -164,7 +185,7 @@ export function BlockRenderer({
           return (
             <EmbedBlock
               block={block}
-              onUpdate={handleContentUpdate}
+              onUpdate={createVoidUpdateHandler(handleContentUpdate)}
               onDelete={handleDelete}
               isEditable={isEditable}
             />
@@ -174,7 +195,7 @@ export function BlockRenderer({
             <FileAttachmentBlock
               block={block}
               pageId={pageId}
-              onUpdate={handleContentUpdate}
+              onUpdate={createVoidUpdateHandler(handleContentUpdate)}
               onDelete={handleDelete}
               isEditable={isEditable}
             />

@@ -9,7 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 interface ImprovedTextBlockProps {
   block: Block;
   pageId: string;
-  onUpdate: (content: any) => Promise<{ data: any; error: string | null }>;
+  onUpdate: (content: any) => Promise<void>;
   onDelete: () => Promise<void>;
   isEditable: boolean;
 }
@@ -54,14 +54,10 @@ export function ImprovedTextBlock({ block, pageId, onUpdate, onDelete, isEditabl
     try {
       console.log('💾 Saving text block:', block.id, textToSave);
       
-      const result = await onUpdate({ text: textToSave });
+      await onUpdate({ text: textToSave });
       
       // Check if this is still the latest save attempt
       if (currentAttempt === saveAttemptRef.current) {
-        if (result.error) {
-          throw new Error(result.error);
-        }
-        
         console.log('✅ Text block saved successfully');
         setLastSavedText(textToSave);
         setHasUnsavedChanges(false);
@@ -187,13 +183,13 @@ export function ImprovedTextBlock({ block, pageId, onUpdate, onDelete, isEditabl
           {/* Status indicators */}
           <div className="absolute top-2 right-2 flex items-center gap-1">
             {isUpdating && (
-              <div className="h-2 w-2 bg-blue-500 rounded-full animate-pulse" title="Saving..." />
+              <div className="h-2 w-2 bg-blue-500 rounded-full animate-pulse" />
             )}
             {hasUnsavedChanges && !isUpdating && (
-              <div className="h-2 w-2 bg-orange-500 rounded-full" title="Unsaved changes" />
+              <div className="h-2 w-2 bg-orange-500 rounded-full" />
             )}
             {saveError && (
-              <AlertCircle className="h-3 w-3 text-red-500" title={saveError} />
+              <AlertCircle className="h-3 w-3 text-red-500" />
             )}
           </div>
         </div>

@@ -5,7 +5,7 @@ import { useRealtimeManager } from '@/hooks/useRealtimeManager';
 
 export function useEnhancedPagesWithRealtime(workspaceId?: string) {
   const pagesHook = useEnhancedPages(workspaceId);
-  const { subscribe } = useRealtimeManager();
+  const { subscribeToPage } = useRealtimeManager();
   const lastRefreshTime = useRef<number>(0);
 
   const handlePageChange = useCallback((payload: any) => {
@@ -27,11 +27,10 @@ export function useEnhancedPagesWithRealtime(workspaceId?: string) {
     }
   }, [workspaceId, pagesHook]);
 
-  // Use the centralized realtime manager instead of direct subscription
+  // Use the centralized realtime manager for workspace-level page changes
   if (workspaceId) {
-    subscribe('workspace', workspaceId, {
-      onPageChange: handlePageChange,
-    });
+    // Subscribe to a workspace-wide page channel (we'll use the workspace ID as the page ID for this)
+    subscribeToPage(workspaceId, handlePageChange);
   }
 
   return pagesHook;

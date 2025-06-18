@@ -14,7 +14,7 @@ interface ActiveUser {
 
 export function usePresence(pageId?: string) {
   const { user } = useAuth();
-  const { subscribe } = useRealtimeManager();
+  const { subscribeToPage } = useRealtimeManager();
   const [activeUsers, setActiveUsers] = useState<ActiveUser[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -143,9 +143,7 @@ export function usePresence(pageId?: string) {
           .single();
 
         // Use the centralized realtime manager
-        const unsubscribe = subscribe('page', pageId, {
-          onPresenceChange: handlePresenceChange,
-        });
+        const unsubscribe = subscribeToPage(pageId, handlePresenceChange);
 
         // Track our presence using the presence table
         const { data: presenceData, error } = await supabase
@@ -203,7 +201,7 @@ export function usePresence(pageId?: string) {
         cleanup.then(fn => fn && fn());
       }
     };
-  }, [pageId, user, subscribe, handlePresenceChange]);
+  }, [pageId, user, subscribeToPage, handlePresenceChange]);
 
   return {
     activeUsers: activeUsers.filter(u => u.user_id !== user?.id), // Exclude current user

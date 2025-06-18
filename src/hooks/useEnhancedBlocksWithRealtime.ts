@@ -5,7 +5,7 @@ import { useRealtimeManager } from '@/hooks/useRealtimeManager';
 
 export function useEnhancedBlocksWithRealtime(pageId?: string, workspaceId?: string) {
   const blocksHook = useEnhancedBlocks(pageId, workspaceId);
-  const { subscribe } = useRealtimeManager();
+  const { subscribeToPage } = useRealtimeManager();
 
   const handleBlockChange = useCallback((payload: any) => {
     const { new: newBlock, old: oldBlock } = payload;
@@ -20,11 +20,9 @@ export function useEnhancedBlocksWithRealtime(pageId?: string, workspaceId?: str
     }
   }, [pageId, blocksHook]);
 
-  // Use the centralized realtime manager instead of direct subscription
+  // Use the centralized realtime manager for page-level subscriptions
   if (pageId && workspaceId) {
-    subscribe('page', pageId, {
-      onBlockChange: handleBlockChange,
-    });
+    subscribeToPage(pageId, handleBlockChange);
   }
 
   return blocksHook;
