@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Block } from '@/types/block';
 import { BlockRenderer } from './BlockRenderer';
@@ -8,7 +9,7 @@ import { Trash2 } from 'lucide-react';
 interface TwoColumnBlockProps {
   block: Block;
   pageId: string;
-  onUpdateBlock: (id: string, updates: any) => Promise<void>;
+  onUpdateBlock: (id: string, updates: any) => Promise<{ data: any; error: string | null }>;
   onDeleteBlock: (id: string) => Promise<void>;
   isEditable: boolean;
   childBlocks: Block[];

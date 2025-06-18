@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Block } from '@/types/block';
 import { Button } from '@/components/ui/button';
@@ -13,7 +14,7 @@ interface ToggleBlockProps {
   pageId: string;
   onUpdate: (content: any) => Promise<void>;
   onDelete: () => Promise<void>;
-  onUpdateBlock: (id: string, updates: any) => Promise<void>;
+  onUpdateBlock: (id: string, updates: any) => Promise<{ data: any; error: string | null }>;
   onDeleteBlock: (id: string) => Promise<void>;
   onCreateBlock?: (params: any) => Promise<void>;
   isEditable: boolean;

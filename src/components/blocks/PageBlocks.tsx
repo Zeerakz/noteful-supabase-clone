@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useBlockOperations } from '@/hooks/blocks/useBlockOperations';
 import { useErrorRecovery } from '@/hooks/blocks/useErrorRecovery';
@@ -29,9 +28,11 @@ export function PageBlocks({ workspaceId, pageId, isEditable = false }: PageBloc
       if (result.error) {
         throw new Error(result.error);
       }
+      return result;
     } catch (error) {
       console.error('❌ Error updating block:', error);
       reportBlockError(id, error as Error);
+      return { data: null, error: (error as Error).message };
     }
   };
 
