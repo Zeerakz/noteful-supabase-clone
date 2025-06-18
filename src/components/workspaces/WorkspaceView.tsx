@@ -1,3 +1,4 @@
+
 import React, { useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useWorkspaces } from '@/hooks/useWorkspaces';
@@ -190,7 +191,7 @@ export function WorkspaceView() {
   return (
     <AppLayoutWithSidebar breadcrumbs={breadcrumbs}>
       <ScrollArea className="h-full">
-        <div className="p-6 space-y-6">
+        <div className="p-4 space-y-4">
           <div className="flex items-center justify-between">
             <div>
               <div className="flex items-center gap-2">
@@ -242,28 +243,28 @@ export function WorkspaceView() {
 
           {/* Show error states for individual sections */}
           {databasesError && (
-            <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-4">
+            <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-3">
               <p className="text-sm text-destructive">Error loading databases: {databasesError}</p>
             </div>
           )}
 
           {pagesError && (
-            <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-4">
+            <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-3">
               <p className="text-sm text-destructive">Error loading pages: {pagesError}</p>
             </div>
           )}
 
           {/* Databases Section */}
           {databases && databases.length > 0 && (
-            <div className="space-y-4">
+            <div className="space-y-3">
               <h2 className="text-lg font-semibold">Databases</h2>
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
                 {databases.map((database) => (
                   <Card 
                     key={database.id} 
                     className="hover:shadow-md transition-shadow cursor-pointer group relative"
                   >
-                    <CardHeader className="pb-3">
+                    <CardHeader className="pb-2">
                       <div className="flex items-start justify-between">
                         <CardTitle 
                           className="text-base flex items-center gap-2 flex-1"
@@ -318,21 +319,21 @@ export function WorkspaceView() {
           )}
 
           {/* Pages Section */}
-          <div className="space-y-4">
+          <div className="space-y-3">
             <h2 className="text-lg font-semibold">Pages</h2>
             {pagesLoading ? (
               <div className="flex items-center justify-center py-8">
                 <div className="text-muted-foreground">Loading pages...</div>
               </div>
             ) : (
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
                 {pages?.map((page) => (
                   <Card 
                     key={page.id} 
                     className="hover:shadow-md transition-shadow cursor-pointer"
                     onClick={() => handlePageClick(page.id)}
                   >
-                    <CardHeader className="pb-3">
+                    <CardHeader className="pb-2">
                       <CardTitle className="text-base flex items-center gap-2">
                         <FileText className="h-4 w-4" />
                         {page.properties?.title || 'Untitled'}
