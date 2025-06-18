@@ -256,7 +256,7 @@ export function BlockEditor({ pageId, isEditable, workspaceId }: BlockEditorProp
   const childBlocks = blocks.filter(block => block.parent_id && block.parent_id !== pageId);
 
   return (
-    <div className="min-h-[400px]" ref={editorRef}>
+    <div className="min-h-[400px] space-y-4" ref={editorRef}>
       {/* Content area */}
       <div className="space-y-2">
         {parentBlocks.map((block) => (
@@ -279,9 +279,16 @@ export function BlockEditor({ pageId, isEditable, workspaceId }: BlockEditorProp
         ))}
       </div>
       
-      {/* Add block button */}
+      {/* Empty state */}
+      {parentBlocks.length === 0 && !isEditable && (
+        <div className="text-center py-12">
+          <div className="text-muted-foreground text-base">This page is empty.</div>
+        </div>
+      )}
+      
+      {/* Add block button - positioned at the bottom */}
       {isEditable && (
-        <div className="mt-6 pt-2">
+        <div className="flex justify-start pt-4">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button 
@@ -405,13 +412,6 @@ export function BlockEditor({ pageId, isEditable, workspaceId }: BlockEditorProp
         </div>
       )}
       
-      {/* Empty state */}
-      {parentBlocks.length === 0 && !isEditable && (
-        <div className="text-center py-12">
-          <div className="text-muted-foreground text-base">This page is empty.</div>
-        </div>
-      )}
-
       {/* Slash menu */}
       <SlashMenu
         isOpen={isOpen}
