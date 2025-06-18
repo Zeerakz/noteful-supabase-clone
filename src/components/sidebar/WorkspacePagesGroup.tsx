@@ -5,22 +5,21 @@ import {
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
-  SidebarMenu,
-  SidebarMenuItem,
-  SidebarMenuButton,
 } from '@/components/ui/sidebar';
 import { useEnhancedPagesWithRealtime } from '@/hooks/useEnhancedPagesWithRealtime';
 import { useTeamspaces } from '@/hooks/useTeamspaces';
 import { useDatabases } from '@/hooks/useDatabases';
 import { useToast } from '@/hooks/use-toast';
 import { validateDragAndDrop } from '@/utils/navigationConstraints';
+import { parseDragDropResult, isDragDropValid } from '@/utils/dragDropHelpers';
+import { DatabaseMovementService } from '@/services/databaseMovementService';
 import { Block } from '@/types/block';
 import { Teamspace } from '@/types/teamspace';
 import { supabase } from '@/integrations/supabase/client';
 import { TeamspaceSettingsModal } from '@/components/workspaces/TeamspaceSettingsModal';
 import { TeamspaceList } from './TeamspaceList';
 import { PrivatePagesList } from './PrivatePagesList';
-import { DatabaseList } from './DatabaseList';
+import { EnhancedDatabaseList } from './EnhancedDatabaseList';
 import { Separator } from '@/components/ui/separator';
 
 interface WorkspacePagesGroupProps {
@@ -52,6 +51,43 @@ export function WorkspacePagesGroup({ workspaceId, workspaceName }: WorkspacePag
   const handleDragEnd = async (result: DropResult) => {
     if (!result.destination) return;
 
+    const dragResult = parseDragDropResult(result);
+    if (!dragResult) return;
+
+    const validation = isDragDropValid(dragResult);
+    if (!validation.isValid) {
+      toast({ 
+        title: "Cannot move item", 
+        description: validation.error, 
+        variant: "destructive" 
+      });
+      return;
+    }
+
+    // Handle database movements
+    if (dragResult.type === 'database') {
+      const { error } = await DatabaseMovementService.moveDatabase(
+        dragResult.sourceId,
+        dragResult.destinationIndex,
+        workspaceId
+      );
+
+      if (error) {
+        toast({ 
+          title: "Error moving database", 
+          description: error, 
+          variant: "destructive" 
+        });
+      } else {
+        toast({ 
+          title: "Success", 
+          description: "Database moved successfully!" 
+        });
+      }
+      return;
+    }
+
+    // Handle page movements (existing logic)
     const { draggableId, source, destination } = result;
 
     if (source.droppableId === destination.droppableId && source.index === destination.index) {
@@ -76,9 +112,9 @@ export function WorkspacePagesGroup({ workspaceId, workspaceName }: WorkspacePag
         newTeamspaceId = null;
     }
 
-    const validation = validateDragAndDrop(pages, draggableId, newParentId, destination.index);
-    if (!validation.isValid) {
-      toast({ title: "Cannot move page", description: validation.error, variant: "destructive" });
+    const pageValidation = validateDragAndDrop(pages, draggableId, newParentId, destination.index);
+    if (!pageValidation.isValid) {
+      toast({ title: "Cannot move page", description: pageValidation.error, variant: "destructive" });
       return;
     }
 
@@ -148,15 +184,6 @@ export function WorkspacePagesGroup({ workspaceId, workspaceName }: WorkspacePag
               <Loader2 className="h-3 w-3 animate-spin" />
             </span>
           </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton disabled className="text-muted-foreground">
-                  Loading pages...
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroupContent>
         </SidebarGroup>
       </li>
     );
@@ -190,19 +217,19 @@ export function WorkspacePagesGroup({ workspaceId, workspaceName }: WorkspacePag
                 workspaceId={workspaceId}
                 onDeletePage={handleDeletePage}
               />
-            </DragDropContext>
-            
-            {((teamspaces.length > 0 || privatePages.length > 0) && databases.length > 0 && !databasesLoading) && (
-              <div className="px-2 pt-2 pb-1">
-                <Separator />
-              </div>
-            )}
+              
+              {((teamspaces.length > 0 || privatePages.length > 0) && databases.length > 0 && !databasesLoading) && (
+                <div className="px-2 pt-2 pb-1">
+                  <Separator />
+                </div>
+              )}
 
-            <DatabaseList
-              databases={databases}
-              databasesLoading={databasesLoading}
-              onDeleteDatabase={handleDeleteDatabase}
-            />
+              <EnhancedDatabaseList
+                databases={databases}
+                databasesLoading={databasesLoading}
+                onDeleteDatabase={handleDeleteDatabase}
+              />
+            </DragDropContext>
           </div>
         </SidebarGroupContent>
       </SidebarGroup>
