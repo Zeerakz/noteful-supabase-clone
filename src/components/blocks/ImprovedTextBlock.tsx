@@ -201,7 +201,7 @@ export function ImprovedTextBlock({ block, pageId, onUpdate, onDelete, isEditabl
             placeholder="Type something..."
             className={`border-none bg-transparent focus:bg-background ${
               saveError ? 'border-red-300 focus:border-red-500' : ''
-            } ${hasUnsavedChanges ? 'bg-yellow-50 dark:bg-yellow-950/20' : ''}`}
+            }`}
             // Never disable input to prevent blocking typing
             disabled={false}
           />
