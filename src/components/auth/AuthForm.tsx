@@ -129,8 +129,8 @@ export function AuthForm({ defaultTab = 'signin' }: { defaultTab?: 'signin' | 's
 
   if (needsConfirmation) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex items-center justify-center p-4">
-        <Card className="w-full max-w-md shadow-xl border-0 bg-white/80 backdrop-blur-sm">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md bg-white shadow-lg">
           <CardHeader className="text-center pb-6">
             <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-blue-100">
               <Mail className="h-8 w-8 text-blue-600" />
@@ -160,7 +160,7 @@ export function AuthForm({ defaultTab = 'signin' }: { defaultTab?: 'signin' | 's
                 variant="outline" 
                 onClick={handleResendConfirmation}
                 disabled={resendLoading}
-                className="w-full"
+                className="w-full bg-white"
               >
                 {resendLoading ? (
                   <>
@@ -192,13 +192,13 @@ export function AuthForm({ defaultTab = 'signin' }: { defaultTab?: 'signin' | 's
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex items-center justify-center p-4">
-      <Card className="w-full max-w-md shadow-xl border-0 bg-white/80 backdrop-blur-sm">
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <Card className="w-full max-w-md bg-white shadow-lg">
         <CardHeader className="text-center pb-6">
-          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-r from-blue-600 to-indigo-600">
+          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-blue-600">
             <FileText className="h-6 w-6 text-white" />
           </div>
-          <CardTitle className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+          <CardTitle className="text-3xl font-bold text-gray-900">
             Welcome to Planna
           </CardTitle>
           <CardDescription className="text-gray-600 text-base">
@@ -234,7 +234,7 @@ export function AuthForm({ defaultTab = 'signin' }: { defaultTab?: 'signin' | 's
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
-                    className="h-11 border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+                    className="h-11 bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                     placeholder="Enter your email"
                   />
                 </div>
@@ -248,13 +248,13 @@ export function AuthForm({ defaultTab = 'signin' }: { defaultTab?: 'signin' | 's
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
-                    className="h-11 border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+                    className="h-11 bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                     placeholder="Enter your password"
                   />
                 </div>
                 <Button 
                   type="submit" 
-                  className="w-full h-11 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium shadow-lg hover:shadow-xl transition-all duration-200" 
+                  className="w-full h-11 bg-blue-600 hover:bg-blue-700 text-white font-medium" 
                   disabled={loading}
                 >
                   {loading ? (
@@ -281,7 +281,7 @@ export function AuthForm({ defaultTab = 'signin' }: { defaultTab?: 'signin' | 's
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
-                    className="h-11 border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+                    className="h-11 bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                     placeholder="Enter your email"
                   />
                 </div>
@@ -296,13 +296,13 @@ export function AuthForm({ defaultTab = 'signin' }: { defaultTab?: 'signin' | 's
                     onChange={(e) => setPassword(e.target.value)}
                     required
                     minLength={6}
-                    className="h-11 border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+                    className="h-11 bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                     placeholder="Create a password (min. 6 characters)"
                   />
                 </div>
                 <Button 
                   type="submit" 
-                  className="w-full h-11 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium shadow-lg hover:shadow-xl transition-all duration-200" 
+                  className="w-full h-11 bg-blue-600 hover:bg-blue-700 text-white font-medium" 
                   disabled={loading}
                 >
                   {loading ? (
