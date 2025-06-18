@@ -67,12 +67,16 @@ export function BlockRenderer({
     };
   };
 
-  // Wrapper for onUpdateBlock to match TwoColumnBlock and ToggleBlock expectations
+  // Wrapper for onUpdateBlock that maintains the proper return type
   const createCompatibleUpdateHandler = () => {
-    return async (id: string, updates: any): Promise<void> => {
-      const result = await onUpdateBlock(id, updates);
-      if (result.error) {
-        throw new Error(result.error);
+    return async (id: string, updates: any): Promise<{ data: any; error: string | null }> => {
+      try {
+        const result = await onUpdateBlock(id, updates);
+        return result;
+      } catch (error) {
+        console.error('Error in compatible update handler:', error);
+        onReportError?.(id, error as Error);
+        return { data: null, error: (error as Error).message };
       }
     };
   };
