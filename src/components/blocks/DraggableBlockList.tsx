@@ -66,7 +66,7 @@ export function DraggableBlockList({
   if (!isEditable) {
     // Render without drag functionality for non-editable mode
     return (
-      <div className="space-y-3">
+      <div className="space-y-2">
         {blocks.map((block) => (
           <BlockRenderer
             key={block.id}
@@ -87,13 +87,13 @@ export function DraggableBlockList({
 
   return (
     <DragDropContext onDragEnd={handleDragEnd}>
-      <Droppable droppableId={parentBlockId || `page-${pageId}`}>
+      <Droppable droppableId={parentBlockId || `page-${pageI'}`}>
         {(provided, snapshot) => (
           <div
             ref={provided.innerRef}
             {...provided.droppableProps}
-            className={`space-y-3 min-h-[20px] transition-colors ${
-              snapshot.isDraggingOver ? 'bg-muted/30 rounded-lg p-3' : ''
+            className={`space-y-2 min-h-[16px] transition-colors ${
+              snapshot.isDraggingOver ? 'bg-muted/20 rounded-md p-2' : ''
             }`}
           >
             {blocks.map((block, index) => (
@@ -109,7 +109,7 @@ export function DraggableBlockList({
                     {...provided.draggableProps}
                     className={`transition-all duration-200 ${
                       snapshot.isDragging
-                        ? 'shadow-lg ring-2 ring-primary/20 bg-background rounded-lg scale-[1.02] rotate-1 z-50'
+                        ? 'shadow-lg ring-2 ring-primary/20 bg-background rounded-md scale-[1.01] rotate-0.5 z-50'
                         : ''
                     }`}
                     style={{
@@ -117,10 +117,10 @@ export function DraggableBlockList({
                     }}
                   >
                     <div className="group relative">
-                      {/* Drag handle - cleaner design */}
+                      {/* Drag handle - more subtle */}
                       <div
                         {...provided.dragHandleProps}
-                        className={`absolute left-0 top-2 -translate-x-8 w-6 h-6 rounded-md bg-background border border-border hover:bg-muted cursor-grab active:cursor-grabbing transition-all duration-200 flex items-center justify-center ${
+                        className={`absolute left-0 top-1 -translate-x-6 w-5 h-5 rounded bg-background border border-border hover:bg-muted cursor-grab active:cursor-grabbing transition-all duration-200 flex items-center justify-center ${
                           snapshot.isDragging ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
                         }`}
                       >
@@ -147,7 +147,7 @@ export function DraggableBlockList({
             
             {/* Drop zone indicator when dragging */}
             {snapshot.isDraggingOver && blocks.length === 0 && (
-              <div className="border-2 border-dashed border-muted-foreground/30 rounded-lg p-8 text-center text-muted-foreground text-sm bg-muted/10">
+              <div className="border-2 border-dashed border-muted-foreground/20 rounded-md p-6 text-center text-muted-foreground text-sm bg-muted/5">
                 Drop block here
               </div>
             )}

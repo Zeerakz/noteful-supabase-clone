@@ -63,11 +63,11 @@ export function PageBlocks({ workspaceId, pageId, isEditable = false }: PageBloc
 
   if (loading) {
     return (
-      <div className="space-y-4 py-8">
-        <div className="animate-pulse space-y-3">
-          <div className="h-4 bg-muted rounded w-3/4"></div>
-          <div className="h-4 bg-muted rounded w-1/2"></div>
-          <div className="h-4 bg-muted rounded w-5/6"></div>
+      <div className="space-y-3 py-6">
+        <div className="animate-pulse space-y-2">
+          <div className="h-3 bg-muted rounded w-3/4"></div>
+          <div className="h-3 bg-muted rounded w-1/2"></div>
+          <div className="h-3 bg-muted rounded w-5/6"></div>
         </div>
       </div>
     );
@@ -75,18 +75,18 @@ export function PageBlocks({ workspaceId, pageId, isEditable = false }: PageBloc
 
   if (error) {
     return (
-      <div className="py-8">
-        <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-4">
-          <div className="flex items-center gap-2 mb-3">
+      <div className="py-6">
+        <div className="rounded-md border border-destructive/20 bg-destructive/5 p-3">
+          <div className="flex items-center gap-2 mb-2">
             <AlertTriangle className="h-4 w-4 text-destructive" />
-            <span className="font-medium text-destructive">Error loading blocks</span>
+            <span className="font-medium text-destructive text-sm">Error loading blocks</span>
           </div>
-          <p className="text-sm text-destructive/80 mb-4">{error}</p>
+          <p className="text-sm text-destructive/80 mb-3">{error}</p>
           <Button 
             size="sm" 
             variant="outline" 
             onClick={() => refetch()}
-            className="h-8 px-3 text-xs border-destructive/20 text-destructive hover:bg-destructive/10"
+            className="h-7 px-3 text-xs border-destructive/20 text-destructive hover:bg-destructive/10"
           >
             <RefreshCw className="h-3 w-3 mr-1" />
             Retry
@@ -110,8 +110,8 @@ export function PageBlocks({ workspaceId, pageId, isEditable = false }: PageBloc
 
   if (parentBlocks.length === 0 && !loading) {
     return (
-      <div className="py-16 text-center">
-        <div className="text-muted-foreground">
+      <div className="py-12 text-center">
+        <div className="text-muted-foreground text-sm">
           {isEditable ? 'No blocks yet. Start adding content!' : 'This page is empty.'}
         </div>
       </div>
@@ -119,9 +119,9 @@ export function PageBlocks({ workspaceId, pageId, isEditable = false }: PageBloc
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-2">
       {hasErrors && (
-        <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+        <div className="rounded-md border border-amber-200 bg-amber-50 p-3 mb-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <AlertTriangle className="h-4 w-4 text-amber-600" />
@@ -133,7 +133,7 @@ export function PageBlocks({ workspaceId, pageId, isEditable = false }: PageBloc
               size="sm"
               variant="outline"
               onClick={retryFailedBlocks}
-              className="h-8 px-3 text-xs border-amber-200 text-amber-700 hover:bg-amber-100"
+              className="h-7 px-3 text-xs border-amber-200 text-amber-700 hover:bg-amber-100"
             >
               <RefreshCw className="h-3 w-3 mr-1" />
               Retry All

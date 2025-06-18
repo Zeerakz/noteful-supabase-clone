@@ -133,10 +133,10 @@ export function PageEditor() {
       <div className="min-h-screen bg-background">
         {/* Header */}
         <header className="sticky top-0 z-10 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-          <div className="mx-auto max-w-6xl px-6 py-4">
+          <div className="mx-auto max-w-5xl px-4 py-3">
             <div className="flex items-center justify-between">
               {/* Left section */}
-              <div className="flex items-center space-x-6">
+              <div className="flex items-center space-x-4">
                 <Button
                   variant="ghost"
                   size="sm"
@@ -156,13 +156,13 @@ export function PageEditor() {
                         onChange={(e) => setTitleValue(e.target.value)}
                         onBlur={handleTitleSave}
                         onKeyDown={handleTitleKeyDown}
-                        className="text-2xl font-semibold border-none bg-transparent p-0 h-auto focus-visible:ring-1 focus-visible:ring-ring"
+                        className="text-xl font-semibold border-none bg-transparent p-0 h-auto focus-visible:ring-1 focus-visible:ring-ring"
                         placeholder="Page title"
                       />
                     </div>
                   ) : (
                     <div className="flex items-center gap-2 group">
-                      <h1 className="text-2xl font-semibold text-foreground">
+                      <h1 className="text-xl font-semibold text-foreground">
                         {(page.properties as any)?.title || 'Untitled'}
                       </h1>
                       {isEditable && (
@@ -170,7 +170,7 @@ export function PageEditor() {
                           variant="ghost"
                           size="sm"
                           onClick={startEditingTitle}
-                          className="opacity-0 group-hover:opacity-100 transition-opacity h-7 w-7 p-0 hover:bg-muted"
+                          className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0 hover:bg-muted"
                         >
                           <Edit2 className="h-3 w-3" />
                         </Button>
@@ -183,14 +183,14 @@ export function PageEditor() {
                       )}
                     </div>
                   )}
-                  <p className="text-sm text-muted-foreground mt-1">
+                  <p className="text-xs text-muted-foreground mt-0.5">
                     in {workspace.name}
                   </p>
                 </div>
               </div>
               
               {/* Right section */}
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
                 {permissions.canManagePermissions && (
                   <ShareButton blockId={page.id} workspaceId={workspaceId} />
                 )}
@@ -211,7 +211,7 @@ export function PageEditor() {
         </header>
         
         {/* Main content */}
-        <main className="mx-auto max-w-4xl px-6 py-8">
+        <main className="mx-auto max-w-3xl px-4 py-6">
           <BlockEditor 
             pageId={page.id} 
             isEditable={isEditable} 

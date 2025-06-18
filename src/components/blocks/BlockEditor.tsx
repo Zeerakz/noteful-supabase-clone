@@ -246,7 +246,7 @@ export function BlockEditor({ pageId, isEditable, workspaceId }: BlockEditorProp
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12">
+      <div className="flex items-center justify-center py-8">
         <div className="text-muted-foreground">Loading content...</div>
       </div>
     );
@@ -256,9 +256,9 @@ export function BlockEditor({ pageId, isEditable, workspaceId }: BlockEditorProp
   const childBlocks = blocks.filter(block => block.parent_id && block.parent_id !== pageId);
 
   return (
-    <div className="min-h-[60vh]" ref={editorRef}>
+    <div className="min-h-[400px]" ref={editorRef}>
       {/* Content area */}
-      <div className="space-y-3">
+      <div className="space-y-2">
         {parentBlocks.map((block) => (
           <div
             key={block.id}
@@ -281,13 +281,13 @@ export function BlockEditor({ pageId, isEditable, workspaceId }: BlockEditorProp
       
       {/* Add block button */}
       {isEditable && (
-        <div className="mt-8 pt-4">
+        <div className="mt-6 pt-2">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button 
                 variant="outline" 
                 size="sm" 
-                className="h-9 px-4 text-muted-foreground border-dashed hover:border-solid hover:text-foreground transition-colors"
+                className="h-8 px-3 text-muted-foreground border-dashed hover:border-solid hover:text-foreground transition-colors"
                 data-cy="add-block-button"
               >
                 <Plus className="h-4 w-4 mr-2" />
@@ -407,8 +407,8 @@ export function BlockEditor({ pageId, isEditable, workspaceId }: BlockEditorProp
       
       {/* Empty state */}
       {parentBlocks.length === 0 && !isEditable && (
-        <div className="text-center py-16">
-          <div className="text-muted-foreground text-lg">This page is empty.</div>
+        <div className="text-center py-12">
+          <div className="text-muted-foreground text-base">This page is empty.</div>
         </div>
       )}
 
