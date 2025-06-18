@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -155,6 +154,8 @@ const menuItems = [
 export function SlashMenu({ isOpen, onClose, onSelectItem, position, searchTerm = '' }: SlashMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [adjustedPosition, setAdjustedPosition] = useState(position);
+  const [maxHeight, setMaxHeight] = useState(400);
   
   // Filter items based on search term
   const filteredItems = menuItems.filter(item => {
@@ -172,6 +173,62 @@ export function SlashMenu({ isOpen, onClose, onSelectItem, position, searchTerm 
   useEffect(() => {
     setSelectedIndex(0);
   }, [filteredItems.length]);
+
+  // Smart positioning logic
+  useEffect(() => {
+    if (!isOpen || !menuRef.current) return;
+
+    const menuElement = menuRef.current;
+    const viewport = {
+      width: window.innerWidth,
+      height: window.innerHeight
+    };
+
+    // Menu dimensions
+    const menuWidth = 320;
+    const itemHeight = 64; // Approximate height per item
+    const padding = 16;
+    const headerHeight = 40;
+    const baseMenuHeight = headerHeight + padding * 2;
+    const itemsHeight = filteredItems.length * itemHeight;
+    const idealMenuHeight = Math.min(baseMenuHeight + itemsHeight, 400);
+
+    // Calculate available space
+    const spaceBelow = viewport.height - position.top;
+    const spaceAbove = position.top;
+    const spaceRight = viewport.width - position.left;
+
+    let newTop = position.top;
+    let newLeft = position.left;
+    let newMaxHeight = idealMenuHeight;
+
+    // Vertical positioning
+    if (spaceBelow < idealMenuHeight && spaceAbove > spaceBelow) {
+      // Flip above if there's more space above
+      newTop = position.top - idealMenuHeight - 8; // 8px gap from trigger
+      newMaxHeight = Math.min(idealMenuHeight, spaceAbove - 16);
+    } else {
+      // Keep below but adjust height if needed
+      newMaxHeight = Math.min(idealMenuHeight, spaceBelow - 16);
+    }
+
+    // Horizontal positioning
+    if (spaceRight < menuWidth) {
+      // Not enough space on the right, position to the left
+      newLeft = Math.max(8, position.left - menuWidth);
+    }
+
+    // Ensure menu doesn't go above viewport
+    newTop = Math.max(8, newTop);
+    
+    // Ensure menu doesn't go below viewport
+    if (newTop + newMaxHeight > viewport.height - 8) {
+      newTop = viewport.height - newMaxHeight - 8;
+    }
+
+    setAdjustedPosition({ top: newTop, left: newLeft });
+    setMaxHeight(newMaxHeight);
+  }, [isOpen, position, filteredItems.length]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -222,7 +279,7 @@ export function SlashMenu({ isOpen, onClose, onSelectItem, position, searchTerm 
   // Scroll selected item into view
   useEffect(() => {
     if (isOpen && menuRef.current) {
-      const selectedElement = menuRef.current.children[selectedIndex + 1] as HTMLElement; // +1 for header
+      const selectedElement = menuRef.current.children[1]?.children[selectedIndex] as HTMLElement;
       if (selectedElement) {
         selectedElement.scrollIntoView({
           block: 'nearest',
@@ -238,13 +295,16 @@ export function SlashMenu({ isOpen, onClose, onSelectItem, position, searchTerm 
     <div
       style={{
         position: 'fixed',
-        top: position.top,
-        left: position.left,
+        top: adjustedPosition.top,
+        left: adjustedPosition.left,
         zIndex: 50,
       }}
       ref={menuRef}
     >
-      <Card className="w-[320px] max-h-[400px] overflow-hidden shadow-lg border-border">
+      <Card 
+        className="w-[320px] overflow-hidden shadow-lg border-border bg-popover"
+        style={{ maxHeight }}
+      >
         <div className="p-2">
           <div className="text-sm text-muted-foreground mb-2 px-2">
             {searchTerm ? `Filtering by "${searchTerm}"` : "Type '/' to insert a block"}
@@ -255,7 +315,10 @@ export function SlashMenu({ isOpen, onClose, onSelectItem, position, searchTerm 
               No blocks found matching "{searchTerm}"
             </div>
           ) : (
-            <div className="max-h-[320px] overflow-y-auto">
+            <div 
+              className="overflow-y-auto"
+              style={{ maxHeight: maxHeight - 60 }} // Account for header
+            >
               {filteredItems.map((item, index) => (
                 <Button
                   key={item.type}
