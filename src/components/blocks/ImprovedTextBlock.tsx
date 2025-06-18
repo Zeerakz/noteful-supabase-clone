@@ -215,7 +215,9 @@ export function ImprovedTextBlock({ block, pageId, onUpdate, onDelete, isEditabl
               <div className="h-2 w-2 bg-orange-500 rounded-full" title="Unsaved changes" />
             )}
             {saveError && (
-              <AlertCircle className="h-3 w-3 text-red-500" title={saveError} />
+              <div title={saveError}>
+                <AlertCircle className="h-3 w-3 text-red-500" />
+              </div>
             )}
           </div>
         </div>
