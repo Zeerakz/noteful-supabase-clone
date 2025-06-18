@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useParams, Navigate } from 'react-router-dom';
 import { useWorkspaces } from '@/hooks/useWorkspaces';
@@ -7,6 +8,7 @@ import { DatabaseView } from '@/components/database/DatabaseView';
 import { AppLayoutWithSidebar } from '@/components/layout/AppLayoutWithSidebar';
 import { SidePeekPage } from '@/pages/SidePeekPage';
 import { useSidePeek } from '@/hooks/useSidePeek';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 export function DatabasePage() {
   const { workspaceId, databaseId } = useParams<{ workspaceId: string; databaseId: string }>();
@@ -71,11 +73,9 @@ export function DatabasePage() {
 
   return (
     <AppLayoutWithSidebar breadcrumbs={breadcrumbs}>
-      <div className="h-full flex flex-col overflow-hidden">
-        <div className="flex-1 min-h-0 overflow-hidden">
-          <DatabaseView workspaceId={workspaceId} />
-        </div>
-      </div>
+      <ScrollArea className="h-full">
+        <DatabaseView workspaceId={workspaceId} />
+      </ScrollArea>
       {peekId && (
         <SidePeekPage
           pageId={peekId}

@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useWorkspaces } from '@/hooks/useWorkspaces';
@@ -29,6 +28,7 @@ import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { AppLayoutWithSidebar } from '@/components/layout/AppLayoutWithSidebar';
 import { WorkspaceMembersModal } from './WorkspaceMembersModal';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 export function WorkspaceView() {
   const { workspaceId } = useParams<{ workspaceId: string }>();
@@ -189,207 +189,209 @@ export function WorkspaceView() {
 
   return (
     <AppLayoutWithSidebar breadcrumbs={breadcrumbs}>
-      <div className="p-6 space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-bold">{workspace.name}</h1>
-              {hasOptimisticChanges && (
-                <span className="inline-block w-2 h-2 bg-blue-500 rounded-full animate-pulse" title="Syncing changes..." />
+      <ScrollArea className="h-full">
+        <div className="p-6 space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="flex items-center gap-2">
+                <h1 className="text-2xl font-bold">{workspace.name}</h1>
+                {hasOptimisticChanges && (
+                  <span className="inline-block w-2 h-2 bg-blue-500 rounded-full animate-pulse" title="Syncing changes..." />
+                )}
+              </div>
+              {workspace.description && (
+                <p className="text-muted-foreground mt-1">{workspace.description}</p>
               )}
             </div>
-            {workspace.description && (
-              <p className="text-muted-foreground mt-1">{workspace.description}</p>
-            )}
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={openSearch} className="gap-2">
-              <Search className="h-4 w-4" />
-              Search
-              <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-100">
-                <span className="text-xs">⌘</span>K
-              </kbd>
-            </Button>
-            <Button variant="outline" onClick={handleTemplateGalleryClick} className="gap-2">
-              <Bookmark className="h-4 w-4" />
-              Templates
-            </Button>
-            <DatabaseWizard onDatabaseCreated={handleDatabaseCreated} />
-            <Button onClick={handleCreatePage} className="gap-2">
-              <Plus className="h-4 w-4" />
-              New Page
-            </Button>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon">
-                  <Settings className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => setMembersModalOpen(true)}>
-                  <Users className="h-4 w-4 mr-2" />
-                  Manage Members
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleSettingsClick}>
-                  <Settings className="h-4 w-4 mr-2" />
-                  Workspace Settings
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </div>
-
-        {/* Show error states for individual sections */}
-        {databasesError && (
-          <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-4">
-            <p className="text-sm text-destructive">Error loading databases: {databasesError}</p>
-          </div>
-        )}
-
-        {pagesError && (
-          <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-4">
-            <p className="text-sm text-destructive">Error loading pages: {pagesError}</p>
-          </div>
-        )}
-
-        {/* Databases Section */}
-        {databases && databases.length > 0 && (
-          <div className="space-y-4">
-            <h2 className="text-lg font-semibold">Databases</h2>
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {databases.map((database) => (
-                <Card 
-                  key={database.id} 
-                  className="hover:shadow-md transition-shadow cursor-pointer group relative"
-                >
-                  <CardHeader className="pb-3">
-                    <div className="flex items-start justify-between">
-                      <CardTitle 
-                        className="text-base flex items-center gap-2 flex-1"
-                        onClick={() => handleDatabaseClick(database.id)}
-                      >
-                        <Database className="h-4 w-4" />
-                        {database.name}
-                      </CardTitle>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteDatabase(database);
-                            }}
-                            className="text-destructive focus:text-destructive"
-                          >
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            Delete Database
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="pt-0" onClick={() => handleDatabaseClick(database.id)}>
-                    {database.description && (
-                      <p className="text-sm text-muted-foreground mb-2">
-                        {database.description}
-                      </p>
-                    )}
-                    <p className="text-xs text-muted-foreground">
-                      Table: {database.table_name}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      Created {new Date(database.created_at!).toLocaleDateString()}
-                    </p>
-                  </CardContent>
-                </Card>
-              ))}
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={openSearch} className="gap-2">
+                <Search className="h-4 w-4" />
+                Search
+                <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-100">
+                  <span className="text-xs">⌘</span>K
+                </kbd>
+              </Button>
+              <Button variant="outline" onClick={handleTemplateGalleryClick} className="gap-2">
+                <Bookmark className="h-4 w-4" />
+                Templates
+              </Button>
+              <DatabaseWizard onDatabaseCreated={handleDatabaseCreated} />
+              <Button onClick={handleCreatePage} className="gap-2">
+                <Plus className="h-4 w-4" />
+                New Page
+              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon">
+                    <Settings className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => setMembersModalOpen(true)}>
+                    <Users className="h-4 w-4 mr-2" />
+                    Manage Members
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleSettingsClick}>
+                    <Settings className="h-4 w-4 mr-2" />
+                    Workspace Settings
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
-        )}
 
-        {/* Pages Section */}
-        <div className="space-y-4">
-          <h2 className="text-lg font-semibold">Pages</h2>
-          {pagesLoading ? (
-            <div className="flex items-center justify-center py-8">
-              <div className="text-muted-foreground">Loading pages...</div>
-            </div>
-          ) : (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {pages?.map((page) => (
-                <Card 
-                  key={page.id} 
-                  className="hover:shadow-md transition-shadow cursor-pointer"
-                  onClick={() => handlePageClick(page.id)}
-                >
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-base flex items-center gap-2">
-                      <FileText className="h-4 w-4" />
-                      {page.properties?.title || 'Untitled'}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="pt-0">
-                    <p className="text-sm text-muted-foreground">
-                      Created {new Date(page.created_time).toLocaleDateString()}
-                    </p>
-                  </CardContent>
-                </Card>
-              ))}
-
-              {(!pages || pages.length === 0) && (!databases || databases.length === 0) && !pagesLoading && !databasesLoading && (
-                <Card className="col-span-full">
-                  <CardContent className="flex flex-col items-center justify-center py-8">
-                    <div className="flex items-center gap-4 mb-4">
-                      <FileText className="h-12 w-12 text-muted-foreground" />
-                      <Database className="h-12 w-12 text-muted-foreground" />
-                    </div>
-                    <h3 className="text-lg font-medium mb-2">Get started</h3>
-                    <p className="text-muted-foreground text-center mb-4">
-                      Create your first page or database to start organizing your content
-                    </p>
-                    <div className="flex gap-2">
-                      <DatabaseWizard onDatabaseCreated={handleDatabaseCreated} />
-                      <Button onClick={handleCreatePage} className="gap-2">
-                        <Plus className="h-4 w-4" />
-                        Create Page
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
+          {/* Show error states for individual sections */}
+          {databasesError && (
+            <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-4">
+              <p className="text-sm text-destructive">Error loading databases: {databasesError}</p>
             </div>
           )}
-        </div>
 
-        <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Delete Database</AlertDialogTitle>
-              <AlertDialogDescription>
-                Are you sure you want to delete "{databaseToDelete?.name}"? This action cannot be undone and will permanently delete all data in this database.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction 
-                onClick={confirmDeleteDatabase}
-                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              >
-                Delete Database
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      </div>
+          {pagesError && (
+            <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-4">
+              <p className="text-sm text-destructive">Error loading pages: {pagesError}</p>
+            </div>
+          )}
+
+          {/* Databases Section */}
+          {databases && databases.length > 0 && (
+            <div className="space-y-4">
+              <h2 className="text-lg font-semibold">Databases</h2>
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {databases.map((database) => (
+                  <Card 
+                    key={database.id} 
+                    className="hover:shadow-md transition-shadow cursor-pointer group relative"
+                  >
+                    <CardHeader className="pb-3">
+                      <div className="flex items-start justify-between">
+                        <CardTitle 
+                          className="text-base flex items-center gap-2 flex-1"
+                          onClick={() => handleDatabaseClick(database.id)}
+                        >
+                          <Database className="h-4 w-4" />
+                          {database.name}
+                        </CardTitle>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteDatabase(database);
+                              }}
+                              className="text-destructive focus:text-destructive"
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Delete Database
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="pt-0" onClick={() => handleDatabaseClick(database.id)}>
+                      {database.description && (
+                        <p className="text-sm text-muted-foreground mb-2">
+                          {database.description}
+                        </p>
+                      )}
+                      <p className="text-xs text-muted-foreground">
+                        Table: {database.table_name}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Created {new Date(database.created_at!).toLocaleDateString()}
+                      </p>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Pages Section */}
+          <div className="space-y-4">
+            <h2 className="text-lg font-semibold">Pages</h2>
+            {pagesLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="text-muted-foreground">Loading pages...</div>
+              </div>
+            ) : (
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {pages?.map((page) => (
+                  <Card 
+                    key={page.id} 
+                    className="hover:shadow-md transition-shadow cursor-pointer"
+                    onClick={() => handlePageClick(page.id)}
+                  >
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <FileText className="h-4 w-4" />
+                        {page.properties?.title || 'Untitled'}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="pt-0">
+                      <p className="text-sm text-muted-foreground">
+                        Created {new Date(page.created_time).toLocaleDateString()}
+                      </p>
+                    </CardContent>
+                  </Card>
+                ))}
+
+                {(!pages || pages.length === 0) && (!databases || databases.length === 0) && !pagesLoading && !databasesLoading && (
+                  <Card className="col-span-full">
+                    <CardContent className="flex flex-col items-center justify-center py-8">
+                      <div className="flex items-center gap-4 mb-4">
+                        <FileText className="h-12 w-12 text-muted-foreground" />
+                        <Database className="h-12 w-12 text-muted-foreground" />
+                      </div>
+                      <h3 className="text-lg font-medium mb-2">Get started</h3>
+                      <p className="text-muted-foreground text-center mb-4">
+                        Create your first page or database to start organizing your content
+                      </p>
+                      <div className="flex gap-2">
+                        <DatabaseWizard onDatabaseCreated={handleDatabaseCreated} />
+                        <Button onClick={handleCreatePage} className="gap-2">
+                          <Plus className="h-4 w-4" />
+                          Create Page
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            )}
+          </div>
+
+          <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete Database</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Are you sure you want to delete "{databaseToDelete?.name}"? This action cannot be undone and will permanently delete all data in this database.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction 
+                  onClick={confirmDeleteDatabase}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  Delete Database
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
+      </ScrollArea>
       <WorkspaceMembersModal 
         workspaceId={workspaceId!}
         isOpen={membersModalOpen}
