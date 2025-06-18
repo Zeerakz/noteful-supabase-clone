@@ -87,7 +87,7 @@ export function DraggableBlockList({
 
   return (
     <DragDropContext onDragEnd={handleDragEnd}>
-      <Droppable droppableId={parentBlockId || `page-${pageI'}`}>
+      <Droppable droppableId={parentBlockId || `page-${pageId}`}>
         {(provided, snapshot) => (
           <div
             ref={provided.innerRef}
