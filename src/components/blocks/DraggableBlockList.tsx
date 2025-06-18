@@ -3,6 +3,7 @@ import React from 'react';
 import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
 import { Block } from '@/types/block';
 import { BlockRenderer } from './BlockRenderer';
+import { GripVertical } from 'lucide-react';
 
 interface DraggableBlockListProps {
   blocks: Block[];
@@ -65,7 +66,7 @@ export function DraggableBlockList({
   if (!isEditable) {
     // Render without drag functionality for non-editable mode
     return (
-      <div className="space-y-2">
+      <div className="space-y-3">
         {blocks.map((block) => (
           <BlockRenderer
             key={block.id}
@@ -91,8 +92,8 @@ export function DraggableBlockList({
           <div
             ref={provided.innerRef}
             {...provided.droppableProps}
-            className={`space-y-2 min-h-[20px] ${
-              snapshot.isDraggingOver ? 'bg-muted/20 rounded-lg p-2 transition-colors' : ''
+            className={`space-y-3 min-h-[20px] transition-colors ${
+              snapshot.isDraggingOver ? 'bg-muted/30 rounded-lg p-3' : ''
             }`}
           >
             {blocks.map((block, index) => (
@@ -108,24 +109,22 @@ export function DraggableBlockList({
                     {...provided.draggableProps}
                     className={`transition-all duration-200 ${
                       snapshot.isDragging
-                        ? 'shadow-lg ring-2 ring-primary/20 bg-background rounded-lg scale-105 rotate-1 z-50'
-                        : 'hover:shadow-sm'
+                        ? 'shadow-lg ring-2 ring-primary/20 bg-background rounded-lg scale-[1.02] rotate-1 z-50'
+                        : ''
                     }`}
                     style={{
                       ...provided.draggableProps.style,
                     }}
                   >
                     <div className="group relative">
-                      {/* Drag handle - visible on hover */}
+                      {/* Drag handle - cleaner design */}
                       <div
                         {...provided.dragHandleProps}
-                        className={`absolute left-0 top-1/2 -translate-y-1/2 -translate-x-6 w-4 h-4 rounded bg-muted hover:bg-muted-foreground/20 cursor-grab active:cursor-grabbing transition-all ${
+                        className={`absolute left-0 top-2 -translate-x-8 w-6 h-6 rounded-md bg-background border border-border hover:bg-muted cursor-grab active:cursor-grabbing transition-all duration-200 flex items-center justify-center ${
                           snapshot.isDragging ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
                         }`}
                       >
-                        <div className="w-full h-full flex items-center justify-center">
-                          <div className="w-1.5 h-1.5 bg-muted-foreground/40 rounded-full"></div>
-                        </div>
+                        <GripVertical className="w-3 h-3 text-muted-foreground" />
                       </div>
                       
                       <BlockRenderer
@@ -148,7 +147,7 @@ export function DraggableBlockList({
             
             {/* Drop zone indicator when dragging */}
             {snapshot.isDraggingOver && blocks.length === 0 && (
-              <div className="border-2 border-dashed border-muted-foreground/20 rounded-lg p-8 text-center text-muted-foreground text-sm">
+              <div className="border-2 border-dashed border-muted-foreground/30 rounded-lg p-8 text-center text-muted-foreground text-sm bg-muted/10">
                 Drop block here
               </div>
             )}

@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Plus, Type, Heading1, Heading2, Heading3, List, ListOrdered, Image, Table, Minus, Quote, MessageSquare, ChevronRight, Globe, Paperclip, Columns } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -247,7 +246,7 @@ export function BlockEditor({ pageId, isEditable, workspaceId }: BlockEditorProp
 
   if (loading) {
     return (
-      <div className="p-4">
+      <div className="flex items-center justify-center py-12">
         <div className="text-muted-foreground">Loading content...</div>
       </div>
     );
@@ -257,107 +256,163 @@ export function BlockEditor({ pageId, isEditable, workspaceId }: BlockEditorProp
   const childBlocks = blocks.filter(block => block.parent_id && block.parent_id !== pageId);
 
   return (
-    <div className="space-y-2 p-4" ref={editorRef}>
-      {parentBlocks.map((block) => (
-        <div
-          key={block.id}
-          className={`transition-opacity ${
-            block.id.startsWith('temp-') ? 'opacity-60' : 'opacity-100'
-          }`}
-        >
-          <BlockRenderer
-            block={block}
-            pageId={pageId}
-            onUpdateBlock={handleUpdateBlock}
-            onDeleteBlock={handleDeleteBlock}
-            onCreateBlock={(params: Partial<Block>) => handleCommand(params.type as string)}
-            isEditable={isEditable}
-            childBlocks={childBlocks}
-          />
-        </div>
-      ))}
+    <div className="min-h-[60vh]" ref={editorRef}>
+      {/* Content area */}
+      <div className="space-y-3">
+        {parentBlocks.map((block) => (
+          <div
+            key={block.id}
+            className={`transition-opacity ${
+              block.id.startsWith('temp-') ? 'opacity-60' : 'opacity-100'
+            }`}
+          >
+            <BlockRenderer
+              block={block}
+              pageId={pageId}
+              onUpdateBlock={handleUpdateBlock}
+              onDeleteBlock={handleDeleteBlock}
+              onCreateBlock={(params: Partial<Block>) => handleCommand(params.type as string)}
+              isEditable={isEditable}
+              childBlocks={childBlocks}
+            />
+          </div>
+        ))}
+      </div>
       
+      {/* Add block button */}
       {isEditable && (
-        <div className="pt-4">
+        <div className="mt-8 pt-4">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" data-cy="add-block-button">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="h-9 px-4 text-muted-foreground border-dashed hover:border-solid hover:text-foreground transition-colors"
+                data-cy="add-block-button"
+              >
                 <Plus className="h-4 w-4 mr-2" />
                 Add Block
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent>
+            <DropdownMenuContent align="start" className="w-56">
               <DropdownMenuItem onClick={() => handleCommand('text')} data-cy="text-block-option">
-                <Type className="h-4 w-4 mr-2" />
-                Text
+                <Type className="h-4 w-4 mr-3" />
+                <div className="flex flex-col">
+                  <span className="text-sm font-medium">Text</span>
+                  <span className="text-xs text-muted-foreground">Start writing with plain text</span>
+                </div>
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => handleCommand('heading1')}>
-                <Heading1 className="h-4 w-4 mr-2" />
-                Heading 1
+                <Heading1 className="h-4 w-4 mr-3" />
+                <div className="flex flex-col">
+                  <span className="text-sm font-medium">Heading 1</span>
+                  <span className="text-xs text-muted-foreground">Big section heading</span>
+                </div>
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => handleCommand('heading2')}>
-                <Heading2 className="h-4 w-4 mr-2" />
-                Heading 2
+                <Heading2 className="h-4 w-4 mr-3" />
+                <div className="flex flex-col">
+                  <span className="text-sm font-medium">Heading 2</span>
+                  <span className="text-xs text-muted-foreground">Medium section heading</span>
+                </div>
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => handleCommand('heading3')}>
-                <Heading3 className="h-4 w-4 mr-2" />
-                Heading 3
+                <Heading3 className="h-4 w-4 mr-3" />
+                <div className="flex flex-col">
+                  <span className="text-sm font-medium">Heading 3</span>
+                  <span className="text-xs text-muted-foreground">Small section heading</span>
+                </div>
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => handleCommand('bullet_list')}>
-                <List className="h-4 w-4 mr-2" />
-                Bullet List
+                <List className="h-4 w-4 mr-3" />
+                <div className="flex flex-col">
+                  <span className="text-sm font-medium">Bullet List</span>
+                  <span className="text-xs text-muted-foreground">Create a bulleted list</span>
+                </div>
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => handleCommand('numbered_list')}>
-                <ListOrdered className="h-4 w-4 mr-2" />
-                Numbered List
+                <ListOrdered className="h-4 w-4 mr-3" />
+                <div className="flex flex-col">
+                  <span className="text-sm font-medium">Numbered List</span>
+                  <span className="text-xs text-muted-foreground">Create a numbered list</span>
+                </div>
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => handleCommand('quote')}>
-                <Quote className="h-4 w-4 mr-2" />
-                Quote
+                <Quote className="h-4 w-4 mr-3" />
+                <div className="flex flex-col">
+                  <span className="text-sm font-medium">Quote</span>
+                  <span className="text-xs text-muted-foreground">Capture a quote</span>
+                </div>
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => handleCommand('callout')}>
-                <MessageSquare className="h-4 w-4 mr-2" />
-                Callout
+                <MessageSquare className="h-4 w-4 mr-3" />
+                <div className="flex flex-col">
+                  <span className="text-sm font-medium">Callout</span>
+                  <span className="text-xs text-muted-foreground">Make writing stand out</span>
+                </div>
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => handleCommand('toggle')}>
-                <ChevronRight className="h-4 w-4 mr-2" />
-                Toggle
+                <ChevronRight className="h-4 w-4 mr-3" />
+                <div className="flex flex-col">
+                  <span className="text-sm font-medium">Toggle</span>
+                  <span className="text-xs text-muted-foreground">Create collapsible content</span>
+                </div>
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => handleCommand('image')}>
-                <Image className="h-4 w-4 mr-2" />
-                Image
+                <Image className="h-4 w-4 mr-3" />
+                <div className="flex flex-col">
+                  <span className="text-sm font-medium">Image</span>
+                  <span className="text-xs text-muted-foreground">Upload or embed an image</span>
+                </div>
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => handleCommand('two_column')}>
-                <Columns className="h-4 w-4 mr-2" />
-                Two Column
+                <Columns className="h-4 w-4 mr-3" />
+                <div className="flex flex-col">
+                  <span className="text-sm font-medium">Columns</span>
+                  <span className="text-xs text-muted-foreground">Create a two-column layout</span>
+                </div>
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => handleCommand('table')}>
-                <Table className="h-4 w-4 mr-2" />
-                Table
+                <Table className="h-4 w-4 mr-3" />
+                <div className="flex flex-col">
+                  <span className="text-sm font-medium">Table</span>
+                  <span className="text-xs text-muted-foreground">Create a simple table</span>
+                </div>
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => handleCommand('divider')}>
-                <Minus className="h-4 w-4 mr-2" />
-                Divider
+                <Minus className="h-4 w-4 mr-3" />
+                <div className="flex flex-col">
+                  <span className="text-sm font-medium">Divider</span>
+                  <span className="text-xs text-muted-foreground">Visually divide sections</span>
+                </div>
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => handleCommand('file_attachment')}>
-                <Paperclip className="h-4 w-4 mr-2" />
-                File Attachment
+                <Paperclip className="h-4 w-4 mr-3" />
+                <div className="flex flex-col">
+                  <span className="text-sm font-medium">File</span>
+                  <span className="text-xs text-muted-foreground">Attach a file</span>
+                </div>
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => handleCommand('embed')}>
-                <Globe className="h-4 w-4 mr-2" />
-                Embed
+                <Globe className="h-4 w-4 mr-3" />
+                <div className="flex flex-col">
+                  <span className="text-sm font-medium">Embed</span>
+                  <span className="text-xs text-muted-foreground">Embed content from the web</span>
+                </div>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
       )}
       
+      {/* Empty state */}
       {parentBlocks.length === 0 && !isEditable && (
-        <div className="text-center py-8 text-muted-foreground">
-          This page is empty.
+        <div className="text-center py-16">
+          <div className="text-muted-foreground text-lg">This page is empty.</div>
         </div>
       )}
 
+      {/* Slash menu */}
       <SlashMenu
         isOpen={isOpen}
         onClose={closeSlashMenu}

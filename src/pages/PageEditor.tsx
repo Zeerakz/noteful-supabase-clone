@@ -51,8 +51,8 @@ export function PageEditor() {
 
   if (pageLoading || workspacesLoading || permissionsLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-lg">Loading...</div>
+      <div className="flex items-center justify-center min-h-screen bg-background">
+        <div className="text-lg text-muted-foreground">Loading...</div>
       </div>
     );
   }
@@ -131,58 +131,70 @@ export function PageEditor() {
   return (
     <PresenceProvider pageId={pageId}>
       <div className="min-h-screen bg-background">
-        <div className="border-b border-border bg-background sticky top-0 z-10">
-          <div className="container mx-auto px-4 py-3">
+        {/* Header */}
+        <header className="sticky top-0 z-10 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+          <div className="mx-auto max-w-6xl px-6 py-4">
             <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
+              {/* Left section */}
+              <div className="flex items-center space-x-6">
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={handleBack}
+                  className="h-8 px-3 text-muted-foreground hover:text-foreground"
                 >
                   <ArrowLeft className="h-4 w-4 mr-2" />
                   Back
                 </Button>
-                <div className="flex-1">
+                
+                <div className="flex flex-col">
                   {isEditingTitle ? (
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center">
                       <Input
                         ref={titleInputRef}
                         value={titleValue}
                         onChange={(e) => setTitleValue(e.target.value)}
                         onBlur={handleTitleSave}
                         onKeyDown={handleTitleKeyDown}
-                        className="text-xl font-semibold border-none bg-transparent p-0 focus-visible:ring-1"
+                        className="text-2xl font-semibold border-none bg-transparent p-0 h-auto focus-visible:ring-1 focus-visible:ring-ring"
                         placeholder="Page title"
                       />
                     </div>
                   ) : (
                     <div className="flex items-center gap-2 group">
-                      <h1 className="text-xl font-semibold">{(page.properties as any)?.title || 'Untitled'}</h1>
+                      <h1 className="text-2xl font-semibold text-foreground">
+                        {(page.properties as any)?.title || 'Untitled'}
+                      </h1>
                       {isEditable && (
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={startEditingTitle}
-                          className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0"
+                          className="opacity-0 group-hover:opacity-100 transition-opacity h-7 w-7 p-0 hover:bg-muted"
                         >
                           <Edit2 className="h-3 w-3" />
                         </Button>
                       )}
                       {hasAnyOptimisticChanges && (
-                        <span className="inline-block w-2 h-2 bg-blue-500 rounded-full animate-pulse ml-2" title="Syncing changes..." />
+                        <span 
+                          className="inline-block w-2 h-2 bg-blue-500 rounded-full animate-pulse ml-2" 
+                          title="Syncing changes..." 
+                        />
                       )}
                     </div>
                   )}
-                  <p className="text-sm text-muted-foreground">in {workspace.name}</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    in {workspace.name}
+                  </p>
                 </div>
               </div>
               
+              {/* Right section */}
               <div className="flex items-center gap-3">
                 {permissions.canManagePermissions && (
                   <ShareButton blockId={page.id} workspaceId={workspaceId} />
                 )}
-                {/* Save as Template button */}
+                
                 {isEditable && blocks.length > 0 && (
                   <SaveAsTemplateDialog
                     pageId={page.id}
@@ -192,16 +204,20 @@ export function PageEditor() {
                   />
                 )}
                 
-                {/* Show active users */}
                 <ActiveUsers activeUsers={activeUsers} loading={presenceLoading} />
               </div>
             </div>
           </div>
-        </div>
+        </header>
         
-        <div className="container mx-auto max-w-4xl">
-          <BlockEditor pageId={page.id} isEditable={isEditable} workspaceId={workspaceId} />
-        </div>
+        {/* Main content */}
+        <main className="mx-auto max-w-4xl px-6 py-8">
+          <BlockEditor 
+            pageId={page.id} 
+            isEditable={isEditable} 
+            workspaceId={workspaceId} 
+          />
+        </main>
       </div>
     </PresenceProvider>
   );
