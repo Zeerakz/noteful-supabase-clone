@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -8,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { Mail, RefreshCw, AlertCircle } from 'lucide-react';
+import { Mail, RefreshCw, AlertCircle, FileText } from 'lucide-react';
 
 export function AuthForm({ defaultTab = 'signin' }: { defaultTab?: 'signin' | 'signup' }) {
   const [email, setEmail] = useState('');
@@ -128,21 +129,21 @@ export function AuthForm({ defaultTab = 'signin' }: { defaultTab?: 'signin' | 's
 
   if (needsConfirmation) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-blue-100">
-              <Mail className="h-6 w-6 text-blue-600" />
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md shadow-xl border-0 bg-white/80 backdrop-blur-sm">
+          <CardHeader className="text-center pb-6">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-blue-100">
+              <Mail className="h-8 w-8 text-blue-600" />
             </div>
-            <CardTitle>Check your email</CardTitle>
-            <CardDescription>
-              We've sent a confirmation link to {confirmationEmail}
+            <CardTitle className="text-2xl font-bold text-gray-900">Check your email</CardTitle>
+            <CardDescription className="text-gray-600">
+              We've sent a confirmation link to <span className="font-medium text-gray-900">{confirmationEmail}</span>
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <Alert>
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>
+          <CardContent className="space-y-6">
+            <Alert className="border-blue-200 bg-blue-50">
+              <AlertCircle className="h-4 w-4 text-blue-600" />
+              <AlertDescription className="text-blue-800">
                 Please check your email (including spam folder) and click the confirmation link to complete your registration.
                 <br /><br />
                 <strong>Current site URL:</strong> {window.location.origin}
@@ -151,8 +152,8 @@ export function AuthForm({ defaultTab = 'signin' }: { defaultTab?: 'signin' | 's
               </AlertDescription>
             </Alert>
             
-            <div className="text-center">
-              <p className="text-sm text-gray-600 mb-4">
+            <div className="text-center space-y-4">
+              <p className="text-sm text-gray-600">
                 Didn't receive the email?
               </p>
               <Button 
@@ -179,7 +180,7 @@ export function AuthForm({ defaultTab = 'signin' }: { defaultTab?: 'signin' | 's
                   setNeedsConfirmation(false);
                   setConfirmationEmail('');
                 }}
-                className="text-sm"
+                className="text-sm text-gray-600 hover:text-gray-900"
               >
                 Back to sign in
               </Button>
@@ -191,63 +192,103 @@ export function AuthForm({ defaultTab = 'signin' }: { defaultTab?: 'signin' | 's
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-50">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle>Welcome to Planna</CardTitle>
-          <CardDescription>
-            Sign in to your account or create a new one
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex items-center justify-center p-4">
+      <Card className="w-full max-w-md shadow-xl border-0 bg-white/80 backdrop-blur-sm">
+        <CardHeader className="text-center pb-6">
+          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-r from-blue-600 to-indigo-600">
+            <FileText className="h-6 w-6 text-white" />
+          </div>
+          <CardTitle className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+            Welcome to Planna
+          </CardTitle>
+          <CardDescription className="text-gray-600 text-base">
+            Your collaborative workspace awaits
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue={defaultTab} className="space-y-4">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="signin">Sign In</TabsTrigger>
-              <TabsTrigger value="signup">Sign Up</TabsTrigger>
+          <Tabs defaultValue={defaultTab} className="space-y-6">
+            <TabsList className="grid w-full grid-cols-2 bg-gray-100 p-1 rounded-lg">
+              <TabsTrigger 
+                value="signin" 
+                className="rounded-md data-[state=active]:bg-white data-[state=active]:shadow-sm font-medium"
+              >
+                Sign In
+              </TabsTrigger>
+              <TabsTrigger 
+                value="signup"
+                className="rounded-md data-[state=active]:bg-white data-[state=active]:shadow-sm font-medium"
+              >
+                Sign Up
+              </TabsTrigger>
             </TabsList>
             
-            <TabsContent value="signin">
+            <TabsContent value="signin" className="space-y-4">
               <form onSubmit={handleSignIn} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="signin-email">Email</Label>
+                  <Label htmlFor="signin-email" className="text-sm font-medium text-gray-700">
+                    Email address
+                  </Label>
                   <Input
                     id="signin-email"
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
+                    className="h-11 border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+                    placeholder="Enter your email"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="signin-password">Password</Label>
+                  <Label htmlFor="signin-password" className="text-sm font-medium text-gray-700">
+                    Password
+                  </Label>
                   <Input
                     id="signin-password"
                     type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
+                    className="h-11 border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+                    placeholder="Enter your password"
                   />
                 </div>
-                <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? 'Signing in...' : 'Sign In'}
+                <Button 
+                  type="submit" 
+                  className="w-full h-11 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium shadow-lg hover:shadow-xl transition-all duration-200" 
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <>
+                      <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                      Signing in...
+                    </>
+                  ) : (
+                    'Sign In'
+                  )}
                 </Button>
               </form>
             </TabsContent>
             
-            <TabsContent value="signup">
+            <TabsContent value="signup" className="space-y-4">
               <form onSubmit={handleSignUp} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="signup-email">Email</Label>
+                  <Label htmlFor="signup-email" className="text-sm font-medium text-gray-700">
+                    Email address
+                  </Label>
                   <Input
                     id="signup-email"
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
+                    className="h-11 border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+                    placeholder="Enter your email"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="signup-password">Password</Label>
+                  <Label htmlFor="signup-password" className="text-sm font-medium text-gray-700">
+                    Password
+                  </Label>
                   <Input
                     id="signup-password"
                     type="password"
@@ -255,10 +296,23 @@ export function AuthForm({ defaultTab = 'signin' }: { defaultTab?: 'signin' | 's
                     onChange={(e) => setPassword(e.target.value)}
                     required
                     minLength={6}
+                    className="h-11 border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+                    placeholder="Create a password (min. 6 characters)"
                   />
                 </div>
-                <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? 'Creating account...' : 'Sign Up'}
+                <Button 
+                  type="submit" 
+                  className="w-full h-11 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium shadow-lg hover:shadow-xl transition-all duration-200" 
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <>
+                      <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                      Creating account...
+                    </>
+                  ) : (
+                    'Create Account'
+                  )}
                 </Button>
               </form>
             </TabsContent>
