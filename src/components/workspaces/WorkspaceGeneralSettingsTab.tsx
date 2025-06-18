@@ -3,7 +3,11 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Settings } from 'lucide-react';
 
-export function WorkspaceGeneralSettingsTab() {
+interface WorkspaceGeneralSettingsTabProps {
+  workspaceId: string;
+}
+
+export function WorkspaceGeneralSettingsTab({ workspaceId }: WorkspaceGeneralSettingsTabProps) {
   return (
     <Card>
       <CardHeader>
