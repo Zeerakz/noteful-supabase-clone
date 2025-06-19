@@ -88,7 +88,9 @@ export function EnhancedDragDropProvider({
     // Enhanced drop indicator positioning
     if (event.over) {
       const rect = event.over.rect;
-      const pointerY = event.activatorEvent?.clientY || 0;
+      // Type cast the activator event to access clientY safely
+      const pointerEvent = event.activatorEvent as PointerEvent | MouseEvent;
+      const pointerY = pointerEvent?.clientY || 0;
       
       if (rect) {
         const midpoint = rect.top + rect.height / 2;
@@ -149,6 +151,9 @@ export function EnhancedDragDropProvider({
                 return `Draggable item ${active.id} was dropped over droppable area ${over.id}`;
               }
               return `Draggable item ${active.id} was dropped.`;
+            },
+            onDragCancel({ active }) {
+              return `Dragging was cancelled. Draggable item ${active.id} was dropped.`;
             },
           },
         }}
