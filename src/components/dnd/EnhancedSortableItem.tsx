@@ -37,6 +37,7 @@ export function EnhancedSortableItem({
   } = useSortable({
     id,
     disabled,
+    resizeObserverConfig: {},
   });
 
   const style = {
