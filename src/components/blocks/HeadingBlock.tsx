@@ -87,7 +87,7 @@ export function HeadingBlock({ block, onUpdate, onDelete, isEditable }: HeadingB
           onChange={(e) => setContent(e.target.value)}
           onBlur={handleSave}
           onKeyDown={handleKeyDown}
-          className={`flex-1 p-2 bg-transparent border-none outline-none focus:bg-accent/10 hover:bg-accent/5 rounded transition-colors ${getHeadingStyle()}`}
+          className={`flex-1 p-2 bg-transparent border-none outline-none focus:bg-accent/10 hover:bg-muted/50 rounded transition-colors ${getHeadingStyle()}`}
           placeholder="Heading..."
         />
       </div>
@@ -101,7 +101,7 @@ export function HeadingBlock({ block, onUpdate, onDelete, isEditable }: HeadingB
       onMouseLeave={() => setIsHovered(false)}
     >
       <div
-        className={`flex-1 p-2 rounded cursor-text bg-transparent hover:bg-accent/5 transition-colors ${!content ? 'text-muted-foreground' : ''} ${getHeadingStyle()}`}
+        className={`flex-1 p-2 rounded cursor-text bg-transparent hover:bg-muted/50 transition-colors ${!content ? 'text-muted-foreground' : ''} ${getHeadingStyle()}`}
         onClick={() => isEditable && setIsEditing(true)}
       >
         {content || (isEditable ? 'Click to add heading...' : '')}
