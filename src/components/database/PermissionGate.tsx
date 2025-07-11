@@ -23,11 +23,15 @@ export function PermissionGate({
 }: PermissionGateProps) {
   const { permissions, loading } = useDatabasePermissions(workspaceId);
 
+  console.log(`PermissionGate - workspaceId: ${workspaceId}, requiredPermission: ${requiredPermission}, loading: ${loading}`);
+  console.log(`PermissionGate - permissions:`, permissions);
+
   if (loading) {
     return <div className="opacity-50">{children}</div>;
   }
 
   const hasPermission = permissions[requiredPermission];
+  console.log(`PermissionGate - hasPermission for ${requiredPermission}: ${hasPermission}`);
 
   if (!hasPermission) {
     if (showTooltip) {

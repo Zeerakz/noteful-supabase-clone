@@ -27,15 +27,19 @@ export function PermissionAwareTableCell(props: PermissionAwareTableCellProps) {
   // For computed fields (rollups, formulas), don't allow editing regardless of permissions
   const isComputedField = definition?.isComputed ?? (field.type === 'rollup' || field.type === 'formula');
   
+  console.log(`PermissionAwareTableCell - Field: ${field.name} (${field.type}), isComputed: ${isComputedField}, workspaceId: ${workspaceId}`);
+  
   if (isComputedField) {
+    console.log(`Field ${field.name} is computed, rendering without permission check`);
     return <OptimizedPropertyTableCell {...props} />;
   }
 
+  console.log(`Field ${field.name} requires permission check for editing`);
   return (
     <PermissionGate
       workspaceId={workspaceId}
       requiredPermission="canEditContent"
-      showTooltip={false}
+      showTooltip={true}
     >
       <OptimizedPropertyTableCell
         {...props}
