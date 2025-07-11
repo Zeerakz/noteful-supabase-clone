@@ -74,12 +74,18 @@ export function useBlockCacheSync({
   }, [pageId, workspaceId, updateCacheForBlock]);
 
   const handleBlockUpdate = useCallback((payload: any) => {
+    console.log('📥 Received block UPDATE event:', payload);
     const updatedBlock = payload.new as Block;
     
     // Only sync if this block belongs to our current page
     if (updatedBlock.parent_id === pageId && updatedBlock.workspace_id === workspaceId) {
-      console.log('📥 Syncing block update to cache:', updatedBlock.id);
+      console.log('📥 Syncing block update to cache:', updatedBlock.id, updatedBlock.content);
       updateCacheForBlock(updatedBlock, 'update');
+    } else {
+      console.log('📥 Ignoring block update - not for current page:', {
+        updatedBlock: { parent_id: updatedBlock.parent_id, workspace_id: updatedBlock.workspace_id },
+        current: { pageId, workspaceId }
+      });
     }
   }, [pageId, workspaceId, updateCacheForBlock]);
 
