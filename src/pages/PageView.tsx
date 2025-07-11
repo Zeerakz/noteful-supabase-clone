@@ -158,87 +158,88 @@ function PageViewContent() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="border-b border-border bg-background sticky top-0 z-10">
-        <div className="container mx-auto px-4 py-3">
-          <div className="flex items-center space-x-4">
+      {/* Notion-like minimal header */}
+      <div className="border-b border-border/50 bg-background/80 backdrop-blur-sm sticky top-0 z-10">
+        <div className="max-w-4xl mx-auto px-6 py-3">
+          <div className="flex items-center justify-between">
             <Button
               variant="ghost"
               size="sm"
               onClick={handleBack}
+              className="text-muted-foreground hover:text-foreground"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Back
+              {pageData.workspace.name}
             </Button>
-            <div>
-              {isEditingTitle ? (
-                <div className="flex items-center gap-2">
-                  <Input
-                    ref={titleInputRef}
-                    value={titleValue}
-                    onChange={(e) => setTitleValue(e.target.value)}
-                    onBlur={handleTitleSave}
-                    onKeyDown={handleTitleKeyDown}
-                    className="text-xl font-semibold border-none bg-transparent p-0 focus-visible:ring-1"
-                    placeholder="Page title"
-                  />
-                </div>
-              ) : (
-                <div className="flex items-center gap-2 group">
-                  <h1 className="text-xl font-semibold">{pageData.properties?.title || 'Untitled'}</h1>
-                  {isEditable && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={startEditingTitle}
-                      className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0"
-                    >
-                      <Edit2 className="h-3 w-3" />
-                    </Button>
-                  )}
-                  {hasOptimisticChanges && (
-                    <span className="inline-block w-2 h-2 bg-blue-500 rounded-full animate-pulse ml-2" title="Syncing changes..." />
-                  )}
-                </div>
-              )}
-              <p className="text-sm text-muted-foreground">in {pageData.workspace.name}</p>
-            </div>
+            {hasOptimisticChanges && (
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />
+                Saving...
+              </div>
+            )}
           </div>
         </div>
       </div>
       
-      <div className="container mx-auto max-w-4xl px-4 py-6 space-y-6">
-        {/* Properties Section */}
+      {/* Notion-like page content with proper spacing */}
+      <div className="max-w-3xl mx-auto px-6 py-8 space-y-8">
+        {/* Page title - Notion style */}
+        <div className="space-y-2">
+          {isEditingTitle ? (
+            <Input
+              ref={titleInputRef}
+              value={titleValue}
+              onChange={(e) => setTitleValue(e.target.value)}
+              onBlur={handleTitleSave}
+              onKeyDown={handleTitleKeyDown}
+              className="text-3xl font-bold border-none bg-transparent p-0 focus-visible:ring-0 focus-visible:outline-none placeholder:text-muted-foreground/50 resize-none"
+              placeholder="Untitled"
+            />
+          ) : (
+            <div className="group">
+              <h1 
+                className="text-3xl font-bold text-foreground cursor-text hover:bg-muted/30 rounded-sm px-1 py-0.5 -mx-1 transition-colors"
+                onClick={isEditable ? startEditingTitle : undefined}
+              >
+                {pageData.properties?.title || 'Untitled'}
+              </h1>
+            </div>
+          )}
+        </div>
+        {/* Properties Section - Notion style */}
         {showProperties && (
           <ErrorBoundary
             fallback={
-              <div className="p-4 border border-red-200 rounded-lg bg-red-50">
-                <p className="text-red-600">Error loading properties</p>
-                {propertiesError && <p className="text-sm text-red-500 mt-1">{propertiesError}</p>}
+              <div className="p-4 border border-destructive/20 rounded-lg bg-destructive/5">
+                <p className="text-destructive">Error loading properties</p>
+                {propertiesError && <p className="text-sm text-destructive/80 mt-1">{propertiesError}</p>}
                 <Button size="sm" onClick={retryProperties} className="mt-2">
                   Retry Properties
                 </Button>
               </div>
             }
           >
-            <PagePropertiesSection
-              fields={fields}
-              properties={propertiesRecord}
-              pageId={pageData.id}
-              workspaceId={pageData.workspace.id}
-              onPropertyUpdate={handlePropertyUpdate}
-              isEditable={isEditable}
-              pageData={pageData}
-              userProfiles={userProfiles}
-            />
+            <div className="border border-border/50 rounded-lg p-4 bg-card/50">
+              <PagePropertiesSection
+                fields={fields}
+                properties={propertiesRecord}
+                pageId={pageData.id}
+                workspaceId={pageData.workspace.id}
+                onPropertyUpdate={handlePropertyUpdate}
+                isEditable={isEditable}
+                pageData={pageData}
+                userProfiles={userProfiles}
+              />
+            </div>
           </ErrorBoundary>
         )}
 
-        {/* Page Content */}
+        {/* Page Content - Clean Notion-like editor */}
         <ErrorBoundary
           fallback={
-            <div className="p-4 border border-red-200 rounded-lg bg-red-50">
-              <p className="text-red-600">Error loading page content</p>
-              <p className="text-sm text-red-500 mt-1">
+            <div className="p-4 border border-destructive/20 rounded-lg bg-destructive/5">
+              <p className="text-destructive">Error loading page content</p>
+              <p className="text-sm text-destructive/80 mt-1">
                 There was an issue loading the page editor.
               </p>
               <Button size="sm" onClick={handleRetry} className="mt-2">
